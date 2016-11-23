@@ -6,6 +6,14 @@ It measures average watts over a periodic interval, records the
 data on a local SDcard and uploads via WiFi.
 This is a work in progress.
 
+There's a lot more coming, but I thought I'd share this snapshot
+with anyone who's following this project.  It does work.  I'm running
+it in my basement.  If you don't build a board (schematics and PCB files 
+are published), you could get by with a breadboarded NodeMCU with an SDcard
+and one MCP3x08 ADC.  You would need to also cobble together the Voltage and
+at least one other port, but altogether doable in a night or two. (I've done
+it multiple times).
+
 * Runs on 5v micro USB power to NodeMCU 0.9 or 1.0 ESP8266 board.
 * Samples power at rate of 30,000+ samples-per-second.
 * Uses external current transformers (CT)s.
