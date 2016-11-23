@@ -13,9 +13,20 @@ This is a work in progress.
 * Connection to eMonCMS.org server.
 * Programmed in C++ using Arduino IDE.
 
+The source code is comprised of seven .ino files that were in a single library in
+my Arduino IDE.  Trying not to spend a lot of time learning how GitHub works,
+so already i've screwed up and uploaded seven individual files.  How to put them all 
+in a single library is not obvious to me right now.  There is one simple class that
+I threw together to allow some limited use of the MCP23S17 GPIO chip, I'll upload that 
+when I learn how.  What it does is pretty obvious in the code.  In addition to the 
+ESP variants of standard classes, I've used: SdFat (allows long filenames), 
+WiFiUDP (because it was there), and the very powerful ArduinoJson by Benoît Blanchon
+which makes handling the Json Config and Table files extremely easy.
+
 To do:
 
 * Configure via WiFi.
+* Log to the SD.
 * Calibration with AC cord adapter.
 * CT calibration project ongoing.
 * Support for connection to other similar power monitoring servers.
