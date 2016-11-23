@@ -1,0 +1,9 @@
+{
+"ct":{
+	"SCT013-030":{"mfg":"YHDC","type":"v","cal":30,"phase":+3.25},
+	"SCT013-050":{"mfg":"YHDC","type":"v","cal":49.8,"phase":+3.00},
+	"SCT013-000":{"mfg":"YHDC","type":"c","turns":2000,"phase":+0},
+	"SCT019-000":{"mfg":"YHDC","type":"c","turns":6097,"phase":+1.3},
+	"SCT0750-000":{"mfg":"Magnalab","type":"c","turns":7500}
+	}
+}
