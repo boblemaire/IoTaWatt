@@ -32,7 +32,7 @@
 	"node":1,
 	"postInterval":10,
 	"url":"emoncms.org",
-	"apikey":"01d0b420c10bdbb374bef71938445605"
+	"apikey":".....Your API Key..............."
 	}
 	
 }
