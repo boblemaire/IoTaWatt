@@ -1,0 +1,38 @@
+
+{
+"format":1.0,
+
+"device":{
+	"model":"IoTaWatt",
+	"version":"4.1",
+	"adc":"MCP3008"
+	},
+	
+"inputs":[
+	{"channel":0,"type":"vt","model":"Jameco","cal":128,"phase":+4.0},
+	{"channel":1,"type":"ct","model":"SCT019-000","burden":47},
+	{"channel":2,"type":"ct","model":"SCT019-000","burden":47},
+	{"channel":3,"type":"ct","model":"SCT013-030"},
+	{"channel":4,"type":"ct","model":"SCT013-030"},
+	{"channel":5,"type":"ct","model":"SCT013-050"},
+	{"channel":6,"type":"ct","model":"SCT013-050"},
+	{"channel":7,"type":"ct","model":"SCT013-050"},
+	{"channel":8,"type":"ct","model":"SCT013-030"},
+	{"channel":9,"type":"ct","model":"SCT013-030"},
+	{"channel":10,"type":"ct","model":"SCT013-030"},
+	{"channel":11,"type":"ct","model":"SCT013-030"},
+	{"channel":12,"type":"ct","model":"SCT013-030"},
+	{"channel":13,"type":"ct","model":"SCT013-030"},
+	{"channel":14,"type":"ct","model":"SCT013-030"},
+	{"channel":15,"type":"ct","model":"SCT013-030"}	
+	],
+	
+"server":{
+	"type":"emoncms",
+	"node":1,
+	"postInterval":10,
+	"url":"emoncms.org",
+	"apikey":".....Your API Key..............."
+	}
+	
+}
