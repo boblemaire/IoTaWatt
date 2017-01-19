@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<title>IoTaWatt Configuration app</title>
+
+<style>
+
+  .outerContainer{
+    border: 2px;
+    width: 500px;
+    padding: 5px;
+    background-color: lightgrey;
+    border-radius: 4px;
+    font-family: "arial", sans-serif;
+  }
+  
+  .bigIdeasDiv{
+    background-color: inherit
+    height: 20px;
+  }
+  
+  .bodyDiv{
+    margin: 5px;
+    display: none;
+  }
+  
+  .advDivStep{
+    margin: 5px;
+    display: none;
+    background-color: crimson;
+  }
+  
+  .bigIdeasButton{
+    width: 19%;
+    height: 50px;
+    background-color: lightgreen;
+    border-radius: 4px;
+  }
+  
+  .chanButton{
+    width: 30px;
+    background-color: lightgrey;
+    border-radius; inherit;
+  }
+  
+  .chanEditButton{
+    width: 30px;
+    background-color: lightgreen;
+    border-radius; inherit;
+  }
+  
+  .editBox{
+    height: 22px;
+    margin-left: 2px;
+    padding: 0px;
+    background-color: lightgreen;
+    border-radius: inherit;
+  }
+  
+  .editButton{
+    width: 50px;
+    height: 22px;
+    background-color: lightgreen;
+    border-radius: inherit;
+  }
+  
+  .notesBox{
+    border: 1px;
+    height: 72px;
+    width: 350px;
+    background-color: lightyellow;
+    border-radius: inherit;
+    margin-left: 5px;
+  }
+  
+  .center{
+    text-align: center;
+  }
+  
+  #calConfirm{
+    width: 100px;
+    height: 40px;
+    text-align: center;
+    background-color: red;
+  }
+  
+ }
+
+</style>
+</head>
+<body onload="setup()">
+  
+<div class="outerContainer">
+  <h3 style="text-align:center">IoTaWatt Power Monitor</h3>
+  
+  <div class="bigIdeasDiv">
+    <button ID="BIBinputs", class="bigIdeasButton", onclick="editInputs()">Configure<br> Inputs</button>
+    <button ID="BIBserver", class="bigIdeasButton", onclick="editWebServer()">Device and<br> Web Server</button>
+    <button ID="BIBstatus", class="bigIdeasButton", onclick="showStatus()">Device<br> Status</button>
+    <button ID="BIBundo", class="bigIdeasButton", onclick="undoChanges()" >Discard<br> Changes</button>
+    <button ID="BIBcommit", class="bigIdeasButton", onclick="commitChanges()">Commit and Restart</button>
+  </div>
+  
+  <div class="bodyDiv", id="divInputs">
+    <table id="inputTable"></table>
+  </div>
+  
+  <div class="bodyDiv", id="divWebServer">
+    <table id="serverTable"></table>
+  </div>
+  
+  <div class="bodyDiv", id="divStatus">
+    <h3 style="text-align:center">Status</h3>
+    <table id="statusTable"></table>
+  </div>
+  
+  <div class="bodyDiv", id="divCalibrate">
+    <h3 style="text-align:center">Voltage Calibration</h3>
+    <table id="calTable"></table>
+    <div id="advConfirm", class="bodyDiv">
+      <h3>Confirm Advanced Calibration</h3>
+      <p>Advanced calibration requires a special AC adapter cord and a battery power supply.
+         Additionally, upon confirmation, the IoTaWatt will discontinue normal operation
+         and dedicate itself to the calibration.  You will be required to disconnect all 
+         CT sensors. This procedure involves direct connection to the AC line and requires
+         strict adherance to the directions to avoid personal injury and/or damage to the 
+         device.</p>
+         <p>The procedure will develop a calibration value for your transformer and determine
+         the phase shift from true line voltage.  When completed, the new values will be 
+         saved along with all other recent changes and the device will be restarted.</p>
+         <div align="center">
+         <input type="button" id="calConfirm",  onclick="calAdv()", value="Proceed"></input>
+         </div>
+    </div>
+  </div>
+  
+  <div class="advDivStep", id="divAdvanced">
+    <h3 style="center">Advanced Voltage Calibration</h3>
+    <p>At this point, the IoTaWatt must be running on battery power.</p>
+    <p id=advStepMsg></p>
+    
+
+  </div>
+
+</div> 
+
+<script>
+// configuration files
+var configFileURL = "config.txt";
+var configNewURL = "config.txt";
+var configTablesURL = "tables.txt";
+var inputTypes = ["CT", "VT"];
+
+// device configuration
+var configFileImage;                // congiguration file as String()
+var config;                         // configuration as Js Object
+var tables;
+var channels = 15;
+var editing = false;
+var getStatus = false;
+var calVoltageUpdate = false;
+var statusTimer;
+var calVTindex;
+var calRefChan;
+
+
+
+function calVTenter(obj){
+  var index = objectIndex(obj);
+  calVTindex = index;
+  if(config.inputs[index].cal === undefined){
+    var modelTable = tables.VT;
+    for(var i=1; i<modelTable.length; i++){
+      if(config.inputs[index].model == modelTable[i].model) {
+        config.inputs[index].cal = modelTable[i].cal;
+      }
+    }
+  }
+  
+  
+  document.getElementById("divInputs").style.display = "none";
+  document.getElementById("divCalibrate").style.display = "inline";
+  var calTable = document.getElementById("calTable");
+  calTable.innerHTML = "";
+  addRow();
+  column1.innerHTML = "calibrate channel:";
+  column2.innerHTML = config.inputs[index].channel;
+  addRow();
+  column1.innerHTML = "Sensed Voltage:";
+  column2.setAttribute("id","calVoltage");
+  addRow();
+  column1.innerHTML = "Calibration Factor:";
+  calInput = document.createElement("input");
+  column2.appendChild(calInput);
+  calInput.setAttribute("class","editBox");
+  calInput.setAttribute("id","calInput");
+  calInput.setAttribute("style","width: 60px;");
+  calInput.setAttribute("type","number");
+  calInput.setAttribute("step","0.1");
+  calInput.setAttribute("onchange","calVTnew(this)");
+  calInput.setAttribute("value",config.inputs[index].cal);
+  addRow();
+  addButton("save","calSave(this)");
+  addButton("cancel","calCancel(this)");
+  addButton("advanced","calAdvanced(this)","70px");
+  calRefreshVoltage = true;
+  calUpdateVoltage();
+  
+  function addRow(){
+    newRow = document.createElement("tr");
+    calTable.appendChild(newRow);
+    column1 = document.createElement("td");
+    column1.setAttribute("align","right");
+    newRow.appendChild(column1);
+    column2 = document.createElement("td");
+    newRow.appendChild(column2);
+  }
+  function addButton(text, handler, width="50px"){
+  var newButton = document.createElement("button");
+  column2.appendChild(newButton);
+  newButton.setAttribute("onclick",handler);
+  newButton.setAttribute("class","editButton");
+  newButton.appendChild(document.createTextNode(text));
+  newButton.setAttribute("style","width: " + width);
+  }
+}
+
+function calVTexit(){
+  var index = calVTindex;
+  document.getElementById("advConfirm").style.display = "none";
+  document.getElementById("divCalibrate").style.display = "none";
+  document.getElementById("divInputs").style.display = "inline";
+  
+  calRefreshVoltage = false;
+  editChannel(calVTindex);
+}
+
+function calUpdateVoltage(){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      if(calRefreshVoltage){
+        var response = JSON.parse(xmlHttp.responseText);
+        var calVoltage = document.getElementById("calVoltage");
+        calVoltage.innerHTML = response.voltage.toFixed(1);
+        calUpdateVoltage();
+      }
+    }
+  }
+  xmlHttp.open("GET","/status?voltage=" + config.inputs[calVTindex].channel, true);
+  xmlHttp.send(null);
+}
+
+function calVTnew(obj){
+  var index = calVTindex;
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+    }
+  }
+  xmlHttp.open("GET","/calvt?channel=" + config.inputs[calVTindex].channel + "&cal=" + obj.value, true);
+  xmlHttp.send(null);
+}
+
+function calSave(obj){
+  config.inputs[calVTindex].cal = Number(document.getElementById("calInput").value);
+  calVTexit();
+}
+
+function calCancel(obj){
+  var calInput = document.getElementById("calInput");
+  calInput.value = config.inputs[calVTindex].cal;
+  calVTnew(calInput);
+  calVTexit();
+}
+
+function calAdvanced(obj){
+  document.getElementById("advConfirm").style.display = "inline";
+//  calRefreshVoltage = false;
+  
+}
+
+
+/***************************************************************************************************
+ * 
+ * Configure Inputs related code.
+ * 
+ * ************************************************************************************************/
+function buildInputsList(){
+  config.inputs.sort(function(a,b){return a.channel - b.channel});
+  var vchannels = [];
+  for(var i=0; i<config.inputs.length; i++){
+    if(config.inputs[i].type == "VT"){
+      vchannels.push(config.inputs[i].channel);
+    } 
+  }
+  var inputsTable = document.getElementById("inputTable");
+  inputsTable.innerHTML = "";
+  var addList = document.createElement("select");
+  var newElement = document.createElement("option");
+  newElement.text = "  ";
+  newElement.value = -1;
+  addList.appendChild(newElement);
+  addList.setAttribute("class","editBox")
+  var lastUsed = -1;
+  for(var i=0; i<config.inputs.length; i++){
+    var inputRow = document.createElement("tr");
+    inputsTable.appendChild(inputRow);
+    inputRow.setAttribute("class","chanEditRow")
+    var inputColumn1 = document.createElement("td");
+    inputRow.appendChild(inputColumn1);
+    inputColumn1.setAttribute("valign","top");
+    var inputColumn2 = document.createElement("td");
+    inputRow.appendChild(inputColumn2);
+    
+    var inputButton = document.createElement("button");
+    inputButton.appendChild(document.createTextNode(config.inputs[i].channel));
+    if(!editing)inputButton.setAttribute("class","chanEditButton");
+    else inputButton.setAttribute("class","chanButton");
+    inputColumn1.appendChild(inputButton);
+    if(!editing){
+      inputButton.setAttribute("onclick","newEdit(" + i +")");
+    }
+    
+    var inputItem = "";
+    if(config.inputs[i].name !== undefined){
+      inputColumn2.innerHTML += "<strong>" + config.inputs[i].name + "</strong>, ";
+    } 
+    inputColumn2.innerHTML += config.inputs[i].type;
+    inputColumn2.innerHTML += ", model:" + config.inputs[i].model;
+    
+    if(config.inputs[i].type == "CT"){
+      if(config.inputs[i].burden !== undefined){
+        inputColumn2.innerHTML += "<small>" + ", burden:" + config.inputs[i].burden + "</small>";}
+      if(vchannels.length > 1){
+        inputColumn2.innerHTML += "<small>" + ", vref:" + config.inputs[i].vchan + "</small>";
+      }
+    }
+    
+    inputColumn2.innerHTML += "<small>" + ", cal:" + config.inputs[i].cal + "</small>";
+    inputColumn2.innerHTML += "<small>" + ", phase:" + config.inputs[i].phase + "</small>";
+
+    //inputColumn2.innerHTML += ",";
+    //displayCalPhase(inputColumn2, i);
+    
+    if(config.inputs[i].notes !== undefined){
+      inputColumn2.innerHTML += "<br><small>" + config.inputs[i].notes;
+    }
+    
+    while(++lastUsed < config.inputs[i].channel) unused(lastUsed);
+  }
+  
+  while(++lastUsed < channels) unused(lastUsed);
+  
+  if(!editing && addList.length > 1) {
+    var inputRow = document.createElement("tr");
+    inputsTable.appendChild(inputRow);
+    inputRow.setAttribute("class","chanEditRow")
+    var inputColumn1 = document.createElement("td");
+    inputRow.appendChild(inputColumn1);
+    var inputColumn2 = document.createElement("td");
+    inputRow.appendChild(inputColumn2);
+    inputColumn2.appendChild(document.createTextNode("Add Channel: "));
+    inputColumn2.appendChild(addList);
+    addList.setAttribute("oninput","addChannel(this.value)")
+  }
+  
+  function unused(channel){
+    var newElement = document.createElement("option");
+    newElement.text = channel;
+    newElement.value = channel;
+    addList.appendChild(newElement);
+  }
+}
+
+/******************************************************************************************************
+ * editChannel - This is the essense of channel editing.
+ * 
+ * When a channel is selected, this function is invoked to transform the <li> element into the 
+ * edit format.
+ * 
+ * When a new channel is added, an "undefined" object is inserted into the config.inputs object
+ * list, the <ul> channel list is rebuilt (buildInputLists()), then this function is invoked
+ * to initiate editing of the added channel.
+ * 
+ * While in edit mode (editing), any editing action is handled by the various oninput, onselect etc.
+ * to process the input into the config.inputs[index] object and then this function is invoked.
+ * 
+ * ***************************************************************************************************/
+function editChannel(index){
+  
+  editing = true; // assume a new demeanor
+  buildInputsList();
+  var vchannels = [];
+  for(var i=0; i<config.inputs.length; i++){
+    if(config.inputs[i].type == "VT"){
+      vchannels.push(Number(config.inputs[i].channel));
+    }
+  }
+  var tableRow = document.getElementById("inputTable").children[index]; // identify the <table> element
+  var inputColumn2 = tableRow.children[1];
+  inputColumn2.setAttribute("style","editChannel");
+  var complete = true;  // innocent until proven guilty
+  inputColumn2.innerHTML = "";
+  
+  // Create an <input> element for the name
+  
+  inputColumn2.appendChild(document.createTextNode("name:"));
+  var nameInput = document.createElement("input");
+  nameInput.setAttribute("class","editBox");
+  nameInput.setAttribute("style","width: 80px;");
+  nameInput.setAttribute("onchange","newName(this)");
+  if(config.inputs[index].name != undefined) nameInput.setAttribute("value",config.inputs[index].name);
+  inputColumn2.appendChild(nameInput);
+  
+  // Create a select element to specify the type of input (eg. CT or VT)
+  
+  var typeSelect = document.createElement("select");
+  typeSelect.setAttribute("class","editBox");
+  typeSelect.setAttribute("style","width: 45px;");
+  typeSelect.setAttribute("oninput","newType(this)");
+  inputColumn2.appendChild(typeSelect);
+  
+  // Now add the permissible options
+  
+  for(var i=0; i<inputTypes.length; i++){  
+    var option = document.createElement("option");
+    option.text = inputTypes[i];
+    typeSelect.add(option);
+    
+    // When adding an option that matches the config.inputs type
+    
+    if(option.text == config.inputs[index].type){
+      typeSelect.selectedIndex = i;  // Make it the selection
+      
+      // Add a select element for model
+      
+      var modelSelect = document.createElement("select");
+      modelSelect.setAttribute("class","editBox");
+      modelSelect.setAttribute("style","width: 110px;");
+      modelSelect.setAttribute("oninput","newModel(this)");
+      inputColumn2.appendChild(modelSelect);
+      var modelTable = tables.CT;  // set to use the appropriate table
+      if(config.inputs[index].type == "VT") modelTable = tables.VT;
+      modelSelect.selectedIndex = 0;  // default to the first option (unspecified)
+      
+      // add options for all the models in the table
+      
+      for(var j=0; j<modelTable.length; j++){
+        var option = document.createElement("option");
+        option.text = modelTable[j].model;
+        modelSelect.add(option);
+        
+        // When adding an option that matches the config.inputs model
+        
+        if(option.text == config.inputs[index].model) {
+          modelSelect.selectedIndex = j;  // indicate this is the selection
+          
+          // if model type (not to be confused with channel type) is the unspecified entry
+          // add <input> elements for cal and phase
+          
+          if (modelTable[j].type == "U"){
+            inputColumn2.appendChild(document.createTextNode(" cal"));
+            var calInput = document.createElement("input");
+            calInput.setAttribute("class","editBox");
+            calInput.setAttribute("style","width: 30px;");
+            calInput.setAttribute("onchange","newCal(this)");
+            inputColumn2.appendChild(calInput);
+            if(config.inputs[index].cal !== undefined  && config.inputs[index].cal > 0){
+              calInput.setAttribute("value",config.inputs[index].cal);
+            }
+            else complete = false;  // entry not valid if cal not specified
+            inputColumn2.appendChild(document.createTextNode(" phase"));
+            var phaseInput = document.createElement("input");
+            phaseInput.setAttribute("class","editBox");
+            phaseInput.setAttribute("style","width: 30px;");
+            phaseInput.setAttribute("onchange","newPhase(this)");
+            inputColumn2.appendChild(phaseInput);
+            if(config.inputs[index].phase !== undefined && config.inputs[index].phase > 0){
+              phaseInput.setAttribute("value",config.inputs[index].phase);
+            }
+            else complete = false;  // entry not valid if phase not specified
+          }
+          
+          // if it's a "C"urrent type CT, we need to know the burden resistor value
+          
+          else if(typeSelect.value == "CT"){
+            if (modelTable[j].type == "C") {
+              inputColumn2.appendChild(document.createTextNode(" burden:"));
+              var burdenInput = document.createElement("input");
+              burdenInput.setAttribute("class","editBox");
+              burdenInput.setAttribute("style","width: 30px;");
+              burdenInput.setAttribute("onchange","newBurden(this)");
+              inputColumn2.appendChild(burdenInput);
+              if(config.inputs[index].burden !== undefined && config.inputs[index].burden > 0){
+                burdenInput.setAttribute("value",config.inputs[index].burden);
+              }
+              else complete = false;  // We really need it
+            }
+            if(vchannels.length > 1){
+              inputColumn2.appendChild(document.createTextNode(" vref:"));
+              var vchanSelect = document.createElement("select");
+              vchanSelect.setAttribute("class","editBox");
+              vchanSelect.setAttribute("style","width: 45px;");
+              vchanSelect.setAttribute("oninput","newVchan(this)");
+              inputColumn2.appendChild(vchanSelect);
+              for(var i=0; i<vchannels.length; i++){
+                var option = document.createElement("option");
+                option.text = vchannels[i];
+                vchanSelect.add(option);
+                if(config.inputs[index].vchan == vchannels[i]){
+                  vchanSelect.selectedIndex = i;
+                } 
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  if(config.inputs[index].cal !== undefined){
+    inputColumn2.appendChild(document.createTextNode(", cal:" + config.inputs[index].cal.toFixed(1)));
+  }
+  if(config.inputs[index].phase !== undefined){
+    inputColumn2.appendChild(document.createTextNode(", phase:" + config.inputs[index].phase.toFixed(2)));
+  }
+  
+  inputColumn2.appendChild(document.createElement("br"));
+  
+  if(complete){
+    addEditButton("save","editSave(this)");
+  }
+  addEditButton("cancel","editCancel(this)");
+  
+  var vtx = VTused(config.inputs[index].channel);
+  if(config.inputs[index].type != "VT" || !VTused(config.inputs[index].channel)){
+    addEditButton("delete","editDelete(this)");
+  }
+  
+  
+  
+  if(complete && config.inputs[index].type == "VT" || !VTused(config.inputs[index].vchan)){
+    addEditButton("calibrate","calVTenter (this)","65px");
+  }
+  if(config.inputs[index].notes === undefined){
+    addEditButton("notes","editNotes(this)");
+  }
+  else
+  {
+    inputColumn2.appendChild(document.createElement("br"));
+    var notesBox = document.createElement("textarea");
+    notesBox.setAttribute("onchange","editNotes(this)");
+    notesBox.setAttribute("class","notesBox");
+    notesBox.value = config.inputs[index].notes;
+    inputColumn2.appendChild(notesBox);
+  }
+  function addEditButton(text, handler, width="50px"){
+  var newButton = document.createElement("button");
+  inputColumn2.appendChild(newButton);
+  newButton.setAttribute("onclick",handler);
+  newButton.setAttribute("class","editButton");
+  newButton.appendChild(document.createTextNode(text));
+  newButton.setAttribute("style","width: " + width);
+  }
+}  
+
+function newEdit(index){
+  if(!editing){
+    editing = true;
+    editChannel(index);
+  }
+}
+
+function newName(obj){
+  var index = objectIndex(obj);
+  if(obj.value.trim() == "") delete config.inputs[index].name;
+  else config.inputs[index].name = obj.value.trim();
+}
+
+function newType(obj){
+  var index = objectIndex(obj);
+  config.inputs[index].type = obj.value;
+  config.inputs[index].model = "unspecified";
+  delete config.inputs[index].cal
+  delete config.inputs[index].phase
+  delete config.inputs[index].burden
+  editChannel(index);
+}
+
+function newModel(obj){
+  var index = objectIndex(obj);
+  config.inputs[index].model = obj.value;
+  var modelTable = tables.CT;
+  if(config.inputs[index].type == "VT") modelTable = tables.VT;
+  for(var j=0; j<modelTable.length; j++){
+    if(modelTable[j].model == obj.value)break;
+  }
+  config.inputs[index].phase = modelTable[j].phase;
+  config.inputs[index].cal = modelTable[j].cal;
+  if(modelTable[j].turns === undefined) delete config.inputs[index].turns;
+  else {
+    config.inputs[index].turns = modelTable[j].turns;
+    if(config.inputs[index].burden !== undefined){
+      config.inputs[index].cal = config.inputs[index].turns / config.inputs[index].burden;
+    }
+  }
+  editChannel(index);
+}
+
+function VTused(vtchan){
+  for(var i=0; i<config.inputs.length; i++){
+    if(config.inputs[i].type == "CT" && config.inputs[i].vchan == vtchan) return true;
+  }
+  return false;
+}
+   
+function newVchan(obj){
+  var index = objectIndex(obj);
+  config.inputs[index].vchan = Number(obj.value);
+  editChannel(index);
+}
+
+function newBurden(obj){
+  var index = objectIndex(obj);
+  config.inputs[index].burden = Number(obj.value);
+  config.inputs[index].cal = config.inputs[index].turns / config.inputs[index].burden;
+  // config.inputs[index].cal = config.inputs[index].cal.toFixed(3);
+  editChannel(index);
+}
+
+function newCal(obj){
+  var index = objectIndex(obj);
+  config.inputs[index].cal = Number(obj.value);
+  if(config.inputs[index].phase !== undefined) editChannel(index);
+}
+
+function newPhase(obj){
+  var index = objectIndex(obj);
+  config.inputs[index].phase = Number(obj.value);
+  if(config.inputs[index].cal !== undefined) editChannel(index);
+}
+
+function deleteSiblings(obj){
+  var parent = obj.parentNode;
+  var nextNode = obj.nextSibling;
+  while(nextNode !== null) {
+    parent.removeChild(nextNode);
+    nextNode = obj.nextSibling;
+  }
+}
+
+function editSave(obj){
+  var index = objectIndex(obj);
+  editing = false;
+  if(config.inputs[index].notes !== undefined &&
+     config.inputs[index].notes.trim() == "") delete config.inputs[index].notes;
+  saveLocalConfig();
+  buildInputsList();
+}
+
+function editCancel(obj){
+  config = JSON.parse(configFileString);
+  editing = false;
+  buildInputsList();
+}
+
+function editDelete(obj){
+  var index = objectIndex(obj);
+  config.inputs.splice(index, 1);
+  saveLocalConfig();
+  editing = false;
+  buildInputsList();
+}
+
+function editNotes(obj){
+  var index = objectIndex(obj);
+  if(config.inputs[index].notes === undefined) config.inputs[index].notes = "";
+  else config.inputs[index].notes = obj.value.trim();
+  editChannel(index);
+}
+
+function objectIndex(object){
+  var obj = object;
+  while(obj.nodeName != "TR") obj = obj.parentNode;
+  var parent = obj.parentNode;
+  var index = 0;
+  while(!obj.isSameNode(parent.children[index])) index++;
+  return index;
+}
+
+function addChannel(channel){
+  console.log("add" + channel);
+  if(channel == -1)return;
+  var index = 0;
+  for(index=0; index<config.inputs.length; index++){
+    if(channel < config.inputs[index].channel) break;
+  }
+  config.inputs.splice(index,0,{"channel":Number(channel),"type":"CT","model":"unspecified"});
+  buildInputsList();
+  editChannel(index);
+}
+
+/********************************************************************************************
+ * 
+ * Setup Web Server related handling
+ * 
+ * ******************************************************************************************/
+
+function buildWebServer(){
+  var serverTable = document.getElementById("serverTable");
+  serverTable.innerHTML = "";
+  var complete = true;
+  
+  var nameInput = serverRow("Device name:", config.device.name, 8);
+  nameInput.setAttribute("onchange","newDeviceName(this)");
+  if(config.device.name.length == 0 || 
+    config.device.name.length > 8 ||
+    /[^0-9a-zA-Z]/.test(config.device.name)) {
+    nameInput.parentNode.appendChild(document.createTextNode(" Name must be 1-8 characters."));
+    complete = false;
+  }
+  
+  
+  tableRule(serverTable,2);
+  
+  var column2 = serverRow("Web service type:").parentNode;
+  column2.removeChild(column2.lastChild);
+  var serverSelect = document.createElement("select");
+  serverSelect.setAttribute("oninput","newServer(this)");
+  column2.appendChild(serverSelect);
+  var optionNone = document.createElement("option");
+  optionNone.text = "none";
+  serverSelect.add(optionNone);
+  var optioneMonCMS = document.createElement("option");
+  optioneMonCMS.text = "eMonCMS";
+  serverSelect.add(optioneMonCMS);
+  
+  if(config.server === undefined){
+    serverSelect.selectedIndex = 0;
+  }
+  else if (config.server.type == "emoncms"){
+    serverSelect.selectedIndex = 1;
+    buildEmonCMS(complete);
+  }
+ 
+  
+  function tableRule(table,columns=1){
+    var newRow = document.createElement("tr");
+    table.appendChild(newRow);
+    newRow.innerHTML = "<td colspan=" + columns +"><hr></td>"; 
+  }
+  
+  if(editing) {
+    tableRule(serverTable,2)
+    var column2 = serverRow("").parentNode;
+    column2.removeChild(column2.lastChild);
+    
+    if(complete){
+      var saveButton = document.createElement("button");
+      saveButton.setAttribute("onclick","configSave(this)"); // allow save if complete
+      saveButton.setAttribute("class","editButton");
+      saveButton.appendChild(document.createTextNode("save"));
+      saveButton.setAttribute("style","width: 40px;");
+      column2.appendChild(saveButton);
+    }
+  
+    var cancelButton = document.createElement("button");
+    column2.appendChild(cancelButton);
+    cancelButton.setAttribute("onclick","configCancel(this)");
+    cancelButton.setAttribute("class","editButton");
+    cancelButton.appendChild(document.createTextNode("cancel"));
+    cancelButton.setAttribute("style","width: 50px;");
+  }
+}
+
+function newServer(obj){
+  editing = true;
+  if(obj.selectedIndex == 0){
+    delete config.server;
+  }
+  else if(obj.selectedIndex == 1){
+    config.server = {"type":"emoncms","node":0,"postInterval":10,"url":"emoncms.org","apikey":""};
+  }
+  buildWebServer();
+}
+
+function buildEmonCMS(complete){
+  var serverTable = document.getElementById("serverTable");
+  
+  var nodeInput = serverRow("node:", config.server.node, 1)
+  nodeInput.setAttribute("onchange","newNode(this)");
+  if(isNaN(config.server.node) == true || config.server.node < 0 || config.server.node > 9){
+    nodeInput.parentNode.appendChild(document.createTextNode(" Node is a number between 0 and 9."));
+  }
+  
+  var postInput = serverRow("post interval(sec):", config.server.postInterval.valueOf(), 3);
+  postInput.setAttribute("onchange","newPost(this)");
+  if(isNaN(config.server.postInterval) == true || config.server.postInterval < 0){
+    postInput.parentNode.appendChild(document.createTextNode(" Post Interval is a number greater than 0."));
+    complete = false;
+  }
+  var urlInput = serverRow("server URL:", config.server.url, 32);
+  urlInput.setAttribute("onchange","newUrl(this)");
+  if(config.server.url.length == 0){
+    urlInput.parentNode.appendChild(document.createElement("br"));
+    urlInput.parentNode.appendChild(document.createTextNode(" Please enter the server URL."));
+    complete = false;
+  }
+  
+  var keyInput = serverRow("api key:", config.server.apikey, 32);
+  keyInput.setAttribute("onchange","newApikey(this)");
+  if(config.server.apikey.length == 0) {
+    keyInput.parentNode.appendChild(document.createElement("br"));
+    keyInput.parentNode.appendChild(document.createTextNode(" Please enter your API key."));
+    complete = false;
+  }
+  else if(config.server.apikey.length != 32 || /[^0-9a-f]/.test(config.server.apikey)) {
+    keyInput.parentNode.appendChild(document.createElement("br"));
+    keyInput.parentNode.appendChild(document.createTextNode(" API key should be 16 hex digits."));
+    complete = false;
+  }
+  
+  var newRow = document.createElement("tr");
+  serverTable.appendChild(newRow);
+  var column1 = document.createElement("td");
+  newRow.appendChild(column1);
+  var column2 = document.createElement("td");
+  newRow.appendChild(column2);
+  
+  return complete;
+ 
+}
+function serverRow(text, value, size){
+  var serverTable = document.getElementById("serverTable");
+  var newRow = document.createElement("tr");
+  serverTable.appendChild(newRow);
+  var column1 = document.createElement("td");
+  newRow.appendChild(column1);
+  var column2 = document.createElement("td");
+  newRow.appendChild(column2);
+  column1.appendChild(document.createTextNode(text));
+  column1.setAttribute("align","right");
+  var newInput = document.createElement("input");
+  column2.appendChild(newInput);
+  newInput.value = value;
+  newInput.setAttribute("size",size);
+  return newInput;
+}
+
+function newDeviceName(obj){
+  config.device.name = obj.value;
+  editing = true;
+  buildWebServer();
+}
+
+function newNode(obj){
+  config.server.node = obj.value;
+  editing = true;
+  buildWebServer();
+}
+
+function newPost(obj){
+  config.server.postInterval = obj.value;
+  editing = true;
+  buildWebServer();
+}
+
+function newUrl(obj){
+  config.server.url = obj.value;
+  editing = true;
+  buildWebServer();
+}
+
+function newApikey(obj){
+  config.server.apikey = obj.value;
+  editing = true;
+  buildWebServer();
+}
+
+function configSave(){
+  editing = false;
+  saveLocalConfig();
+  buildWebServer();  
+}
+
+function configCancel(){
+  config = JSON.parse(configFileString);
+  editing = false;
+  buildWebServer();
+}
+
+/***********************************************************************************************
+ * 
+ * Setup and run status display
+ * 
+ * *******************************************************************************************/
+function statusBegin(){
+  getStatus = true;
+  statusGet();
+  
+}
+
+function statusGet(){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      statusDisplay(xmlHttp.responseText);
+    }
+  }
+  xmlHttp.open("GET","/status?channels=yes&stats=yes", true);
+  xmlHttp.send(null);
+}
+
+function statusDisplay(statusMessage){
+  var status = JSON.parse(statusMessage);
+  statusTable = document.getElementById("statusTable");
+  statusTable.innerHTML = null;
+  addRow();
+  column3.appendChild(document.createTextNode(status.stats.cyclerate + " samples per AC cycle"));
+  addRow();
+  column3.appendChild(document.createTextNode(status.stats.chanrate + " AC cycles sampled/second"));
+  addRow();
+  column3.appendChild(document.createTextNode("Running time: " + formatSeconds(status.stats.runseconds)));
+  addRow();
+  column3.appendChild(document.createTextNode("free Heap: " + status.stats.stack));
+  addRow();
+  column3.innerHTML = "<hr>";
+  
+  for(var i=0; i<status.channels.length; i++){
+    addRow();
+    column2.appendChild(document.createTextNode("(" + status.channels[i].channel + ")"));
+    
+    for(var j=0; j<config.inputs.length; j++){
+      if(config.inputs[j].channel == status.channels[i].channel){
+        if(config.inputs[i].name !== undefined) column1.innerHTML += "<strong>" + config.inputs[i].name + "</strong>";
+        break;
+      }
+    }
+    
+    
+    if(status.channels[i].Watts !== undefined){
+      column3.appendChild(document.createTextNode(status.channels[i].Watts + " watts"));
+      if(status.channels[i].Watts >= 60){
+        var pf = status.channels[i].Pf;
+        column3.appendChild(document.createTextNode(", pf: " + pf.toFixed(2)));
+      }
+    }
+    else if(status.channels[i].Vrms !== undefined){
+      column3.appendChild(document.createTextNode(status.channels[i].Vrms.toFixed(1) + " volts"));
+      column3.appendChild(document.createTextNode(", " + status.channels[i].Hz.toFixed(1) + " Hz"));
+    }
+  }
+  if(getStatus) statusGet();
+  
+  function addRow(){
+    newRow = document.createElement("tr");
+    statusTable.appendChild(newRow);
+    column1 = document.createElement("td");
+    column1.setAttribute("align","right");
+    newRow.appendChild(column1);
+    column2 = document.createElement("td");
+    newRow.appendChild(column2);
+    column3 = document.createElement("td");
+    newRow.appendChild(column3);
+  }
+}
+
+function formatSeconds(seconds)
+{
+    var date = new Date(1970,0,1);
+    date.setSeconds(seconds);
+    return date.toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1");
+}
+
+// *************************************************************************************************************
+//
+//  Advanced calibration code.  Experimental - has issues. 
+//
+//****************************************************************************************************
+function calAdv(){
+  document.getElementById("divCalibrate").style.display = "none";
+  document.getElementById("divAdvanced").style.display = "inline";
+  calAdvStep1();
+}
+
+function calAdvStep1(){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var response = JSON.parse(xmlHttp.responseText);
+      if(response.channels.length > 1){
+        document.getElementById("advStepMsg").innerHTML = "Disconnect all inputs.";
+        calAdvStep1();
+      }
+      else{
+        
+        var message = "Connect the phone jack end of the calibration cord to any input on the " +
+        "IoTaWatt that does not have an onboard burden resistor.<br>";
+        message += "<strong>Do not plug calibration cord to wall recepticle until instructed.</strong><br>";
+        message += "Connect AC adapter to be calibrated to channel " + calVTindex;
+        document.getElementById("advStepMsg").innerHTML = message;
+        calAdvStep2();
+      }
+    }
+  }
+  xmlHttp.open("GET","/status?channels=all", true);
+  xmlHttp.send(null);
+}
+
+function calAdvStep2(){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var response = JSON.parse(xmlHttp.responseText);
+      if(response.channels.length == 2){
+        calRefChan = response.channels[1].channel;
+        document.getElementById("advStepMsg").innerHTML = "Calibration cord is connected to channel: " + calRefChan + ".";
+        calAdvStep3();
+      }
+      else{
+        calAdvStep2();
+      }
+    }
+  }
+  xmlHttp.open("GET","/status?channels=all", true);
+  xmlHttp.send(null);
+}
+
+function calAdvStep3(){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("advStepMsg").innerHTML += "<br>Plug calibration cord into wall recepticle.";
+      calAdvStep4();
+    }
+  }
+  xmlHttp.open("GET","/command?calibrate="+calVTindex+"&ref="+calRefChan, true);
+  xmlHttp.send(null);
+}
+
+function calAdvStep4(){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var response = JSON.parse(xmlHttp.responseText);
+      if(response.calcomplete == "yes"){
+        document.getElementById("advStepMsg").innerHTML = "<br>Calibration complete.";
+        document.getElementById("advStepMsg").innerHTML += "<br><strong>Unplug calibration cord from recepticle.</strong>";
+        document.getElementById("advStepMsg").innerHTML += "<br>Calibration factor is: " + response.cal;
+        document.getElementById("advStepMsg").innerHTML += "<br>Phase shift is: " + response.phase;
+        config.inputs[calVTindex].cal = Number(response.cal);
+        config.inputs[calVTindex].phase = Number(response.phase);
+        calAdvStep5();
+      }
+      else calAdvStep4();
+    }
+  }
+  xmlHttp.open("GET","/status?calcomplete=yes", true);
+  xmlHttp.send(null);
+}
+
+function calAdvStep5(){
+  
+}
+  
+/********************************************************************************************
+ * 
+ * Startup and "Big Ideas" navigation.
+ * 
+ * *****************************************************************************************/
+
+function editInputs(){
+  if(!editing) {
+    buildInputsList();
+    resetDisplay();
+    document.getElementById("divInputs").style.display = "inline";
+    document.getElementById("BIBinputs").setAttribute("style","background-color: lightgrey");
+  }
+}
+
+function editWebServer(){
+  if(!editing) {
+    resetDisplay();
+    document.getElementById("divWebServer").style.display = "inline";
+    document.getElementById("BIBserver").setAttribute("style","background-color: lightgrey");
+    buildWebServer();
+  }
+}
+
+function showStatus(){
+  if(!editing){
+    resetDisplay();
+    document.getElementById("divStatus").style.display = "inline";
+    document.getElementById("BIBstatus").setAttribute("style","background-color: lightgrey");
+    statusBegin();
+  }
+}
+
+function saveLocalConfig(){configFileString = JSON.stringify(config, null,'\t');}
+
+function commitChanges(){
+  if(editing) return;
+  writeFile(configFileString,configNewURL);
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      return;
+    }
+  }
+  xmlHttp.open("GET","/command?restart=yes", true);
+  xmlHttp.send(null);
+}
+
+function undoChanges(){
+  if(!editing) {
+    configFileString = readFile(configFileURL);
+    config = JSON.parse(configFileString);
+    buildInputsList();
+    buildWebServer();
+  }
+}
+
+function readFile(url){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+    }
+  };
+  xmlHttp.open("GET", url, false);
+  xmlHttp.send();
+  return xmlHttp.responseText;
+}
+
+
+function writeFile(fileString, url){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      
+    }
+  };
+  var formData = new FormData();
+  var blob = new Blob([fileString], {type: 'plain/text'},  url);
+  formData.append("file", blob, url);
+  xmlHttp.open("POST", "/edit");
+  xmlHttp.send(formData);
+}
+
+function resetDisplay(){
+  getStatus = false;
+  document.getElementById("divInputs").style.display = "none";
+  document.getElementById("BIBinputs").setAttribute("style","background-color: lightgreen");
+  document.getElementById("divWebServer").style.display = "none";
+  document.getElementById("BIBserver").setAttribute("style","background-color: lightgreen");
+  document.getElementById("divStatus").style.display = "none";
+  document.getElementById("BIBstatus").setAttribute("style","background-color: lightgreen");
+  document.getElementById("BIBundo").setAttribute("style","background-color: lightgreen");
+  document.getElementById("BIBcommit").setAttribute("style","background-color: lightgreen");
+}
+
+function setup(){
+  configFileString = readFile(configFileURL);
+  config = JSON.parse(configFileString);
+  tables = JSON.parse(readFile(configTablesURL));
+  resetDisplay();
+}
+
+</script>
+</body>
+</html>
