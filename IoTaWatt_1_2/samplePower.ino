@@ -43,8 +43,7 @@ void samplePower(int channel){
   
     float _phaseCorrection = (phaseCorrection[Vchan] - phaseCorrection[Ichan]) * samplesPerCycle / 360.0;
     int stepCorrection = int(_phaseCorrection);
-    // float stepFraction = _phaseCorrection - stepCorrection;
-    float stepFraction = 0;
+    float stepFraction = _phaseCorrection - stepCorrection;
     
     if(_phaseCorrection >= 0) IsamplePtr += stepCorrection;
     else                      VsamplePtr -= stepCorrection;
@@ -172,7 +171,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
   useconds_t firstCrossUs;
   useconds_t lastCrossUs;
 
-    SPI.beginTransaction(SPISettings(500000,MSBFIRST,SPI_MODE0));
+    SPI.beginTransaction(SPISettings(1000000,MSBFIRST,SPI_MODE0));
 
     ADC_IselectPin = ADC_selectPin[Ichan >> 3];
     ADC_VselectPin = ADC_selectPin[Vchan >> 3];
