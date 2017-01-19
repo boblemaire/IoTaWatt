@@ -1,3 +1,9 @@
+/************************************************************************************
+ * 
+ * This is an experimental feature that is not recommended for general use.
+ * 
+ ************************************************************************************/
+
 boolean calibrateVT(){
 
   int Vchan = calibrationVchan;

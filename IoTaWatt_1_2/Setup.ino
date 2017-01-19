@@ -1,11 +1,10 @@
 void setup()
 {
-  
   for(int i=0; i<channels; i++){
     buckets[i].value1 = 0;
     buckets[i].value2 = 0;
     buckets[i].accum1 = 0;
-    buckets[i].accum1 = 0;
+    buckets[i].accum2 = 0;
     buckets[i].timeThen = millis();
         
     calibration[i] = 0.0;
@@ -17,8 +16,25 @@ void setup()
   //*************************************** Start Serial connection (if any)***************************
   
   Serial.begin(115200);
-  delay(1000);
-  if(Serial)Serial.println("Serial Initialized");
+  delay(250);
+  Serial.println();
+  Serial.println("Serial Initialized");
+
+  msgLog("Version: ", IOTAWATT_VERSION);
+
+  String restartMessage = "Normal Power Up";
+  rst_info* _resetInfo = system_get_rst_info();
+  if(_resetInfo->reason != REASON_DEFAULT_RST){
+           restartMessage = "Restart reason: " +
+           String(_resetInfo->reason) + " " +
+           formatHex(_resetInfo->exccause,4) + " " +
+           formatHex(_resetInfo->epc1,4) + " " +
+           formatHex(_resetInfo->epc2,4) + " " +
+           formatHex(_resetInfo->epc3,4) + " " +
+           formatHex(_resetInfo->excvaddr,4) + " " +
+           formatHex(_resetInfo->depc,4); 
+    msgLog(restartMessage); 
+  }
 
   //*************************************** Start SPI *************************************************
     
@@ -33,7 +49,7 @@ void setup()
   
   SPI.begin();
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
-  Serial.println("SPI started.");
+  msgLog("SPI started.");
 
   //*************************************** Initialize the MCP23S17 GPIO extender *********************
 
@@ -47,73 +63,72 @@ void setup()
   //*************************************** Initialize the SD card ************************************
 
   if(!SD.begin(pin_CS_SDcard)) {
-    Serial.println("SD initiatization failed. Retrying.");
-    while(!SD.begin(pin_CS_SDcard)) delay(100);
+    msgLog("SD initiatization failed. Retrying.");
+    while(!SD.begin(pin_CS_SDcard)){
+      delay(100); 
+      yield();
+    }
   }
-  Serial.println("SD initialized.");
+  msgLog("SD initialized.");
   hasSD = true;
+
+  msgLog(restartMessage);
 
   //************************************* Process Config file *****************************************
   
   GPIO.writePin(yellowLedPin,LOW); 
   if(!getConfig())
   {
-    Serial.println("Configuration failed");
+    msgLog("Configuration failed");
     dropDead();
   }
-  
+    
   //*************************************** Start the internet connection *****************************
 
   WiFiManager wifiManager;
   wifiManager.setConfigPortalTimeout(120);
   wifiManager.autoConnect(deviceName.c_str());
 
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-
+  msgLog("WiFi connected, IP address: ", formatIP(WiFi.localIP()));
+  
   setNTPtime();
   if(timeRefNTP == 0){
-    Serial.println("Failed to retrieve NTP time, retrying.");
+    msgLog("Failed to retrieve NTP time, retrying.");
     while(!setNTPtime());
-    Serial.println("NTP time successfully retrieved.");  
+    msgLog("NTP time successfully retrieved.");  
   }
   
-  Serial.print("UTC time:");
-  printHMS(NTPtime());
-  Serial.println();
-  Serial.print("Unix time:");
-  Serial.println(UnixTime());
+  msgLog("UTC time:", formatHMS(NTPtime()));
+  msgLog("Unix time:", UnixTime());
   NewService(timeSync);
+  programStartTime = NTPtime();
   
  //*************************************** Measure and report Aref voltage****************************
 
-  Serial.print("Aref=");
-  Serial.println(getAref(),3);
-
+  msgLog("Aref=", String(getAref(),3));
+  
  //*************************************** Start the local DNS service ****************************
 
   if (MDNS.begin(host)) {
       MDNS.addService("http", "tcp", 80);
-      DBG_OUTPUT_PORT.println("MDNS responder started");
-      DBG_OUTPUT_PORT.print("You can now connect to http://");
-      DBG_OUTPUT_PORT.print(host);
-      DBG_OUTPUT_PORT.println(".local");
+      msgLog("MDNS responder started");
+      msgLog("You can now connect to http://", host, ".local");
   }
 
  //*************************************** Start the web server ****************************
 
   server.on("/status",HTTP_GET, handleStatus);
+  server.on("/calvt",HTTP_GET, handleCalVT);
   server.on("/command", HTTP_GET, handleCommand);
   server.on("/list", HTTP_GET, printDirectory);
   server.on("/edit", HTTP_DELETE, handleDelete);
   server.on("/edit", HTTP_PUT, handleCreate);
-  server.on("/edit", HTTP_POST, [](){ returnOK(); }, handleFileUpload);
+  server.on("/edit", HTTP_POST, [](){returnOK(); }, handleFileUpload);
   server.onNotFound(handleNotFound);
 
 //  host = deviceName;
   server.begin();
-  DBG_OUTPUT_PORT.println("HTTP server started");
+  msgLog("HTTP server started");
 
  //*************************************** Start the logging services *********************************
       
@@ -123,36 +138,30 @@ void setup()
 }
 
 
-void printHex(uint32_t data)
+String formatHex(uint32_t data, int len)
 {
+  String str;
   byte digit;
-  digit = data >> 24;
-  if (digit < 16) Serial.print("0");
-  Serial.print(digit,HEX);
-  digit = (data >> 16) & 0xFF;
-  if (digit < 16) Serial.print("0");
-  Serial.print(digit,HEX);
-  digit = (data >> 8) & 0xFF;
-  if (digit < 16) Serial.print("0");
-  Serial.print(digit,HEX);
-  digit = data & 0xFF;
-  if (digit < 16) Serial.print("0");
-  Serial.print(digit,HEX);
-  Serial.println();
-  return;
+  while(len--){
+    digit = (data >> (len*8)) & 0xFF;
+    if (digit < 16) str += "0";
+    str += String(digit,HEX);  
+  }
+  return str;
 }
 
-void dropDead()
-{
-  GPIO.writePin(yellowLedPin,LOW);
-  while(1)
-  {  
-    GPIO.writePin(redLedPin,HIGH);
-    delay(500);
+void dropDead(void){dropDead(1);}
+void dropDead(int secs){
+  msgLog("Program halted.");GPIO.writePin(yellowLedPin,LOW);
+  while(1){
     GPIO.writePin(redLedPin,LOW);
-    delay(500);
-  }
-  return;
+    delay(secs*1000);
+    yield();
+    
+    GPIO.writePin(redLedPin,HIGH);
+    delay(secs*1000);
+    yield();   
+  }  
 }
 
 /**************************************************************************************
@@ -162,12 +171,12 @@ void dropDead()
  *  outward difference is that they return an extra two bits of resolution. This 
  *  sense method exploits a feature of both whereby if the SPI is clocked past the 
  *  resolution bits, the same result is output in reverse (lsb first) order. Note that 
- *  only the lsb bit in the msb first stream is the also the first bit of the lsb
+ *  the lsb bit in the msb first stream is the also the first bit of the lsb
  *  first stream.  In other words, only 19 or 23 significant bits (10 or 12 bit ADC).
  *  Both will also tollerate more cycles beyond that, outputting zeros (MISO low). 
  *  
- *  So we will read the reference voltage channel, returning 23 significant bits,
- *  and determine the ADC bits by determining where the mirror lies.
+ *  So we this reads the reference voltage channel, returning 23 significant bits,
+ *  and determines the ADC bits by determining where the mirror lies.
  * 
  **************************************************************************************/
 uint8_t senseADCbits(){
@@ -211,22 +220,17 @@ uint8_t senseADCbits(){
   if(is10Bit and !is12Bit) return 10;
   if(is12Bit && !is10Bit) return 12;
 
-  Serial.println("ADC type unknown");
-  Serial.print(msbFirst10);
-  Serial.print(" - ");
-  Serial.println(lsbFirst10);
-  Serial.print(msbFirst12);
-  Serial.print(" - ");
-  Serial.println(lsbFirst12);
-
+  String msg = "ADC type unknown: ";
+  msg += String(msbFirst10) + " - " + String(lsbFirst10);
+  msg += ", " + String(msbFirst12) + " - " + String(lsbFirst12);
+  msgLog(msg);
   return 10;
 }
 
 void setADCbits(uint8_t bits)
 {
   ADC_bits = bits;                            // Set counts and
-  Serial.print("ADC bits=");
-  Serial.println(ADC_bits);
+  msgLog("ADC bits=", ADC_bits);
   ADC_range = 1 << bits;                      // ADC output range
   for(int i=0; i<channels; i++)
   {

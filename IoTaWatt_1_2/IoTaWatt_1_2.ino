@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ***********************************************************************************/
 
-#define IoTaWatt_version 1.0
+#define IOTAWATT_VERSION "1.2"
 
 #include <SPI.h>
 #include <ESP8266WiFi.h>
@@ -34,22 +34,20 @@ SOFTWARE.
 #include <SD.h>
 #include <WiFiUDP.h>
 #include <IoTaMCP23S17.h>
+#include <IotaLog.h>
 #include <ArduinoJson.h>
 #include <math.h>
 
-//***********************************************************************************
-// The millisecond clock is 32 bits and so rolls over after about a week. Not a 
-// problem if you do unsigned math and don't try to measure that span of time in
-// milliseconds. To facilitate testing that bad things don't happen when it does
-// roll over, I set this to uint16_t and force the timer to roll over about 
-// every 65 seconds.  After an hour of that, there is higher confidence that it 
-// will survive a similar event once a week.
-//*********************************************************************************
-typedef uint16_t IotaTime;                  
-
+WiFiClient WifiClient;
 IoTa_MCP23S17 GPIO;                         // QandD method to run the GPIO chip
+IotaLog iotaLog;
+
+typedef uint32_t mseconds_t;
 
 String deviceName = "IoTaWatt";             // can be specified in config.device.name
+String IotaLogFile = "/IotaWatt/IotaLog.log";
+String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
+
 
 // Define the hardware SPI chip select pins
 
@@ -85,16 +83,19 @@ uint16_t ADC_range;                         // computed integer range of ADC out
  * We try to run everything else during the half-wave intervals between power sampling.  The next 
  * channel to be sampled is also kept here to complete the picture.  
  ******************************************************************************************************/
-uint32_t lastCrossMs = 0;              // Timestamp at last zero crossing (ms)
-uint32_t nextCrossMs = 0;              // Time just before next zero crossing (ms)
-uint16_t nextChannel = 0;              // Next channel to sample
+mseconds_t lastCrossMs = 0;             // Timestamp at last zero crossing (ms)
+mseconds_t nextCrossMs = 0;             // Time just before next zero crossing (ms)
+uint32_t nextChannel = 0;               // Next channel to sample
+#define priorityLow 3
+#define priorityMed 2
+#define priorityHigh 1
 
 struct serviceBlock {                  // Scheduler/Dispatcher list item (see comments in Loop)
   serviceBlock* next;                  // Next serviceBlock in list
   uint32_t callTime;                   // Time (in NTP seconds) to dispatch
   uint32_t priority;                   // Priority - lower is better
-  int (*service)(serviceBlock*);       // function to invoke to run the service
-  serviceBlock(){next=NULL; callTime=0; priority=5; service=NULL;}
+  uint32_t (*service)(serviceBlock*);  // the SERVICE
+  serviceBlock(){next=NULL; callTime=0; priority=priorityMed; service=NULL;}
 };
 
 serviceBlock* serviceQueue = NULL;     // Head of ordered list of services
@@ -136,7 +137,7 @@ int16_t offset [channels];
 // accumulators are in hours (WattHrs, or VoltHrs) while the time stamps are in
 // milliseconds - hence the useful constant:
 
-const double MS_PER_HOUR = 3600000;               // useful constant
+const double MS_PER_HOUR = 3600000UL;               // useful constant
 
 struct dataBucket {
   double value1;
@@ -145,13 +146,15 @@ struct dataBucket {
   double accum1;
   double accum2;
   double accum3;
-  IotaTime timeThen;
+  mseconds_t timeThen;
 
   dataBucket(){value1=0; value2=0; value3=0;
                accum1=0; accum2=0; accum3=0; 
                timeThen=0;}
 };
 
+double logHours = 0;
+uint32_t logSerial = 0;
 dataBucket buckets[channels];               // create a bunch of them
 
 #define volts value1                        // so we can reference bucket.volts
@@ -161,6 +164,17 @@ dataBucket buckets[channels];               // create a bunch of them
 #define wattHrs accum1
 #define pf value3
 #define pfHrs accum3
+
+// This function ages the contents of one bucket.
+
+void ageBucket(struct dataBucket *bucket, mseconds_t timeNow){
+    double elapsedHrs = double((mseconds_t)(timeNow - bucket->timeThen)) / MS_PER_HOUR;
+    bucket->accum1 += bucket->value1 * elapsedHrs;
+    bucket->accum2 += bucket->value2 * elapsedHrs;
+    bucket->accum3 += bucket->value3 * elapsedHrs;
+    bucket->timeThen = timeNow;
+}
+
 //***********************************************************************************************
 // statService maintains current averages of the channel values
 // so that current values can be displayed by web clients
@@ -174,13 +188,7 @@ int16_t  cycleSamples = 0;
 
 dataBucket statBuckets[channels];
 
-//****************************************WiFi Stuff *******************************
-
-WiFiClient cloudServer;
-boolean internet_connection = 0;
-boolean reply_pending = false;
-
-// ********************************** SDWebServer stuff ****************************
+// ****************************** SDWebServer stuff ****************************
 
 #define DBG_OUTPUT_PORT Serial
 const char* ssid = "flyaway";
@@ -191,15 +199,18 @@ static bool hasSD = false;
 File uploadFile;
 void handleNotFound();
 
-// ********************** Timing and time data *************************
-uint32_t  timeRefNTP = 0;                        // Last time from NTP server
-uint32_t  timeRefMs = 0;                         // Internal MS clock corresponding to timeRefNTP
-uint32_t  timeSynchInterval = 3600;              // Interval (sec) to roll NTP forward and try to refresh
-uint32_t  dataLogInterval = 12;                  // Interval (sec) to invoke dataLog
-uint32_t  eMonCMSInterval = 10;                  // Interval (sec) to invoke eMonCMS 
-uint32_t  statServiceInterval = 5;
+// ****************************** Timing and time data *************************
+uint32_t localTimeDiff = -5;
+uint32_t programStartTime = 0;                  // Time program started
+uint32_t timeRefNTP = 0;                       // Last time from NTP server
+mseconds_t timeRefMs = 0;                       // Internal MS clock corresponding to timeRefNTP
+uint32_t timeSynchInterval = 3600;              // Interval (sec) to roll NTP forward and try to refresh
+uint32_t dataLogInterval = 5;                   // Interval (sec) to invoke dataLog
+uint32_t eMonCMSInterval = 10;                  // Interval (sec) to invoke eMonCMS 
+uint32_t statServiceInterval = 5;
+#define SEVENTY_YEAR_SECONDS 2208988800UL
 
-// eMonCMS configuration stuff    
+// *********************** eMonCMS configuration stuff *************************
 
 String cloudURL;
 String apiKey;
@@ -212,7 +223,7 @@ int16_t samples = 0;                              // Number of samples taken in 
 int16_t Vsample [maxSamples];                     // voltage/current pairs during sampling
 int16_t Isample [maxSamples];
 
-// ************************ Calibration *************************************
+// **************************** Calibration *************************************
                     
 boolean calibrationMode = false;
 int16_t calibrationVchan = 0;

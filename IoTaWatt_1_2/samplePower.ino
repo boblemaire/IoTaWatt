@@ -19,7 +19,7 @@ void samplePower(int channel){
   byte Vchan = Vchannel[channel];
   byte Ichan = channel;
 
-  IotaTime timeNow = millis();
+  uint32_t timeNow = millis();
   
   ageBucket(&buckets[Ichan], timeNow);  
   
@@ -29,7 +29,7 @@ void samplePower(int channel){
   double _Vrms = 0;
 
   if(sampleCycle(Vchan, Ichan, _Irms)) {                 // collect the I and V samples
-         
+       
 //******************************************* Process the samples ********************************************
     float Aref = getAref();    
     int32_t sumV = 0;
@@ -92,37 +92,11 @@ void samplePower(int channel){
     buckets[Vchan].hz = _hz;
     if(_watts > 60){
       buckets[Ichan].pf = _watts / (_Irms * _Vrms);
-//      if(buckets[Ichan].pf < 0.90){
-//        Serial.print("pf, ");
-//        Serial.println(buckets[Ichan].pf,4);
-//        Serial.print("samples, ");
-//        Serial.println(samples);
-//        Serial.print("Power, ");
-//        Serial.print(sumP);
-//        Serial.print(", ");
-//        Serial.println(_watts,3);
-//        Serial.print("Irms, ");
-//        Serial.print(sumIsq);
-//        Serial.print(", ");
-//        Serial.println(_Irms,3);
-//        Serial.print("Vrms, ");
-//        Serial.print(sumVsq);
-//        Serial.print(", ");
-//        Serial.println(_Vrms,3);
-//        Serial.print("PhaseCor, ");
-//        Serial.println(_phaseCorrection,2);
-//        Serial.print("StepCor, ");
-//        Serial.println(stepCorrection);
-//        printSamples();
-//        delay(3600000UL);
-//      }
     }
   } 
     
   buckets[Ichan].watts = _watts;
   buckets[Ichan].amps = _Irms;
-  
-
 }
 
 /**********************************************************************************************
@@ -193,10 +167,12 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
   int16_t crossGuard = 0;
   int16_t crossGuardReset = 2 + phaseMax * samplesPerCycle / 360;
 
-  uint32_t firstCrossUs;
-  uint32_t lastCrossUs;
+  mseconds_t startMs = millis();
+  mseconds_t timeoutMs = 40;
+  useconds_t firstCrossUs;
+  useconds_t lastCrossUs;
 
-    SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
+    SPI.beginTransaction(SPISettings(500000,MSBFIRST,SPI_MODE0));
 
     ADC_IselectPin = ADC_selectPin[Ichan >> 3];
     ADC_VselectPin = ADC_selectPin[Vchan >> 3];
@@ -204,11 +180,8 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
     ADC_VselectMask = 1 << ADC_VselectPin;
    
     if(readADC(Ichan) < 4) return false;                // channel is unplugged (grounded)
-                                    
-    do {
-      if(samples++ > 100) return false;                 // nothing happening
-      rawV = readADC(Vchan) - offsetV;
-    } while(rawV > -4 && rawV < 4);
+
+    rawV = readADC(Vchan) - offsetV;
     
     samples = 0;
     os_intr_lock();                                     // disable interrupts
@@ -226,9 +199,9 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           SPI1U1 = ((SPI1U1 & mask) | ((4 << SPILMOSI) | (4 << SPILMISO)));
           SPI1W0 = (0x18 | Ichan) << 3;
           SPI1CMD |= SPIBUSY;
-          while(SPI1CMD & SPIBUSY) {}
+          while(SPI1CMD & SPIBUSY) {} 
           delayMicroseconds(1);
-    
+              
           // Sample and Hold then...
           // Read the results
                                     
@@ -245,6 +218,11 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
             if(crossCount < crossLimit){
               samples++;                                    // Only count samples between crossings
               sumIsq += *IsamplePtr * *IsamplePtr;          // Need Irms early to correct phase shift     
+              if(samples >= maxSamples){                    // AC must be shut down
+                GPOS = ADC_IselectMask;                     // shortcut out
+                os_intr_unlock();
+                return false;
+              }
             }
             VsamplePtr++;                                   // Accumulate samples
             IsamplePtr++;
@@ -257,7 +235,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
                     
           GPOS = ADC_IselectMask;                                          // digitalWrite(ADC_IselectPin, HIGH);  Deselect the ADC
           volatile uint8_t * fifoPtr8 = (volatile uint8_t *) &SPI1W0;
-          *IsamplePtr = (word(*fifoPtr8, *(fifoPtr8+1)) >> (14 - ADC_bits)) - offsetI;
+          *IsamplePtr = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_bits)) - offsetI;
 
       // Hard coded equivilent of:
       // rawV = readADC(Vchan) - offsetV;
@@ -268,8 +246,8 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           SPI1W0 = (0x18 | Vchan) << 3;                                      // Data left aligned in low byte 
           SPI1CMD |= SPIBUSY;                                                // Start the SPI clock  
           while(SPI1CMD & SPIBUSY) {}                                        // Loop till SPI completes  
-          delayMicroseconds(1);                                              // Give S&H cap more time to charge
-          
+          delayMicroseconds(1);
+                                                   
           // Sample and Hold then...
           // Start reading the results
               
@@ -278,6 +256,12 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           SPI1CMD |= SPIBUSY;                                                 // Start the SPI clock
 
           // Do some loop housekeeping asynchronously while SPI runs.
+
+          if((uint32_t)(millis()-startMs)>timeoutMs){                         // Something is very wrong
+            GPOS = ADC_VselectMask;                                           // shortcut back
+            os_intr_unlock();
+            return false;
+          }
           
           if((*IsamplePtr > -3) && (*IsamplePtr < 3)) *IsamplePtr = 0;        // Filter noise from previous reading while SPI reads ADC
           
@@ -286,7 +270,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           while(SPI1CMD & SPIBUSY) {}                                         // Loop till SPI completes
           GPOS = ADC_VselectMask;                                             // digitalWrite(ADC_VselectPin, HIGH); Deselect the ADC
           fifoPtr8 = (volatile uint8_t *) &SPI1W0;                            // Use a pointer to bit twiddle the result
-          rawV = (word(*fifoPtr8, *(fifoPtr8+1)) >> (14 - ADC_bits)) - offsetV;  // Result is in left aligned in first FiFo word
+          rawV = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_bits)) - offsetV;  // Result is in left aligned in first FiFo word
 
           // Finish up loop cycle by checking for zero crossing.
 
@@ -301,7 +285,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           }
      
     } while(crossCount < crossLimit  || crossGuard > 0);                      // Keep going until prescribed crossings + phase shift overun
-
+    
     *VsamplePtr = (lastV + rawV) / 2;                                         // Loose end
 
     os_intr_unlock();                                                         // OK to interrupt now   
@@ -313,7 +297,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
 
     double Iratio = calibration[Ichan] * Aref / float(ADC_range);
     Irms = Iratio * sqrt((float)  sumIsq / samples);
-    frequency = (1000000.0 * cycles)  / float((uint32_t)(lastCrossUs - firstCrossUs));
+    frequency = (1000000.0 * cycles)  / float((useconds_t)(lastCrossUs - firstCrossUs));
 
     // Note the sample rate.
     // This is just a snapshot from single cycle sampling.
@@ -366,7 +350,8 @@ float getAref(void) {return (float) VrefVolts * ADC_range / readADC(VrefChan);}
 
 //**********************************************************************************************
 //
-//        printSamples()  -  print one cycle of the current samples
+//        printSamples()  -  print one cycle of the current samples.
+//        Diagnostic tool, not used.
 //
 //**********************************************************************************************
 

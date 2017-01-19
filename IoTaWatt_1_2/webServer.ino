@@ -1,11 +1,18 @@
 /*
-  This WebServer code is incorporated with little modification
-  to facilitate editing the Json configuration files. Currently used
-  only to read and write those files, the capability would also support
-  querying the log and reading a text event log.
+  This WebServer code is incorporated with very little modification.
+  Very simple yet powerful.
 
-  Small parts of the code are imbedded elsewhere as needed in the preamble and Init sections.
-  and "handleClient()" is invoked in Loop.
+  A few new handlers were added at the end, and appropriate server.on
+  declarations define them in the Setup code.
+
+  The server supports reading and writing files to/from the SDcard.
+  It also serves up HTML files to a browser.  The configuration utility is
+  index.htm in the root directory of the SD card.
+  The server also came with a great editor utility which, if placed on the SD,
+  can be used to edit the web pages or any other text file on the SDcard.
+  
+  Small parts of the code are imbedded elsewhere as needed in the preamble and Setup sections.
+  and "handleClient()" is invoked as often as practical in Loop to keep it running.
   
   The author's copyright and license info follows:
 
@@ -79,7 +86,7 @@ bool loadFromSdCard(String path){
   if (server.hasArg("download")) dataType = "application/octet-stream";
 
   if (server.streamFile(dataFile, dataType) != dataFile.size()) {
-    DBG_OUTPUT_PORT.println("Sent less data than expected!");
+    msgLog("Server: Sent less data than expected!");
   }
 
   dataFile.close();
@@ -161,7 +168,6 @@ void handleCreate(){
 }
 
 void printDirectory() {
-  Serial.print("print dir");
   if(!server.hasArg("dir")) return returnFail("BAD ARGS");
   String path = server.arg("dir");
   if(path != "/" && !SD.exists((char *)path.c_str())) return returnFail("BAD PATH");
@@ -203,19 +209,12 @@ void printDirectory() {
 
 void handleNotFound(){
   if(hasSD && loadFromSdCard(server.uri())) return;
-  String message = "SDCARD Not Detected\n\n";
-  message += "URI: ";
-  message += server.uri();
-  message += "\nMethod: ";
+  String message = "Server: unsupported request. Method: ";
   message += (server.method() == HTTP_GET)?"GET":"POST";
-  message += "\nArguments: ";
-  message += server.args();
-  message += "\n";
-  for (uint8_t i=0; i<server.args(); i++){
-    message += " NAME:"+server.argName(i) + "\n VALUE:" + server.arg(i) + "\n";
-  }
+  message += ", URI: ";
+  message += server.uri();
   server.send(404, "text/plain", message);
-  DBG_OUTPUT_PORT.print(message);
+  msgLog(message);
 }
 
 /************************************************************************************************
@@ -238,6 +237,8 @@ void handleStatus(){
     firstArg = false;
     message += "\"stats\":{\"cyclerate\":" + String(samplesPerCycle,0);
     message += ",\"chanrate\":" + String(cycleSampleRate,1);
+    message += ",\"runseconds\":" + String(NTPtime() - programStartTime);
+    message += ",\"stack\":" + String(ESP.getFreeHeap());  //system_get_free_heap_size());
     message += "}";
     statServiceInterval = 2;
   }
@@ -298,24 +299,30 @@ void handleStatus(){
   }
   
   message += "}";
-  // Serial.println(message);
   server.sendContent(message);
+}
+
+void handleCalVT(){
+  if(!server.hasArg("channel") || !server.hasArg("cal")){
+    server.send(200, "text/json", "Missing parameters");
+    return;
+  }
+  int channel = server.arg("channel").toInt();
+  calibration[channel] = server.arg("cal").toInt();  
+  server.send(200, "text/json", "ok");  
 }
 
 void handleCommand(){
 
   if(server.hasArg("restart")) {
     server.send(200, "text/plain", "ok");
-    DBG_OUTPUT_PORT.print("Restart command received.");
+    msgLog("Restart command received.");
     delay(500);
     ESP.restart();
   } 
   if(server.hasArg("calibrate")){
-    Serial.print("calibrate:");
-    Serial.print(server.arg("calibrate").toInt());
-    Serial.print(", ref:");
-    Serial.print(server.arg("ref").toInt());
-    Serial.println();
+    msgLog("calibrate:", server.arg("calibrate").toInt());
+    msgLog(", ref:", server.arg("ref").toInt());
     server.send(200, "text/plain", "ok");
     calibrationVchan = server.arg("calibrate").toInt();
     calibrationRefChan = server.arg("ref").toInt();
