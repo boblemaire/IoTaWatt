@@ -781,7 +781,7 @@ function newServer(obj){
     delete config.server;
   }
   else if(obj.selectedIndex == 1){
-    config.server = {"type":"emoncms","node":0,"postInterval":10,"url":"emoncms.org","apikey":""};
+    config.server = {"type":"emoncms","node":0,"postInterval":10,"secure":"yes","url":"emoncms.org","apikey":""};
   }
   buildWebServer();
 }
@@ -801,6 +801,21 @@ function buildEmonCMS(complete){
     postInput.parentNode.appendChild(document.createTextNode(" Post Interval is a number greater than 0."));
     complete = false;
   }
+  var column2 = serverRow("Connection type:"," ",0);
+  var secureSelect = document.createElement("select");
+  secureSelect.setAttribute("oninput","newSecure(this)");
+  column2.appendChild(secureSelect);
+  var optionSecure = document.createElement("option");
+  optionSecure.text = "secure";
+  secureSelect.add(optionSecure);
+  var optionUnsecure = document.createElement("option");
+  optionUnsecure.text = "unsecure";
+  secureSelect.add(optionUnsecure);
+  secureSelect.selectedIndex = 0;
+  if(config.server.secure == "unsecure"){
+    secureSelect.selectedIndex = 1;
+  }
+  
   var urlInput = serverRow("server URL:", config.server.url, 32);
   urlInput.setAttribute("onchange","newUrl(this)");
   if(config.server.url.length == 0){
@@ -842,6 +857,7 @@ function serverRow(text, value, size){
   newRow.appendChild(column2);
   column1.appendChild(document.createTextNode(text));
   column1.setAttribute("align","right");
+  if(size == 0) return column2;
   var newInput = document.createElement("input");
   column2.appendChild(newInput);
   newInput.value = value;
@@ -863,6 +879,12 @@ function newNode(obj){
 
 function newPost(obj){
   config.server.postInterval = obj.value;
+  editing = true;
+  buildWebServer();
+}
+
+function newSecure(obj){
+  config.server.secure = obj.value;
   editing = true;
   buildWebServer();
 }
@@ -990,19 +1012,18 @@ function calAdvStep1(){
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       var response = JSON.parse(xmlHttp.responseText);
-      if(response.channels.length > 1){
-        document.getElementById("advStepMsg").innerHTML = "Disconnect all inputs.";
-        calAdvStep1();
-      }
-      else{
-        
-        var message = "Connect the phone jack end of the calibration cord to any input on the " +
-        "IoTaWatt that does not have an onboard burden resistor.<br>";
-        message += "<strong>Do not plug calibration cord to wall recepticle until instructed.</strong><br>";
-        message += "Connect AC adapter to be calibrated to channel " + calVTindex;
-        document.getElementById("advStepMsg").innerHTML = message;
-        calAdvStep2();
-      }
+      for(var i=1; i<channels; i++) {
+        if(response.channels[i].Irms > 0){
+          document.getElementById("advStepMsg").innerHTML = "Disconnect all inputs.";
+          calAdvStep1();
+        }
+      }  
+      var message = "Connect the phone jack end of the calibration cord to channel 14.<br>";
+      message += "<strong>Do not plug calibration cord to wall recepticle until instructed.</strong><br>";
+      message += "Connect AC adapter to be calibrated to channel " + calVTindex;
+      document.getElementById("advStepMsg").innerHTML = message;
+      calRefChan = 14;
+      calAdvStep3();
     }
   }
   xmlHttp.open("GET","/status?channels=all", true);

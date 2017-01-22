@@ -23,7 +23,7 @@ void setup()
   msgLog("Version: ", IOTAWATT_VERSION);
 
   String restartMessage = "Normal Power Up";
-  rst_info* _resetInfo = system_get_rst_info();
+  rst_info* _resetInfo = ESP.getResetInfoPtr();
   if(_resetInfo->reason != REASON_DEFAULT_RST){
            restartMessage = "Restart reason: " +
            String(_resetInfo->reason) + " " +
@@ -33,7 +33,7 @@ void setup()
            formatHex(_resetInfo->epc3,4) + " " +
            formatHex(_resetInfo->excvaddr,4) + " " +
            formatHex(_resetInfo->depc,4); 
-    msgLog(restartMessage); 
+    msgLog(restartMessage);
   }
 
   //*************************************** Start SPI *************************************************
@@ -73,6 +73,8 @@ void setup()
   hasSD = true;
 
   msgLog(restartMessage);
+  msgLog((char*)ESP.getResetReason().c_str());
+  msgLog("ChipID:",ESP.getChipId());
 
   //************************************* Process Config file *****************************************
   
@@ -134,7 +136,7 @@ void setup()
       
   NewService(dataLog);
   NewService(statService);
- 
+  ESP.wdtEnable(WDTO_2S);
 }
 
 

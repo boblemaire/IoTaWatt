@@ -48,6 +48,7 @@
 		"type": "emoncms",
 		"node": 1,
 		"postInterval": 10,
+		"secure":"secure",
 		"url": "emoncms.org",
 		"apikey": "****** your 32 hex digit key ***"
 	}

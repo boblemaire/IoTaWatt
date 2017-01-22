@@ -27,6 +27,7 @@ SOFTWARE.
 
 #include <SPI.h>
 #include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
@@ -38,12 +39,13 @@ SOFTWARE.
 #include <ArduinoJson.h>
 #include <math.h>
 
+WiFiClientSecure WifiClientSecure;
 WiFiClient WifiClient;
+const int HttpsPort = 443;
 IoTa_MCP23S17 GPIO;                         // QandD method to run the GPIO chip
 IotaLog iotaLog;
 
 typedef uint32_t mseconds_t;
-
 String deviceName = "IoTaWatt";             // can be specified in config.device.name
 String IotaLogFile = "/IotaWatt/IotaLog.log";
 String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
@@ -212,9 +214,11 @@ uint32_t statServiceInterval = 5;
 
 // *********************** eMonCMS configuration stuff *************************
 
-String cloudURL;
+String  eMonURL;
 String apiKey;
 int16_t node = 9;
+boolean eMonSecure = false;
+const char* eMonSHA1 = "A2 FB AA 81 59 E2 B5 12 10 5D 38 22 23 A7 4E 74 B0 11 7D AA";
 
 // ************************ ADC sample pairs ************************************
  

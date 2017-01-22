@@ -69,13 +69,17 @@ boolean getConfig(void)
   if(serverType.equals("emoncms"))
   {
     msgLog("cloud server is: eMonCMS");
-    cloudURL = Config["server"]["url"].asString();
-    msgLog("url: ", cloudURL);
+     eMonURL = Config["server"]["url"].asString();
+    msgLog("url: ",  eMonURL);
     apiKey = Config["server"]["apikey"].asString();
     node = Config["server"]["node"];
     msgLog("node: ", node);
     eMonCMSInterval = Config["server"]["postInterval"].as<int>();
     msgLog("post interval: ", eMonCMSInterval);
+    String secure = Config["server"]["secure"].asString();
+    if(secure == "secure"){
+      eMonSecure = true;
+    }
     NewService(eMonService);
   }
   else

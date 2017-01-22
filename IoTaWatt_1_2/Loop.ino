@@ -34,12 +34,16 @@ void loop()
   // ------- If AC zero crossing approaching, go sample a channel.
 
   if(millis() >= nextCrossMs){
+    GPIO.writePin(yellowLedPin,HIGH);
+    ESP.wdtFeed(); 
     samplePower(nextChannel);
+    GPIO.writePin(yellowLedPin,LOW); 
     nextCrossMs = lastCrossMs + 490 / int(frequency);
     nextChannel = ++nextChannel % channels;
   }
 
   yield();
+  ESP.wdtFeed();
   server.handleClient();
   yield();
 
@@ -49,11 +53,13 @@ void loop()
   if(serviceQueue != NULL && NTPtime() >= serviceQueue->callTime){
     serviceBlock* thisBlock = serviceQueue;
     serviceQueue = thisBlock->next;
+    ESP.wdtFeed();
     thisBlock->callTime = thisBlock->service(thisBlock);
     AddService(thisBlock); 
   }
      
   yield();
+  ESP.wdtFeed();
   server.handleClient();
   yield();
 }
