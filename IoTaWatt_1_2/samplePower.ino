@@ -166,10 +166,10 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
   int16_t crossGuard = 0;
   int16_t crossGuardReset = 2 + phaseMax * samplesPerCycle / 360;
 
-  mseconds_t startMs = millis();
-  mseconds_t timeoutMs = 40;
-  useconds_t firstCrossUs;
-  useconds_t lastCrossUs;
+  uint32_t startMs = millis();
+  uint32_t timeoutMs = 1 + ((cycles * 1000) + 500) / frequency;
+  uint32_t firstCrossUs;
+  uint32_t lastCrossUs;
 
     SPI.beginTransaction(SPISettings(1000000,MSBFIRST,SPI_MODE0));
 
@@ -218,6 +218,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
               samples++;                                    // Only count samples between crossings
               sumIsq += *IsamplePtr * *IsamplePtr;          // Need Irms early to correct phase shift     
               if(samples >= maxSamples){                    // AC must be shut down
+                trace(22);
                 GPOS = ADC_IselectMask;                     // shortcut out
                 os_intr_unlock();
                 return false;
@@ -257,6 +258,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           // Do some loop housekeeping asynchronously while SPI runs.
 
           if((uint32_t)(millis()-startMs)>timeoutMs){                         // Something is very wrong
+            trace(23);
             GPOS = ADC_VselectMask;                                           // shortcut back
             os_intr_unlock();
             return false;
@@ -276,8 +278,12 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           if(((rawV ^ lastV) & crossGuard) >> 15) {        // If crossed unambiguously (one but not both Vs negative and crossGuard negative 
             crossCount++;                                  // Count this crossing
             crossGuard = crossGuardReset;                  // No more crosses for awhile
-            if(crossCount == 1) firstCrossUs = micros();
+            if(crossCount == 1){
+              trace(20);
+              firstCrossUs = micros();
+            }
             else if(crossCount == crossLimit) {
+              trace(21);
               lastCrossUs = micros();
               lastCrossMs = millis();
             }                               
@@ -286,8 +292,11 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
     } while(crossCount < crossLimit  || crossGuard > 0);                      // Keep going until prescribed crossings + phase shift overun
     
     *VsamplePtr = (lastV + rawV) / 2;                                         // Loose end
-
+    trace(25);
+    ESP.wdtFeed();
+    trace(26);
     os_intr_unlock();                                                         // OK to interrupt now   
+    trace(27);
     Aref = getAref();
 
     // sumIsq was accumulated in loop at no cost during SPI transfers.
@@ -296,7 +305,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
 
     double Iratio = calibration[Ichan] * Aref / float(ADC_range);
     Irms = Iratio * sqrt((float)  sumIsq / samples);
-    frequency = (1000000.0 * cycles)  / float((useconds_t)(lastCrossUs - firstCrossUs));
+    frequency = (1000000.0 * cycles)  / float((uint32_t)(lastCrossUs - firstCrossUs));
 
     // Note the sample rate.
     // This is just a snapshot from single cycle sampling.

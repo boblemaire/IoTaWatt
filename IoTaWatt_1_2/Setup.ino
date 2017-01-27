@@ -72,8 +72,8 @@ void setup()
   msgLog("SD initialized.");
   hasSD = true;
 
-  msgLog(restartMessage);
-  msgLog((char*)ESP.getResetReason().c_str());
+  msgLog("Reset reason: ",(char*)ESP.getResetReason().c_str());
+  logTrace();
   msgLog("ChipID:",ESP.getChipId());
 
   //************************************* Process Config file *****************************************

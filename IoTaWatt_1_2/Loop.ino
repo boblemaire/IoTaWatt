@@ -35,8 +35,10 @@ void loop()
 
   if(millis() >= nextCrossMs){
     GPIO.writePin(yellowLedPin,HIGH);
-    ESP.wdtFeed(); 
+    ESP.wdtFeed();
+    trace(1);
     samplePower(nextChannel);
+    trace(2);
     GPIO.writePin(yellowLedPin,LOW); 
     nextCrossMs = lastCrossMs + 490 / int(frequency);
     nextChannel = ++nextChannel % channels;
@@ -44,7 +46,9 @@ void loop()
 
   yield();
   ESP.wdtFeed();
+  trace(3);
   server.handleClient();
+  trace(4);
   yield();
 
 // ---------- If the head of the service queue is dispatchable
@@ -54,13 +58,17 @@ void loop()
     serviceBlock* thisBlock = serviceQueue;
     serviceQueue = thisBlock->next;
     ESP.wdtFeed();
+    trace(5);
     thisBlock->callTime = thisBlock->service(thisBlock);
+    trace(6);
     AddService(thisBlock); 
   }
      
   yield();
   ESP.wdtFeed();
+  trace(7);
   server.handleClient();
+  trace(8);
   yield();
 }
 
@@ -157,6 +165,38 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   if(statServiceInterval < 10)statServiceInterval++;
   return ((uint32_t)NTPtime() + statServiceInterval);
 }
+
+void trace(uint32_t id){
+  static uint16_t traceSeq = 0;
+  id |= traceSeq++ << 16;
+  WRITE_PERI_REG(RTC_USER_MEM + 96 + (traceSeq & 0x1F), id);
+}
+
+void printTrace(void){
+  uint16_t _counter = READ_PERI_REG(RTC_USER_MEM + 96) >> 16;
+  Serial.println(formatHex(_counter,4));
+  int i=1;
+  while(((uint16_t)++_counter) == (READ_PERI_REG(RTC_USER_MEM + 96 + (i%32)) >> 16)) i++;
+  Serial.println(i);
+  for(int j=0; j<32; j++){
+    Serial.print(formatHex(READ_PERI_REG(RTC_USER_MEM + 96 + ((j+i)%32)), 4));
+    Serial.println();
+  }
+}
+
+void logTrace(void){
+  uint16_t _counter = READ_PERI_REG(RTC_USER_MEM + 96) >> 16;
+  int i = 1;
+  while(((uint16_t)++_counter) == (READ_PERI_REG(RTC_USER_MEM + 96 + (i%32)) >> 16)) i++;
+  String line = "Trace: ";
+  for(int j=0; j<32; j++){
+    uint32_t _entry = READ_PERI_REG(RTC_USER_MEM + 96 + ((j+i)%32)) & 0xFFFF;
+    line += String(_entry) + ",";
+  }
+  line.remove(line.length()-1);  
+  msgLog(line);
+}
+
 
 
 

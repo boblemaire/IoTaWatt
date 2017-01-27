@@ -45,7 +45,6 @@ const int HttpsPort = 443;
 IoTa_MCP23S17 GPIO;                         // QandD method to run the GPIO chip
 IotaLog iotaLog;
 
-typedef uint32_t mseconds_t;
 String deviceName = "IoTaWatt";             // can be specified in config.device.name
 String IotaLogFile = "/IotaWatt/IotaLog.log";
 String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
@@ -85,8 +84,8 @@ uint16_t ADC_range;                         // computed integer range of ADC out
  * We try to run everything else during the half-wave intervals between power sampling.  The next 
  * channel to be sampled is also kept here to complete the picture.  
  ******************************************************************************************************/
-mseconds_t lastCrossMs = 0;             // Timestamp at last zero crossing (ms)
-mseconds_t nextCrossMs = 0;             // Time just before next zero crossing (ms)
+uint32_t lastCrossMs = 0;             // Timestamp at last zero crossing (ms)
+uint32_t nextCrossMs = 0;             // Time just before next zero crossing (ms)
 uint32_t nextChannel = 0;               // Next channel to sample
 #define priorityLow 3
 #define priorityMed 2
@@ -148,7 +147,7 @@ struct dataBucket {
   double accum1;
   double accum2;
   double accum3;
-  mseconds_t timeThen;
+  uint32_t timeThen;
 
   dataBucket(){value1=0; value2=0; value3=0;
                accum1=0; accum2=0; accum3=0; 
@@ -169,8 +168,8 @@ dataBucket buckets[channels];               // create a bunch of them
 
 // This function ages the contents of one bucket.
 
-void ageBucket(struct dataBucket *bucket, mseconds_t timeNow){
-    double elapsedHrs = double((mseconds_t)(timeNow - bucket->timeThen)) / MS_PER_HOUR;
+void ageBucket(struct dataBucket *bucket, uint32_t timeNow){
+    double elapsedHrs = double((uint32_t)(timeNow - bucket->timeThen)) / MS_PER_HOUR;
     bucket->accum1 += bucket->value1 * elapsedHrs;
     bucket->accum2 += bucket->value2 * elapsedHrs;
     bucket->accum3 += bucket->value3 * elapsedHrs;
@@ -205,7 +204,7 @@ void handleNotFound();
 uint32_t localTimeDiff = -5;
 uint32_t programStartTime = 0;                  // Time program started
 uint32_t timeRefNTP = 0;                       // Last time from NTP server
-mseconds_t timeRefMs = 0;                       // Internal MS clock corresponding to timeRefNTP
+uint32_t timeRefMs = 0;                       // Internal MS clock corresponding to timeRefNTP
 uint32_t timeSynchInterval = 3600;              // Interval (sec) to roll NTP forward and try to refresh
 uint32_t dataLogInterval = 5;                   // Interval (sec) to invoke dataLog
 uint32_t eMonCMSInterval = 10;                  // Interval (sec) to invoke eMonCMS 
@@ -235,6 +234,7 @@ int16_t calibrationRefChan = 0;
 float calibrationCal = 0.0;
 float calibrationPhase = 0.0; 
 
+// ***************************RTC Trace **********************************************
 
 
 

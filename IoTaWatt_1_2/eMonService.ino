@@ -20,8 +20,9 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   static uint32_t UnixNextPost = UnixTime();
   static double _logHours;
   static String req = "";  
-  static mseconds_t postTime = millis();
-      
+  static uint32_t postTime = millis();
+
+  trace(10);    
   switch(state){
 
     case initialize: {
@@ -167,6 +168,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
 boolean eMonSend(String req){
   
   if(eMonSecure) return eMonSendSecure(req);
+  trace(11);
   
   uint32_t startTime = millis();
   if(!WifiClient.connect(eMonURL.c_str(), 80)) {
@@ -206,6 +208,7 @@ boolean eMonSend(String req){
 }
 
 boolean eMonSendSecure(String req){
+  trace(12);
   ESP.wdtFeed();
 
       // Should always be disconnected, but test can't hurt.
