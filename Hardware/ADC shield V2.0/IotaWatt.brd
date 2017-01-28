@@ -8,7 +8,7 @@
 </settings>
 <grid distance="0.025" unitdist="inch" unit="inch" style="dots" multiple="2" display="yes" altdistance="0.00625" altunitdist="inch" altunit="inch"/>
 <layers>
-<layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
+<layer number="1" name="Top" color="59" fill="1" visible="yes" active="yes"/>
 <layer number="16" name="Bottom" color="1" fill="1" visible="yes" active="yes"/>
 <layer number="17" name="Pads" color="2" fill="1" visible="yes" active="yes"/>
 <layer number="18" name="Vias" color="2" fill="1" visible="yes" active="yes"/>
@@ -69,7 +69,7 @@
 <layer number="104" name="Name" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="105" name="Beschreib" color="9" fill="1" visible="yes" active="yes"/>
 <layer number="106" name="BGA-Top" color="4" fill="1" visible="yes" active="yes"/>
-<layer number="107" name="BD-Top" color="5" fill="1" visible="yes" active="yes"/>
+<layer number="107" name="BD-Top" color="59" fill="1" visible="yes" active="yes"/>
 <layer number="108" name="fp8" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="109" name="fp9" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="110" name="fp0" color="7" fill="1" visible="yes" active="yes"/>
@@ -724,17 +724,19 @@ design rules under a new name.</description>
 <contactref element="R31" pad="1"/>
 <wire x1="2.175" y1="31.59125" x2="2.7" y2="34.19" width="0.254" layer="1"/>
 <wire x1="2.7" y1="34.19" x2="2.175" y2="36.83" width="0.254" layer="1"/>
-<wire x1="2.8" y1="34.29" x2="2.7" y2="34.19" width="0.254" layer="1" curve="90"/>
-<wire x1="5.715" y1="34.29" x2="5.715" y2="41.275" width="0.254" layer="1"/>
-<wire x1="5.715" y1="34.29" x2="5.715" y2="33.655" width="0.254" layer="1"/>
-<wire x1="5.715" y1="33.655" x2="7.58" y2="31.79" width="0.254" layer="1" curve="90"/>
-<wire x1="7.7" y1="31.79" x2="7.58" y2="31.79" width="0.254" layer="1"/>
-<wire x1="2.7" y1="34.19" x2="5.715" y2="34.29" width="0.254" layer="1"/>
+<wire x1="2.7" y1="34.19" x2="2.8" y2="34.29" width="0.254" layer="1" curve="-90"/>
+<wire x1="7.58" y1="31.79" x2="7.7" y2="31.79" width="0.254" layer="1"/>
 <wire x1="10.16" y1="29.63" x2="13.0175" y2="29.0195" width="0.254" layer="1"/>
 <wire x1="10.16" y1="29.63" x2="7.7" y2="29.09" width="0.254" layer="1"/>
 <wire x1="7.7" y1="29.09" x2="7.7" y2="31.79" width="0.254" layer="1"/>
 <wire x1="11.43" y1="46.14875" x2="11.43" y2="43.8625" width="0.254" layer="1"/>
-<wire x1="5.715" y1="41.275" x2="11.43" y2="43.8625" width="0" layer="19" extent="1-1"/>
+<via x="9.525" y="43.815" extent="1-16" drill="0.6"/>
+<wire x1="9.525" y1="43.815" x2="11.43" y2="43.815" width="0.254" layer="1"/>
+<via x="9.525" y="33.655" extent="1-16" drill="0.6"/>
+<wire x1="9.525" y1="33.655" x2="9.525" y2="43.815" width="0.254" layer="16"/>
+<wire x1="2.8" y1="34.29" x2="7.7" y2="31.79" width="0.254" layer="1"/>
+<wire x1="7.7" y1="31.79" x2="9.525" y2="33.655" width="0.254" layer="1"/>
+<wire x1="11.43" y1="43.815" x2="11.43" y2="43.8625" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="GND">
 <contactref element="R3" pad="1"/>
@@ -782,7 +784,7 @@ design rules under a new name.</description>
 <via x="43.18" y="34.29" extent="1-16" drill="0.6"/>
 <via x="43.18" y="46.99" extent="1-16" drill="0.6"/>
 <via x="10.16" y="21.59" extent="1-16" drill="0.6"/>
-<via x="10.16" y="34.29" extent="1-16" drill="0.6"/>
+<via x="11.1125" y="33.3375" extent="1-16" drill="0.6"/>
 <via x="10.16" y="8.89" extent="1-16" drill="0.6"/>
 <via x="4.445" y="15.08125" extent="1-16" drill="0.6"/>
 <via x="33.02" y="13.97" extent="1-16" drill="0.6"/>
@@ -1341,27 +1343,27 @@ design rules under a new name.</description>
 <approved hash="4,16,a732040979445a74"/>
 <approved hash="4,16,d3e3e6d09d8f28b7"/>
 <approved hash="4,16,141a21295bf0eec8"/>
-<approved hash="19,1,0c28d067a61ad3f6"/>
-<approved hash="19,1,c2511e686819d3e4"/>
 <approved hash="19,1,4e3f9212e423d3e8"/>
-<approved hash="19,1,8c4a103c240ce5b7"/>
+<approved hash="19,1,c2511e686819d3e4"/>
+<approved hash="19,1,0c28d067a61ad3f6"/>
 <approved hash="19,1,29a226a8c9c79b00"/>
-<approved hash="19,1,105c0820241061a1"/>
-<approved hash="19,1,add426d8c84f1e8e"/>
+<approved hash="19,1,8c4a103c240ce5b7"/>
 <approved hash="19,1,ce571024200aa3b4"/>
+<approved hash="19,1,add426d8c84f1e8e"/>
+<approved hash="19,1,105c0820241061a1"/>
 <approved hash="19,1,6fd522dccc23dce7"/>
-<approved hash="19,1,d53ff008abd42d51"/>
-<approved hash="19,1,1419a42322ba3132"/>
-<approved hash="19,1,d612a02726c0f347"/>
 <approved hash="19,1,1700f43453ac132a"/>
 <approved hash="19,1,5230a00f26b87735"/>
-<approved hash="19,1,981bac2b2afebd7c"/>
+<approved hash="19,1,1419a42322ba3132"/>
 <approved hash="19,1,56f5f7cc53a85123"/>
+<approved hash="19,1,d53ff008abd42d51"/>
+<approved hash="19,1,d612a02726c0f347"/>
 <approved hash="19,1,eb3a8c082bc8ef48"/>
-<approved hash="19,1,7d58cc949addd254"/>
-<approved hash="19,1,8fe4f742daf3caab"/>
+<approved hash="19,1,981bac2b2afebd7c"/>
 <approved hash="19,1,c1e7b96d98f4c6a9"/>
 <approved hash="19,1,0bd673a8517dc28f"/>
+<approved hash="19,1,8fe4f742daf3caab"/>
+<approved hash="19,1,7d58cc949addd254"/>
 </errors>
 </board>
 </drawing>
