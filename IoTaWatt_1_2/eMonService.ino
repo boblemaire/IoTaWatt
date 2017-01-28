@@ -80,7 +80,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
         return ((uint32_t)UnixNextPost + SEVENTY_YEAR_SECONDS);
       } 
       
-          // Not current.  Read sequentially to get the entry >= scheduled post time
+          // Read sequentially to get the entry >= scheduled post time
       
       while(logRecord->UNIXtime < UnixNextPost){
         if(logRecord->UNIXtime >= iotaLog.lastKey()){
