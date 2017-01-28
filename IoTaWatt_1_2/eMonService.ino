@@ -20,8 +20,9 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   static uint32_t UnixNextPost = UnixTime();
   static double _logHours;
   static String req = "";  
-  static mseconds_t postTime = millis();
-      
+  static uint32_t postTime = millis();
+
+  trace(10);    
   switch(state){
 
     case initialize: {
@@ -79,7 +80,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
         return ((uint32_t)UnixNextPost + SEVENTY_YEAR_SECONDS);
       } 
       
-          // Not current.  Read sequentially to get the entry >= scheduled post time
+          // Read sequentially to get the entry >= scheduled post time
       
       while(logRecord->UNIXtime < UnixNextPost){
         if(logRecord->UNIXtime >= iotaLog.lastKey()){
@@ -96,8 +97,9 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
           // Build the request string.
           // values for each channel are (delta value hrs)/(delta log hours) = period value.
           // Update the previous (Then) buckets to the most recent values.
+     // req = "GET " + eMonURL.c_str() + " HTTP/1.1\r\n" +
 
-      req = "GET /input/post.json?time=" + String(UnixNextPost) + "&node=" + String(node) + "&csv=";    
+      req = "/input/post.json?time=" + String(UnixNextPost) + "&node=" + String(node) + "&csv=";    
       int commas = 0;
       double value1;
       double elapsedHours = logRecord->logHours - _logHours;
@@ -119,23 +121,25 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       }
       req += "&apikey=" + apiKey;
 
-          // Send the post
-          
-      Serial.print(formatHMS(NTPtime() + (localTimeDiff * 3600)));
-      Serial.print(" ");
-      Serial.print(offset[0]);
-      Serial.print(" ");
-      Serial.println(req);
+          // Send the post       
       
+      uint32_t sendTime = millis();
       if(!eMonSend(req)){
         state = resend;
         return ((uint32_t)NTPtime() + 1);
       }
-            
+      Serial.print(formatHMS(NTPtime() + (localTimeDiff * 3600)));
+      Serial.print(" ");
+      Serial.print(millis()-sendTime);
+      Serial.print(" ");
+      Serial.println(req);     
       UnixLastPost = UnixNextPost;
       UnixNextPost +=  eMonCMSInterval - (UnixNextPost % eMonCMSInterval);
-      return 0;   
+      state = post;
+      
+      return ((uint32_t)NTPtime() + 1);
     }
+
 
     case resend: {
       msgLog("Resending eMonCMS data.");
@@ -143,9 +147,11 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
         return ((uint32_t)NTPtime() + 5);
       }
       else {
+        
         UnixLastPost = UnixNextPost;
         UnixNextPost +=  eMonCMSInterval - (UnixNextPost % eMonCMSInterval);
         state = post;
+        return ((uint32_t)NTPtime() + 1);
       }
       break;
     }
@@ -154,20 +160,24 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
 }
 
 /************************************************************************************************
- *  This synchronous HTTP GET transaction seems to take about 160-180ms from Boston to the UK.
- *  It takes about half that to ping the site, so we could be doing sampling while the bits are
- *  swimming across the ocean.
- *  There is a WiFiClient for the ESP that allows this to be done asynchronously. That would be
- *  something to explore in order to keep the AC sampling rates up.
+ *  eMonSend - send data to the eMonCMS server. 
+ *  if secure transmission is configured, pas sthe request to a 
+ *  similar WiFiClientSecure function.
+ *  Secure takes about twice as long and can block sampling for more than a second.
  ***********************************************************************************************/
-
 boolean eMonSend(String req){
-  if(!WifiClient.connect(cloudURL.c_str(), 80)) {
-        msgLog("failed to connect to:", cloudURL);
+  
+  if(eMonSecure) return eMonSendSecure(req);
+  trace(11);
+  
+  uint32_t startTime = millis();
+  if(!WifiClient.connect(eMonURL.c_str(), 80)) {
+        msgLog("failed to connect to:", eMonURL);
         WifiClient.stop();
         return false;
-  }   
-  WifiClient.println(req);
+  } 
+  yield();  
+  WifiClient.println(String("GET ") + req);
   uint32_t _time = millis();
   while(WifiClient.available() < 2){
     yield();
@@ -177,6 +187,7 @@ boolean eMonSend(String req){
       return false;
     }
   }
+  yield();
   String reply = "";
   int maxlen = 40;
   while(WifiClient.available()){
@@ -191,6 +202,62 @@ boolean eMonSend(String req){
     return false;
   }
   WifiClient.stop();
+//  Serial.print("Open Send ms: ");
+//  Serial.println(millis()-startTime);
+  return true;
+}
+
+boolean eMonSendSecure(String req){
+  trace(12);
+  ESP.wdtFeed();
+
+      // Should always be disconnected, but test can't hurt.
+    
+  uint32_t startTime = millis();
+  if(!WifiClientSecure.connected()){
+    if(!WifiClientSecure.connect(eMonURL.c_str(), HttpsPort)) {
+          msgLog("failed to connect to:",  eMonURL);
+          WifiClientSecure.stop();
+          return false;
+    }
+    if(!WifiClientSecure.verify(eMonSHA1,  eMonURL.c_str())){
+      msgLog("eMonCMS could not validate certificate.");
+      WifiClientSecure.stop();
+      return false;
+    }
+  }
+  yield();
+  
+      // Send the packet
+   
+  WifiClientSecure.print(String("GET ") + req + " HTTP/1.1\r\n" +
+               "Host: " + eMonURL + "\r\n" +
+               "User-Agent: IotaWatt\r\n" +
+               "Connection: close\r\n\r\n"); 
+ 
+      // Read through response header until blank line (\r\n)
+
+  yield();    
+  while (WifiClientSecure.connected()) {
+    String line = WifiClientSecure.readStringUntil('\n');
+    if (line == "\r") {
+      break;
+    }
+  }
+
+  yield(); 
+  String line;
+  while(WifiClientSecure.available()){
+    line += char(WifiClientSecure.read());
+  }
+  if (!line.startsWith("ok")) {
+    msgLog ("eMonCMS reply: ", line);
+    WifiClientSecure.stop();
+    return false;
+  }              
+  
+//  Serial.print("Secure Send ms: ");
+//  Serial.println(millis()-startTime);
   return true;
 }
 
