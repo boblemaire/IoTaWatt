@@ -20,7 +20,7 @@
  * Services should try not to execute for more than a few milliseconds at a time.
  **********************************************************************************************/
  uint32_t dataLog(struct serviceBlock* _serviceBlock){
-
+  // trace 2x
   enum states {initialize, logData, noLog};
   static states state = initialize;
   
@@ -49,7 +49,18 @@
         logRecord->UNIXtime = iotaLog.lastKey();
         iotaLog.readKey(logRecord);
         msgLog("Last log entry UNIXtime:", iotaLog.lastKey());
-      }        
+      }
+
+      // Check last log record for NaN and reset to zero.
+      // Should only happen if something went berzerk.
+      // This is better than 86ing the whole historical log.
+      // Maybe in the future start up a SERVICE to walk the error back and clean up. 
+
+      if(logRecord->logHours != logRecord->logHours)logRecord->logHours = 0;
+      for(int i=0; i<channels; i++) {
+        if(logRecord->channel[i].accum1 != logRecord->channel[i].accum1) logRecord->channel[i].accum1 = 0;
+        if(logRecord->channel[i].accum2 != logRecord->channel[i].accum2) logRecord->channel[i].accum2 = 0;
+      }
     
       msgLog("dataLog service started.");
       state = logData;
@@ -61,13 +72,16 @@
       for(int i=0; i<channels; i++){
         ageBucket(&buckets[i], timeNow);
         logRecord->channel[i].accum1 += (buckets[i].accum1 - accum1Then[i]);
+        if(logRecord->channel[i].accum1 != logRecord->channel[i].accum1) logRecord->channel[i].accum1 = 0;
         logRecord->channel[i].accum2 += (buckets[i].accum2 - accum2Then[i]);
+        if(logRecord->channel[i].accum2 != logRecord->channel[i].accum2) logRecord->channel[i].accum2 = 0;
         double value1 = (buckets[i].accum1 - accum1Then[i]) / elapsedHrs;
         accum1Then[i] = buckets[i].accum1;
         accum2Then[i] = buckets[i].accum2;
       }  
       timeThen = timeNow;
       logRecord->logHours += elapsedHrs;
+      if(logRecord->logHours != logRecord->logHours) logRecord->logHours = 0;
       logRecord->serial++;
       logRecord->UNIXtime = UnixTime();
 

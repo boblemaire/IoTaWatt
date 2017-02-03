@@ -110,6 +110,7 @@ enum channelTypes {channelTypeUndefined,
                    channelTypePower};               
 
 channelTypes channelType [channels];
+String channelName[channels]; 
  
 // The calibration factor for a voltage channel is the true voltage (in Volts) per ADC volt.
 // The calibration for a current channel is the true current (in Amperes) per ADC volt.
@@ -176,6 +177,12 @@ void ageBucket(struct dataBucket *bucket, uint32_t timeNow){
     bucket->timeThen = timeNow;
 }
 
+#define QUERY_VOLTAGE  1
+#define QUERY_FREQUENCY  2
+#define QUERY_POWER  3
+#define QUERY_ENERGY 4
+#define QUERY_PF  5
+
 //***********************************************************************************************
 // statService maintains current averages of the channel values
 // so that current values can be displayed by web clients
@@ -199,6 +206,8 @@ ESP8266WebServer server(80);
 static bool hasSD = false;
 File uploadFile;
 void handleNotFound();
+serviceBlock* getFeedDataHandler;
+boolean serverAvailable = true;                    // Set false when asynchronous handler active to avoid new requests
 
 // ****************************** Timing and time data *************************
 uint32_t localTimeDiff = -5;
@@ -236,6 +245,12 @@ float calibrationPhase = 0.0;
 
 // ***************************RTC Trace **********************************************
 
+     // Starting trace values by module. 
 
+#define T_LOOP 10           // Loop
+#define T_LOG 20            // dataLog
+#define T_EMON 30           // eMonService
+#define T_GFD 40            // GetFeedData
+#define T_SAMP 50           // samplePower
 
 

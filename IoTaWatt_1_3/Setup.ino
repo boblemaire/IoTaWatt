@@ -10,6 +10,7 @@ void setup()
     calibration[i] = 0.0;
     phaseCorrection[i] = 0.0;
     channelType [i] = channelTypeUndefined;
+    channelName [i] = "";
     Vchannel[i] = 0;
   }
 
@@ -133,7 +134,8 @@ void setup()
   msgLog("HTTP server started");
 
  //*************************************** Start the logging services *********************************
-      
+
+  NewService(handleGetFeedData);    
   NewService(dataLog);
   NewService(statService);
   ESP.wdtEnable(WDTO_2S);

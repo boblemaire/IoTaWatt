@@ -48,6 +48,7 @@ boolean getConfig(void)
       msgLog("Unsupported channel configured: ", channel);
       continue;
     }
+    channelName[channel] = Config["inputs"][i]["name"].asString();
     String type = Config["inputs"][i]["type"].asString();
     String model = Config["inputs"][i]["model"].asString();
     calibration[channel] = Config["inputs"][i]["cal"].as<float>();

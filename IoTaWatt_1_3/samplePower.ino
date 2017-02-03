@@ -218,7 +218,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
               samples++;                                    // Only count samples between crossings
               sumIsq += *IsamplePtr * *IsamplePtr;          // Need Irms early to correct phase shift     
               if(samples >= maxSamples){                    // AC must be shut down
-                trace(22);
+                trace(T_SAMP,0);
                 GPOS = ADC_IselectMask;                     // shortcut out
                 os_intr_unlock();
                 return false;
@@ -258,7 +258,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           // Do some loop housekeeping asynchronously while SPI runs.
 
           if((uint32_t)(millis()-startMs)>timeoutMs){                         // Something is very wrong
-            trace(23);
+            trace(T_SAMP,2);
             GPOS = ADC_VselectMask;                                           // shortcut back
             os_intr_unlock();
             return false;
@@ -276,14 +276,15 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           // Finish up loop cycle by checking for zero crossing.
 
           if(((rawV ^ lastV) & crossGuard) >> 15) {        // If crossed unambiguously (one but not both Vs negative and crossGuard negative 
+            ESP.wdtFeed();                                 // Red meat for the silicon dog
             crossCount++;                                  // Count this crossing
             crossGuard = crossGuardReset;                  // No more crosses for awhile
             if(crossCount == 1){
-              trace(20);
+              trace(T_SAMP,4);
               firstCrossUs = micros();
             }
             else if(crossCount == crossLimit) {
-              trace(21);
+              trace(T_SAMP,6);
               lastCrossUs = micros();
               lastCrossMs = millis();
             }                               
@@ -292,11 +293,11 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
     } while(crossCount < crossLimit  || crossGuard > 0);                      // Keep going until prescribed crossings + phase shift overun
     
     *VsamplePtr = (lastV + rawV) / 2;                                         // Loose end
-    trace(25);
+    trace(T_SAMP,7);
     ESP.wdtFeed();
-    trace(26);
+    trace(T_SAMP,8);
     os_intr_unlock();                                                         // OK to interrupt now   
-    trace(27);
+    trace(T_SAMP,9);
     Aref = getAref();
 
     // sumIsq was accumulated in loop at no cost during SPI transfers.

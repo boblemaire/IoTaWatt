@@ -11,6 +11,7 @@
  * asynchWifiClient would solve that.
  ******************************************************************************************************/
 uint32_t eMonService(struct serviceBlock* _serviceBlock){
+  // trace T_EMON
   enum   states {initialize, post, resend};
   static states state = initialize;
   static IotaLogRecord* logRecord = new IotaLogRecord;
@@ -22,7 +23,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   static String req = "";  
   static uint32_t postTime = millis();
 
-  trace(10);    
+  trace(T_EMON,0);    
   switch(state){
 
     case initialize: {
@@ -81,7 +82,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       } 
       
           // Not current.  Read sequentially to get the entry >= scheduled post time
-      
+trace(T_EMON,1);    
       while(logRecord->UNIXtime < UnixNextPost){
         if(logRecord->UNIXtime >= iotaLog.lastKey()){
           msgLog("runaway seq read.", logRecord->UNIXtime);
@@ -98,7 +99,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
           // values for each channel are (delta value hrs)/(delta log hours) = period value.
           // Update the previous (Then) buckets to the most recent values.
      // req = "GET " + eMonURL.c_str() + " HTTP/1.1\r\n" +
-
+trace(T_EMON,2);    
       req = "/input/post.json?time=" + String(UnixNextPost) + "&node=" + String(node) + "&csv=";    
       int commas = 0;
       double value1;
@@ -119,6 +120,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
         }
         commas++;
       }
+trace(T_EMON,3);    
       req += "&apikey=" + apiKey;
 
           // Send the post       
@@ -156,7 +158,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       break;
     }
   }
-  return 0;
+  return ((uint32_t)NTPtime() + 1);
 }
 
 /************************************************************************************************
@@ -168,7 +170,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
 boolean eMonSend(String req){
   
   if(eMonSecure) return eMonSendSecure(req);
-  trace(11);
+  trace(T_EMON,7);
   
   uint32_t startTime = millis();
   if(!WifiClient.connect(eMonURL.c_str(), 80)) {
@@ -208,7 +210,7 @@ boolean eMonSend(String req){
 }
 
 boolean eMonSendSecure(String req){
-  trace(12);
+  trace(T_EMON,8);
   ESP.wdtFeed();
 
       // Should always be disconnected, but test can't hurt.

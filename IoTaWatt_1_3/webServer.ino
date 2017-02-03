@@ -205,9 +205,22 @@ void printDirectory() {
  dir.close();
 }
 
-
-
 void handleNotFound(){
+  Serial.println(server.uri());
+  if(server.uri().startsWith("//feed/list")){
+    handleGetFeedList();
+    return;
+  }
+  if(server.uri() == "/graph/getall"){
+    handleGraphGetall();
+    return;
+  }
+  if(server.uri().startsWith("/feed/data")){
+    getFeedDataHandler->callTime = 1;
+    AddService(getFeedDataHandler);
+    // handleGetFeedData();
+    return;
+  }
   if(hasSD && loadFromSdCard(server.uri())) return;
   String message = "Server: unsupported request. Method: ";
   message += (server.method() == HTTP_GET)?"GET":"POST";
@@ -328,6 +341,44 @@ void handleCommand(){
     calibrationRefChan = server.arg("ref").toInt();
     calibrationMode = true;
   }
+}
+
+void handleGetFeedList(){
+  
+  String reply = "[";
+  for(int i=0; i<channels; i++){
+    if(channelType[i] != channelTypeUndefined){
+      if(channelType[i] == channelTypeVoltage){
+        addFeed("voltage",QUERY_VOLTAGE,reply,i);
+        addFeed("Frequency",QUERY_FREQUENCY,reply,i);
+      }
+      else if(channelType[i] == channelTypePower){
+        addFeed("Power",QUERY_POWER,reply,i);
+        addFeed("Energy",QUERY_ENERGY,reply,i);
+        addFeed("Power Factor",QUERY_PF,reply,i);
+      }
+    }
+  }
+  reply.remove(reply.length()-3);
+  reply += "]\r\n";
+  server.send(200, "application/json", reply);
+  Serial.println(reply);
+}
+
+void addFeed(char* tag, int code, String &reply, int i){
+  reply += "{\"id\":\"" + String(i*10+code) + "\",\"tag\":\"" + tag + "\",\"name\":";
+  if(channelName[i] == "") {
+    reply += "\"chan" + String(i) + "\"";   
+  }
+  else {
+    reply += "\"" + channelName[i] + "\"";
+  }
+  reply += "},\r\n";
+}
+
+void handleGraphGetall(){
+  return;
+  server.send(200, "ok", "{}");
 }
 
 

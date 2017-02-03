@@ -36,9 +36,9 @@ void loop()
   if(millis() >= nextCrossMs){
     GPIO.writePin(yellowLedPin,HIGH);
     ESP.wdtFeed();
-    trace(1);
+    trace(T_LOOP,1);
     samplePower(nextChannel);
-    trace(2);
+    trace(T_LOOP,2);
     GPIO.writePin(yellowLedPin,LOW); 
     nextCrossMs = lastCrossMs + 490 / int(frequency);
     nextChannel = ++nextChannel % channels;
@@ -46,10 +46,13 @@ void loop()
 
   yield();
   ESP.wdtFeed();
-  trace(3);
-  server.handleClient();
-  trace(4);
-  yield();
+  trace(T_LOOP,3);
+  if(serverAvailable){
+    server.handleClient();
+    trace(T_LOOP,4);
+    yield();
+  }
+  
 
 // ---------- If the head of the service queue is dispatchable
 //            invoke it's service function.
@@ -58,18 +61,22 @@ void loop()
     serviceBlock* thisBlock = serviceQueue;
     serviceQueue = thisBlock->next;
     ESP.wdtFeed();
-    trace(5);
+    trace(T_LOOP,5);
     thisBlock->callTime = thisBlock->service(thisBlock);
-    trace(6);
-    AddService(thisBlock); 
+    trace(T_LOOP,6);
+    if(thisBlock->callTime > 0){
+      AddService(thisBlock); 
+    }    
   }
      
   yield();
   ESP.wdtFeed();
-  trace(7);
-  server.handleClient();
-  trace(8);
-  yield();
+  if(serverAvailable){
+    trace(T_LOOP,7);
+    server.handleClient();
+    trace(T_LOOP,8);
+    yield();
+  }
 }
 
 /*********************************************************************************************************
@@ -166,10 +173,11 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   return ((uint32_t)NTPtime() + statServiceInterval);
 }
 
-void trace(uint32_t id){
+void trace(uint32_t module, int seq){
   static uint16_t traceSeq = 0;
-  id |= traceSeq++ << 16;
-  WRITE_PERI_REG(RTC_USER_MEM + 96 + (traceSeq & 0x1F), id);
+  static uint32_t entry;
+  entry = (module+seq) | (traceSeq++ << 16);
+  WRITE_PERI_REG(RTC_USER_MEM + 96 + (traceSeq & 0x1F), entry);
 }
 
 void printTrace(void){
