@@ -26,6 +26,8 @@ SOFTWARE.
 #define IOTAWATT_VERSION "1.2"
 
 #include <SPI.h>
+#include <Wire.h>
+#include <RTClib.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 #include <WiFiClient.h>
@@ -38,6 +40,8 @@ SOFTWARE.
 #include <IotaLog.h>
 #include <ArduinoJson.h>
 #include <math.h>
+
+RTC_PCF8523 rtc;
 
 WiFiClientSecure WifiClientSecure;
 WiFiClient WifiClient;
@@ -55,10 +59,13 @@ String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
 #define pin_CS_ADC0 0                       
 #define pin_CS_ADC1 2
 #define pin_CS_SDcard 15
-#define pin_CS_GPIO 4
+#define pin_CS_GPIO 16
 uint8_t ADC_selectPin[2] = {pin_CS_ADC0, pin_CS_ADC1};  // indexable reference
 
 const int chipSelect = pin_CS_SDcard;       // for the benefit of SD.h
+
+#define pin_I2C_SDA 4
+#define pin_I2C_SCL 5
 
 //*************************************************************************************
 // Following are not the ESP8266 pins.
@@ -219,6 +226,7 @@ uint32_t dataLogInterval = 5;                   // Interval (sec) to invoke data
 uint32_t eMonCMSInterval = 10;                  // Interval (sec) to invoke eMonCMS 
 uint32_t statServiceInterval = 5;
 #define SEVENTY_YEAR_SECONDS 2208988800UL
+const char daysOfTheWeek[7][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 // *********************** eMonCMS configuration stuff *************************
 

@@ -14,6 +14,9 @@ void setup()
     Vchannel[i] = 0;
   }
 
+  // Wire.pins(pin_I2C_SDA, pin_I2C_SCL);
+  Wire.pins(4,5);
+
   //*************************************** Start Serial connection (if any)***************************
   
   Serial.begin(115200);
@@ -93,19 +96,37 @@ void setup()
   wifiManager.autoConnect(deviceName.c_str());
 
   msgLog("WiFi connected, IP address: ", formatIP(WiFi.localIP()));
+
+  initTime();
+
+    DateTime now = rtc.now();
+    
+    Serial.print(now.year(), DEC);
+    Serial.print('/');
+    Serial.print(now.month(), DEC);
+    Serial.print('/');
+    Serial.print(now.day(), DEC);
+    Serial.print(" (");
+    Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
+    Serial.print(") ");
+    Serial.print(now.hour(), DEC);
+    Serial.print(':');
+    Serial.print(now.minute(), DEC);
+    Serial.print(':');
+    Serial.print(now.second(), DEC);
+    Serial.println();
+    
+    Serial.print(" since midnight 1/1/1970 = ");
+    Serial.print(UnixTime());
+    Serial.print("s = ");
+    Serial.print(UnixTime() / 86400L);
+    Serial.println("d");
+    
   
-  setNTPtime();
-  if(timeRefNTP == 0){
-    msgLog("Failed to retrieve NTP time, retrying.");
-    while(!setNTPtime());
-    msgLog("NTP time successfully retrieved.");  
-  }
-  
-  msgLog("UTC time:", formatHMS(NTPtime()));
   msgLog("Unix time:", UnixTime());
   NewService(timeSync);
-  programStartTime = NTPtime();
-  
+  programStartTime = UnixTime();
+
  //*************************************** Measure and report Aref voltage****************************
 
   msgLog("Aref=", String(getAref(),3));

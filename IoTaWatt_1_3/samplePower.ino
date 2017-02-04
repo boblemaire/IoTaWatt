@@ -181,10 +181,8 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
     if(readADC(Ichan) < 4) return false;                // channel is unplugged (grounded)
 
     rawV = readADC(Vchan) - offsetV;
-    
     samples = 0;
-    os_intr_lock();                                     // disable interrupts
-                    
+                        
     do {                                     
      
       // Hard coded equivilent of:
@@ -281,6 +279,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
             crossGuard = crossGuardReset;                  // No more crosses for awhile
             if(crossCount == 1){
               trace(T_SAMP,4);
+              os_intr_lock();                              // disable interrupts
               firstCrossUs = micros();
             }
             else if(crossCount == crossLimit) {

@@ -1,3 +1,40 @@
+  void initTime() {
+    uint32_t _NTPtime;
+
+    rtc.begin();
+    
+    if(! rtc.initialized()){
+      msgLog("Real Time Clock not initialized - Setting time from NTP server.");
+      _NTPtime = getNTPtime();
+      if(! _NTPtime){
+        msgLog("Failed to retrieve NTP time, retrying.");
+        while(! _NTPtime){
+          _NTPtime = getNTPtime();
+        }
+        msgLog("NTP time successfully retrieved.");
+        rtc.adjust((uint32_t)_NTPtime - SEVENTY_YEAR_SECONDS);  
+      }
+      return;
+    }
+
+    msgLog("Real Time Clock is running, comparing to NTP server.");
+    _NTPtime = getNTPtime();
+    if(! _NTPtime){
+      msgLog("Failed to retrieve time from NTP server, using RTC time.");
+      timeRefNTP = rtc.now().unixtime() + SEVENTY_YEAR_SECONDS;
+      timeRefMs = millis();
+      return;   
+    }
+    uint32_t timeDiff = rtc.now().unixtime() - UnixTime();
+    if(timeDiff){
+      msgLog("Real Time Clock vs NTP server difference: ", String(timeDiff));
+      msgLog("Adjusting Real Time Clock to NTP server time.");
+      rtc.adjust(UnixTime());
+      return;
+    } 
+  }
+  
+  
   /***************************************************************************************************
    * setNTPtime() - returns uint32_t bimary count of seconds since 1/1/1900 - UTC aka GMT.
    * This is the fundamental time standard used by the program. The value is obtained from one of
@@ -13,7 +50,7 @@
    * 
    * Unix time is NTP time minus 70 years worth of seconds (seconds since 1/1/70 when the world began). 
    **************************************************************************************************/ 
-  uint32_t setNTPtime() {
+  uint32_t getNTPtime() {
     WiFiUDP udp;
     const char* ntpServerName = "time.nist.gov";
     const int NTP_PACKET_SIZE = 48;
@@ -75,9 +112,18 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock){
     msgLog("timeSync service started.");
     firstCall = false;
   }
-  timeRefNTP = NTPtime();                 
-  timeRefMs = millis();
-  if(!setNTPtime()) msgLog("setNTPtime failed");
+  uint32_t _NTPtime = getNTPtime();
+  if(! _NTPtime){
+    msgLog("Time Synch service failed to get NTP time.");
+  } else {
+    timeRefNTP = _NTPtime;                 
+    timeRefMs = millis();
+    uint32_t timeDiff = UnixTime() - rtc.now().unixtime();
+    if(timeDiff){
+      msgLog("Time Synch Service adjusting RTC by ", String(timeDiff));
+      rtc.adjust(UnixTime());
+    }
+  }
   return ((uint32_t) timeSynchInterval * ( 1 + NTPtime() / timeSynchInterval));
 }
 
