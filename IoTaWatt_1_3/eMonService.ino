@@ -157,6 +157,8 @@ trace(T_EMON,3);
         return ((uint32_t)NTPtime() + 5);
       }
       else {
+        req = "";
+        currentReqEntries = 0;  
         state = post;
         return ((uint32_t)NTPtime() + 1);
       }
