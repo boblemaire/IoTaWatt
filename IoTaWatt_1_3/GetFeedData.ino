@@ -8,7 +8,7 @@
  *  To accomplish that without modifying ESP8266WebServer, we schedule this SERVICE and
  *  block subsequent calls to server.handleClient() until the request is satisfied, at which time
  *  this SERVICE returns with code 0 to cause it's serviceBlock to be deleted.  When a new /feed/data
- *  request comes in, the web server handler will reshedule this SERVICE with AddService.
+ *  request comes in, the web server handler will reshedule this SERVICE with NewService.
  * 
  **************************************************************************************************/
 
@@ -150,13 +150,9 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       replyData.setCharAt(replyData.length()-1,']');
       sendChunk(replyData); 
       yield();
-      sendChunk(String(""));
-      trace(T_GFD,4);
-      yield();
-      server.send(200, "application/json", replyData);
-      yield();
       replyData = "";
-      trace(T_GFD,5);
+      sendChunk(replyData); 
+      trace(T_GFD,4);
       serverAvailable = true;
       state = Setup;
       return 0;                                       // Done for now, return without scheduling.
