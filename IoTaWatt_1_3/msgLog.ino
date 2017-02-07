@@ -7,7 +7,7 @@
  * There's a better way to accomodate the various types, but this works for now.
  ****************************************************************************************/
 
-void msgLog(String &message){msgLog((char*)message.c_str());}
+void msgLog(String message){msgLog((char*)message.c_str(), "", "");}
 void msgLog(char* segment1, String segment2){msgLog(segment1,(char*)segment2.c_str());}
 void msgLog(char* segment1, uint32_t segment2){msgLog(segment1, String(segment2));}
 void msgLog(char* segment1){msgLog(segment1, "", "");}

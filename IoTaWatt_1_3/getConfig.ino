@@ -35,8 +35,12 @@ boolean getConfig(void)
   if(deviceName.length() == 0) deviceName = "IoTaWatt";
   deviceName.toCharArray(host,9);
   host[8] = 0;
-  msgLog("device name: ", deviceName);
-  msgLog("version:", Config["device"]["version"].asString());
+  String msg = "device name: " + deviceName + ", version: " + Config["device"]["version"].asString();
+  msgLog(msg);
+
+  if(Config["device"]["version"].asString()[0] >= '2'){
+    hasRTC = true;
+  }
   
   //************************************************ Configure channels ***************************
   for(int i=0; i<channels; i++) channelType[i] = channelTypeUndefined;
@@ -69,18 +73,20 @@ boolean getConfig(void)
 
   if(serverType.equals("emoncms"))
   {
-    msgLog("cloud server is: eMonCMS");
-     eMonURL = Config["server"]["url"].asString();
-    msgLog("url: ",  eMonURL);
+    msg = "server is: eMonCMS";
+    eMonURL = Config["server"]["url"].asString();
+    msg += ", url: " + eMonURL;
     apiKey = Config["server"]["apikey"].asString();
     node = Config["server"]["node"];
-    msgLog("node: ", node);
+    msg += ", node: " + String(node);
     eMonCMSInterval = Config["server"]["postInterval"].as<int>();
-    msgLog("post interval: ", eMonCMSInterval);
+    msg += ", post interval: " + String(eMonCMSInterval);
     String secure = Config["server"]["secure"].asString();
     if(secure == "secure"){
       eMonSecure = true;
+      msg += ", HTTPS protocol";
     }
+    msgLog(msg);
     NewService(eMonService);
   }
   else

@@ -15,6 +15,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   enum   states {initialize, post, resend};
   static states state = initialize;
   static IotaLogRecord* logRecord = new IotaLogRecord;
+  static File eMonPostLog;
   static double accum1Then [channels];
   static uint32_t UnixLastPost = UnixTime();
   static uint32_t UnixNextPost = UnixTime();
@@ -23,7 +24,10 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   static uint32_t currentReqUnixtime = 0;
   static int  currentReqEntries = 0; 
   static uint32_t postTime = millis();
-
+  struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
+  static SDbuffer* buf = new SDbuffer;
+  String eMonPostLogFile = "/iotawatt/emonlog.log";
+    
   trace(T_EMON,0);    
   switch(state){
 
@@ -35,15 +39,32 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       if(!iotaLog.isOpen()){
         return ((uint32_t) NTPtime() + 5);
       }
-      msgLog("EmonCMS service started.");
+      msgLog("EmonService: started.");
+     
+      if(!eMonPostLog){
+        eMonPostLog = SD.open(eMonPostLogFile,FILE_WRITE);
+      }
+            
+      if(eMonPostLog){
+        if(eMonPostLog.size() == 0){
+          buf->data = iotaLog.lastKey();
+          eMonPostLog.write((byte*)buf,4);
+          eMonPostLog.flush();
+          msgLog("EmonService: Emonlog file created.");
+        }
+        eMonPostLog.seek(eMonPostLog.size()-4);
+        eMonPostLog.read((byte*)buf,4);
+        logRecord->UNIXtime = buf->data;
+        msgLog("EmonService: Start posting from ", String(logRecord->UNIXtime));
+      }
+      else {
+        logRecord->UNIXtime = iotaLog.lastKey();
+      }
+      
 
           // Get the last record in the log.
           // Posting will begin with the next log entry after this one,
-          // so in the future if there is a way to remember the last
-          // that was posted (RTC memory or maybe use the SPIFFS) then 
-          // that record should be loaded here.
-          
-      logRecord->UNIXtime = iotaLog.lastKey();
+            
       iotaLog.readKey(logRecord);
 
           // Save the value*hrs to date, and logHours to date
@@ -143,10 +164,12 @@ trace(T_EMON,3);
       Serial.print(millis()-sendTime);
       Serial.print(" ");
       Serial.println(req);
+      buf->data = UnixLastPost;
+      eMonPostLog.write((byte*)buf,4);
+      eMonPostLog.flush();
       req = "";
       currentReqEntries = 0;    
       state = post;
-      
       return 1;
     }
 
@@ -157,6 +180,9 @@ trace(T_EMON,3);
         return ((uint32_t)NTPtime() + 5);
       }
       else {
+        buf->data = UnixLastPost;
+        eMonPostLog.write((byte*)buf,4);
+        eMonPostLog.flush();
         req = "";
         currentReqEntries = 0;  
         state = post;

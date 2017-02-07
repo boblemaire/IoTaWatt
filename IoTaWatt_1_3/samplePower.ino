@@ -167,7 +167,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
   int16_t crossGuardReset = 2 + phaseMax * samplesPerCycle / 360;
 
   uint32_t startMs = millis();
-  uint32_t timeoutMs = 1 + ((cycles * 1000) + 500) / frequency;
+  uint32_t timeoutMs = 600 / frequency;
   uint32_t firstCrossUs;
   uint32_t lastCrossUs;
 
@@ -218,7 +218,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
               if(samples >= maxSamples){                    // AC must be shut down
                 trace(T_SAMP,0);
                 GPOS = ADC_IselectMask;                     // shortcut out
-                os_intr_unlock();
+                // os_intr_unlock();
                 return false;
               }
             }
@@ -258,7 +258,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           if((uint32_t)(millis()-startMs)>timeoutMs){                         // Something is very wrong
             trace(T_SAMP,2);
             GPOS = ADC_VselectMask;                                           // shortcut back
-            os_intr_unlock();
+            // os_intr_unlock();
             return false;
           }
           
@@ -275,11 +275,12 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
 
           if(((rawV ^ lastV) & crossGuard) >> 15) {        // If crossed unambiguously (one but not both Vs negative and crossGuard negative 
             ESP.wdtFeed();                                 // Red meat for the silicon dog
+            WDT_FEED();
+            startMs = millis();
             crossCount++;                                  // Count this crossing
             crossGuard = crossGuardReset;                  // No more crosses for awhile
             if(crossCount == 1){
               trace(T_SAMP,4);
-              os_intr_lock();                              // disable interrupts
               firstCrossUs = micros();
             }
             else if(crossCount == crossLimit) {
@@ -293,10 +294,8 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
     
     *VsamplePtr = (lastV + rawV) / 2;                                         // Loose end
     trace(T_SAMP,7);
-    ESP.wdtFeed();
+    yield();
     trace(T_SAMP,8);
-    os_intr_unlock();                                                         // OK to interrupt now   
-    trace(T_SAMP,9);
     Aref = getAref();
 
     // sumIsq was accumulated in loop at no cost during SPI transfers.

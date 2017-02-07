@@ -12,12 +12,10 @@ void loop()
   // ------- If AC zero crossing approaching, go sample a channel.
 
   if(millis() >= nextCrossMs){
-    GPIO.writePin(yellowLedPin,HIGH);
     ESP.wdtFeed();
     trace(T_LOOP,1);
     samplePower(nextChannel);
     trace(T_LOOP,2);
-    GPIO.writePin(yellowLedPin,LOW); 
     nextCrossMs = lastCrossMs + 490 / int(frequency);
     nextChannel = ++nextChannel % channels;
   }
@@ -144,6 +142,12 @@ void AddService(struct serviceBlock* newBlock){
 uint32_t statService(struct serviceBlock* _serviceBlock) {
   static uint32_t timeThen = millis() - 1;            // Don't want divide by zero on first call
   uint32_t timeNow = millis();
+  static boolean started = false;
+
+  if(!started){
+    msgLog("statService: started.");
+    started = true;
+  }
 
   if(float(cycleSamples) > 0){
     cycleSampleRate = cycleSampleRate * .75 + .25 * float(cycleSamples * 1000) / float((uint32_t)(timeNow - timeThen));
@@ -179,7 +183,7 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
  *  
  *  invoking trace() puts a 16 bit entry with highbyte=module and lowbyte=seq into the 
  *  RTC_USER_MEM area.  After a restart, the 32 most recent entries can be printed, oldest to most rent, 
- *  using printTrace.
+ *  using logTrace.
  *************************************************************************************************/
 
 void trace(uint32_t module, int seq){
@@ -191,12 +195,12 @@ void trace(uint32_t module, int seq){
 
 void printTrace(void){
   uint16_t _counter = READ_PERI_REG(RTC_USER_MEM + 96) >> 16;
-  Serial.println(formatHex(_counter,4));
+  Serial.println(formatHex(_counter));
   int i=1;
   while(((uint16_t)++_counter) == (READ_PERI_REG(RTC_USER_MEM + 96 + (i%32)) >> 16)) i++;
   Serial.println(i);
   for(int j=0; j<32; j++){
-    Serial.print(formatHex(READ_PERI_REG(RTC_USER_MEM + 96 + ((j+i)%32)), 4));
+    Serial.print(formatHex(READ_PERI_REG(RTC_USER_MEM + 96 + ((j+i)%32))));
     Serial.println();
   }
 }

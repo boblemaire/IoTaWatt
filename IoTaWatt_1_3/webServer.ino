@@ -218,9 +218,7 @@ void handleNotFound(){
     return;
   }
   if(serverURI.startsWith("/feed/data")){
-    getFeedDataHandler->callTime = 1;
-    AddService(getFeedDataHandler);
-    // handleGetFeedData();
+    NewService(handleGetFeedData);
     return;
   }
   if(hasSD && loadFromSdCard(server.uri())) return;

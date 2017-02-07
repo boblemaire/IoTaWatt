@@ -1,8 +1,21 @@
   void initTime() {
     uint32_t _NTPtime;
 
+    if(!hasRTC){
+      msgLog("Setting time from NTP server.");
+      _NTPtime = getNTPtime();
+      if(! _NTPtime){
+        msgLog("Failed to retrieve NTP time, retrying.");
+        while(! _NTPtime){
+          _NTPtime = getNTPtime();
+        }
+      }
+      return;
+    }
+
+    Wire.pins(pin_I2C_SDA, pin_I2C_SCL);
     rtc.begin();
-    
+
     if(! rtc.initialized()){
       msgLog("Real Time Clock not initialized - Setting time from NTP server.");
       _NTPtime = getNTPtime();
@@ -11,9 +24,9 @@
         while(! _NTPtime){
           _NTPtime = getNTPtime();
         }
-        msgLog("NTP time successfully retrieved.");
-        rtc.adjust((uint32_t)_NTPtime - SEVENTY_YEAR_SECONDS);  
       }
+      msgLog("NTP time successfully retrieved.");
+      rtc.adjust((uint32_t)_NTPtime - SEVENTY_YEAR_SECONDS);  
       return;
     }
 
@@ -109,19 +122,21 @@ uint32_t UnixTime() {
 uint32_t timeSync(struct serviceBlock* _serviceBlock){
   static boolean firstCall = true;
   if(firstCall){
-    msgLog("timeSync service started.");
+    msgLog("timeSync: service started.");
     firstCall = false;
   }
   uint32_t _NTPtime = getNTPtime();
   if(! _NTPtime){
-    msgLog("Time Synch service failed to get NTP time.");
+    msgLog("timeSynch: failed to get NTP time.");
   } else {
     timeRefNTP = _NTPtime;                 
     timeRefMs = millis();
-    uint32_t timeDiff = UnixTime() - rtc.now().unixtime();
-    if(timeDiff){
-      msgLog("Time Synch Service adjusting RTC by ", String(timeDiff));
-      rtc.adjust(UnixTime());
+    if(hasRTC){
+      int32_t timeDiff = UnixTime() - rtc.now().unixtime();
+      if(timeDiff){
+        msgLog("timeSynch: adjusting RTC by ", String(timeDiff));
+        rtc.adjust(UnixTime());
+      }
     }
   }
   return ((uint32_t) timeSynchInterval * ( 1 + NTPtime() / timeSynchInterval));

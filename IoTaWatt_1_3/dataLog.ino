@@ -39,16 +39,17 @@
         accum2Then[i] = buckets[i].accum2;
       }
       timeThen = timeNow;
+      msgLog("dataLog: service started.");
       
       if(iotaLog.begin((char*)IotaLogFile.c_str())){
-        msgLog("Log file open failed.");
+        msgLog("dataLog: Log file open failed.");
         dropDead();
       }
       
       if(iotaLog.firstKey() != 0){
         logRecord->UNIXtime = iotaLog.lastKey();
         iotaLog.readKey(logRecord);
-        msgLog("Last log entry UNIXtime:", iotaLog.lastKey());
+        msgLog("dataLog: Last log entry:", iotaLog.lastKey());
       }
 
       // Check last log record for NaN and reset to zero.
@@ -61,8 +62,7 @@
         if(logRecord->channel[i].accum1 != logRecord->channel[i].accum1) logRecord->channel[i].accum1 = 0;
         if(logRecord->channel[i].accum2 != logRecord->channel[i].accum2) logRecord->channel[i].accum2 = 0;
       }
-    
-      msgLog("dataLog service started.");
+      
       state = logData;
       break;
     }
