@@ -1,3 +1,17 @@
+/***************************************************************************************************
+ *  GetFeedData SERVICE.
+ *  
+ *  The web server does a pretty good job of handling file downloads and uploads asynchronously, 
+ *  but assumes that any callbacks to new handlers get the job completely done befor returning. 
+ *  The GET /feed/data/ request takes a long time and generates a lot of data so it needs to 
+ *  run as a SERVICE so that sampling can continue while it works on providing the data.  
+ *  To accomplish that without modifying ESP8266WebServer, we schedule this SERVICE and
+ *  block subsequent calls to server.handleClient() until the request is satisfied, at which time
+ *  this SERVICE returns with code 0 to cause it's serviceBlock to be deleted.  When a new /feed/data
+ *  request comes in, the web server handler will reshedule this SERVICE with AddService.
+ * 
+ **************************************************************************************************/
+
 uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   // trace T_GFD
   enum   states {Initialize, Setup, process};
@@ -21,22 +35,21 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
 
   switch (state) {
     case Initialize: {
-      getFeedDataHandler = _serviceBlock;
       state = Setup;
       return 0;
     }
   
     case Setup: {
       trace(T_GFD,0);
-      Serial.print(server.arg("id"));
-      Serial.print(" ");
-      Serial.print(server.arg("start"));
-      Serial.print(" ");
-      Serial.print(server.arg("end"));
-      Serial.print(" ");
-      Serial.print(server.arg("interval"));
-      Serial.print(" ");
-      Serial.println();
+//      Serial.print(server.arg("id"));
+//      Serial.print(" ");
+//      Serial.print(server.arg("start"));
+//      Serial.print(" ");
+//      Serial.print(server.arg("end"));
+//      Serial.print(" ");
+//      Serial.print(server.arg("interval"));
+//      Serial.print(" ");
+//      Serial.println();
   
       channel = server.arg("id").toInt() % 1000;
       queryType = channel % 10;
@@ -146,7 +159,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       trace(T_GFD,5);
       serverAvailable = true;
       state = Setup;
-      return 0;
+      return 0;                                       // Done for now, return without scheduling.
     }
   }
 }
@@ -158,7 +171,6 @@ void sendChunk(String replyData){
   chunkHeader[0] = hexDigit[_len/256];
   chunkHeader[1] = hexDigit[(_len/16) % 16];
   chunkHeader[2] = hexDigit[_len % 16];
-  Serial.print(String(chunkHeader));
   server.sendContent(String(chunkHeader));
   replyData += "\r\n";
   server.sendContent(replyData);

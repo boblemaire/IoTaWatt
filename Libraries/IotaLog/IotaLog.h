@@ -44,6 +44,7 @@ class IotaLog
 		uint32_t firstKey();
 		uint32_t lastKey();
 		uint32_t fileSize();
+		int searchReads();
 			
   private:
   
@@ -70,9 +71,15 @@ class IotaLog
 	uint32_t _lastKey=0;
 	uint32_t _fileSize = 0;
 	uint32_t _entries = 0;
+	uint32_t _searchReads = 0;
+	
+	uint32_t _lastReadKey = 0;
+	uint32_t _lastReadSerial = 0;
+	uint32_t _interval = 5;
+	uint32_t _sigKey = 10000000;
 	
 	int create(char* /*filepath */, uint32_t /* entry length */);
-	void search(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+	uint32_t search(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
 	
 };
 

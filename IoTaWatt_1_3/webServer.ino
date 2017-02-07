@@ -216,8 +216,7 @@ void handleNotFound(){
     return;
   }
   if(server.uri().startsWith("/feed/data")){
-    getFeedDataHandler->callTime = 1;
-    AddService(getFeedDataHandler);
+    NewService(handleGetFeedData); 
     // handleGetFeedData();
     return;
   }

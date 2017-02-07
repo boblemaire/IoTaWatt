@@ -41,6 +41,8 @@
 		else {
 			IotaFile.read(record, header.entryLength);
 			_firstKey = record->UNIXtime;
+			_lastReadKey = record->UNIXtime;
+			_lastReadSerial = record->serial;
 			IotaFile.seek(_fileSize-header.entryLength);
 			IotaFile.read(record, header.entryLength);
 			_lastKey = record->UNIXtime;
@@ -74,6 +76,7 @@
 	}
 	
 	int IotaLog::readKey (IotaLogRecord* callerRecord){
+		_searchReads = 0;
 		if(_entries == 0)return 1;
 		_callerRecord = callerRecord;
 		uint32_t key = _callerRecord->UNIXtime;
@@ -81,53 +84,74 @@
 		uint32_t lowRec = 0;
 		uint32_t highKey = _lastKey;
 		uint32_t highRec = _entries-1;
+		uint32_t thisRec = 0;
+				
 		if(key < _firstKey || key > _lastKey)return 2;
 		if(_fileState == fileClosed){
 			IotaFile = SD.open(fileName, FILE_READ);
 			_fileState = openRead;
 		}
 		
-		search(key, lowKey, lowRec, highKey, highRec);
-		// IotaFile.close();
+		if(key == _lastReadKey){
+			thisRec = _lastReadSerial;
+		} 
+		else if(key < _lastReadKey){
+			thisRec = search(key, lowKey, lowRec, _lastReadKey, _lastReadSerial);
+		}
+		else {
+			IotaFile.seek(header.headerLength + header.entryLength * (_lastReadSerial + 1));
+			IotaFile.read(_callerRecord, 4);
+			_searchReads++;
+			if(key <_callerRecord->UNIXtime) {
+				thisRec = _lastReadSerial;
+			}
+			else {
+				_lastReadSerial++;
+				_lastReadKey = callerRecord->UNIXtime;
+				thisRec = search(key, _lastReadKey, _lastReadSerial, highKey, highRec);
+			}
+		}
+		IotaFile.seek(header.headerLength + header.entryLength * thisRec);
+		IotaFile.read(_callerRecord, header.entryLength);
+		_lastReadKey = _callerRecord->UNIXtime;
+		_lastReadSerial = _callerRecord->serial;
 		return 0;
 	}
 	
 	int IotaLog::readNext (IotaLogRecord* callerRecord){
 		if(callerRecord->serial >= (_entries - 1))return 1;
 		IotaFile.seek(header.headerLength + header.entryLength * (callerRecord->serial+1));
-		IotaFile.read(_callerRecord, header.entryLength);
+		IotaFile.read(callerRecord, header.entryLength);
 		return 0;
 	}
 		
-	void IotaLog::search(uint32_t key, uint32_t lowKey, uint32_t lowRec,
+	uint32_t IotaLog::search(uint32_t key, uint32_t lowKey, uint32_t lowRec,
 						uint32_t highKey, uint32_t highRec){
-
-		if(highRec - lowRec == 1){
-			if(key == _callerRecord->UNIXtime)return;
-			if(key == highKey){
-				IotaFile.seek(header.headerLength + header.entryLength * highRec);
-			}
-			else {
-				IotaFile.seek(header.headerLength + header.entryLength * lowRec);
-			}
-			IotaFile.read(_callerRecord, header.entryLength);
-			return;
-		}					
-		uint32_t thisRec = lowRec + 0.5 + ((float(key - lowKey) / float(highKey - lowKey)) * float(highRec - lowRec));
-		if(thisRec == lowRec)thisRec++;
-		if(thisRec == highRec)thisRec--;
+		
+		if(key == highKey) return highRec;
+		if(key == lowKey)return lowKey;		
+		if(highRec - lowRec == 1) return lowRec;
+			
+		uint32_t thisRec = (lowRec + highRec) / 2;
+		uint32_t realityRec = lowRec + (key - lowKey) / _interval;
+		
+		if(thisRec > realityRec) thisRec = realityRec;
+		if(thisRec <= lowRec)thisRec = lowRec + 1;
+		if(thisRec >= highRec)thisRec = highRec - 1;
 		IotaFile.seek(header.headerLength + header.entryLength * thisRec);
-		IotaFile.read(_callerRecord, header.entryLength);
+		IotaFile.read(_callerRecord, 4);
+		_searchReads++;
 		uint32_t thisKey = _callerRecord->UNIXtime;
-		if(key == thisKey) return;
+		if(key == thisKey) return thisRec;
 		if(key > thisKey){
-			search(key, thisKey, thisRec, highKey, highRec);
+			return search(key, thisKey, thisRec, highKey, highRec);
 		} 
 		else {
-			search(key, lowKey, lowRec, thisKey, thisRec);
-		}
-		return;
+			return search(key, lowKey, lowRec, thisKey, thisRec);
+		}	
 	}
+	
+	int IotaLog::searchReads(){return _searchReads;}
 						
 	
 	int IotaLog::end(){
