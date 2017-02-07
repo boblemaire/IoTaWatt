@@ -1,45 +1,20 @@
 
 
-### IotaWatt 1.2
+### IotaWatt 1.3
 
-IotaWatt is an open-hardware/open-source project to produce an accurate, low-cost, multi-channel, and easy to use electric power monitor.  It's based on the ESP8266 IoT platform using MCP3208 12 bit ADCs to sample voltage and current at very high sample rates. The version described here with schematics and PCB layout have been fabricated and several are running well in residential installations.
+IotaWatt is an open-hardware/open-source project to produce an accurate, low-cost, multi-channel, and easy to use electric power monitor.  It's based on the ESP8266 IoT platform using MCP3208 12 bit ADCs to sample voltage and current at high sample rates. 
 
+One version described here with schematics and PCB layout has been fabricated and several are running well in residential installations.
 The board supports either version 0.9 or 1.0 of the NodeMCU open development ESP8266 board running the Arduino/ESP8266 SDK platform.
 
-This release represents considerable development from the previous version. Among the most significant:
+The newer PCB and schematic set represents the next iteration of development. It is based on the Adafruit "feather" series and uses their ESP8266 feather board stacked on their feather datalogger board with real-time-clock and SDcard.  The IotaWatt ADC board described in this git's Eagle files stacks under the Adafruit boards.  Each ADC board has up to seven inputs, and up to three can be stacked for a total of 7, 14 or 21 input channels.
 
-   - A wifi server that supports a JS application on the local Wifi network.  The application provdes the ability to configure the voltage and current channels of the device, as well as to specify an internet service to upload data. Currently eMonCMS is supported, with an architecture that allows for easy addition of others.
+The software samples input channels at a rate of 35-40 channels per second, and records voltage(V), frequency(Hz), power(Watts), energy(kWh) and power-factor to the local SD card every five seconds.  The eMonCMS browser based graphing utility can be used on the local WiFi network to view the data.
 
+In addition, the data can be uploaded to the eMonCMS.org server at any interval that is a multiple of 5 seconds. In the event of WiFi or internet service disruptions, the IotaWatt will bulk update eMonCMS.org when service is restored.
 
-   - On board Sdcard datalogging and message logging.  The device logs all data to the Sdcard at 5 second intervals.  If connectivity to the internet server is lost, the device will catch up when reconnected.  The architecture will support adding a query facility through the web server.
+Any input channel may be used to monitor either voltage or current (watts), however each IotaWatt ADC "feather" board has one auxiliary 5mm barrel plug with associated circuitry that is "voltage ready".  With three ADC boards, the voltage of all three legs of a three-phase power installation can be monitored to get true power on all three legs.
 
-   - Re-architected core makes best use of time by running services to datalog, internet post, and web serve in between sampling power data.  The scheduler concentrates on sampling and does these other functions largely during the several milliseconds available in the half cycle between sampling.  The net result is that the device does everything while averaging more than 60% of its time sampling electricity use.
-
-   - Supports voltage input on any channel, and voltage reference for any power channel can be to any voltage channel.  This opens the door for three phase monitoring as well as more accurate monitoring of US single phase services by monitoring the voltage on both legs.  Also makes monitoring all circuits in a 120/208 “two phase” panel possible.
-
-While this is a major release that does run well, there are as yet many more improvements in progress or on the to-do list.  
-
-- The board will be simplified to elimiminate several components.
-- The form factor will change to allow stacked input “shields” that will allow stereo jack - input or screw terminals – or both by stacking different input modumles.
-- Support for 33mv CTs will be available on a stackable 1.2V input board that can be - combined with the current 3.2V offering.
-- Support for more inputs.  At least 21 in total.
-
-In addition to the hardware circuit described here, to run the system you would need:
-
-- ESP8266 nodeMCU 0.9 or 1.0
-- 8GB or better Sdcard with the contents of the Sdcard library copied to the root directory.
-
-To run:
-
-- Boot the device. 
-- Connect via the ESP8266 wifi-manager protocol.
-- Run the configuration utility at iotawatt.local
-- Commit and restart.
-
-You will need to calibrate the AC adapter to get accurate results.  There is a calibration procedure in the configuration utility to do that using a decent line voltage reference.
-
-The latest PCB layout includes jumpers to allow selecting 3.2v or 5v voltage to the ADCs.  Previous versions have all used 5v, but as it turns out, they run fine at 3.2v.  This eliminates the need for the jumper on the MISO SPI line to reduce the voltage to 3.2v.  Be aware the jumper is needed if selecting 5v.
-
-The device currently takes two or three WDT (watchdog timer) resets per day.  Research is ongoing to identify the cause.  Nevertheless, the board reliably reboots and is running normal within 20 seconds, so not a critical problem.
+The ADC boards are selectable between 3.2V or 1.2V reference voltage to support either 1V type current transformers (like the popular YHDC STC013-000) or the better 33mv CTs (like the DENT CTHMC-100).  Voltage is individually selectable for each ADC in the stack, and each has a voltage reference to insure accuracy without the need for additional calibration.
 
 Thanks to contributors of other open software that have been incorporated into this project.  In particular the ArduinoJSON and SDWebServer software made a lot of this possible, not to mention the Arduino/ESP8266 project and related forums.
