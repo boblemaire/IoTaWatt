@@ -206,7 +206,6 @@ ESP8266WebServer server(80);
 static bool hasSD = false;
 File uploadFile;
 void handleNotFound();
-serviceBlock* getFeedDataHandler;
 boolean serverAvailable = true;                    // Set false when asynchronous handler active to avoid new requests
 
 // ****************************** Timing and time data *************************
