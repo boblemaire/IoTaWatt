@@ -1,27 +1,5 @@
 void loop()
 {
-
-  // -------- This calibration is a kludge. Requires an AC cord connected
-  //          while IotaWatt in isolated running on battery and communicating
-  //          via Wifi.  The utility value is that it measures the VT phase
-  //          shift very accurately.  The standard calibration procedure in
-  //          the configuration utility allows calibrating the voltage with
-  //          just a meter or other method of reading the plug voltage.
-    
-  if(calibrationMode){
-    uint32_t calStart = millis();
-    while(calibrationMode){
-      if(calibrateVT() && calibrateVT()) calibrationMode = false ;
-      yield();
-      server.handleClient();
-      yield();
-      server.handleClient();
-      if((unsigned long)(millis() - calStart) > 20000){
-        calibrationMode = false;
-      }
-    }
-  }
-
 /******************************************************************************
  * The main loop is very simple:
  *  Sample a power channel.
@@ -44,6 +22,10 @@ void loop()
     nextChannel = ++nextChannel % channels;
   }
 
+  // --------- Give web server a shout out.
+  //           serverAvailable will be false if there is a request being serviced by
+  //           an Iota SERVICE. (GetFeedData)
+
   yield();
   ESP.wdtFeed();
   trace(T_LOOP,3);
@@ -55,7 +37,7 @@ void loop()
   
 
 // ---------- If the head of the service queue is dispatchable
-//            invoke it's service function.
+//            call the SERVICE.
 
   if(serviceQueue != NULL && NTPtime() >= serviceQueue->callTime){
     serviceBlock* thisBlock = serviceQueue;
@@ -66,8 +48,12 @@ void loop()
     trace(T_LOOP,6);
     if(thisBlock->callTime > 0){
       AddService(thisBlock); 
-    }    
+    } else {
+      delete thisBlock;    
+    }
   }
+
+// ----------- Another shout out to the Web 
      
   yield();
   ESP.wdtFeed();
@@ -78,6 +64,12 @@ void loop()
     yield();
   }
 }
+
+/***************************** End of main Loop ******************************************************/
+
+
+//                                          - * -
+
 
 /*********************************************************************************************************
  * Scheduler/Dispatcher support functions.
@@ -97,10 +89,12 @@ void loop()
  * This mechanism schedules at a resolution of one second, and dispatches during the optimal time period
  * between AC cycles.  To avoid context and synchonization issues, each service is coded as a state-machine.
  * They must be well behaved and should try to run for less than a few milliseconds. Although that isn't
- * always possible.
+ * always possible and doesn't do any real harm if they run over - just reduces the sampling frequency a bit.
  * 
- * Services return the UNIXtime of the next requested dispatch.  If the requested time is in the past 
- * (includes 0), the service is requeued at the current time.  
+ * Services return the UNIXtime of the next requested dispatch.  If the requested time is in the past, 
+ * the service is requeued at the current time, so if a service just wants to relinquish but reschedule 
+ * for the next available opportunity, just return 1.  If a service returns zero, it's service block will
+ * be deleted.  To reschedule, AddService would have to be called to create a new serviceBlock.
  * 
  * The schedule itself is kept as an ordered list of control blocks in ascending order of time + priority.
  * Loop simply invokes the service currently at the beginning of the list.
@@ -137,6 +131,8 @@ void AddService(struct serviceBlock* newBlock){
   }
 }
 
+
+
 /******************************************************************************************************** 
  * All of the other SERVICEs that harvest values from the main "buckets" do so for their own selfish 
  * purposes, and have no global scope to share with others. This simple service maintains periodic
@@ -172,6 +168,19 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   if(statServiceInterval < 10)statServiceInterval++;
   return ((uint32_t)NTPtime() + statServiceInterval);
 }
+
+
+/************************************************************************************************
+ *  Program Trace Routines.
+ *  
+ *  This is a real handy part of the package since there is no interactive debugger.  The idea is
+ *  to just drop breadcrumbs at key places so that in the event of an exception or wdt restart, we
+ *  can at least get some idea where it happened.
+ *  
+ *  invoking trace() puts a 16 bit entry with highbyte=module and lowbyte=seq into the 
+ *  RTC_USER_MEM area.  After a restart, the 32 most recent entries can be printed, oldest to most rent, 
+ *  using printTrace.
+ *************************************************************************************************/
 
 void trace(uint32_t module, int seq){
   static uint16_t traceSeq = 0;

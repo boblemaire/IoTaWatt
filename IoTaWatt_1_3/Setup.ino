@@ -155,8 +155,7 @@ void setup()
   msgLog("HTTP server started");
 
  //*************************************** Start the logging services *********************************
-
-  NewService(handleGetFeedData);    
+   
   NewService(dataLog);
   NewService(statService);
   ESP.wdtEnable(WDTO_2S);

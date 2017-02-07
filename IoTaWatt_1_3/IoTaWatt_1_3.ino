@@ -213,7 +213,6 @@ ESP8266WebServer server(80);
 static bool hasSD = false;
 File uploadFile;
 void handleNotFound();
-serviceBlock* getFeedDataHandler;
 boolean serverAvailable = true;                    // Set false when asynchronous handler active to avoid new requests
 
 // ****************************** Timing and time data *************************
@@ -234,6 +233,7 @@ String  eMonURL;
 String apiKey;
 int16_t node = 9;
 boolean eMonSecure = false;
+int16_t emonBulkEntries = 2;
 const char* eMonSHA1 = "A2 FB AA 81 59 E2 B5 12 10 5D 38 22 23 A7 4E 74 B0 11 7D AA";
 
 // ************************ ADC sample pairs ************************************
