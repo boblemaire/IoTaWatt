@@ -14,28 +14,18 @@ void setup()
     Vchannel[i] = 0;
   }
 
+ 
+
   //*************************************** Start Serial connection (if any)***************************
   
   Serial.begin(115200);
   delay(250);
-  Serial.println();
+  Serial.println("\r\n******************************************* Restart *************************************");
   Serial.println("Serial Initialized");
-
+  
   msgLog("Version: ", IOTAWATT_VERSION);
 
-  String restartMessage = "Normal Power Up";
-  rst_info* _resetInfo = ESP.getResetInfoPtr();
-  if(_resetInfo->reason != REASON_DEFAULT_RST){
-           restartMessage = "Restart reason: " +
-           String(_resetInfo->reason) + " " +
-           formatHex(_resetInfo->exccause,4) + " " +
-           formatHex(_resetInfo->epc1,4) + " " +
-           formatHex(_resetInfo->epc2,4) + " " +
-           formatHex(_resetInfo->epc3,4) + " " +
-           formatHex(_resetInfo->excvaddr,4) + " " +
-           formatHex(_resetInfo->depc,4); 
-    msgLog(restartMessage);
-  }
+  
 
   //*************************************** Start SPI *************************************************
     
@@ -45,17 +35,10 @@ void setup()
   digitalWrite(pin_CS_ADC1,HIGH);
   pinMode(pin_CS_SDcard,OUTPUT);
   digitalWrite(pin_CS_SDcard,HIGH);
-  pinMode(pin_CS_GPIO,OUTPUT);
-  digitalWrite(pin_CS_GPIO,HIGH);
-  
+
   SPI.begin();
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
   msgLog("SPI started.");
-
-  //*************************************** Initialize the MCP23S17 GPIO extender *********************
-
-  GPIO.begin(pin_CS_GPIO);
-  GPIO.writePin(yellowLedPin,HIGH);
   
   //*************************************** Configure the ADCs **************************************
 
@@ -75,11 +58,10 @@ void setup()
 
   msgLog("Reset reason: ",(char*)ESP.getResetReason().c_str());
   logTrace();
-  msgLog("ChipID:",ESP.getChipId());
+  msgLog("ESP8266 ChipID:",ESP.getChipId());
 
   //************************************* Process Config file *****************************************
   
-  GPIO.writePin(yellowLedPin,LOW); 
   if(!getConfig())
   {
     msgLog("Configuration failed");
@@ -90,22 +72,16 @@ void setup()
 
   WiFiManager wifiManager;
   wifiManager.setConfigPortalTimeout(120);
+  wifiManager.setDebugOutput(false);
   wifiManager.autoConnect(deviceName.c_str());
 
   msgLog("WiFi connected, IP address: ", formatIP(WiFi.localIP()));
-  
-  setNTPtime();
-  if(timeRefNTP == 0){
-    msgLog("Failed to retrieve NTP time, retrying.");
-    while(!setNTPtime());
-    msgLog("NTP time successfully retrieved.");  
-  }
-  
-  msgLog("UTC time:", formatHMS(NTPtime()));
+
+  initTime();
   msgLog("Unix time:", UnixTime());
   NewService(timeSync);
-  programStartTime = NTPtime();
-  
+  programStartTime = UnixTime();
+
  //*************************************** Measure and report Aref voltage****************************
 
   msgLog("Aref=", String(getAref(),3));
@@ -141,27 +117,28 @@ void setup()
 }
 
 
-String formatHex(uint32_t data, int len)
+
+String formatHex(uint32_t data)
 {
-  String str;
-  byte digit;
-  while(len--){
-    digit = (data >> (len*8)) & 0xFF;
-    if (digit < 16) str += "0";
-    str += String(digit,HEX);  
+  const char* hexDigits = "0123456789ABCDEF";
+  String str = "00000000";
+  uint32_t _data = data;
+  for(int i=7; i>=0; i--){
+    str[i] = hexDigits[_data % 16];
+    _data /= 16;
   }
   return str;
 }
 
 void dropDead(void){dropDead(1);}
 void dropDead(int secs){
-  msgLog("Program halted.");GPIO.writePin(yellowLedPin,LOW);
+  msgLog("Program halted.");
   while(1){
-    GPIO.writePin(redLedPin,LOW);
+    digitalWrite(pin_RED_LED, HIGH);
     delay(secs*1000);
     yield();
     
-    GPIO.writePin(redLedPin,HIGH);
+    digitalWrite(pin_RED_LED, LOW);
     delay(secs*1000);
     yield();   
   }  

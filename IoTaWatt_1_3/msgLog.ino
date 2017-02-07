@@ -7,19 +7,22 @@
  * There's a better way to accomodate the various types, but this works for now.
  ****************************************************************************************/
 
-void msgLog(String &message){msgLog((char*)message.c_str());}
+void msgLog(String message){msgLog((char*)message.c_str(), "", "");}
 void msgLog(char* segment1, String segment2){msgLog(segment1,(char*)segment2.c_str());}
 void msgLog(char* segment1, uint32_t segment2){msgLog(segment1, String(segment2));}
 void msgLog(char* segment1){msgLog(segment1, "", "");}
 void msgLog(char* segment1, char* segment2){msgLog(segment1, segment2, "");}
 void msgLog(char* segment1, char* segment2, char* segment3){
   static File msgFile;
-  uint32_t _NTPtime = NTPtime();
   String msg = "";
+  uint32_t _NTPtime = NTPtime();
+  DateTime now = DateTime(UnixTime() + (localTimeDiff * 3600));
+  
   if(_NTPtime != 0){
-    msg += formatHMS(_NTPtime + (localTimeDiff * 3600)) + " ";
+    msg = String(now.month()) + '/' + String(now.day()) + '/' + String(now.year()%100) + ' ' + 
+          String(now.hour()) + ':' + String(now.minute()) + ':' + String(now.second()) + ' ';
   } else {
-    msg += "00:00:00 ";
+    msg += "No clock yet: ";
   }
   msg += String(segment1) + String(segment2) + String(segment3);
   Serial.println(msg);

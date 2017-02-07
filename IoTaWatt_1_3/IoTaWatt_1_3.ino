@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ***********************************************************************************/
 
-#define IOTAWATT_VERSION "1.2"
+#define IOTAWATT_VERSION "1.3"
 
 #include <SPI.h>
 #include <ESP8266WiFi.h>
@@ -38,16 +38,21 @@ SOFTWARE.
 #include <IotaLog.h>
 #include <ArduinoJson.h>
 #include <math.h>
+#include <Wire.h>
+#include <RTClib.h>
+
+RTC_PCF8523 rtc;
 
 WiFiClientSecure WifiClientSecure;
 WiFiClient WifiClient;
 const int HttpsPort = 443;
-IoTa_MCP23S17 GPIO;                         // QandD method to run the GPIO chip
+     
 IotaLog iotaLog;
 
 String deviceName = "IoTaWatt";             // can be specified in config.device.name
 String IotaLogFile = "/IotaWatt/IotaLog.log";
 String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
+String eMonPostLogFile = "/iotawatt/emonlog.log";
 
 
 // Define the hardware SPI chip select pins
@@ -55,17 +60,14 @@ String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
 #define pin_CS_ADC0 0                       
 #define pin_CS_ADC1 2
 #define pin_CS_SDcard 15
-#define pin_CS_GPIO 4
+#define pin_RED_LED 15
+#define pin_GPIO 4
 uint8_t ADC_selectPin[2] = {pin_CS_ADC0, pin_CS_ADC1};  // indexable reference
 
 const int chipSelect = pin_CS_SDcard;       // for the benefit of SD.h
 
-//*************************************************************************************
-// Following are not the ESP8266 pins.
-// They are MCP23S17 GPIO pins (0-15)
-//*************************************************************************************
-#define yellowLedPin 8                      // Connected to yellow LED
-#define redLedPin 9                         // Connected to red LED
+#define pin_I2C_SDA 4
+#define pin_I2C_SCL 5
 
 //*************************************************************************************
 
@@ -218,6 +220,8 @@ uint32_t dataLogInterval = 5;                   // Interval (sec) to invoke data
 uint32_t eMonCMSInterval = 10;                  // Interval (sec) to invoke eMonCMS 
 uint32_t statServiceInterval = 5;
 #define SEVENTY_YEAR_SECONDS 2208988800UL
+const char daysOfTheWeek[7][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+boolean hasRTC = false;
 
 // *********************** eMonCMS configuration stuff *************************
 
@@ -225,7 +229,7 @@ String  eMonURL;
 String apiKey;
 int16_t node = 9;
 boolean eMonSecure = false;
-int16_t emonBulkEntries = 2;
+int16_t emonBulkEntries = 4;
 const char* eMonSHA1 = "A2 FB AA 81 59 E2 B5 12 10 5D 38 22 23 A7 4E 74 B0 11 7D AA";
 
 // ************************ ADC sample pairs ************************************
@@ -252,5 +256,6 @@ float calibrationPhase = 0.0;
 #define T_EMON 30           // eMonService
 #define T_GFD 40            // GetFeedData
 #define T_SAMP 50           // samplePower
+
 
 

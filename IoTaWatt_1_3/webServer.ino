@@ -206,18 +206,19 @@ void printDirectory() {
 }
 
 void handleNotFound(){
+  String serverURI = server.uri();
+  if(serverURI.startsWith("//")) serverURI.remove(0,1);
   Serial.println(server.uri());
-  if(server.uri().startsWith("//feed/list")){
+  if(serverURI.startsWith("/feed/list")){
     handleGetFeedList();
     return;
   }
-  if(server.uri() == "/graph/getall"){
+  if(serverURI == "/graph/getall"){
     handleGraphGetall();
     return;
   }
-  if(server.uri().startsWith("/feed/data")){
-    NewService(handleGetFeedData); 
-    // handleGetFeedData();
+  if(serverURI.startsWith("/feed/data")){
+    NewService(handleGetFeedData);
     return;
   }
   if(hasSD && loadFromSdCard(server.uri())) return;
@@ -249,7 +250,7 @@ void handleStatus(){
     firstArg = false;
     message += "\"stats\":{\"cyclerate\":" + String(samplesPerCycle,0);
     message += ",\"chanrate\":" + String(cycleSampleRate,1);
-    message += ",\"runseconds\":" + String(NTPtime() - programStartTime);
+    message += ",\"runseconds\":" + String(UnixTime() - programStartTime);
     message += ",\"stack\":" + String(ESP.getFreeHeap());  //system_get_free_heap_size());
     message += "}";
     statServiceInterval = 2;
