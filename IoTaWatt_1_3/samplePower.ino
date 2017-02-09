@@ -347,6 +347,51 @@ int readADC(uint8_t channel)
   return (word(ADC_in[0] & 0x3F, ADC_in[1]) >> (14 - ADC_bits));  // Put the result together and return
 }
 
+/****************************************************************************************************
+ * sampleVoltage() is used during calibration of a Voltage channel.
+ * It samples one cycle and returns the voltage corresponding to the supplied calibration factor.
+ ****************************************************************************************************/
+float sampleVoltage(uint8_t Vchan, float Vcal){
+  uint32_t sumVsq = 0;
+  int16_t rawV = 0;
+  int16_t lastV = 0;
+  int16_t offsetV = offset[Vchan];
+  int16_t* VsamplePtr = Vsample;
+  uint32_t startMs = millis();
+  uint32_t timeoutMs = 600 / frequency;
+  int16_t crossCount = 0;
+  int16_t crossLimit = 3;
+  int16_t crossGuard = 0;
+  samples = 0;
+
+  rawV = readADC(Vchan) - offsetV;
+  while(crossCount < crossLimit){
+    lastV = rawV;
+    rawV = readADC(Vchan) - offsetV;
+    *VsamplePtr = rawV;
+    
+    if(((rawV ^ lastV) & crossGuard) >> 15) {  
+      crossCount++;
+      crossGuard = 10;
+      startMs = millis();     
+    }
+    crossGuard--;
+    
+    if(crossCount){
+      VsamplePtr++;
+      sumVsq += rawV * rawV;
+      samples++;
+    }     
+    
+    if((uint32_t)(millis()-startMs) > timeoutMs){
+      return 0;
+    }
+    
+  }
+  double Vratio = Vcal * getAref() / double(ADC_range);
+  return  Vratio * sqrt((double)(sumVsq / samples)); 
+}
+
 //**********************************************************************************************
 //
 //        getAref()  -  Get the current value of Aref

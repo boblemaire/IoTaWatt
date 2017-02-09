@@ -222,6 +222,7 @@
           xmlHttp.onreadystatechange = httpPostProcessRequest;
           var formData = new FormData();
           formData.append("data", input.files[0], path.value);
+		  // document.getElementByID("msgarea").innerHTML = "<p>" + formData + "</p>";
           xmlHttp.open("POST", "/edit");
           xmlHttp.send(formData);
         }
@@ -668,6 +669,7 @@
     <div id="uploader"></div>
     <div id="tree"></div>
     <div id="editor"></div>
+	<div id="msgarea"><p>message area</p></div>
     <div id="preview" style="display:none;"></div>
     <iframe id=download-frame style='display:none;'></iframe>
   </body>
