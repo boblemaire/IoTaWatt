@@ -1,0 +1,276 @@
+<!doctype html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Emoncms - graph 122285 </title>
+        <link rel="shortcut icon" href="https://emoncms.org/Theme/basic/favicon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+        <link rel="apple-touch-startup-image" href="https://emoncms.org/Theme/basic/ios_load.png">
+        <link rel="apple-touch-icon" href="https://emoncms.org/Theme/basic/logo_normal.png">
+        <!--<link href="https://emoncms.org/Lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://emoncms.org/Lib/bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
+        <link href="https://emoncms.org/Lib/bootstrap-datetimepicker-0.0.11/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
+        -->
+        <link href="https://emoncms.org/Lib/bootstrap/css/bootstrap-combined.min.css" rel="stylesheet">
+        
+        <link href="https://emoncms.org/Theme/basic/emon.css" rel="stylesheet">
+        <script type="text/javascript" src="https://emoncms.org/Lib/jquery-1.11.3.min.js"></script>
+    </head>
+    <body>
+        <div id="wrap">
+        <div class="navbar navbar-inverse navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container">
+                        <style>
+                            @media (max-width: 1200px){
+                              .menu-text {
+                                display: none !important;
+                              }
+                            }
+                            @media (max-width: 480px){
+                              .menu-dashboard {
+                                display: none !important;
+                              }
+                            }
+
+                            @media (max-width: 320px){
+                              .menu-extra {
+                                display: none !important;
+                              }
+                            }
+                        </style>
+                    
+<ul class="nav">
+<li class=' menu-left'><a href="https://emoncms.org/site/home"><div style='display: inline'> <img style='margin-top: -4px;' id='emoncms-logo' src='https://emoncms.org/Theme/emoncms-logo.png' /></div></a></li><li class="dropdown menu-left"><a href="#" class="dropdown-toggle" data-toggle="dropdown"><div style='display: inline'><i class='icon-th-large icon-white' title='Dashboard'></i> <span class='menu-text'>Dashboard</span></div><b class="caret"></b></a><ul class="dropdown-menu"><li class=""><a href="https://emoncms.org/dashboard/view&id=33334"><div style='display: inline'> Current Use</div></a></li></ul></li><li class="dropdown menu-left"><a href="#" class="dropdown-toggle" data-toggle="dropdown"><div style='display: inline'><i class='icon-leaf icon-white' title='Apps'></i> <span class='menu-text'>Apps</span></div><b class="caret"></b></a><ul class="dropdown-menu"><li class=""><a href="https://emoncms.org/app?readkey=f790bd4967f720f961f91d13f946eeea#myelectric"><div style='display: inline'> My Electric</div></a></li><li class=""><a href="https://emoncms.org/app?readkey=f790bd4967f720f961f91d13f946eeea#mysolarpv"><div style='display: inline'> My Solar</div></a></li><li class=""><a href="https://emoncms.org/app?readkey=f790bd4967f720f961f91d13f946eeea#myenergy"><div style='display: inline'> My Solar&amp;Wind</div></a></li></ul></li></ul>
+<ul class="nav pull-right">
+<li class="dropdown menu-extra"><a href="#" class="dropdown-toggle" data-toggle="dropdown"><div style='display: inline'><i class='icon-plus icon-white' title='Extra'></i> <span class='menu-text'>Extra</span></div><b class="caret"></b></a><ul class="dropdown-menu"><li class=""><a href="https://emoncms.org/myip/list"><div style='display: inline'> My IP</div></a></li><li class=""><a href="https://emoncms.org/vis/list"><div style='display: inline'><i class='icon-tint' title='Visualization'></i> Visualization</div></a></li></ul></li><li class="dropdown menu-setup"><a href="#" class="dropdown-toggle" data-toggle="dropdown"><div style='display: inline'><i class='icon-wrench icon-white' title='Setup'></i> <span class='menu-text'>Setup</span></div><b class="caret"></b></a><ul class="dropdown-menu"><li class=""><a href="https://emoncms.org/input/view"><div style='display: inline'><i class='icon-signal' title='Inputs'></i> Inputs</div></a></li><li class=""><a href="https://emoncms.org/feed"><div style='display: inline'><i class='icon-list-alt' title='Feeds'></i> Feeds</div></a></li><li class=""><a href="https://emoncms.org/graph"><div style='display: inline'><i class='icon-retweet' title='Graphs'></i> Graphs</div></a></li><li class=""><a href="https://emoncms.org/dashboard/list"><div style='display: inline'><i class='icon-th-large' title='Dashboards'></i> Dashboards</div></a></li><li class="divider"></li><li class=""><a href="https://emoncms.org/user/view"><div style='display: inline'><i class='icon-user' title='My Account'></i> My Account</div></a></li><li class=""><a href="https://emoncms.org/site/api#input"><div style='display: inline'><i class='icon-book' title='API'></i> API</div></a></li></ul></li><li class=' menu-right'><a href="https://emoncms.org/user/logout"><div style='display: inline'><i class='icon-off icon-white' title='Logout'></i> <span class='menu-text'>Logout</span></div></a></li></ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="topspacer"></div>
+
+        
+                <div class = "container-fluid"><div class="row-fluid"><div class="span12">
+            
+<!--[if IE]><script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/excanvas.min.js"></script><![endif]-->
+
+<!--
+<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/jquery.flot.min.js"></script>
+<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/jquery.flot.time.min.js"></script>
+<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/jquery.flot.selection.min.js"></script>
+<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/jquery.flot.touch.min.js"></script>
+<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/jquery.flot.togglelegend.min.js"></script>
+-->
+<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/flot.min.js"></script>
+
+<script language="javascript" type="text/javascript" src="https://emoncms.org/Modules/graph/vis.helper.js"></script>
+
+<style>
+#wrapper {
+  padding:0px;
+  margin:0px;
+  padding-left: 250px;
+}
+
+#sidebar-wrapper {
+  margin-top:-10px;
+  margin-left: -250px;
+  left: 250px;
+  width: 250px;
+  background: #eee;
+  position: fixed;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+#page-content-wrapper {
+  width: 100%;
+  padding-left:0px;
+}
+
+
+</style>
+
+<div id="wrapper">
+    <div id="sidebar-wrapper">
+            <div style="padding-left:10px;">
+                <div id="sidebar-close" style="float:right; cursor:pointer; padding:10px;"><i class="icon-remove"></i></div>
+                <h3>Feeds</h3>
+                
+            </div>
+            <div style="overflow-x: hidden; background-color:#f3f3f3; width:100%">
+                <table class="table" id="feeds">
+                </table>
+            </div>
+            
+            <div style="padding:10px;">
+                <h4>My Graphs</h4>
+                
+                <select id="graph-select" style="width:215px">
+                </select>
+                
+                <br><br>
+                <b>Graph Name:</b><br>
+                <input id="graph-name" type="text" style="width:200px" />
+                <button id="graph-delete" class="btn" style="display:none">Delete</button>
+                <button id="graph-save" class="btn">Save</button>
+            </div>
+    </div>
+
+    <div id="page-content-wrapper" style="max-width:1280px">
+        
+        <h3>Data viewer</h3> 
+
+        <div id="error" style="display:none"></div>
+
+        <div id="navigation" style="padding-bottom:5px;">
+            <button class="btn" id="sidebar-open"><i class="icon-list"></i></button>
+            <button class='btn graph_time' type='button' time='1'>D</button>
+            <button class='btn graph_time' type='button' time='7'>W</button>
+            <button class='btn graph_time' type='button' time='30'>M</button>
+            <button class='btn graph_time' type='button' time='365'>Y</button>
+            <button id='graph_zoomin' class='btn'>+</button>
+            <button id='graph_zoomout' class='btn'>-</button>
+            <button id='graph_left' class='btn'><</button>
+            <button id='graph_right' class='btn'>></button>
+            
+            <div class="input-prepend input-append" style="float:right; margin-right:22px">
+            <span class="add-on">Show</span>
+            <span class="add-on">missing data: <input type="checkbox" id="showmissing" style="margin-top:1px" /></span>
+            <span class="add-on">legend: <input type="checkbox" id="showlegend" style="margin-top:1px" /></span>
+            <span class="add-on">feed tag: <input type="checkbox" id="showtag" style="margin-top:1px" /></span>
+            </div>
+            
+            <div style="clear:both"></div>
+        </div>
+
+        <div id="histogram-controls" style="padding-bottom:5px; display:none;">
+            <div class="input-prepend input-append">
+                <span class="add-on" style="width:75px"><b>Histogram</b></span>
+                <span class="add-on" style="width:75px">Type</span>
+                <select id="histogram-type" style="width:150px">
+                    <option value="timeatvalue" >Time at value</option>
+                    <option value="kwhatpower" >kWh at Power</option>
+                </select>
+                <span class="add-on" style="width:75px">Resolution</span>
+                <input id="histogram-resolution" type="text" style="width:60px"/>
+            </div>
+            
+            <button id="histogram-back" class="btn" style="float:right">Back to main view</button>
+        </div>
+
+        <div id="placeholder_bound" style="width:100%; height:400px;">
+            <div id="placeholder"></div>
+        </div>
+
+        <div id="info" style="padding:20px; display:none">
+            
+            <div class="input-prepend input-append" style="padding-right:5px">
+                <span class="add-on" style="width:50px">Start</span>
+                <input id="request-start" type="text" style="width:80px" />
+
+                <span class="add-on" style="width:50px">End</span>
+                <input id="request-end" type="text" style="width:80px" />
+
+                <span class="add-on" style="width:50px">Type</span>
+                <select id="request-type" style="width:120px">
+                    <option value="interval">Fixed Interval</option>
+                    <option>Daily</option>
+                    <option>Weekly</option>
+                    <option>Monthly</option>
+                    <option>Annual</option>
+                </select>
+                
+                <span class="fixed-interval-options">
+                    <input id="request-interval" type="text" style="width:60px" />
+                    <span class="add-on">Fix <input id="request-fixinterval" type="checkbox" style="margin-top:1px" /></span>
+                    <span class="add-on">Limit to data interval <input id="request-limitinterval" type="checkbox" style="margin-top:1px" /></span>
+                </span>
+            </div>
+            
+            <div class="input-prepend input-append">
+                <span class="add-on" style="width:50px">Y-axis:</span>
+                <span class="add-on" style="width:30px">min</span>
+                <input id="yaxis-min" type="text" style="width:50px" value="auto"/>
+
+                <span class="add-on" style="width:30px">max</span>
+                <input id="yaxis-max" type="text" style="width:50px" value="auto"/>
+                
+                <button id="reload" class="btn">Reload</button>
+            </div>
+            
+            <div id="window-info" style=""></div><br>
+                
+            <table class="table">
+                <tr><th>Feed</th><th>Type</th><th>Color</th><th>Fill</th><th>Quality</th><th>Min</th><th>Max</th><th>Diff</th><th>Mean</th><th>Stdev</th><th>Wh</th><th style='text-align:center'>Scale</th><th style='text-align:center'>Delta</th><th style='text-align:center'>Average</th><th>DP</th><th style="width:120px"></th></tr>
+                <tbody id="stats"></tbody>
+            </table>
+            
+            
+            <div class="input-prepend input-append">
+                <button class="btn" id="showcsv" >Show CSV Output</button>
+                <span class="add-on csvoptions">Time format:</span>
+                <select id="csvtimeformat" class="csvoptions">
+                    <option value="unix">Unix timestamp</option>
+                    <option value="seconds">Seconds since start</option>
+                    <option value="datestr">Date-time string</option>
+                </select>
+                <span class="add-on csvoptions">Null values:</span>
+                <select id="csvnullvalues" class="csvoptions">
+                    <option value="show">Show</option>
+                    <option value="lastvalue">Replace with last value</option>
+                    <option value="remove">Remove whole line</option>
+                </select>
+            </div> 
+            
+            
+            <textarea id="csv" style="width:98%; height:500px; display:none; margin-top:10px"></textarea>
+        </div>
+    </div>
+</div>
+
+<script language="javascript" type="text/javascript" src="https://emoncms.org/Modules/graph/graph.js"></script>
+
+<script>
+    var path = "http://" + location.host + "/";
+    
+    sidebar_resize();
+    graph_init_editor();
+    
+    // Assign active feedid from URL
+    var urlparts = window.location.pathname.split("graph/");
+    if (urlparts.length==2) {
+        feedid = parseInt(urlparts[1]);
+        f = getfeed(feedid);
+        feedlist.push({id:feedid, name:f.name, tag:f.tag, yaxis:1, fill:0, scale: 1.0, delta:false, dp:1, plottype:'lines'});
+    }
+    
+    load_feed_selector();
+    graph_resize();
+    
+    var timeWindow = 3600000*24.0*7;
+    var now = Math.round(+new Date * 0.001)*1000;
+    view.start = now - timeWindow;
+    view.end = now;
+    view.calc_interval();
+    
+    
+    graph_reloaddraw();
+    
+</script>
+
+        </div></div></div>
+        
+        <div style="clear:both; height:60px;"></div>
+        </div>
+
+        <div id="footer">
+            Powered by             <a href="http://openenergymonitor.org">openenergymonitor.org</a>
+            <span></span>
+        </div>
+        <script type="text/javascript" src="https://emoncms.org/Lib/bootstrap/js/bootstrap.js"></script>
+    </body>
+</html>

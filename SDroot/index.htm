@@ -118,31 +118,11 @@
   <div class="bodyDiv", id="divCalibrate">
     <h3 style="text-align:center">Voltage Calibration</h3>
     <table id="calTable"></table>
-    <div id="advConfirm", class="bodyDiv">
-      <h3>Confirm Advanced Calibration</h3>
-      <p>Advanced calibration requires a special AC adapter cord and a battery power supply.
-         Additionally, upon confirmation, the IoTaWatt will discontinue normal operation
-         and dedicate itself to the calibration.  You will be required to disconnect all 
-         CT sensors. This procedure involves direct connection to the AC line and requires
-         strict adherance to the directions to avoid personal injury and/or damage to the 
-         device.</p>
-         <p>The procedure will develop a calibration value for your transformer and determine
-         the phase shift from true line voltage.  When completed, the new values will be 
-         saved along with all other recent changes and the device will be restarted.</p>
-         <div align="center">
-         <input type="button" id="calConfirm",  onclick="calAdv()", value="Proceed"></input>
-         </div>
-    </div>
+    <p>Using a voltmeter to display the current AC line voltage, adjust the calibration factor until the Sensed
+    Voltage reasonably matches the voltmeter reading.  Click save, and then save again to update the channel
+    with the new calibration factor.  The new calibration will not take effect until you then click the <strong>Commit and Restart</strong> button.</p>
   </div>
   
-  <div class="advDivStep", id="divAdvanced">
-    <h3 style="center">Advanced Voltage Calibration</h3>
-    <p>At this point, the IoTaWatt must be running on battery power.</p>
-    <p id=advStepMsg></p>
-    
-
-  </div>
-
 </div> 
 
 <script>
@@ -160,6 +140,7 @@ var channels = 15;
 var editing = false;
 var getStatus = false;
 var calVoltageUpdate = false;
+var avgVoltage = 0;
 var statusTimer;
 var calVTindex;
 var calRefChan;
@@ -203,9 +184,8 @@ function calVTenter(obj){
   addRow();
   addButton("save","calSave(this)");
   addButton("cancel","calCancel(this)");
-  addButton("advanced","calAdvanced(this)","70px");
   calRefreshVoltage = true;
-  calUpdateVoltage();
+  statusTimer = setInterval(calUpdateVoltage,500);
   
   function addRow(){
     newRow = document.createElement("tr");
@@ -228,39 +208,32 @@ function calVTenter(obj){
 
 function calVTexit(){
   var index = calVTindex;
-  document.getElementById("advConfirm").style.display = "none";
   document.getElementById("divCalibrate").style.display = "none";
   document.getElementById("divInputs").style.display = "inline";
-  
+  clearInterval(statusTimer);
   calRefreshVoltage = false;
   editChannel(calVTindex);
 }
 
 function calUpdateVoltage(){
+  var index = calVTindex;
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       if(calRefreshVoltage){
         var response = JSON.parse(xmlHttp.responseText);
         var calVoltage = document.getElementById("calVoltage");
-        calVoltage.innerHTML = response.voltage.toFixed(1);
-        calUpdateVoltage();
+        avgVoltage = (avgVoltage + response.vrms * 4) / 5; 
+        calVoltage.innerHTML = avgVoltage.toFixed(1);
       }
     }
   }
-  xmlHttp.open("GET","/status?voltage=" + config.inputs[calVTindex].channel, true);
+  xmlHttp.open("GET","/vcal?channel=" + config.inputs[index].channel + "&cal=" + Number(document.getElementById("calInput").value), true);
   xmlHttp.send(null);
 }
 
 function calVTnew(obj){
   var index = calVTindex;
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-    }
-  }
-  xmlHttp.open("GET","/calvt?channel=" + config.inputs[calVTindex].channel + "&cal=" + obj.value, true);
-  xmlHttp.send(null);
 }
 
 function calSave(obj){
@@ -271,14 +244,7 @@ function calSave(obj){
 function calCancel(obj){
   var calInput = document.getElementById("calInput");
   calInput.value = config.inputs[calVTindex].cal;
-  calVTnew(calInput);
   calVTexit();
-}
-
-function calAdvanced(obj){
-  document.getElementById("advConfirm").style.display = "inline";
-//  calRefreshVoltage = false;
-  
 }
 
 
@@ -974,97 +940,6 @@ function formatSeconds(seconds)
     return date.toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1");
 }
 
-// *************************************************************************************************************
-//
-//  Advanced calibration code.  Experimental - has issues. 
-//
-//****************************************************************************************************
-function calAdv(){
-  document.getElementById("divCalibrate").style.display = "none";
-  document.getElementById("divAdvanced").style.display = "inline";
-  calAdvStep1();
-}
-
-function calAdvStep1(){
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      var response = JSON.parse(xmlHttp.responseText);
-      if(response.channels.length > 1){
-        document.getElementById("advStepMsg").innerHTML = "Disconnect all inputs.";
-        calAdvStep1();
-      }
-      else{
-        
-        var message = "Connect the phone jack end of the calibration cord to any input on the " +
-        "IoTaWatt that does not have an onboard burden resistor.<br>";
-        message += "<strong>Do not plug calibration cord to wall recepticle until instructed.</strong><br>";
-        message += "Connect AC adapter to be calibrated to channel " + calVTindex;
-        document.getElementById("advStepMsg").innerHTML = message;
-        calAdvStep2();
-      }
-    }
-  }
-  xmlHttp.open("GET","/status?channels=all", true);
-  xmlHttp.send(null);
-}
-
-function calAdvStep2(){
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      var response = JSON.parse(xmlHttp.responseText);
-      if(response.channels.length == 2){
-        calRefChan = response.channels[1].channel;
-        document.getElementById("advStepMsg").innerHTML = "Calibration cord is connected to channel: " + calRefChan + ".";
-        calAdvStep3();
-      }
-      else{
-        calAdvStep2();
-      }
-    }
-  }
-  xmlHttp.open("GET","/status?channels=all", true);
-  xmlHttp.send(null);
-}
-
-function calAdvStep3(){
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("advStepMsg").innerHTML += "<br>Plug calibration cord into wall recepticle.";
-      calAdvStep4();
-    }
-  }
-  xmlHttp.open("GET","/command?calibrate="+calVTindex+"&ref="+calRefChan, true);
-  xmlHttp.send(null);
-}
-
-function calAdvStep4(){
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      var response = JSON.parse(xmlHttp.responseText);
-      if(response.calcomplete == "yes"){
-        document.getElementById("advStepMsg").innerHTML = "<br>Calibration complete.";
-        document.getElementById("advStepMsg").innerHTML += "<br><strong>Unplug calibration cord from recepticle.</strong>";
-        document.getElementById("advStepMsg").innerHTML += "<br>Calibration factor is: " + response.cal;
-        document.getElementById("advStepMsg").innerHTML += "<br>Phase shift is: " + response.phase;
-        config.inputs[calVTindex].cal = Number(response.cal);
-        config.inputs[calVTindex].phase = Number(response.phase);
-        calAdvStep5();
-      }
-      else calAdvStep4();
-    }
-  }
-  xmlHttp.open("GET","/status?calcomplete=yes", true);
-  xmlHttp.send(null);
-}
-
-function calAdvStep5(){
-  
-}
-  
 /********************************************************************************************
  * 
  * Startup and "Big Ideas" navigation.

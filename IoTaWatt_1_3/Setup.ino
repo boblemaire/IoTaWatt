@@ -97,7 +97,7 @@ void setup()
  //*************************************** Start the web server ****************************
 
   server.on("/status",HTTP_GET, handleStatus);
-  server.on("/calvt",HTTP_GET, handleCalVT);
+  server.on("/vcal",HTTP_GET, handleVcal);
   server.on("/command", HTTP_GET, handleCommand);
   server.on("/list", HTTP_GET, printDirectory);
   server.on("/edit", HTTP_DELETE, handleDelete);

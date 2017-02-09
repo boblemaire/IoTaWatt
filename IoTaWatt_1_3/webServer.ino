@@ -208,7 +208,6 @@ void printDirectory() {
 void handleNotFound(){
   String serverURI = server.uri();
   if(serverURI.startsWith("//")) serverURI.remove(0,1);
-  Serial.println(server.uri());
   if(serverURI.startsWith("/feed/list")){
     handleGetFeedList();
     return;
@@ -295,34 +294,21 @@ void handleStatus(){
     int Vchan = server.arg("channel").toInt();
     message += "\"voltage\":" + String(buckets[Vchan].volts,1);
   }
-
-  if(server.hasArg("calcomplete")){
-    if(!firstArg){
-      message += ",";
-    }
-    firstArg = false;
-    if(calibrationMode) {
-      message += "\"calcomplete\":\"no\"";
-    }
-    else {
-      message += "\"calcomplete\":\"yes\"";
-      message += ",\"cal\":" + String(calibrationCal,4);
-      message += ",\"phase\":" + String(calibrationPhase,2);
-    }
-  }
   
   message += "}";
   server.sendContent(message);
 }
 
-void handleCalVT(){
+void handleVcal(){
   if(!server.hasArg("channel") || !server.hasArg("cal")){
     server.send(200, "text/json", "Missing parameters");
     return;
   }
   int channel = server.arg("channel").toInt();
-  calibration[channel] = server.arg("cal").toInt();  
-  server.send(200, "text/json", "ok");  
+  calibration[channel] = server.arg("cal").toInt();
+  float Vrms = sampleVoltage(channel, calibration[channel]);
+  String json = "{\"vrms\":" + String(Vrms,1) + "}";  
+  server.send(200, "text/json", json);  
 }
 
 void handleCommand(){
