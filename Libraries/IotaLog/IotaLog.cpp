@@ -129,7 +129,7 @@
 						uint32_t highKey, uint32_t highRec){
 		
 		if(key == highKey) return highRec;
-		if(key == lowKey)return lowKey;		
+		if(key == lowKey)return lowRec;		
 		if(highRec - lowRec == 1) return lowRec;
 			
 		uint32_t thisRec = (lowRec + highRec) / 2;
