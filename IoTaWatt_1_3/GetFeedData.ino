@@ -32,6 +32,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   static int voltageChannel = 0;
   static boolean Kwh = false;
   static String replyData = "";
+  static int directReads = 0;
 
   switch (state) {
     case Initialize: {
@@ -50,6 +51,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
 //      Serial.print(server.arg("interval"));
 //      Serial.print(" ");
 //      Serial.println();
+      directReads = 0;
   
       channel = server.arg("id").toInt() % 1000;
       queryType = channel % 10;
@@ -64,11 +66,12 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       iotaLog.readKey(logRecord);
       accum1Then = logRecord->channel[channel].accum1;
       accum2Then = logRecord->channel[channel].accum2;
+     
       if(queryType == QUERY_PF){
         voltageChannel = Vchannel[channel];
         voltageThen = logRecord->channel[channel].accum1;
       }
-      logHoursThen = logRecord->logHours;
+      logHoursThen = logRecord->logHours; 
       
       server.setContentLength(CONTENT_LENGTH_UNKNOWN);
       server.sendHeader("Accept-Ranges","none");
@@ -87,9 +90,19 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   
     case process: {
       trace(T_GFD,1);
+      uint32_t exitTime = nextCrossMs + 500 / frequency;              // Take an additional half cycle
       while(UnixTime <= endUnixTime) {
-        logRecord->UNIXtime = UnixTime;
-        iotaLog.readKey(logRecord);
+
+        // Make a play for the record by sequence number.
+
+        logRecord->serial += (UnixTime - logRecord->UNIXtime) / dataLogInterval - 1;
+        iotaLog.readNext(logRecord);
+        if(logRecord->UNIXtime == UnixTime) directReads++;
+        else {
+          logRecord->UNIXtime = UnixTime;
+          iotaLog.readKey(logRecord);
+        }
+        trace(T_GFD,2);
         if(logRecord->logHours == logHoursThen){
           // replyData += "[" + String(intervalNumber) + ",null]";
           replyData += "[" + String(UnixTime) + "000,null]";
@@ -97,6 +110,8 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
         else {
           elapsedHours = logRecord->logHours - logHoursThen;
           replyData += "[" + String(UnixTime) + "000,";
+          trace(T_GFD,3);
+                    
           switch (queryType) {
             case QUERY_VOLTAGE: {
               replyData += String((logRecord->channel[channel].accum1 - accum1Then) / elapsedHours,1) + "]";
@@ -130,9 +145,9 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
         accum2Then = logRecord->channel[channel].accum2;
         voltageThen = logRecord->channel[voltageChannel].accum1;
         logHoursThen = logRecord->logHours;
-    
+        trace(T_GFD,4);
         if(replyData.length() > 1024){
-          trace(T_GFD,2);
+          trace(T_GFD,5);
           yield();
           sendChunk(replyData);
           replyData = "";
@@ -141,18 +156,18 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
         replyData += ",";
         UnixTime += intervalSeconds;
         intervalNumber++;
-        if(millis() >= nextCrossMs){
+        if(millis() >= exitTime){
           return 1;
         }
       }
-      trace(T_GFD,3);
+      trace(T_GFD,6);
       yield();
       replyData.setCharAt(replyData.length()-1,']');
       sendChunk(replyData); 
       yield();
       replyData = "";
       sendChunk(replyData); 
-      trace(T_GFD,4);
+      trace(T_GFD,7);
       serverAvailable = true;
       state = Setup;
       return 0;                                       // Done for now, return without scheduling.
