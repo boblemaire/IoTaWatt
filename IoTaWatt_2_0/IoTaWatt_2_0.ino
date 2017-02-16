@@ -1,4 +1,4 @@
- 
+
 /***********************************************************************************
 MIT License
 
@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ***********************************************************************************/
 
-#define IOTAWATT_VERSION "1.3"
+#define IOTAWATT_VERSION "2.0"
 
 #include <SPI.h>
 #include <ESP8266WiFi.h>
@@ -34,7 +34,6 @@ SOFTWARE.
 #include <ESP8266mDNS.h>
 #include <SD.h>
 #include <WiFiUDP.h>
-#include <IoTaMCP23S17.h>
 #include <IotaLog.h>
 #include <ArduinoJson.h>
 #include <math.h>
@@ -58,25 +57,26 @@ String eMonPostLogFile = "/iotawatt/emonlog.log";
 // Define the hardware SPI chip select pins
 
 #define pin_CS_ADC0 0                       
-#define pin_CS_ADC1 2
+#define pin_CS_ADC1 16
+#define pin_CS_ADC2 2
 #define pin_CS_SDcard 15
+#define pin_I2C_SDA 4
+#define pin_I2C_SCL 5
 #define pin_RED_LED 15
-#define pin_GPIO 4
-uint8_t ADC_selectPin[2] = {pin_CS_ADC0, pin_CS_ADC1};  // indexable reference
+#define pin_BLUE_LED 2
+uint8_t ADC_selectPin[3] = {pin_CS_ADC0, pin_CS_ADC1, pin_CS_ADC2};  // indexable reference
 
 const int chipSelect = pin_CS_SDcard;       // for the benefit of SD.h
 
-#define pin_I2C_SDA 4
-#define pin_I2C_SCL 5
+
 
 //*************************************************************************************
 
-#define VrefChan 15                         // Voltage reference ADC channel
-#define VrefVolts 2.5                       // Voltage reference value
+float VrefVolts = 1.0;                      // Voltage reference value
 float Aref = 0.1;                           // Measured Aref using above reference
                                    
-uint8_t  ADC_bits;                          // JWYT - ADC output bits, set by senseADCbits() in Setup
-uint16_t ADC_range;                         // computed integer range of ADC output
+uint8_t  ADC_bits = 12;                     // JWYT - ADC output bits
+uint16_t ADC_range = 1 << ADC_bits;         // integer range of ADC output
 
 /******************************************************************************************************
  * Core dispatching parameters - There's a lot going on, but the steady rhythm is sampling the
@@ -103,30 +103,45 @@ struct serviceBlock {                  // Scheduler/Dispatcher list item (see co
 
 serviceBlock* serviceQueue = NULL;     // Head of ordered list of services
 
-// Define number of physical channels, their configuration status, and active status
+// Define number of external channels, their configuration status, and active status.
+// Channels are identified externally by consecutive numbers beginning with 1.
+// They are mapped to internal channel identifiers that are actually ADC*8 + port.
+// The ChanAddr and ChanAref mapping arrays, are filled in by getConfig to match the particular hardware.     
 
-#define channels 15
+#define MAXCHANNELS 21                         // Compiled channel support limit
+uint16_t maxChannels = 0;                      // channel limit based on configured hardware
+int8_t  channels = 0;                          // Number of highest channel actually configured
+
+uint8_t chanAddr [MAXCHANNELS] = {0};          // ADC * 8 + port; Maps channel number to ADC port
+uint8_t chanAref [MAXCHANNELS] = {0};          // ADC * 8 + port; Maps channel number to Aref ADC port
 
 enum channelTypes {channelTypeUndefined,
                    channelTypeVoltage,
                    channelTypePower};               
 
-channelTypes channelType [channels];
-String channelName[channels]; 
+channelTypes channelType [MAXCHANNELS];
+String channelName[MAXCHANNELS]; 
  
 // The calibration factor for a voltage channel is the true voltage (in Volts) per ADC volt.
 // The calibration for a current channel is the true current (in Amperes) per ADC volt.
 
-float calibration [channels];
-float phaseCorrection [channels];       // in degrees +lead, -lag  
-uint8_t Vchannel [channels];            // Voltage reference channel (typically channel 0)
+float calibration [MAXCHANNELS];
+float voltageAdapt [MAXCHANNELS];          // Voltage input adapter circuit ratio
+#define voltageAdapt1 37                   // 24K + 12K + 1K
+#define voltageAdapt3 13                   // 12K + 1K
+float phaseCorrection [MAXCHANNELS];       // in degrees +lead, -lag  
+uint8_t Vchannel [MAXCHANNELS];            // Voltage reference channel (typically channel 0)
 
 // ADC setup.  Assume perfect split DC bias.
 // Initialized in setADCbits, adjusted within min/max range after each sample.     
-                             
-int16_t minOffset;
-int16_t maxOffset;
-int16_t offset [channels];              
+
+int16_t minOffset = (ADC_range * 49) / 100;         // Allow +/- 1% variation
+int16_t maxOffset = (ADC_range * 51) / 100;
+int16_t offset [MAXCHANNELS];                       // Initialized in setup
+
+float ADCvoltage[3] = {0, 0, 0};
+float Vcal1volt = 37;
+float Vcal3volt = 13;
 
 //********************************************************************************************
 // This structure is the basic data repository for a sensor channel.
@@ -159,7 +174,7 @@ struct dataBucket {
 
 double logHours = 0;
 uint32_t logSerial = 0;
-dataBucket buckets[channels];               // create a bunch of them
+dataBucket buckets[MAXCHANNELS];               // create a bunch of them
 
 #define volts value1                        // so we can reference bucket.volts
 #define hz value2                           // etc.
@@ -196,7 +211,7 @@ float  samplesPerCycle = 500;
 float  cycleSampleRate = 0;
 int16_t  cycleSamples = 0;
 
-dataBucket statBuckets[channels];
+dataBucket statBuckets[MAXCHANNELS];
 
 // ****************************** SDWebServer stuff ****************************
 
@@ -257,5 +272,5 @@ float calibrationPhase = 0.0;
 #define T_GFD 40            // GetFeedData
 #define T_SAMP 50           // samplePower
 
-
+uint32_t Micro;
 
