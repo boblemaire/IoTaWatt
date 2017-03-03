@@ -115,12 +115,51 @@
     <table id="statusTable"></table>
   </div>
   
-  <div class="bodyDiv", id="divCalibrate">
-    <h3 style="text-align:center">Voltage Calibration</h3>
-    <table id="calTable"></table>
+  <div class="bodyDiv", id="divCalVoltage">
+    <h3 style="text-align:center">VT Voltage Calibration</h3>
+    <table id="calTable">
+    <tr>
+      <td align="right">Calibrate channel:</td>
+      <td id="calVTchan"></td>
+    </tr>
+    <tr>
+      <td align="right">Sensed Voltage:</td>
+      <td id="calVTvolts"> </td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td>
+        <input id="calVTcal", class="editBox", style="width:60px", type="number", step="0.01"></input>
+      </td>
+    </tr>
+    <tr>
+      <td align="right"></td>
+      <td id="calVTbuttons">
+        <button class="editButton" style="width:70px" onclick="calVTsave(this)">save</button>
+        <button class="editButton" style="width:70px" onclick="calVTexit(this)">cancel</button>
+      </td>
+    </tr>
+    </table>
+    
     <p>Using a voltmeter to display the current AC line voltage, adjust the calibration factor until the Sensed
     Voltage reasonably matches the voltmeter reading.  Click save, and then save again to update the channel
     with the new calibration factor.  The new calibration will not take effect until you then click the <strong>Commit and Restart</strong> button.</p>
+  </div>
+  
+  <div class="bodyDiv", id="divCalPhase">
+    <h3 style="text-align:center">VT Phase Calibration</h3>
+    
+    <p>This procedure estimates the phase shift of the voltage transformer by comparing it to
+    the output of a CT channel with a known phase shift. From the list of related CTs, chose a
+    reference channel with a small phase shift that is subjected to a modest (>10 A) 
+    resistive load.</p>
+    
+    <p>Reference channel:<select id="calPHref"> </select> </p>
+    <p id="calPHresult"></p>
+    <button id="PHmeasureButton" display="no" class="editButton" style="width:70px" onclick="calPHmeasure(this)">measure</button>
+    <button class="editButton" onclick="calVTexit(this)">return</button>
+    <p>After measurement, press <strong>return</strong> to return to VT editing where you can alter
+    the phase setting for this VT.</p>
   </div>
   
 </div> 
@@ -136,7 +175,7 @@ var inputTypes = ["CT", "VT"];
 var configFileImage;                // congiguration file as String()
 var config;                         // configuration as Js Object
 var tables;
-var channels = 15;
+var channels = 21;
 var editing = false;
 var getStatus = false;
 var calVoltageUpdate = false;
@@ -144,73 +183,77 @@ var avgVoltage = 0;
 var statusTimer;
 var calVTindex;
 var calRefChan;
+var calVTvolts = 0;
+var calPHphase = 0;
 
 
 
-function calVTenter(obj){
+function calVTphase(obj){
   var index = objectIndex(obj);
   calVTindex = index;
-  if(config.inputs[index].cal === undefined){
-    var modelTable = tables.VT;
-    for(var i=1; i<modelTable.length; i++){
-      if(config.inputs[index].model == modelTable[i].model) {
-        config.inputs[index].cal = modelTable[i].cal;
+  document.getElementById("divInputs").style.display = "none";
+  document.getElementById("calPHresult").innerHTML = "";
+  document.getElementById("divCalPhase").style.display = "inline";
+  var calref = document.getElementById("calPHref");
+  calref.innerHTML = "";
+  
+  for(var i=0; i<config.inputs.length; i++){
+    if(config.inputs[i].type == "CT" &&
+       config.inputs[i].vchan == config.inputs[index].channel){
+      var option = document.createElement("option");
+      option.text = config.inputs[i].channel;
+      calref.add(option);
+      if(calref.value = i){
+        calref.selectedIndex = i;
+      }
+    } 
+  }
+  
+}
+function calPHmeasure(obj){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var response = JSON.parse(xmlHttp.responseText);
+      document.getElementById("calPHresult").innerHTML = "CT current: " + response.irms.toFixed(1) + "Amps";
+      if(response.irms < 10){
+        document.getElementById("calPHresult").innerHTML += " should be at least 10A to calibrate phase.";
+      }
+      else {
+        var difPhase = response.ctphase - response.relphase;
+        document.getElementById("calPHresult").innerHTML += "<br>Relative phase difference: " + response.relphase.toFixed(1) +
+        "<br>CT phase calibration: " + response.ctphase.toFixed(1) +
+        "<br>differential VT phase shift: " + difPhase.toFixed(1);
       }
     }
   }
-  
-  
+  xmlHttp.open("GET","/pcal?channel=" + config.inputs[calVTindex].channel + "&refchan=" + Number(document.getElementById("calPHref").value), true);
+  xmlHttp.send(null);
+}
+
+function calPHsave(obj){
+  config.inputs[calVTindex].phase = Number(document.getElementById("calVTcal").value);
+  calVTexit();
+}
+
+function calVTvoltage(obj){
+  var index = objectIndex(obj);
+  calVTindex = index;
   document.getElementById("divInputs").style.display = "none";
-  document.getElementById("divCalibrate").style.display = "inline";
-  var calTable = document.getElementById("calTable");
-  calTable.innerHTML = "";
-  addRow();
-  column1.innerHTML = "calibrate channel:";
-  column2.innerHTML = config.inputs[index].channel;
-  addRow();
-  column1.innerHTML = "Sensed Voltage:";
-  column2.setAttribute("id","calVoltage");
-  addRow();
-  column1.innerHTML = "Calibration Factor:";
-  calInput = document.createElement("input");
-  column2.appendChild(calInput);
-  calInput.setAttribute("class","editBox");
-  calInput.setAttribute("id","calInput");
-  calInput.setAttribute("style","width: 60px;");
-  calInput.setAttribute("type","number");
-  calInput.setAttribute("step","0.1");
-  calInput.setAttribute("onchange","calVTnew(this)");
-  calInput.setAttribute("value",config.inputs[index].cal);
-  addRow();
-  addButton("save","calSave(this)");
-  addButton("cancel","calCancel(this)");
+  document.getElementById("divCalVoltage").style.display = "inline";
+  document.getElementById("calVTchan").innerHTML = config.inputs[index].channel;
+  document.getElementById("calVTvolts").innerHTML = "";
+  document.getElementById("calVTcal").value = config.inputs[index].cal;
   calRefreshVoltage = true;
-  statusTimer = setInterval(calUpdateVoltage,500);
-  
-  function addRow(){
-    newRow = document.createElement("tr");
-    calTable.appendChild(newRow);
-    column1 = document.createElement("td");
-    column1.setAttribute("align","right");
-    newRow.appendChild(column1);
-    column2 = document.createElement("td");
-    newRow.appendChild(column2);
-  }
-  function addButton(text, handler, width="50px"){
-  var newButton = document.createElement("button");
-  column2.appendChild(newButton);
-  newButton.setAttribute("onclick",handler);
-  newButton.setAttribute("class","editButton");
-  newButton.appendChild(document.createTextNode(text));
-  newButton.setAttribute("style","width: " + width);
-  }
+  calVTvolts = 0;
+  calUpdateVoltage();
 }
 
 function calVTexit(){
   var index = calVTindex;
-  document.getElementById("divCalibrate").style.display = "none";
+  document.getElementById("divCalVoltage").style.display = "none";
+  document.getElementById("divCalPhase").style.display = "none";
   document.getElementById("divInputs").style.display = "inline";
-  clearInterval(statusTimer);
   calRefreshVoltage = false;
   editChannel(calVTindex);
 }
@@ -222,31 +265,21 @@ function calUpdateVoltage(){
     if (this.readyState == 4 && this.status == 200) {
       if(calRefreshVoltage){
         var response = JSON.parse(xmlHttp.responseText);
-        var calVoltage = document.getElementById("calVoltage");
-        avgVoltage = (avgVoltage + response.vrms * 4) / 5; 
-        calVoltage.innerHTML = avgVoltage.toFixed(1);
+        if(calVTvolts == 0) calVTvolts = response.vrms;
+        else calVTvolts = .8 * calVTvolts + .2 * response.vrms;
+        document.getElementById("calVTvolts").innerHTML = calVTvolts.toFixed(1);
+        calUpdateVoltage();
       }
     }
   }
-  xmlHttp.open("GET","/vcal?channel=" + config.inputs[index].channel + "&cal=" + Number(document.getElementById("calInput").value), true);
+  xmlHttp.open("GET","/vcal?channel=" + config.inputs[index].channel + "&cal=" + Number(document.getElementById("calVTcal").value), true);
   xmlHttp.send(null);
 }
 
-function calVTnew(obj){
-  var index = calVTindex;
-}
-
-function calSave(obj){
-  config.inputs[calVTindex].cal = Number(document.getElementById("calInput").value);
+function calVTsave(obj){
+  config.inputs[calVTindex].cal = Number(document.getElementById("calVTcal").value);
   calVTexit();
 }
-
-function calCancel(obj){
-  var calInput = document.getElementById("calInput");
-  calInput.value = config.inputs[calVTindex].cal;
-  calVTexit();
-}
-
 
 /***************************************************************************************************
  * 
@@ -297,7 +330,7 @@ function buildInputsList(){
     inputColumn2.innerHTML += ", model:" + config.inputs[i].model;
     
     if(config.inputs[i].type == "CT"){
-      if(config.inputs[i].burden !== undefined){
+      if(config.inputs[i].burden !== undefined && config.inputs[i].turns !== undefined){
         inputColumn2.innerHTML += "<small>" + ", burden:" + config.inputs[i].burden + "</small>";}
       if(vchannels.length > 1){
         inputColumn2.innerHTML += "<small>" + ", vref:" + config.inputs[i].vchan + "</small>";
@@ -409,7 +442,7 @@ function editChannel(index){
       inputColumn2.appendChild(modelSelect);
       var modelTable = tables.CT;  // set to use the appropriate table
       if(config.inputs[index].type == "VT") modelTable = tables.VT;
-      modelSelect.selectedIndex = 0;  // default to the first option (unspecified)
+      modelSelect.selectedIndex = 0;  // default to the first option (generic)
       
       // add options for all the models in the table
       
@@ -423,7 +456,7 @@ function editChannel(index){
         if(option.text == config.inputs[index].model) {
           modelSelect.selectedIndex = j;  // indicate this is the selection
           
-          // if model type (not to be confused with channel type) is the unspecified entry
+          // if model type (not to be confused with channel type) is the generic entry
           // add <input> elements for cal and phase
           
           if (modelTable[j].type == "U"){
@@ -443,7 +476,7 @@ function editChannel(index){
             phaseInput.setAttribute("style","width: 30px;");
             phaseInput.setAttribute("onchange","newPhase(this)");
             inputColumn2.appendChild(phaseInput);
-            if(config.inputs[index].phase !== undefined && config.inputs[index].phase > 0){
+            if(config.inputs[index].phase !== undefined && config.inputs[index].phase >= 0){
               phaseInput.setAttribute("value",config.inputs[index].phase);
             }
             else complete = false;  // entry not valid if phase not specified
@@ -457,12 +490,14 @@ function editChannel(index){
               var burdenInput = document.createElement("input");
               burdenInput.setAttribute("class","editBox");
               burdenInput.setAttribute("style","width: 30px;");
-              burdenInput.setAttribute("onchange","newBurden(this)");
+              burdenInput.setAttribute("oninput","newBurden(this)");
               inputColumn2.appendChild(burdenInput);
               if(config.inputs[index].burden !== undefined && config.inputs[index].burden > 0){
                 burdenInput.setAttribute("value",config.inputs[index].burden);
               }
               else complete = false;  // We really need it
+            } else {
+              delete config.inputs[index].turns;
             }
             if(vchannels.length > 1){
               inputColumn2.appendChild(document.createTextNode(" vref:"));
@@ -487,10 +522,13 @@ function editChannel(index){
   }
   
   if(config.inputs[index].cal !== undefined){
-    inputColumn2.appendChild(document.createTextNode(", cal:" + config.inputs[index].cal.toFixed(1)));
+    inputColumn2.appendChild(document.createTextNode(", cal:" + config.inputs[index].cal));
   }
   if(config.inputs[index].phase !== undefined){
     inputColumn2.appendChild(document.createTextNode(", phase:" + config.inputs[index].phase.toFixed(2)));
+  }
+  if(config.inputs[index].signed !== undefined){
+    inputColumn2.appendChild(document.createTextNode(", signed"));
   }
   
   inputColumn2.appendChild(document.createElement("br"));
@@ -505,11 +543,16 @@ function editChannel(index){
     addEditButton("delete","editDelete(this)");
   }
   
-  
-  
-  if(complete && config.inputs[index].type == "VT" || !VTused(config.inputs[index].vchan)){
-    addEditButton("calibrate","calVTenter (this)","65px");
+  if(config.inputs[index].type == "CT"){
+    if(config.inputs[index].signed != "yes"){
+      addEditButton("signed","editSigned(this)","65px");
+    }
+    else {
+      addEditButton("unsigned","editUnsigned(this)","65px");
+    }
   }
+  
+  
   if(config.inputs[index].notes === undefined){
     addEditButton("notes","editNotes(this)");
   }
@@ -522,6 +565,13 @@ function editChannel(index){
     notesBox.value = config.inputs[index].notes;
     inputColumn2.appendChild(notesBox);
   }
+  
+  if(complete && config.inputs[index].type == "VT" || !VTused(config.inputs[index].vchan)){
+    inputColumn2.appendChild(document.createTextNode(" calibrate: "));
+    addEditButton("voltage","calVTvoltage (this)","60px");
+    addEditButton("phase","calVTphase (this)","65px");
+  }
+  
   function addEditButton(text, handler, width="50px"){
   var newButton = document.createElement("button");
   inputColumn2.appendChild(newButton);
@@ -548,10 +598,18 @@ function newName(obj){
 function newType(obj){
   var index = objectIndex(obj);
   config.inputs[index].type = obj.value;
-  config.inputs[index].model = "unspecified";
-  delete config.inputs[index].cal
-  delete config.inputs[index].phase
-  delete config.inputs[index].burden
+  config.inputs[index].model = "generic";
+  config.inputs[index].phase = 0;
+  delete config.inputs[index].burden;
+  delete config.inputs[index].cal;
+  delete config.inputs[index].turns;
+  config.inputs[index].phase = 0.0;
+  if(obj.type == "CT"){
+    config.inputs[index].Vchan = 0;
+  }
+  else {
+    config.inputs[index].cal = 10.0;
+  }
   editChannel(index);
 }
 
@@ -569,7 +627,8 @@ function newModel(obj){
   else {
     config.inputs[index].turns = modelTable[j].turns;
     if(config.inputs[index].burden !== undefined){
-      config.inputs[index].cal = config.inputs[index].turns / config.inputs[index].burden;
+      var cal = config.inputs[index].turns / config.inputs[index].burden;
+      config.inputs[index].cal = cal.toFixed(2);
     }
   }
   editChannel(index);
@@ -591,8 +650,9 @@ function newVchan(obj){
 function newBurden(obj){
   var index = objectIndex(obj);
   config.inputs[index].burden = Number(obj.value);
-  config.inputs[index].cal = config.inputs[index].turns / config.inputs[index].burden;
-  // config.inputs[index].cal = config.inputs[index].cal.toFixed(3);
+  var cal = config.inputs[index].turns / config.inputs[index].burden;
+  //config.inputs[index].cal = Math.round(config.inputs[index].turns / config.inputs[index].burden);
+  config.inputs[index].cal = cal.toFixed(2);
   editChannel(index);
 }
 
@@ -647,6 +707,18 @@ function editNotes(obj){
   editChannel(index);
 }
 
+function editSigned(obj){
+  var index = objectIndex(obj);
+  config.inputs[index].signed = "yes";
+  editChannel(index);
+}
+
+function editUnsigned(obj){
+  var index = objectIndex(obj);
+  delete config.inputs[index].signed;
+  editChannel(index);
+}
+
 function objectIndex(object){
   var obj = object;
   while(obj.nodeName != "TR") obj = obj.parentNode;
@@ -657,13 +729,12 @@ function objectIndex(object){
 }
 
 function addChannel(channel){
-  console.log("add" + channel);
   if(channel == -1)return;
   var index = 0;
   for(index=0; index<config.inputs.length; index++){
     if(channel < config.inputs[index].channel) break;
   }
-  config.inputs.splice(index,0,{"channel":Number(channel),"type":"CT","model":"unspecified"});
+  config.inputs.splice(index,0,{"channel":Number(channel),"type":"CT","model":"generic","phase":0,"vchan":0});
   buildInputsList();
   editChannel(index);
 }
@@ -688,6 +759,13 @@ function buildWebServer(){
     complete = false;
   }
   
+  var timeZoneInput = serverRow("Time Zone:", config.timezone, 3);
+  timeZoneInput.setAttribute("onchange","newTimeZone(this)");
+  timeZoneInput.setAttribute("style","width: 40px;");
+  timeZoneInput.setAttribute("type","number");
+  timeZoneInput.setAttribute("min","-12");
+  timeZoneInput.setAttribute("max","12");
+  timeZoneInput.setAttribute("step","1");
   
   tableRule(serverTable,2);
   
@@ -747,7 +825,12 @@ function newServer(obj){
     delete config.server;
   }
   else if(obj.selectedIndex == 1){
-    config.server = {"type":"emoncms","node":0,"postInterval":10,"url":"emoncms.org","apikey":""};
+    config.server = {"type":"emoncms",
+                     "node":0,
+                     "postInterval":10,
+                     "bulksend":1,
+                     "url":"emoncms.org",
+                     "apikey":""};
   }
   buildWebServer();
 }
@@ -757,16 +840,30 @@ function buildEmonCMS(complete){
   
   var nodeInput = serverRow("node:", config.server.node, 1)
   nodeInput.setAttribute("onchange","newNode(this)");
-  if(isNaN(config.server.node) == true || config.server.node < 0 || config.server.node > 9){
-    nodeInput.parentNode.appendChild(document.createTextNode(" Node is a number between 0 and 9."));
-  }
+  nodeInput.setAttribute("style","width: 40px;");
+  nodeInput.setAttribute("type","number");
+  nodeInput.setAttribute("min","0");
+  nodeInput.setAttribute("max","99");
+  nodeInput.setAttribute("step","1");
   
   var postInput = serverRow("post interval(sec):", config.server.postInterval.valueOf(), 3);
   postInput.setAttribute("onchange","newPost(this)");
-  if(isNaN(config.server.postInterval) == true || config.server.postInterval < 0){
-    postInput.parentNode.appendChild(document.createTextNode(" Post Interval is a number greater than 0."));
-    complete = false;
-  }
+  postInput.setAttribute("style","width: 40px;");
+  postInput.setAttribute("type","number");
+  postInput.setAttribute("min","0");
+  postInput.setAttribute("max","3600");
+  postInput.setAttribute("step","5");
+  
+  if(isNaN(config.server.bulksend)) config.server.bulksend = 1;
+  var bulksendInput = serverRow("bulk send:", config.server.bulksend.valueOf(), 3);
+  bulksendInput.setAttribute("onchange","newBulkSend(this)");
+  bulksendInput.setAttribute("style","width: 40px;");
+  bulksendInput.setAttribute("type","number");
+  bulksendInput.setAttribute("min","1");
+  bulksendInput.setAttribute("max","10");
+  bulksendInput.setAttribute("step","1");
+  bulksendInput.parentNode.appendChild(document.createTextNode(" post(s) in each update."));
+  
   var urlInput = serverRow("server URL:", config.server.url, 32);
   urlInput.setAttribute("onchange","newUrl(this)");
   if(config.server.url.length == 0){
@@ -821,6 +918,12 @@ function newDeviceName(obj){
   buildWebServer();
 }
 
+function newTimeZone(obj){
+  config.timezone = obj.value;
+  editing = true;
+  buildWebServer();
+}
+
 function newNode(obj){
   config.server.node = obj.value;
   editing = true;
@@ -829,6 +932,12 @@ function newNode(obj){
 
 function newPost(obj){
   config.server.postInterval = obj.value;
+  editing = true;
+  buildWebServer();
+}
+
+function newBulkSend(obj){
+  config.server.bulksend = obj.value;
   editing = true;
   buildWebServer();
 }
@@ -888,10 +997,10 @@ function statusDisplay(statusMessage){
   addRow();
   column3.appendChild(document.createTextNode(status.stats.chanrate + " AC cycles sampled/second"));
   addRow();
-  column3.appendChild(document.createTextNode("Running time: " + formatSeconds(status.stats.runseconds)));
+  column3.appendChild(document.createTextNode("Running time: " + formatRunTime(status.stats.runseconds)));
   addRow();
-  column3.appendChild(document.createTextNode("free Heap: " + status.stats.stack));
-  addRow();
+  //column3.appendChild(document.createTextNode("free Heap: " + status.stats.stack));
+  //addRow();
   column3.innerHTML = "<hr>";
   
   for(var i=0; i<status.channels.length; i++){
@@ -907,18 +1016,28 @@ function statusDisplay(statusMessage){
     
     
     if(status.channels[i].Watts !== undefined){
-      column3.appendChild(document.createTextNode(status.channels[i].Watts + " watts"));
+      var wattNode = document.createElement("font");
+      wattNode.innerHTML = status.channels[i].Watts + " watts";
+      
+      column3.appendChild(wattNode);
+      if(status.channels[i].reversed == "yes"){
+        wattNode.setAttribute("color","DarkRed");
+      } 
+      if(status.channels[i].Watts < 0){
+          wattNode.setAttribute("color","DarkGreen");
+      }
       if(status.channels[i].Watts >= 60){
         var pf = status.channels[i].Pf;
         column3.appendChild(document.createTextNode(", pf: " + pf.toFixed(2)));
       }
+      
     }
     else if(status.channels[i].Vrms !== undefined){
       column3.appendChild(document.createTextNode(status.channels[i].Vrms.toFixed(1) + " volts"));
       column3.appendChild(document.createTextNode(", " + status.channels[i].Hz.toFixed(1) + " Hz"));
     }
   }
-  if(getStatus) statusGet();
+  setTimeout(function(){if(getStatus)statusGet();},1000);
   
   function addRow(){
     newRow = document.createElement("tr");
@@ -933,11 +1052,13 @@ function statusDisplay(statusMessage){
   }
 }
 
-function formatSeconds(seconds)
-{
-    var date = new Date(1970,0,1);
-    date.setSeconds(seconds);
-    return date.toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, "$1");
+function formatRunTime(time){
+  var hours = Math.floor(time / 3600);
+  time -= hours * 3600;
+  var minutes = Math.floor(time / 60);
+  time -= minutes * 60;
+  var seconds = parseInt(time % 60, 10);
+  return (hours + ':' + (minutes < 10 ? '0' + minutes : minutes) + ':' + (seconds < 10 ? '0' + seconds : seconds));
 }
 
 /********************************************************************************************

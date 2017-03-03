@@ -1,6 +1,6 @@
 void setup()
 {
-  for(int i=0; i<MAXCHANNELS; i++){
+  for(int i=0; i<MAXCHANNELS; i++){                     // Start with a clean slate.
     buckets[i].value1 = 0;
     buckets[i].value2 = 0;
     buckets[i].accum1 = 0;
@@ -8,19 +8,20 @@ void setup()
     buckets[i].timeThen = millis();
         
     calibration[i] = 0.0;
-    voltageAdapt[i] = 1;
     phaseCorrection[i] = 0.0;
     channelType [i] = channelTypeUndefined;
     channelName [i] = "";
     Vchannel[i] = 0;
     offset[i] = ADC_range / 2;
+    CTreversed[i] = false;
+    CTsigned[i] = false;
   }
 
   //*************************************** Start Serial connection (if any)***************************
   
   Serial.begin(115200);
   delay(250);
-  Serial.println("\r\n******************************************* Restart *************************************");
+  Serial.println("\r\n\n\n** Restart **\r\n\n");
   Serial.println("Serial Initialized");
   
   msgLog("Version: ", IOTAWATT_VERSION);
@@ -63,7 +64,7 @@ void setup()
     msgLog("Configuration failed");
     dropDead();
   }
-    
+
   //*************************************** Start the internet connection *****************************
 
   WiFiManager wifiManager;
@@ -73,15 +74,13 @@ void setup()
 
   msgLog("WiFi connected, IP address: ", formatIP(WiFi.localIP()));
 
+  //*************************************** Initialize timer and time of day *************************
+
   initTime();
-  msgLog("Unix time:", UnixTime());
+  msgLog("Unix time:", UNIXtime());
   NewService(timeSync);
-  programStartTime = UnixTime();
+  programStartTime = UNIXtime();
 
- //*************************************** Measure and report Aref voltage****************************
-
-  // msgLog("Aref=", String(getAref(),3));
-  
  //*************************************** Start the local DNS service ****************************
 
   if (MDNS.begin(host)) {
@@ -94,6 +93,7 @@ void setup()
 
   server.on("/status",HTTP_GET, handleStatus);
   server.on("/vcal",HTTP_GET, handleVcal);
+  server.on("/pcal",HTTP_GET, handlePcal);
   server.on("/command", HTTP_GET, handleCommand);
   server.on("/list", HTTP_GET, printDirectory);
   server.on("/edit", HTTP_DELETE, handleDelete);
@@ -101,7 +101,8 @@ void setup()
   server.on("/edit", HTTP_POST, [](){returnOK(); }, handleFileUpload);
   server.onNotFound(handleNotFound);
 
-//  host = deviceName;
+  SdFile::dateTimeCallback(dateTime);
+
   server.begin();
   msgLog("HTTP server started");
 
@@ -109,7 +110,6 @@ void setup()
    
   NewService(dataLog);
   NewService(statService);
-  ESP.wdtEnable(WDTO_2S);
 }
 
 /***************************************** End of Setup **********************************************/
@@ -138,6 +138,7 @@ void dropDead(int secs){
     yield();   
   }  
 }
+
    
 
 

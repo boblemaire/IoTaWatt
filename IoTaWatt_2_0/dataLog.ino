@@ -1,4 +1,4 @@
-/**********************************************************************************************
+ /**********************************************************************************************
  * dataLog is a SERVICE that posts the raw input data from the "buckets" to a file on the SDcard.
  * The IotaLog class handles the SD file work.
  * If there is no file, it will be created.
@@ -23,28 +23,33 @@
   // trace 2x
   enum states {initialize, logData, noLog};
   static states state = initialize;
-  
+  #define GapFill 600                                  // Fill in gaps of up to these seconds                             
   static IotaLogRecord* logRecord = new IotaLogRecord;
   static double accum1Then [MAXCHANNELS];
-  static double accum2Then [MAXCHANNELS];
   static uint32_t timeThen = 0;
   uint32_t timeNow = millis();
+  static uint32_t timeNext;
   switch(state){
 
     case initialize: {
+
+      // Initialize local accumulators
       
       for(int i=0; i<channels; i++){
         ageBucket(&buckets[i], timeNow);
         accum1Then[i] = buckets[i].accum1;
-        accum2Then[i] = buckets[i].accum2;
       }
       timeThen = timeNow;
       msgLog("dataLog: service started.");
+
+      // Initialize the IotaLog class
       
       if(int rtc = iotaLog.begin((char*)IotaLogFile.c_str())){
         msgLog("dataLog: Log file open failed. ", String(rtc));
         dropDead();
       }
+
+      // If it's not a new log, get the last entry.
       
       if(iotaLog.firstKey() != 0){
         logRecord->UNIXtime = iotaLog.lastKey();
@@ -52,44 +57,53 @@
         msgLog("dataLog: Last log entry:", iotaLog.lastKey());
       }
 
-      // Check last log record for NaN and reset to zero.
-      // Should only happen if something went berzerk.
-      // This is better than 86ing the whole historical log.
-      // Maybe in the future start up a SERVICE to walk the error back and clean up. 
-
-      if(logRecord->logHours != logRecord->logHours)logRecord->logHours = 0;
-      for(int i=0; i<channels; i++) {
-        if(logRecord->channel[i].accum1 != logRecord->channel[i].accum1) logRecord->channel[i].accum1 = 0;
-        if(logRecord->channel[i].accum2 != logRecord->channel[i].accum2) logRecord->channel[i].accum2 = 0;
-      }
+      // If it's been a long time since last entry, skip ahead.
       
+      if((UNIXtime() - logRecord->UNIXtime) > GapFill){
+        logRecord->UNIXtime = UNIXtime() - UNIXtime() % dataLogInterval;
+      }
+
+      // Initialize timeNext (will be incremented at exit below)
+      // Set state to log on subsequent calls.
+
+      timeNext = logRecord->UNIXtime;
       state = logData;
       break;
     }
  
     case logData: {
-      double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
-      for(int i=0; i<channels; i++){
-        ageBucket(&buckets[i], timeNow);
-        logRecord->channel[i].accum1 += (buckets[i].accum1 - accum1Then[i]);
-        if(logRecord->channel[i].accum1 != logRecord->channel[i].accum1) logRecord->channel[i].accum1 = 0;
-        logRecord->channel[i].accum2 += (buckets[i].accum2 - accum2Then[i]);
-        if(logRecord->channel[i].accum2 != logRecord->channel[i].accum2) logRecord->channel[i].accum2 = 0;
-        double value1 = (buckets[i].accum1 - accum1Then[i]) / elapsedHrs;
-        accum1Then[i] = buckets[i].accum1;
-        accum2Then[i] = buckets[i].accum2;
-      }  
-      timeThen = timeNow;
-      logRecord->logHours += elapsedHrs;
-      if(logRecord->logHours != logRecord->logHours) logRecord->logHours = 0;
-      logRecord->serial++;
-      logRecord->UNIXtime = UnixTime();
 
+      // If this seems premature.... get outta here.
+
+      if(UNIXtime() < timeNext) return timeNext;
+
+      // If log is up to date, update the entry with latest data.
+          
+      if(timeNext == (UNIXtime() - UNIXtime() % dataLogInterval)){
+        double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
+        for(int i=0; i<channels; i++){
+          ageBucket(&buckets[i], timeNow);
+          logRecord->channel[i].accum1 += (buckets[i].accum1 - accum1Then[i]);
+          if(logRecord->channel[i].accum1 != logRecord->channel[i].accum1) logRecord->channel[i].accum1 = 0;
+          double value1 = (buckets[i].accum1 - accum1Then[i]) / elapsedHrs;
+          accum1Then[i] = buckets[i].accum1;
+        }
+        timeThen = timeNow;
+        logRecord->logHours += elapsedHrs;
+      }
+
+      // set the time and record number and write the entry.
+      
+      logRecord->UNIXtime = timeNext;
+      logRecord->serial++;
       iotaLog.write(logRecord);
       break;
     }
   }
+
+  // Advance the time and return.
   
-  return ((uint32_t)NTPtime() + dataLogInterval - (NTPtime() % dataLogInterval));
+  timeNext += dataLogInterval;
+  return timeNext;
 }
 

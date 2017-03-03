@@ -17,8 +17,8 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   static IotaLogRecord* logRecord = new IotaLogRecord;
   static File eMonPostLog;
   static double accum1Then [MAXCHANNELS];
-  static uint32_t UnixLastPost = UnixTime();
-  static uint32_t UnixNextPost = UnixTime();
+  static uint32_t UnixLastPost = UNIXtime();
+  static uint32_t UnixNextPost = UNIXtime();
   static double _logHours;
   static String req = "";
   static uint32_t currentReqUnixtime = 0;
@@ -37,7 +37,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
           // so wait until the log service is up and running.
       
       if(!iotaLog.isOpen()){
-        return ((uint32_t) NTPtime() + 5);
+        return UNIXtime() + 5;
       }
       msgLog("EmonService: started.");
      
@@ -87,7 +87,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       
       state = post;
       _serviceBlock->priority = priorityLow;
-      return ((uint32_t) UnixNextPost + SEVENTY_YEAR_SECONDS);
+      return UnixNextPost;
     }
 
         
@@ -97,12 +97,12 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
           // Anticipate next posting at next regular interval and break to reschedule.
  
       if(iotaLog.lastKey() < UnixNextPost){ 
-        UnixNextPost = UnixTime() + eMonCMSInterval - (UnixTime() % eMonCMSInterval);
-        return ((uint32_t)UnixNextPost + SEVENTY_YEAR_SECONDS);
+        UnixNextPost = UNIXtime() + eMonCMSInterval - (UNIXtime() % eMonCMSInterval);
+        return UnixNextPost;
       } 
       
           // Not current.  Read sequentially to get the entry >= scheduled post time
-trace(T_EMON,1);    
+      trace(T_EMON,1);    
       while(logRecord->UNIXtime < UnixNextPost){
         if(logRecord->UNIXtime >= iotaLog.lastKey()){
           msgLog("runaway seq read.", logRecord->UNIXtime);
@@ -112,9 +112,20 @@ trace(T_EMON,1);
       }
 
           // Adjust the posting time to match the log entry time.
-          // If new request, format preamble.
-      
+            
       UnixNextPost = logRecord->UNIXtime - logRecord->UNIXtime % eMonCMSInterval;
+
+          // Compute the time difference between log entries.
+          // If zero, don't bother.
+          
+      double elapsedHours = logRecord->logHours - _logHours;
+      if(elapsedHours == 0){
+        UnixNextPost += eMonCMSInterval;
+        return UnixNextPost;  
+      }
+      
+          // If new request, format preamble, otherwise, just tack it on with a comma.
+      
       if(req.length() == 0){
         req = "/input/bulk.json?time=" + String(UnixNextPost) + "&apikey=" + apiKey + "&data=[";
         currentReqUnixtime = UnixNextPost;
@@ -127,12 +138,12 @@ trace(T_EMON,1);
           // values for each channel are (delta value hrs)/(delta log hours) = period value.
           // Update the previous (Then) buckets to the most recent values.
      
-trace(T_EMON,2);
+      trace(T_EMON,2);
 
       req += '[' + String(UnixNextPost - currentReqUnixtime) + ',' + String(node) + ',';
       double value1;
-      double elapsedHours = logRecord->logHours - _logHours;
-      _logHours = logRecord->logHours;
+      
+      _logHours = logRecord->logHours;   
       for (int i = 0; i < channels; i++) {
         value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
         accum1Then[i] = logRecord->channel[i].accum1;
@@ -141,16 +152,16 @@ trace(T_EMON,2);
         else if(channelType[i] == channelTypePower) req += String(long(value1+0.5)) + ',';
         else req += String(long(value1+0.5)) + ',';
       }
-trace(T_EMON,3);    
+      trace(T_EMON,3);    
       req.setCharAt(req.length()-1,']');
       currentReqEntries++;
       UnixLastPost = UnixNextPost;
       UnixNextPost +=  eMonCMSInterval - (UnixNextPost % eMonCMSInterval);
       
-      if ((currentReqEntries < emonBulkEntries) ||
+      if ((currentReqEntries < eMonBulkSend) ||
          ((iotaLog.lastKey() > UnixNextPost) &&
          (req.length() < 1000))) {
-        return 1;
+        return UnixNextPost;
       }
 
           // Send the post       
@@ -159,7 +170,7 @@ trace(T_EMON,3);
       uint32_t sendTime = millis();
       if(!eMonSend(req)){
         state = resend;
-        return ((uint32_t)NTPtime() + 2);
+        return UNIXtime() + 2;
       }
       Serial.print(formatHMS(NTPtime() + (localTimeDiff * 3600)));
       Serial.print(" ");
@@ -172,14 +183,14 @@ trace(T_EMON,3);
       req = "";
       currentReqEntries = 0;    
       state = post;
-      return 1;
+      return UnixNextPost;
     }
 
 
     case resend: {
       msgLog("Resending eMonCMS data.");
-      if(!eMonSend(req)){
-        return ((uint32_t)NTPtime() + 5);
+      if(!eMonSend(req)){ 
+        return UNIXtime() + 5;
       }
       else {
         buf->data = UnixLastPost;
@@ -188,12 +199,12 @@ trace(T_EMON,3);
         req = "";
         currentReqEntries = 0;  
         state = post;
-        return ((uint32_t)NTPtime() + 1);
+        return 1;
       }
       break;
     }
   }
-  return ((uint32_t)NTPtime() + 1);
+  return 1;
 }
 
 /************************************************************************************************
