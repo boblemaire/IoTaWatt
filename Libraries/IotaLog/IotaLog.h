@@ -25,9 +25,8 @@ struct IotaLogRecord {
 			double logHours;				// Total hours of monitoring logged to date in this log	
 			struct channels {
 				double accum1;
-				double accum2;
-				channels(){accum1 = 0; accum2 = 0;}
-			} channel[15];
+				channels(){accum1 = 0;}
+			} channel[30];
 			IotaLogRecord(){UNIXtime=0; serial=0; logHours=0;};
 		};
 
@@ -47,39 +46,53 @@ class IotaLog
 		int searchReads();
 			
   private:
-  
-    struct IotaHeaderRecord {
-		uint16_t headerLength;
-		uint16_t entryLength;
-		uint16_t logInterval;
-		uint16_t version;
-		IotaHeaderRecord(){headerLength=sizeof(IotaHeaderRecord);
-					entryLength=sizeof(IotaLogRecord);
-					logInterval=0;
-					version=0;}	
-		} header;
+  			
+struct IotaL1indexEntry {
+			uint32_t UNIXtime;
+			uint32_t serial;
+		} L1indexEntry;
+		
+	IotaL1indexEntry* _L1indexEntry = &L1indexEntry;	
 		
 	File IotaFile;
-	enum fileState {fileClosed, openWrite, openRead};
-	fileState _fileState = fileClosed;
+	File IotaIndex;
 	
 	IotaLogRecord* record;
 	IotaLogRecord* _callerRecord;
 	
-	String fileName;
+	String logPath;
+	String indexPath;
+	
 	uint32_t _firstKey = 0;
 	uint32_t _lastKey=0;
 	uint32_t _fileSize = 0;
 	uint32_t _entries = 0;
-	uint32_t _searchReads = 0;
 	
-	uint32_t _lastReadKey = 0;
-	uint32_t _lastReadSerial = 0;
+	// Posting interval to log. Currently tested only using 5.
+	
 	uint32_t _interval = 5;
-	uint32_t _sigKey = 10000000;
 	
-	int create(char* /*filepath */, uint32_t /* entry length */);
+	// Defines the L1 (SDfile), and L2 (array) indices.
+	// L1 entries are an ordered list of the first UNIXtime/serial of each contigeous series in the log, 
+	// contained in the NDX file.
+	// L2 entries are an ordered list of the first UNIXtime of a cluster (group) of L1 entries.  The size
+	// of the clusters are dynamically determined.
+	
+	uint32_t _L1entries = 0;				// Entries in 1st level index
+	uint32_t _L2entries = 0;				// Number of entries in 2nd level index
+	uint32_t _L2maxEntries = 256; 			// Maximum 2nd level index entries
+	uint32_t _L1clusterEntries = 1;			// 1st level entries indexed by one 2nd level entry
+	uint32_t* _L2index;						// 2nd level index array pointer
+
+	// Defines the last indexed series
+	
+	uint32_t _seriesKey = 0;
+	uint32_t _seriesSerial = 0;
+	uint32_t _seriesEntries = 0;
+	uint32_t _seriesNextKey = 0;	
+		
 	uint32_t search(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+	int buildIndex(void);
 	
 };
 

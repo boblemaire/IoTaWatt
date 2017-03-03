@@ -11,7 +11,7 @@ void loop()
 
   // ------- If AC zero crossing approaching, go sample a channel.
 
-  if(millis() >= nextCrossMs){
+  if((uint32_t)(millis() - lastCrossMs) >= (490 / int(frequency))){
     ESP.wdtFeed();
     trace(T_LOOP,1);
     samplePower(nextChannel);
@@ -37,7 +37,7 @@ void loop()
 // ---------- If the head of the service queue is dispatchable
 //            call the SERVICE.
 
-  if(serviceQueue != NULL && NTPtime() >= serviceQueue->callTime){
+  if(serviceQueue != NULL && UNIXtime() >= serviceQueue->callTime){
     serviceBlock* thisBlock = serviceQueue;
     serviceQueue = thisBlock->next;
     ESP.wdtFeed();
@@ -63,13 +63,12 @@ void loop()
   }
 }
 
-/***************************** End of main Loop ******************************************************/
+/*****************************************************************************************************
 
+                                    End of main Loop
+             
+******************************************************************************************************
 
-//                                          - * -
-
-
-/*********************************************************************************************************
  * Scheduler/Dispatcher support functions.
  * 
  * The main loop steps through and samples the channels at the millisecond level.  It invokes samplePower()
@@ -108,7 +107,7 @@ void NewService(uint32_t (*serviceFunction)(struct serviceBlock*)){
   }
 
 void AddService(struct serviceBlock* newBlock){
-  if(newBlock->callTime < NTPtime()) newBlock->callTime = NTPtime();
+  if(newBlock->callTime < UNIXtime()) newBlock->callTime = UNIXtime();
   if(serviceQueue == NULL ||
     (newBlock->callTime < serviceQueue->callTime) ||
     (newBlock->callTime == serviceQueue->callTime && newBlock->priority < serviceQueue->priority)){
@@ -129,8 +128,6 @@ void AddService(struct serviceBlock* newBlock){
   }
 }
 
-
-
 /******************************************************************************************************** 
  * All of the other SERVICEs that harvest values from the main "buckets" do so for their own selfish 
  * purposes, and have no global scope to share with others. This simple service maintains periodic
@@ -140,17 +137,18 @@ void AddService(struct serviceBlock* newBlock){
  *******************************************************************************************************/
 
 uint32_t statService(struct serviceBlock* _serviceBlock) {
-  static uint32_t timeThen = millis() - 1;            // Don't want divide by zero on first call
+  static uint32_t timeThen = millis();              
   uint32_t timeNow = millis();
   static boolean started = false;
 
   if(!started){
     msgLog("statService: started.");
     started = true;
+    return (uint32_t)UNIXtime() + 1;
   }
 
   if(float(cycleSamples) > 0){
-    cycleSampleRate = cycleSampleRate * .75 + .25 * float(cycleSamples * 1000) / float((uint32_t)(timeNow - timeThen));
+    cycleSampleRate = .75 * cycleSampleRate + .25 * float(cycleSamples * 1000) / float((uint32_t)(timeNow - timeThen));
   } else {
     cycleSampleRate = cycleSampleRate * .75;
   }
@@ -170,9 +168,8 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   cycleSamples = 0;
   
   if(statServiceInterval < 10)statServiceInterval++;
-  return ((uint32_t)NTPtime() + statServiceInterval);
+  return ((uint32_t)UNIXtime() + statServiceInterval);
 }
-
 
 /************************************************************************************************
  *  Program Trace Routines.
@@ -182,7 +179,7 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
  *  can at least get some idea where it happened.
  *  
  *  invoking trace() puts a 16 bit entry with highbyte=module and lowbyte=seq into the 
- *  RTC_USER_MEM area.  After a restart, the 32 most recent entries can be printed, oldest to most rent, 
+ *  RTC_USER_MEM area.  After a restart, the 32 most recent entries are logged, oldest to most rent, 
  *  using logTrace.
  *************************************************************************************************/
 
@@ -191,18 +188,6 @@ void trace(uint32_t module, int seq){
   static uint32_t entry;
   entry = (module+seq) | (traceSeq++ << 16);
   WRITE_PERI_REG(RTC_USER_MEM + 96 + (traceSeq & 0x1F), entry);
-}
-
-void printTrace(void){
-  uint16_t _counter = READ_PERI_REG(RTC_USER_MEM + 96) >> 16;
-  Serial.println(formatHex(_counter));
-  int i=1;
-  while(((uint16_t)++_counter) == (READ_PERI_REG(RTC_USER_MEM + 96 + (i%32)) >> 16)) i++;
-  Serial.println(i);
-  for(int j=0; j<32; j++){
-    Serial.print(formatHex(READ_PERI_REG(RTC_USER_MEM + 96 + ((j+i)%32))));
-    Serial.println();
-  }
 }
 
 void logTrace(void){

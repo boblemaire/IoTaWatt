@@ -1,4 +1,4 @@
- /***************************************************************************************************
+  /***************************************************************************************************
   *  samplePower()
   *  
   *  Sample all of the channels.
@@ -12,15 +12,19 @@
   *  
   **************************************************************************************************/
 void samplePower(int channel){
+  uint32_t timeNow = millis();
+  
+  if(channelType[channel] == channelTypeVoltage){
+    ageBucket(&buckets[channel], timeNow);
+    buckets[channel].volts = sampleVoltage(channel, calibration[channel]);
+    return;
+  }
      
   if(channelType[channel] != channelTypePower) return;
 
 //******************************************* Collect the samples *******************************************
   byte Vchan = Vchannel[channel];
   byte Ichan = channel;
-
-  uint32_t timeNow = millis();
-  
   ageBucket(&buckets[Ichan], timeNow);  
   
   double _Irms = 0;
@@ -45,7 +49,7 @@ void samplePower(int channel){
     float stepFraction = _phaseCorrection - stepCorrection;
     
     if(_phaseCorrection >= 0) IsamplePtr += stepCorrection;
-    else                      VsamplePtr -= stepCorrection;
+    else                      VsamplePtr += -stepCorrection;
     
     int16_t rawV;
     int16_t rawI;
@@ -78,12 +82,17 @@ void samplePower(int channel){
       
     //***************************************** Compute results **************************************    
       
-    double Vratio = calibration[Vchan] * voltageAdapt[Vchan] * getAref(Vchan) / double(ADC_range);
+    double Vratio = calibration[Vchan] * Vadj_3 * getAref(Vchan) / double(ADC_range);
+    if(getAref(Vchan) < 1.5) Vratio *= (double)Vadj_1 / Vadj_3;
     double Iratio = calibration[Ichan] * getAref(Ichan) / double(ADC_range);
     _Vrms = Vratio * sqrt((double)(sumVsq / samples));
-    // _Irms = Iratio * sqrt((double)(sumIsq / samples));
     _watts = Vratio * Iratio * (double)(sumP / samples);
-    if(_watts < 0) _watts = -_watts;
+    if(_watts < 0 && !CTsigned[Ichan]){
+      _watts = -_watts;
+      if(_watts > 1) CTreversed[Ichan] = true;
+    } else {
+      CTreversed[Ichan] = false;
+    }
     
     ageBucket(&buckets[Vchan], timeNow);
     buckets[Vchan].volts = _Vrms;
@@ -142,11 +151,6 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
 
   const uint32_t mask = ~((SPIMMOSI << SPILMOSI) | (SPIMMISO << SPILMISO));
   
-  byte      ADC_VselectPin;
-  uint32_t  ADC_VselectMask;
-  byte      ADC_IselectPin;
-  uint32_t  ADC_IselectMask;
-
   uint8_t  Iport = chanAddr[Ichan] % 8;
   uint8_t  Vport = chanAddr[Vchan] % 8;
     
@@ -166,7 +170,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
   int16_t crossLimit = cycles * 2 + 1;
   int16_t crossCount = 0;
   int16_t crossGuard = 0;
-  int16_t crossGuardReset = 2 + phaseMax * samplesPerCycle / 360;
+  int16_t crossGuardReset = 50;  //2 + phaseMax * samplesPerCycle / 360;
 
   uint32_t startMs = millis();
   uint32_t timeoutMs = 600 / frequency;
@@ -175,10 +179,16 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
 
     SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
 
-    ADC_IselectPin = ADC_selectPin[chanAddr[Ichan] >> 3];
-    ADC_VselectPin = ADC_selectPin[chanAddr[Vchan] >> 3];
-    ADC_IselectMask = 1 << ADC_IselectPin;
-    ADC_VselectMask = 1 << ADC_VselectPin;
+    byte ADC_IselectPin = ADC_selectPin[chanAddr[Ichan] >> 3];
+    byte ADC_VselectPin = ADC_selectPin[chanAddr[Vchan] >> 3];
+    uint32_t ADC_IselectMask = 1 << ADC_IselectPin;
+    uint32_t ADC_VselectMask = 1 << ADC_VselectPin;
+
+    boolean ADC_Iselect16 = false;
+    if(ADC_IselectPin == 16) ADC_Iselect16 = true;
+    boolean ADC_Vselect16 = false;
+    if(ADC_VselectPin == 16) ADC_Vselect16 = true;
+    
    
     if(readADC(Ichan) < 4) return false;                // channel is unplugged (grounded)
 
@@ -189,8 +199,9 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
      
       // Hard coded equivilent of:
       // Isample[samples] = readADC(Ichan) - offsetI;
-      
-          GPOC = ADC_IselectMask;                                           // digitalWrite(ADC_IselectPin, LOW); Select the ADC
+
+          if(ADC_Iselect16) GP16O &= ~1;
+          else GPOC = ADC_IselectMask;                     // digitalWrite(ADC_IselectPin, LOW); Select the ADC
     
           // Hard coded equivilent of:
           // Isample[samples] = readADC(Ichan) - offsetI;
@@ -217,9 +228,10 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
             if(crossCount < crossLimit){
               samples++;                                    // Only count samples between crossings
               sumIsq += *IsamplePtr * *IsamplePtr;          // Need Irms early to correct phase shift     
-              if(samples >= maxSamples){                    // AC must be shut down
+              if(samples >= MAX_SAMPLES){                    // AC must be shut down
                 trace(T_SAMP,0);
-                GPOS = ADC_IselectMask;                     // shortcut out
+                if(ADC_Iselect16) GP16O = 1;
+                else GPOS = ADC_IselectMask;                // shortcut out
                 // os_intr_unlock();
                 return false;
               }
@@ -233,7 +245,9 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           
           while(SPI1CMD & SPIBUSY) {}                       
                     
-          GPOS = ADC_IselectMask;                                          // digitalWrite(ADC_IselectPin, HIGH);  Deselect the ADC
+          if(ADC_Iselect16) GP16O = 1;
+          else GPOS = ADC_IselectMask;                       // digitalWrite(ADC_IselectPin, HIGH);  Deselect the ADC
+          
           volatile uint8_t * fifoPtr8 = (volatile uint8_t *) &SPI1W0;
           *IsamplePtr = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_bits)) - offsetI;
 
@@ -241,7 +255,8 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
       // rawV = readADC(Vchan) - offsetV;
       // Vsample[samples] = (lastV + rawV) / 2;
                                      
-          GPOC = ADC_VselectMask;                                            // digitalWrite(ADC_VselectPin, LOW); Select the ADC
+          if(ADC_Vselect16) GP16O &= ~1;
+          else GPOC = ADC_VselectMask;                                       // digitalWrite(ADC_VselectPin, LOW); Select the ADC
           SPI1U1 = ((SPI1U1 & mask) | ((4 << SPILMOSI) | (4 << SPILMISO)));  // Set number of bits (n-1) so this is 5 
           SPI1W0 = (0x18 | Vport) << 3;                                      // Data left aligned in low byte 
           SPI1CMD |= SPIBUSY;                                                // Start the SPI clock  
@@ -256,20 +271,30 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
           SPI1CMD |= SPIBUSY;                                                 // Start the SPI clock
 
           // Do some loop housekeeping asynchronously while SPI runs.
-
-          if((uint32_t)(millis()-startMs)>timeoutMs){                         // Something is very wrong
-            trace(T_SAMP,2);
-            GPOS = ADC_VselectMask;                                           // shortcut back
-            // os_intr_unlock();
-            return false;
-          }
           
           if((*IsamplePtr > -3) && (*IsamplePtr < 3)) *IsamplePtr = 0;        // Filter noise from previous reading while SPI reads ADC
+
+          // Check for timeout.  The clock gets reset at each crossing, so the
+          // timeout value is a little more than a half cycle - 10ms @ 60Hz, 12ms @ 50Hz.
+          // The most common cause of timeout here is unplugging the AC reference VT.  Since the
+          // device is typically sampling 60% of the time, there is a high probability this
+          // will happen if the adapter is unplugged.
+          // So handling needs to be robust.
           
+          if((uint32_t)(millis()-startMs)>timeoutMs){                         // Something is wrong
+            trace(T_SAMP,2);                                                  // Leave a meaningful trace
+            trace(T_SAMP,Ichan);
+            trace(T_SAMP,Vchan);
+            if(ADC_Vselect16) GP16O = 1;                                      // ADC select pin high
+            else GPOS = ADC_VselectMask;                                      // Diagnostic stuff if anybody is listening
+            return false;                                                     // Return a failure
+          }
+            
           // Now wait for SPI to complete
           
           while(SPI1CMD & SPIBUSY) {}                                         // Loop till SPI completes
-          GPOS = ADC_VselectMask;                                             // digitalWrite(ADC_VselectPin, HIGH); Deselect the ADC
+          if(ADC_Vselect16) GP16O = 1;
+          else GPOS = ADC_VselectMask;                                        // digitalWrite(ADC_VselectPin, HIGH); Deselect the ADC
           fifoPtr8 = (volatile uint8_t *) &SPI1W0;                            // Use a pointer to bit twiddle the result
           rawV = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_bits)) - offsetV;  // Result is in left aligned in first FiFo word
 
@@ -295,9 +320,14 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
     } while(crossCount < crossLimit  || crossGuard > 0);                      // Keep going until prescribed crossings + phase shift overun
     
     *VsamplePtr = (lastV + rawV) / 2;                                         // Loose end
+
+    // If AC is floating, we can end up here with the noise looking enough like crossings.
+    // If that's the case, with the phase correction overrun, this should detect it.  
+    
+    if(*VsamplePtr > -10 && *VsamplePtr < 10){
+      return false;
+    }
     trace(T_SAMP,7);
-    yield();
-    trace(T_SAMP,8);
 
     // sumIsq was accumulated in loop at no cost during SPI transfers.
     // Use it now to develop Irms in case caller needs it to get phase shift
@@ -305,7 +335,7 @@ boolean sampleCycle(int Vchan, int Ichan, double &Irms) {
 
     double Iratio = calibration[Ichan] * getAref(Ichan) / float(ADC_range);
     Irms = Iratio * sqrt((float)  sumIsq / samples);
-    frequency = (1000000.0 * cycles)  / float((uint32_t)(lastCrossUs - firstCrossUs));
+    frequency = (0.9 * frequency) + (0.1 * (1000000.0 * cycles)  / float((uint32_t)(lastCrossUs - firstCrossUs)));
 
     // Note the sample rate.
     // This is just a snapshot from single cycle sampling.
@@ -335,8 +365,8 @@ int readADC(uint8_t channel)
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));  // SD may have changed this
   ADCselectPin = ADC_selectPin[chanAddr[channel] >> 3];
       
-  ADC_out[0] = 0x18 | (chanAddr[channel] & 0x07);            
-
+  ADC_out[0] = 0x18 | (chanAddr[channel] & 0x07);
+  
   digitalWrite(ADCselectPin, LOW);                  // Lower the chip select
   SPI.transferBytes(ADC_out, ADC_in, 1);            // Start bit, single bit, ADC port
                                                     // At this point ADC is sampling the port
@@ -344,7 +374,8 @@ int readADC(uint8_t channel)
                                                     // period ends when we initiate the next read
   SPI.transferBytes(ADC_out, ADC_in, 2);            // Start reading the results
   digitalWrite(ADCselectPin, HIGH);                 // Raise the chip select to deselect and reset
-  return (word(ADC_in[0] & 0x3F, ADC_in[1]) >> (14 - ADC_bits));  // Put the result together and return
+  
+  return (word(ADC_in[0] & 0x3F, ADC_in[1]) >> (14 - ADC_bits)); // Put the result together and return
 }
 
 /****************************************************************************************************
@@ -388,10 +419,10 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
     }
     
   }
-  double Vratio = Vcal * voltageAdapt[Vchan] * getAref(Vchan) / double(ADC_range);
-  return  Vratio * sqrt((double)(sumVsq / samples)); 
+  double Vratio = Vcal * Vadj_3 * getAref(Vchan) / double(ADC_range);
+  if(getAref(Vchan) < 1.5) Vratio *= (double)Vadj_1 / Vadj_3;
+  return  Vratio * sqrt((double)(sumVsq / samples));
 }
-
 //**********************************************************************************************
 //
 //        getAref()  -  Get the current value of Aref
@@ -406,8 +437,8 @@ float getAref(int channel) {
   uint8_t ADCselectPin;
   
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));  // SD may have changed this
-  ADCselectPin = ADC_selectPin[chanAddr[channel] >> 3];    
-  ADC_out[0] = 0x1F;            
+  ADCselectPin = ADC_selectPin[chanAref[channel] >> 3];    
+  ADC_out[0] = 0x18 | (chanAref[channel] & 0x07);            
 
   digitalWrite(ADCselectPin, LOW);                  // Lower the chip select
   SPI.transferBytes(ADC_out, ADC_in, 1);            // Start bit, single bit, ADC port
@@ -418,27 +449,43 @@ float getAref(int channel) {
   digitalWrite(ADCselectPin, HIGH);                 // Raise the chip select to deselect and reset
                                                     // Put the result together and return
   uint16_t ADCvalue = (word(ADC_in[0] & 0x3F, ADC_in[1]) >> (14 - ADC_bits));
-  if(ADCvalue == 4095) return 0;                    // no ADC
+  if(ADCvalue == 4095 | ADCvalue == 0) return 0;    // no ADC
   return VrefVolts * ADC_range / ADCvalue;  
 }
 
 //**********************************************************************************************
 //
-//        printSamples()  -  print one cycle of the current samples.
-//        Diagnostic tool, not used.
+//        printSamples()  -  print the current samples.
+//        fileSamples() - write the current samples to an SD file ("samples.txt").
+//        These are diagnostic tools, not currently used.
 //
 //**********************************************************************************************
 
-void printSamples()
-{
-  Serial.println(samplesPerCycle, 0);
-  for(int i=0; i<(samplesPerCycle + 20); i++)
+void printSamples() {
+  Serial.println(samples);
+  for(int i=0; i<(samples + 50); i++)
   {
     Serial.print(Vsample[i]);
     Serial.print(", ");
     Serial.print(Isample[i]);
     Serial.println();
   }
+  return;
+}
+
+void fileSamples() {
+  File sampleFile;
+  SD.remove("samples.txt");
+  sampleFile = SD.open("samples.txt",FILE_WRITE);
+  sampleFile.println(samples);
+  for(int i=0; i<(samples + 50); i++)
+  {
+    sampleFile.print(Vsample[i]);
+    sampleFile.print(", ");
+    sampleFile.print(Isample[i]);
+    sampleFile.println();
+  }
+  sampleFile.close();
   return;
 }
 

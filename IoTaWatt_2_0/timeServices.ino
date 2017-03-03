@@ -38,11 +38,11 @@
       timeRefMs = millis();
       return;   
     }
-    uint32_t timeDiff = rtc.now().unixtime() - UnixTime();
+    uint32_t timeDiff = rtc.now().unixtime() - UNIXtime();
     if(timeDiff){
       msgLog("Real Time Clock vs NTP server difference: ", String(timeDiff));
       msgLog("Adjusting Real Time Clock to NTP server time.");
-      rtc.adjust(UnixTime());
+      rtc.adjust(UNIXtime());
       return;
     } 
   }
@@ -99,7 +99,8 @@
  * 
  *  uint32_t NTPtime() - Return the current time in NTP format
  *  uint32_t Unixtime() - Return the current time in Unix format
- *  Both return zero if the clock is not set
+ *  Both return zero if the clock is not set//
+ *  uint32_t MillisAtUNIXtime - Return the local Millis() value corresponding to the UnixTime
  * 
  *******************************************************************************************/
 
@@ -108,9 +109,15 @@ uint32_t NTPtime() {
   return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000;
  }
   
-uint32_t UnixTime() {
+uint32_t UNIXtime() {
   if(timeRefNTP == 0) return 0;
   return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000 - SEVENTY_YEAR_SECONDS;
+ }
+ 
+ 
+
+uint32_t MillisAtUNIXtime(uint32_t UnixTime){                  
+  return (uint32_t)timeRefMs + 1000 * (UnixTime - SEVENTY_YEAR_SECONDS - timeRefNTP);
  }
 
 /********************************************************************************************
@@ -132,14 +139,32 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock){
     timeRefNTP = _NTPtime;                 
     timeRefMs = millis();
     if(hasRTC){
-      int32_t timeDiff = UnixTime() - rtc.now().unixtime();
+      int32_t timeDiff = UNIXtime() - rtc.now().unixtime();
       if(timeDiff){
         msgLog("timeSynch: adjusting RTC by ", String(timeDiff));
-        rtc.adjust(UnixTime());
+        rtc.adjust(UNIXtime());
       }
     }
   }
-  return ((uint32_t) timeSynchInterval * ( 1 + NTPtime() / timeSynchInterval));
+  return ((uint32_t) timeSynchInterval * ( 1 + UNIXtime() / timeSynchInterval));
+}
+
+/********************************************************************************
+ *   dateTime callback for SD so it can maintain dates in the directory.
+ ********************************************************************************/
+
+void dateTime(uint16_t* date, uint16_t* time) {
+  uint32_t localUnixTime = UNIXtime() + localTimeDiff*3600;
+  
+  // return date using FAT_DATE macro to format fields
+  *date = FAT_DATE(DateTime(localUnixTime).year(),
+                   DateTime(localUnixTime).month(),
+                   DateTime(localUnixTime).day());
+
+  // return time using FAT_TIME macro to format fields
+  *time = FAT_TIME(DateTime(localUnixTime).hour(), 
+                   DateTime(localUnixTime).minute(),
+                   DateTime(localUnixTime).second());
 }
 
 /********************************************************************************************

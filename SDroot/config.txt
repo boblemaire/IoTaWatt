@@ -1,54 +1,21 @@
 {
 	"format": 1,
+	"timezone":0,
 	"device": {
-		"name": "iotaWatt",
-		"version": "4.2"
+		"name": "IoTaWatt",
+		"version": "2.1",
+		"channels": 21,
+		"refvolts": 1
 	},
 	"inputs": [
 		{
 			"channel": 0,
 			"type": "VT",
-			"model": "unspecified",
-			"cal": 126.1,
-			"phase": 2.74,
-			"name": "Voltage",
-			"notes": "Global Village"
-		},
-		{
-			"channel": 1,
-			"type": "CT",
-			"model": "SCT013-000",
-			"vchan": 0,
-			"name": "channel 1",
-			"burden": 47,
-			"cal": 42.1,
-			"phase": 4
-		},
-		{
-			"channel": 2,
-			"type": "CT",
-			"model": "CR3110-3000",
-			"vchan": 0,
-			"name": "channel 2",
-			"burden": 47,
-			"cal": 64,
-			"phase": 1.5
-		},
-		{
-			"channel": 3,
-			"type": "CT",
-			"model": "SCT013-030",
-			"vchan": 0,
-			"cal": 30,
-			"phase": 4,
-			"name": "Channel 3"
+			"model": "CUI",
+			"cal": 10.03,
+			"phase": 1.1,
+			"name": "Voltage"
 		}
 	],
-	"server": {
-		"type": "emoncms",
-		"node": 1,
-		"postInterval": 10,
-		"url": "emoncms.org",
-		"apikey": "****** your 32 hex digit key ***"
-	}
+	"server":{"type":"none"}	
 }
