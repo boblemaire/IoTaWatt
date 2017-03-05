@@ -70,6 +70,7 @@
 			IotaIndex.read(ptr, 4);
 			ptr++;
 		}
+		_seriesKey = 0xffffffff;
 		return 0;
 	}
 	
@@ -129,7 +130,7 @@
 					IotaIndex.read((char*)_L1indexEntry, 8);
 				} else {
 					_L1indexEntry->UNIXtime = 0xffffffff;
-					_L1indexEntry->serial = _entries;
+					_L1indexEntry->serial = 0xffffffff;
 				}
 			} while(key >= _L1indexEntry->UNIXtime);
 			
