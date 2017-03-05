@@ -7,12 +7,12 @@
   ],
   
 "CT":[
-  {"model":"generic","type":"U"},
-  {"model":"CR3110-3000","type":"C","turns":3008,"phase":1.5},
+	{"model":"generic","type":"U"},
+	{"model":"CR3110-3000","type":"C","turns":3008,"phase":1.5},
 	{"model":"SCT013-030","mfg":"YHDC","type":"V","cal":30,"phase":3.8},
 	{"model":"SCT013-050","mfg":"YHDC","type":"V","cal":49.8,"phase":3.0},
 	{"model":"SCT013-000","mfg":"YHDC","type":"C","turns":1978,"phase":2.3},
-	{"model":"SCT019-000","mfg":"YHDC","type":"C","turns":6097,"phase":1.3},
+	{"model":"SCT019-000","mfg":"YHDC","type":"C","turns":6097,"phase":2.0},
 	{"model":"CTHMC-100-UB","mfg":"Dent","type":"V","cal":301,"phase":0.25},
 	{"model":"HWCT-004","mfg":"China","type":"C","turns":1005,"phase":0.3},
 	{"model":"ZDKCT10M","mfg":"China","type":"C","turns":2007,"phase":1.5},
