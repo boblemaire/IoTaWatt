@@ -14,7 +14,7 @@ void loop()
   if((uint32_t)(millis() - lastCrossMs) >= (490 / int(frequency))){
     ESP.wdtFeed();
     trace(T_LOOP,1);
-    samplePower(nextChannel);
+    samplePower(nextChannel, 0);
     trace(T_LOOP,2);
     nextCrossMs = lastCrossMs + 490 / int(frequency);
     nextChannel = ++nextChannel % channels;

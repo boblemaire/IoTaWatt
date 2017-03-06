@@ -351,14 +351,13 @@ void handlePcal(){
 }
 
 float calcPhaseDiff(int refChan){
+  int Ishift = 40;
   double phaseShift = 0;
   for(int i=0; i<4; i++){
-    samplePower(refChan);
-    samplePower(refChan);
+    samplePower(refChan, Ishift);
     double sumVsq = 0;
     double sumIsq = 0;
-    double sumVI = 0;
-    int Ishift = 40;
+    double sumVI = 0;  
     for(int i=0; i<samples; i++){
       sumVsq += (double)Vsample[i] * Vsample[i];
       sumIsq += (double)Isample[i+Ishift] * Isample[i+Ishift];
@@ -369,8 +368,7 @@ float calcPhaseDiff(int refChan){
     double VI = sumVI/double(samples);
     float shiftedDeg = (float)360.0 * Ishift / samples;
     phaseShift += 57.29578 * acos(VI / (Vrms * Irms)) - shiftedDeg;
-  }
-    
+  }  
   return phaseShift / 4;
 }
 
