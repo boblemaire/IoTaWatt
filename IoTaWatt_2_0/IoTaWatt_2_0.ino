@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ***********************************************************************************/
 
-#define IOTAWATT_VERSION "2.0"
+#define IOTAWATT_VERSION "2.00.02"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -134,7 +134,7 @@ String channelName[MAXCHANNELS];
 // The calibration for a current channel is the true current (in Amperes) per ADC volt.
 
 float calibration [MAXCHANNELS];
-#define Vadj_1 38.532                          // attenuation with 1.2v Aref (37:1) 24K + 12K + 1K
+#define Vadj_1 38.532                      // attenuation with 1.2v Aref 
 #define Vadj_3 13                          // attenuation with 3.3v Aref (13:1) 12K + 1K       
 float phaseCorrection [MAXCHANNELS];       // in degrees +lead, -lag  
 uint8_t Vchannel [MAXCHANNELS];            // Power channel associated voltage reference channel 

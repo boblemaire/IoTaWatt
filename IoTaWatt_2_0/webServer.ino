@@ -60,6 +60,10 @@ void returnFail(String msg) {
 bool loadFromSdCard(String path){
   String dataType = "text/plain";
   if(path.endsWith("/")) path += "index.htm";
+  if(path == "/edit" ||
+     path == "/graph"){
+      path += ".htm";
+     }
 
   if(path.endsWith(".src")) path = path.substring(0, path.lastIndexOf("."));
   else if(path.endsWith(".htm")) dataType = "text/html";

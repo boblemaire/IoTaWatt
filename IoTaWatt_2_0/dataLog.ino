@@ -85,7 +85,6 @@
           ageBucket(&buckets[i], timeNow);
           logRecord->channel[i].accum1 += (buckets[i].accum1 - accum1Then[i]);
           if(logRecord->channel[i].accum1 != logRecord->channel[i].accum1) logRecord->channel[i].accum1 = 0;
-          double value1 = (buckets[i].accum1 - accum1Then[i]) / elapsedHrs;
           accum1Then[i] = buckets[i].accum1;
         }
         timeThen = timeNow;
