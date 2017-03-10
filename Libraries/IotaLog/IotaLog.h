@@ -52,7 +52,9 @@ struct IotaL1indexEntry {
 			uint32_t serial;
 		} L1indexEntry;
 		
-	IotaL1indexEntry* _L1indexEntry = &L1indexEntry;	
+	IotaL1indexEntry* _L1indexEntry = &L1indexEntry;
+	IotaL1indexEntry* _L1indexBuffer;
+	uint32_t _L1indexBufferPos;
 		
 	File IotaFile;
 	File IotaIndex;
@@ -78,11 +80,14 @@ struct IotaL1indexEntry {
 	// L2 entries are an ordered list of the first UNIXtime of a cluster (group) of L1 entries.  The size
 	// of the clusters are dynamically determined.
 	
+	uint32_t _L1indexSize = 0;				// Size of L1 index
 	uint32_t _L1entries = 0;				// Entries in 1st level index
 	uint32_t _L2entries = 0;				// Number of entries in 2nd level index
-	uint32_t _L2maxEntries = 256; 			// Maximum 2nd level index entries
+	uint32_t _L2maxEntries = 128; 			// Maximum 2nd level index entries
 	uint32_t _L1clusterEntries = 1;			// 1st level entries indexed by one 2nd level entry
 	uint32_t* _L2index;						// 2nd level index array pointer
+	
+	
 
 	// Defines the last indexed series
 	
@@ -93,6 +98,7 @@ struct IotaL1indexEntry {
 		
 	uint32_t search(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
 	int buildIndex(void);
+	void readL1index(uint32_t);
 	
 };
 

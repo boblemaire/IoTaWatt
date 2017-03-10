@@ -32,6 +32,13 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   static String replyData = "";
   static int directReads = 0;
   
+  static uint32_t timeIO;
+  static uint32_t timeCOM;
+  static uint32_t timeWAIT;
+  static uint32_t timeTOT;
+  static uint32_t timePER;
+  static uint32_t timeSTART;
+  
   static uint32_t Init;
   static uint32_t Io;
   static uint32_t Send;
@@ -47,6 +54,12 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   
     case Setup: {
       trace(T_GFD,0);
+
+      timeIO = 0;
+      timeCOM = 0;
+      timeWAIT = 0;
+      timePER = micros();
+      timeSTART = micros();
         
       channel = server.arg("id").toInt() % 1000;
       queryType = channel % 10;
@@ -81,14 +94,21 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       state = process;
       _serviceBlock->priority = priorityLow;
       return 1;
+      
+      timePER = micros();
+      
     }
   
     case process: {
+      timeit(timePER,timeWAIT);
       trace(T_GFD,1);
       uint32_t exitTime = nextCrossMs + 5000 / frequency;              // Take an additional half cycle
+      SPI.beginTransaction(SPISettings(SPI_FULL_SPEED, MSBFIRST, SPI_MODE0));
       while(UnixTime <= endUnixTime) {
         logRecord->UNIXtime = UnixTime;
+        timePER = micros();
         int rtc = iotaLog.readKey(logRecord);
+        timeit(timePER,timeIO);
         trace(T_GFD,2);
         replyData += '[' + String(UnixTime) + "000,";
         if(rtc || logRecord->logHours == logHoursThen){
@@ -121,7 +141,9 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
         if(replyData.length() > 2048){
           trace(T_GFD,5);
           yield();
+          timePER = micros();
           sendChunk(replyData);
+          timeit(timePER,timeCOM);
           yield();
           replyData = "";
         }
@@ -129,22 +151,36 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
         UnixTime += intervalSeconds;
         intervalNumber++;
         if(millis() >= exitTime){
+          timePER = micros();
           return 1;
         }
       }
       trace(T_GFD,6);
       yield();
       replyData.setCharAt(replyData.length()-1,']');
+      timePER = micros();
       sendChunk(replyData); 
+      
       yield();
       replyData = "";
       sendChunk(replyData); 
+      timeit(timePER,timeCOM);
       trace(T_GFD,7);
       serverAvailable = true;
       state = Setup;
+      timeTOT = micros() - timeSTART;
+//      PRINTL("IO:",timeIO)
+//      PRINTL("COM:",timeCOM)
+//      PRINTL("WAIT:",timeWAIT)
+//      PRINTL("Elapsed:",timeTOT);
       return 0;                                       // Done for now, return without scheduling.
     }
   }
+}
+
+void timeit(uint32_t &timePER,uint32_t &timeACCT){
+  timeACCT += micros() - timePER;
+  timePER = micros();
 }
 
 void sendChunk(String replyData){
