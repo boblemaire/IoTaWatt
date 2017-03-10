@@ -40,12 +40,12 @@ void setup()
   SPI.begin();
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
   msgLog("SPI started.");
-  
+   
   //*************************************** Initialize the SD card ************************************
 
   if(!SD.begin(pin_CS_SDcard)) {
     msgLog("SD initiatization failed. Retrying.");
-    while(!SD.begin(pin_CS_SDcard)){
+    while(!SD.begin(pin_CS_SDcard, SPI_FULL_SPEED)){
       delay(100); 
       yield();
     }

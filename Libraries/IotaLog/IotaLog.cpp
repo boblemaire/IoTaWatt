@@ -3,7 +3,8 @@
   Created by Bob Lemaire 
 */
 #include "Iotalog.h"
-	
+	#define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
+#define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
 	int IotaLog::begin (char* path){
 		logPath = String(path) + ".log";
 		indexPath = String(path) + ".ndx";
@@ -48,6 +49,9 @@
 			_entries = _fileSize / sizeof(IotaLogRecord);
 		}
 		
+		_L1indexBuffer = new IotaL1indexEntry [64];
+		_L1indexBufferPos = 0xffffffff;
+		
 		return buildIndex();
 	}
 	
@@ -56,7 +60,8 @@
 		if(!IotaIndex){
 			return 4;
 		}
-		_L1entries = IotaIndex.size() / 8;
+		_L1indexSize = IotaIndex.size();
+		_L1entries = _L1indexSize / 8;
 		uint32_t _L2range = _L2maxEntries;
 		while(_L1entries > _L2range){
 			_L2range *= 2;
@@ -71,6 +76,7 @@
 			ptr++;
 		}
 		_seriesKey = 0xffffffff;
+		_L1indexBufferPos = 0xffffffff;
 		return 0;
 	}
 	
@@ -95,6 +101,7 @@
 			IotaIndex.write((char*)newRecord,8);
 			IotaIndex.close();
 			_L1entries++;
+			_L1indexBufferPos = 0xffffffff;
 			if(_L1entries > _L2entries * _L1clusterEntries){
 				delete[] _L2index;
 				buildIndex();
@@ -116,24 +123,22 @@
 		
 		if(key < _firstKey || key > _lastKey){
 			return 1;
-		}	
+		}
+			
+				// Search L2 index for L1 block containing key.
+
+			
 		if(key < _seriesKey || key >= _seriesNextKey) {
 			int32_t _L1cluster = _L2entries - 1;
 			while(key < _L2index[_L1cluster--]);
-			_L1cluster++;
-			IotaIndex.seek(_L1cluster * _L1clusterEntries * 8);
-			IotaIndex.read((char*)_L1indexEntry, 8);						
+			uint32_t L1Position = ++_L1cluster * _L1clusterEntries * 8;
+			readL1index(L1Position);					
 			do{
 				_seriesKey = _L1indexEntry->UNIXtime;
 				_seriesSerial = _L1indexEntry->serial;
-				if(IotaIndex.available()){
-					IotaIndex.read((char*)_L1indexEntry, 8);
-				} else {
-					_L1indexEntry->UNIXtime = 0xffffffff;
-					_L1indexEntry->serial = 0xffffffff;
-				}
+				L1Position += 8;
+				readL1index(L1Position);
 			} while(key >= _L1indexEntry->UNIXtime);
-			
 			_seriesEntries = _L1indexEntry->serial - _seriesSerial;
 			_seriesNextKey = _L1indexEntry->UNIXtime;
 		}
@@ -146,6 +151,31 @@
 		IotaFile.read(_callerRecord, sizeof(IotaLogRecord));
 		_callerRecord->UNIXtime = key;
 		return 0;
+	}
+
+			// readL1index() - reads an L1 index entry.
+			// This function maintains a one block (512) buffer
+			// of the L1 Index and services requests from that buffer.
+			// The SD routines don't buffer, so otherwise these requests
+			// would each be generating 512 byte reads to service an 8 byte request.
+			// The performance improvement is huge.
+	
+	void IotaLog::readL1index(uint32_t pos){
+		if(pos >= _L1indexSize){
+			_L1indexEntry->UNIXtime = 0xffffffff;
+			_L1indexEntry->serial = 0xffffffff;
+			return;
+		}
+		if(pos < _L1indexBufferPos || pos >= (_L1indexBufferPos + 512)){
+			_L1indexBufferPos = pos - (pos % 512);
+			IotaIndex.seek(_L1indexBufferPos);
+			uint32_t length = _L1indexSize - _L1indexBufferPos;
+			if(length > 512) length = 512;
+			IotaIndex.read((char*)_L1indexBuffer, length);
+		}
+		uint32_t bufferIndex = (pos - _L1indexBufferPos) / 8;
+		_L1indexEntry->UNIXtime = _L1indexBuffer[bufferIndex].UNIXtime;
+		_L1indexEntry->serial = _L1indexBuffer[bufferIndex].serial;
 	}
 	
 	int IotaLog::readNext (IotaLogRecord* callerRecord){
@@ -164,6 +194,7 @@
 		logPath = "";
 		indexPath = "";
 		delete[] _L2index;
+		delete[] _L1indexBuffer; 
 		_firstKey = 0;
 		_lastKey = 0;
 		_fileSize = 0;
