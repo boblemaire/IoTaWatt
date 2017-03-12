@@ -19,3 +19,5 @@ The ADC boards are selectable between 3.2V or 1.2V reference voltage to support 
 The configuration and monitoring app runs on any browser based device that is connected to the local WiFi network. 
 
 Thanks to contributors of other open software that have been incorporated into this project.  In particular the ArduinoJSON and SDWebServer software made a lot of this possible, not to mention the Arduino/ESP8266 project and related forums.
+
+The WiKi is a work in progress and goes into detail concerning installation and use.
