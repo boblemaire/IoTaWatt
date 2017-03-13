@@ -7,5 +7,5 @@
  *  
  *   03/10/17 2.00.03 API performance enhancement.  Add L1 index cache by full block buffering.
  *  
- *  
+ *   03/12/17 2.00.04 Insist on WiFi connect at startup.
  */
