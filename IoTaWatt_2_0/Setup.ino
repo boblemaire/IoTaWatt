@@ -70,10 +70,15 @@ void setup()
   WiFiManager wifiManager;
   wifiManager.setConfigPortalTimeout(120);
   wifiManager.setDebugOutput(false);
-  wifiManager.autoConnect(deviceName.c_str());
-
+  boolean WiFiRetry = false;
+  while( ! wifiManager.autoConnect(deviceName.c_str())) {
+    if( ! WiFiRetry){
+      msgLog("Failed to connect to WiFi at startup. Retrying until successful.");
+      WiFiRetry = true;
+    }
+  }
   msgLog("WiFi connected, IP address: ", formatIP(WiFi.localIP()));
-
+  
   //*************************************** Initialize timer and time of day *************************
 
   initTime();
