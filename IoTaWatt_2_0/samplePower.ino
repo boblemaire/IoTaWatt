@@ -25,7 +25,6 @@ void samplePower(int channel, int overSample){
   byte Ichan = channel;
 
   double _Irms = 0;
-  double _hz = 60;
   double _watts = 0;
   double _Vrms = 0;
 
@@ -131,7 +130,6 @@ void samplePower(int channel, int overSample){
   
   ageBucket(&buckets[Vchan], timeNow);
   buckets[Vchan].volts = _Vrms;
-  buckets[Vchan].hz = _hz;
 
   return;
 }
@@ -421,6 +419,7 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
   int16_t offsetV = offset[Vchan];
   int16_t* VsamplePtr = Vsample;
   uint32_t startMs = millis();
+  uint32_t firstCrossUs;
   uint32_t timeoutMs = 600 / frequency;
   int16_t crossCount = 0;
   int16_t crossLimit = 3;
@@ -436,7 +435,10 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
     if(((rawV ^ lastV) & crossGuard) >> 15) {  
       crossCount++;
       crossGuard = 10;
-      startMs = millis();     
+      startMs = millis();
+      if(crossCount == 1){
+        firstCrossUs = micros();     
+      }
     }
     crossGuard--;
     
@@ -451,6 +453,10 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
     }
     
   }
+  buckets[Vchan].hz = 1000000.0  / float((uint32_t)(micros() - firstCrossUs));
+  frequency = (0.9 * frequency) + (0.1 * buckets[Vchan].hz);
+  samplesPerCycle = samplesPerCycle * .9 + (samples / cycles) * .1;
+  cycleSamples++;
   double Vratio = Vcal * Vadj_3 * getAref(Vchan) / double(ADC_range);
   if(getAref(Vchan) < 1.5) Vratio *= (double)Vadj_1 / Vadj_3;
   return  Vratio * sqrt((double)(sumVsq / samples));
