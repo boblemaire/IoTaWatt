@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ***********************************************************************************/
 
-#define IOTAWATT_VERSION "2.00.04"
+#define IOTAWATT_VERSION "2.00.05"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -207,8 +207,8 @@ void ageBucket(struct dataBucket *bucket, uint32_t timeNow){
 // statService runs at low frequency but is reved up by the web server 
 // handlers if the statistics are used.
 
-float frequency = 60;
-float samplesPerCycle = 500;
+float frequency = 55;                             // Split the difference to start
+float samplesPerCycle = 550;                      // Here as well
 float cycleSampleRate = 0;
 int16_t cycleSamples = 0;
 dataBucket statBuckets[MAXCHANNELS];
