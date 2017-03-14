@@ -11,7 +11,7 @@
  *   
  *   03/12/17 2.00.05 Update frequency, samples/cycle in voltage only sample.
  *   
- *   
+ *   03/14/17 2.00.06 Add partial read of message log. Dress up msgLog startup.
  *   
  *   
  */

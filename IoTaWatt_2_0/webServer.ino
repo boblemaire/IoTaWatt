@@ -68,7 +68,7 @@ bool loadFromSdCard(String path){
   if(path.endsWith(".src")) path = path.substring(0, path.lastIndexOf("."));
   else if(path.endsWith(".htm")) dataType = "text/html";
   else if(path.endsWith(".css")) dataType = "text/css";
-  else if(path.endsWith(".js")) dataType = "application/javascript";
+  else if(path.endsWith(".js"))  dataType = "application/javascript";
   else if(path.endsWith(".png")) dataType = "image/png";
   else if(path.endsWith(".gif")) dataType = "image/gif";
   else if(path.endsWith(".jpg")) dataType = "image/jpeg";
@@ -89,8 +89,15 @@ bool loadFromSdCard(String path){
 
   if (server.hasArg("download")) dataType = "application/octet-stream";
 
-  if (server.streamFile(dataFile, dataType) != dataFile.size()) {
-    msgLog("Server: Sent less data than expected!");
+  if(server.hasArg("textpos")){
+    sendMsgFile(dataFile, server.arg("textpos").toInt());
+    return true;
+  }
+
+  else {
+    if (server.streamFile(dataFile, dataType) != dataFile.size()) {
+      msgLog("Server: Sent less data than expected!");
+    }
   }
 
   dataFile.close();
@@ -376,4 +383,22 @@ float calcPhaseDiff(int refChan){
   return phaseShift / 4;
 }
 
+// Had to roll our own streamFile function so we can set the actual partial
+// file length rather than the total file length.  Safari won't work otherwise.
+// No big deal.  BTW/ This instance of Client.send is depricated in the newer
+// ESP8266WiFiClient, so probably change at some point. (Remove buffer size parameter).
 
+void sendMsgFile(File &dataFile, int32_t relPos){
+    int32_t absPos = relPos;
+    if(relPos < 0) absPos = dataFile.size() + relPos;
+    dataFile.seek(absPos);
+    while(dataFile.available()){
+      if(dataFile.read() == '\n') break;
+    }
+    absPos = dataFile.position();
+    server.setContentLength(dataFile.size() - absPos);
+    server.send(200, "text/plain", "");
+    WiFiClient _client = server.client();
+    _client.write(dataFile, 1460);
+}
+    

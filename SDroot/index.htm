@@ -506,12 +506,12 @@ function editChannel(index){
               vchanSelect.setAttribute("style","width: 45px;");
               vchanSelect.setAttribute("oninput","newVchan(this)");
               inputColumn2.appendChild(vchanSelect);
-              for(var i=0; i<vchannels.length; i++){
+              for(var k=0; k<vchannels.length; k++){
                 var option = document.createElement("option");
-                option.text = vchannels[i];
+                option.text = vchannels[k];
                 vchanSelect.add(option);
-                if(config.inputs[index].vchan == vchannels[i]){
-                  vchanSelect.selectedIndex = i;
+                if(config.inputs[index].vchan == vchannels[k]){
+                  vchanSelect.selectedIndex = k;
                 } 
               }
             }

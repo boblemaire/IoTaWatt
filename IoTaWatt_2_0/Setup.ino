@@ -24,8 +24,6 @@ void setup()
   Serial.println("\r\n\n\n** Restart **\r\n\n");
   Serial.println("Serial Initialized");
   
-  msgLog("Version: ", IOTAWATT_VERSION);
-
   //*************************************** Start SPI *************************************************
     
   pinMode(pin_CS_ADC0,OUTPUT);                    // Make sure all the CS pins are HIGH
@@ -48,10 +46,12 @@ void setup()
     while(!SD.begin(pin_CS_SDcard, SPI_FULL_SPEED)){
       delay(100); 
       yield();
-    }
+    } 
   }
   msgLog("SD initialized.");
   hasSD = true;
+
+  msgLog("Version: ", IOTAWATT_VERSION);
 
   msgLog("Reset reason: ",(char*)ESP.getResetReason().c_str());
   logTrace();
