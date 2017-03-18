@@ -240,7 +240,7 @@ void handleStatus(){
   
   if(server.hasArg("stats")){
     JsonObject& stats = jsonBuffer.createObject();
-    stats.set("chanrate",samplesPerCycle,0);
+    stats.set("cyclerate", samplesPerCycle,0);
     stats.set("chanrate",cycleSampleRate,1);
     stats.set("runseconds", UNIXtime()-programStartTime);
     stats.set("stack",ESP.getFreeHeap());
