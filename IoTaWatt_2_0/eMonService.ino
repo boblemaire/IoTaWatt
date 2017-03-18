@@ -170,7 +170,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       uint32_t sendTime = millis();
       if(!eMonSend(req)){
         state = resend;
-        return UNIXtime() + 2;
+        return UNIXtime() + 60;
       }
       Serial.print(formatHMS(NTPtime() + (localTimeDiff * 3600)));
       Serial.print(" ");

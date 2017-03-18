@@ -77,6 +77,7 @@ boolean getConfig(void)
     }
     channels = channel+1;
     channelName[channel] = Config["inputs"][i]["name"].asString();
+    if(channelName[channel] == "") channelName[channel] = String("chan: ") + String(channel);
     String type = Config["inputs"][i]["type"].asString();
     String model = Config["inputs"][i]["model"].asString();
     calibration[channel] = Config["inputs"][i]["cal"].as<float>();

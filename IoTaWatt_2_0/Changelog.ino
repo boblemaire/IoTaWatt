@@ -11,7 +11,10 @@
  *   
  *   03/12/17 2.00.05 Update frequency, samples/cycle in voltage only sample.
  *   
+ *   03/17/17 2.00.06 Use ArduinoJson to generate server responses
+ *                    Increase emoncms retry interval to 30 seconds
  *   
+ *  
  *   
  *   
  */
