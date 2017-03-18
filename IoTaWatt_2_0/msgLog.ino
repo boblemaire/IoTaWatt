@@ -14,13 +14,14 @@ void msgLog(char* segment1){msgLog(segment1, "", "");}
 void msgLog(char* segment1, char* segment2){msgLog(segment1, segment2, "");}
 void msgLog(char* segment1, char* segment2, char* segment3){
   static File msgFile;
+  static boolean restart = true;
   String msg = "";
   uint32_t _NTPtime = NTPtime();
   DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
   
   if(_NTPtime != 0){
     msg = String(now.month()) + '/' + String(now.day()) + '/' + String(now.year()%100) + ' ' + 
-          String(now.hour()) + ':' + String(now.minute()) + ':' + String(now.second()) + ' ';
+          timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second()) + ' ';
   } else {
     msg += "No clock yet: ";
   }
@@ -31,10 +32,19 @@ void msgLog(char* segment1, char* segment2, char* segment3){
     msgFile = SD.open(IotaMsgLog,FILE_WRITE);
   }
   if(msgFile){
+    if(restart){
+      restart = false;
+      msgFile.write("\r\n** Restart **\r\n\n");
+    }
     msg += "\r\n";
     msgFile.write((char*)msg.c_str(), msg.length());
-    msgFile.flush();
-  } 
+    msgFile.flush(); 
+  }
+}
+
+String timeString(int value){
+  if(value < 10) return String("0") + String(value);
+  return String(value);
 }
 
 String formatIP(uint32_t IP){

@@ -86,7 +86,7 @@ bool loadFromSdCard(String path){
 
   if (!dataFile)
     return false;
-
+    
   if (server.hasArg("download")) dataType = "application/octet-stream";
 
   if(server.hasArg("textpos")){
@@ -99,7 +99,6 @@ bool loadFromSdCard(String path){
       msgLog("Server: Sent less data than expected!");
     }
   }
-
   dataFile.close();
   return true;
 }
@@ -188,32 +187,21 @@ void printDirectory() {
     dir.close();
     return returnFail("NOT DIR");
   }
+  DynamicJsonBuffer jsonBuffer;
+  JsonArray& array = jsonBuffer.createArray();
   dir.rewindDirectory();
-  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(200, "text/json", "");
-  WiFiClient client = server.client();
-
-  server.sendContent("[");
-  for (int cnt = 0; true; ++cnt) {
-    File entry = dir.openNextFile();
-    if (!entry)
-    break;
-
-    String output;
-    if (cnt > 0)
-      output = ',';
-
-    output += "{\"type\":\"";
-    output += (entry.isDirectory()) ? "dir" : "file";
-    output += "\",\"name\":\"";
-    output += entry.name();
-    output += "\"";
-    output += "}";
-    server.sendContent(output);
+  File entry;
+  while(entry = dir.openNextFile()){
+    JsonObject& object = jsonBuffer.createObject();
+    object["type"] = (entry.isDirectory()) ? "dir" : "file";
+    object["name"] = String(entry.name());
+    array.add(object);
     entry.close();
- }
- server.sendContent("]");
- dir.close();
+  }  
+  String response = "";
+  array.printTo(response);
+  server.send(200, "application/json", response);
+  dir.close();
 }
 
 void handleNotFound(){
@@ -246,62 +234,84 @@ void handleNotFound(){
  * 
  **********************************************************************************************/
 
-void handleStatus(){  
-  String message = "{";
+void handleStatus(){ 
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject(); 
   
   if(server.hasArg("stats")){
-    message += "\"stats\":{\"cyclerate\":" + String(samplesPerCycle,0);
-    message += ",\"chanrate\":" + String(cycleSampleRate,1);
-    message += ",\"runseconds\":" + String(UNIXtime() - programStartTime);
-    message += ",\"stack\":" + String(ESP.getFreeHeap());  //system_get_free_heap_size());
-    message += "},";
+    JsonObject& stats = jsonBuffer.createObject();
+    stats.set("chanrate",samplesPerCycle,0);
+    stats.set("chanrate",cycleSampleRate,1);
+    stats.set("runseconds", UNIXtime()-programStartTime);
+    stats.set("stack",ESP.getFreeHeap());
+    root.set("stats",stats);
     statServiceInterval = 0;
   }
   
   if(server.hasArg("channels")){
-    message += "\"channels\":[";
+    JsonArray& channelArray = jsonBuffer.createArray();
+    
     for(int i=0; i<channels; i++){
       if(channelType[i] == channelTypeUndefined) continue;
-      message += "{\"channel\":" + String(i);
-
+      JsonObject& channelObject = jsonBuffer.createObject();
+      channelObject.set("channel",i);
       if(channelType[i] == channelTypeVoltage){
-        message += ",\"Vrms\":" + String(statBuckets[i].volts,1);
-        message += ",\"Hz\":" + String(statBuckets[i].hz,1);
+        channelObject.set("Vrms",statBuckets[i].volts,1);
+        channelObject.set("Hz",statBuckets[i].hz,1);
       }
       else if(channelType[i] == channelTypePower){
-        message += ",\"Watts\":" + String(statBuckets[i].watts,0);
-        message += ",\"Irms\":" + String(statBuckets[i].amps,3);
+        channelObject.set("Watts",statBuckets[i].watts,0);
+        channelObject.set("Irms",statBuckets[i].amps,3);
         if(statBuckets[i].watts > 10){
-          message += ",\"Pf\":" + String(statBuckets[i].watts/(statBuckets[i].amps*statBuckets[Vchannel[i]].volts),2);
+          channelObject.set("Pf",statBuckets[i].watts/(statBuckets[i].amps*statBuckets[Vchannel[i]].volts),2);
         } 
         if(CTreversed[i]){
-          message += ",\"reversed\":\"yes\"";      
+          channelObject.set("reversed","yes");
         }
       }
-      message += "},";
+      channelArray.add(channelObject);
     }
-    message.setCharAt(message.length()-1,']');
-    message += ",";
+    root["channels"] = channelArray;
   }
 
   if(server.hasArg("voltage")){
     int Vchan = server.arg("channel").toInt();
-    message += "\"voltage\":" + String(buckets[Vchan].volts,1) + ',';
+    root.set("voltage",buckets[Vchan].volts,1);
   }
-  message.setCharAt(message.length()-1,'}');
-  server.send(200, "text/json", message);
+  String response = "";
+  root.printTo(response);
+  server.send(200, "text/json", response);  
 }
 
 void handleVcal(){
-  if(!server.hasArg("channel") || !server.hasArg("cal")){
+  if( ! (server.hasArg("channel") && server.hasArg("cal"))){
     server.send(400, "text/json", "Missing parameters");
     return;
   }
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject();
   int channel = server.arg("channel").toInt();
   float Vrms = sampleVoltage(channel, server.arg("cal").toFloat());
-  String json = "{\"vrms\":" + String(Vrms,1) + "}";  
-  server.send(200, "text/json", json);  
+  root.set("vrms",Vrms,1);
+  String response = "";
+  root.printTo(response);
+  server.send(200, "text/json", response);  
 }
+
+//void handleVcal(){
+//  if( ! (server.hasArg("channel") && server.hasArg("cal"))){
+//    server.send(400, "text/json", "Missing parameters");
+//    return;
+//  }
+//  DynamicJsonBuffer jsonBuffer;
+//  JsonObject &root = jsonBuffer.createObject();
+//  int channel = server.arg("channel").toInt();
+//  float Vrms = sampleVoltage(channel, server.arg("cal").toFloat());
+//  root.set("vrms",Vrms,1);
+//  String response = "";
+//  root.printTo(response);
+//  server.send(200, "text/json", response);  
+//}
 
 void handleCommand(){
 
@@ -314,29 +324,35 @@ void handleCommand(){
   server.send(400, "text/json", "Unrecognized request");
 }
 
-void handleGetFeedList(){  
-  String reply = "[";
-  for(int i=0; i<channels; i++){
+void handleGetFeedList(){ 
+  DynamicJsonBuffer jsonBuffer;
+  JsonArray& array = jsonBuffer.createArray();
+  for(int i=0; i<channels; i++){  
     if(channelType[i] != channelTypeUndefined){
       if(channelType[i] == channelTypeVoltage){
-        reply += addFeed("voltage",QUERY_VOLTAGE,i) + ",\r\n";
-      }
+        JsonObject& voltage = jsonBuffer.createObject();
+        voltage["id"] = String(i*10+QUERY_VOLTAGE);
+        voltage["tag"] = "Voltage";
+        voltage["name"] = channelName[i];
+        array.add(voltage);
+      } 
       else if(channelType[i] == channelTypePower){
-        reply += addFeed("Power",QUERY_POWER,i)  + ",\r\n";
-        reply += addFeed("Energy",QUERY_ENERGY,i) + ",\r\n";
+        JsonObject& power = jsonBuffer.createObject();
+        power["id"] = String(i*10+QUERY_POWER);
+        power["tag"] = "Power";
+        power["name"] = channelName[i];
+        array.add(power);
+        JsonObject& energy = jsonBuffer.createObject();
+        energy["id"] = String(i*10+QUERY_ENERGY);
+        energy["tag"] = "Energy";
+        energy["name"] = channelName[i];
+        array.add(energy);
       }
     }
   }
-  reply.remove(reply.length()-3);
-  reply += "]\r\n";
-  server.send(200, "application/json", reply);
-}
-
-String addFeed(char* tag, int code, int i){
-  String jsonFeed = "{\"id\":\"" + String(i*10+code) + "\",\"tag\":\"" + tag + "\",\"name\":";
-  if(channelName[i] == "") jsonFeed += "\"chan" + String(i) + "\"}";   
-  else jsonFeed += "\"" + channelName[i] + "\"}";
-  return jsonFeed;
+  String response = "";
+  array.printTo(response);
+  server.send(200, "application/json", response);
 }
 
 void handleGraphGetall(){                   // Stub to appease eMonCMS graph app
@@ -349,16 +365,20 @@ void handlePcal(){
     server.send(400, "text/json", "Missing parameters");
     return;
   }
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject();
   int channel = server.arg("channel").toInt();
   int refChan = server.arg("refchan").toInt();
   float relPhase = calcPhaseDiff(refChan);
   float difPhase = relPhase - phaseCorrection[refChan];
-  String json = "{\"irms\":" + String(buckets[refChan].amps,1);
+  root.set("irms",buckets[refChan].amps,1);
   if(buckets[refChan].amps >= 5){
-    json += ",\"relphase\":" + String(relPhase,1) + ",\"ctphase\":" + String(phaseCorrection[refChan],1);
+    root.set("relphase",relPhase,1);
+    root.set("ctphase",phaseCorrection[refChan],1);
   }
-  json += "}";  
-  server.send(200, "text/json", json);  
+  String response = "";
+  root.printTo(response);
+  server.send(200, "text/json", response);   
 }
 
 float calcPhaseDiff(int refChan){
