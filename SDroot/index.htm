@@ -8,7 +8,7 @@
 
   .outerContainer{
     border: 2px;
-    width: 500px;
+    width: 600px;
     padding: 5px;
     background-color: lightgrey;
     border-radius: 4px;
@@ -25,6 +25,12 @@
     display: none;
   }
   
+  .msgsFrame{
+    width:480px;
+    height:400px;
+    background-color:white;
+  }
+  
   .advDivStep{
     margin: 5px;
     display: none;
@@ -32,8 +38,8 @@
   }
   
   .bigIdeasButton{
-    width: 19%;
-    height: 50px;
+    width: 100%;
+    height: 25px;
     background-color: lightgreen;
     border-radius: 4px;
   }
@@ -95,18 +101,43 @@
   <h3 style="text-align:center">IoTaWatt Power Monitor</h3>
   
   <div class="bigIdeasDiv">
-    <button ID="BIBinputs", class="bigIdeasButton", onclick="editInputs()">Configure<br> Inputs</button>
-    <button ID="BIBserver", class="bigIdeasButton", onclick="editWebServer()">Device and<br> Web Server</button>
-    <button ID="BIBstatus", class="bigIdeasButton", onclick="showStatus()">Device<br> Status</button>
-    <button ID="BIBundo", class="bigIdeasButton", onclick="undoChanges()" >Discard<br> Changes</button>
-    <button ID="BIBcommit", class="bigIdeasButton", onclick="commitChanges()">Commit and Restart</button>
-  </div>
+    <table width="100%">
+      <tr><td width="50%">
+        <button ID="BIBinputs", class="bigIdeasButton", onclick="editInputs()">Configure Input</button>
+      </td><td width="50%">
+        <button ID="BIBstatus", class="bigIdeasButton", onclick="showStatus()">Input Channels Status</button>
+      </td></tr>
+      
+      <tr><td>
+        <button ID="BIBserver", class="bigIdeasButton", onclick="editWebServer()">Device and Web Server</button><br>
+      </td><td>
+        <button ID="BIBmsgs", class="bigIdeasButton", onclick="showMsgs()">Message Log</button><br>
+      </td></tr>
+      
+      <tr><td>
+        <button ID="BIBundo", class="bigIdeasButton", onclick="undoChanges()">Discard Changes</button><br>
+      </td><td>
+        <button ID="BIBgraph", class="bigIdeasButton", onclick="loadGraph()">Run Local Graph App</button><br>
+      </td></tr>
+      
+      <tr><td>
+        <button ID="BIBcommit", class="bigIdeasButton", onclick="commitChanges()">Commit and Restart</button>
+      </td><td>
+        <button ID="BIBedit", class="bigIdeasButton", onclick="loadEdit()">Run Edit and File Manager App</button><br>
+      </td></tr>
+    </table>
+    
+    
+    
+    
+    
+  </div width="100%">
   
   <div class="bodyDiv", id="divInputs">
     <table id="inputTable"></table>
   </div>
   
-  <div class="bodyDiv", id="divWebServer">
+  <div class="bodyDiv", id="divWebServer", width="100%">
     <table id="serverTable"></table>
   </div>
   
@@ -114,6 +145,11 @@
     <h3 style="text-align:center">Status</h3>
     <table id="statusTable"></table>
   </div>
+  
+  <div class="bodyDiv", id="divMsgs">
+      <h3 style="text-align:center">Message Log</h3>
+      <p id="msgsText"></p>
+   </div>
   
   <div class="bodyDiv", id="divCalVoltage">
     <h3 style="text-align:center">VT Voltage Calibration</h3>
@@ -169,6 +205,9 @@
 var configFileURL = "config.txt";
 var configNewURL = "config.txt";
 var configTablesURL = "tables.txt";
+var editURL = "edit.htm";
+var graphURL = "graph.htm";
+var msgsFileURL = "/iotawatt/iotamsgs.txt?textpos=-10000";
 var inputTypes = ["CT", "VT"];
 
 // device configuration
@@ -267,7 +306,7 @@ function calUpdateVoltage(){
         var response = JSON.parse(xmlHttp.responseText);
         if(calVTvolts == 0) calVTvolts = response.vrms;
         else calVTvolts = .8 * calVTvolts + .2 * response.vrms;
-        document.getElementById("calVTvolts").innerHTML = calVTvolts.toFixed(1);
+        document.getElementById("calVTvolts").innerHTML = calVTvolts.valueOf().toFixed(1);
         calUpdateVoltage();
       }
     }
@@ -1060,7 +1099,7 @@ function formatRunTime(time){
   var seconds = parseInt(time % 60, 10);
   return (hours + ':' + (minutes < 10 ? '0' + minutes : minutes) + ':' + (seconds < 10 ? '0' + seconds : seconds));
 }
-
+  
 /********************************************************************************************
  * 
  * Startup and "Big Ideas" navigation.
@@ -1082,6 +1121,20 @@ function editWebServer(){
     document.getElementById("divWebServer").style.display = "inline";
     document.getElementById("BIBserver").setAttribute("style","background-color: lightgrey");
     buildWebServer();
+  }
+}
+
+function loadGraph(){
+  var myWindow = window.open(graphURL, "_self");
+}
+
+function loadEdit(){
+  var myWindow = window.open(editURL, "_self");
+}
+
+function showMsgs(){
+  if(!editing){
+    var myWindow = window.open(msgsFileURL, "_self");
   }
 }
 
@@ -1154,6 +1207,8 @@ function resetDisplay(){
   document.getElementById("BIBstatus").setAttribute("style","background-color: lightgreen");
   document.getElementById("BIBundo").setAttribute("style","background-color: lightgreen");
   document.getElementById("BIBcommit").setAttribute("style","background-color: lightgreen");
+  document.getElementById("BIBmsgs").setAttribute("style","background-color: lightgreen");
+  document.getElementById("divMsgs").style.display = "none";
 }
 
 function setup(){
