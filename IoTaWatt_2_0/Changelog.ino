@@ -10,11 +10,12 @@
  *   03/12/17 2.00.04 Insist on WiFi connect at startup.
  *   
  *   03/12/17 2.00.05 Update frequency, samples/cycle in voltage only sample.
- *   
+ *  
  *   03/17/17 2.00.06 Use ArduinoJson to generate server responses
  *                    Increase emoncms retry interval to 30 seconds
  *   
- *  
+ *   03/17/17 2.00.07 Add partial read of message log. Dress up msgLog startup.
+ * 
  *   
  *   
  */
