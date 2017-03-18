@@ -260,13 +260,13 @@ void handleStatus(){
         channelObject.set("Hz",statBuckets[i].hz,1);
       }
       else if(channelType[i] == channelTypePower){
-        channelObject.set("Watts",statBuckets[i].watts,0);
+        channelObject.set("Watts",long(statBuckets[i].watts + .5));
         channelObject.set("Irms",statBuckets[i].amps,3);
         if(statBuckets[i].watts > 10){
           channelObject.set("Pf",statBuckets[i].watts/(statBuckets[i].amps*statBuckets[Vchannel[i]].volts),2);
         } 
         if(CTreversed[i]){
-          channelObject.set("reversed","yes");
+          channelObject.set("reversed","true");
         }
       }
       channelArray.add(channelObject);
@@ -297,21 +297,6 @@ void handleVcal(){
   root.printTo(response);
   server.send(200, "text/json", response);  
 }
-
-//void handleVcal(){
-//  if( ! (server.hasArg("channel") && server.hasArg("cal"))){
-//    server.send(400, "text/json", "Missing parameters");
-//    return;
-//  }
-//  DynamicJsonBuffer jsonBuffer;
-//  JsonObject &root = jsonBuffer.createObject();
-//  int channel = server.arg("channel").toInt();
-//  float Vrms = sampleVoltage(channel, server.arg("cal").toFloat());
-//  root.set("vrms",Vrms,1);
-//  String response = "";
-//  root.printTo(response);
-//  server.send(200, "text/json", response);  
-//}
 
 void handleCommand(){
 
