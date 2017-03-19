@@ -170,7 +170,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       uint32_t sendTime = millis();
       if(!eMonSend(req)){
         state = resend;
-        return UNIXtime() + 60;
+        return UNIXtime() + 30;
       }
       Serial.print(formatHMS(NTPtime() + (localTimeDiff * 3600)));
       Serial.print(" ");
@@ -190,7 +190,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
     case resend: {
       msgLog("Resending eMonCMS data.");
       if(!eMonSend(req)){ 
-        return UNIXtime() + 5;
+        return UNIXtime() + 60;
       }
       else {
         buf->data = UnixLastPost;
