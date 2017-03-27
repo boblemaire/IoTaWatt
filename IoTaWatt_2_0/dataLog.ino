@@ -36,8 +36,11 @@
       // Initialize local accumulators
       
       for(int i=0; i<channels; i++){
-        ageBucket(&buckets[i], timeNow);
-        accum1Then[i] = buckets[i].accum1;
+        IoTaInputChannel* _input = inputChannel[i];
+        if(_input){
+          inputChannel[i]->ageBuckets(timeNow);
+          accum1Then[i] = inputChannel[i]->dataBucket.accum1;
+        }
       }
       timeThen = timeNow;
       msgLog("dataLog: service started.");
@@ -82,10 +85,13 @@
       if(timeNext == (UNIXtime() - UNIXtime() % dataLogInterval)){
         double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
         for(int i=0; i<channels; i++){
-          ageBucket(&buckets[i], timeNow);
-          logRecord->channel[i].accum1 += (buckets[i].accum1 - accum1Then[i]);
-          if(logRecord->channel[i].accum1 != logRecord->channel[i].accum1) logRecord->channel[i].accum1 = 0;
-          accum1Then[i] = buckets[i].accum1;
+          IoTaInputChannel* _input = inputChannel[i];
+          if(_input){
+            _input->ageBuckets(timeNow);
+            logRecord->channel[i].accum1 += _input->dataBucket.accum1 - accum1Then[i];
+            if(logRecord->channel[i].accum1 != logRecord->channel[i].accum1) logRecord->channel[i].accum1 = 0;
+            accum1Then[i] = _input->dataBucket.accum1;
+          }
         }
         timeThen = timeNow;
         logRecord->logHours += elapsedHrs;

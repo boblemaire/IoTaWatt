@@ -4,26 +4,26 @@
   ****************************************************************************************************/
 void samplePower(int channel, int overSample){
   uint32_t timeNow = millis();
-
-      // If it's a voltage channel, use voltage only sample, update and return.
   
-  if(channelType[channel] == channelTypeVoltage){
-    ageBucket(&buckets[channel], timeNow);
-    buckets[channel].volts = sampleVoltage(channel, calibration[channel]);
+      // If it's a voltage channel, use voltage only sample, update and return.
+
+  if(inputChannel[channel]->_type == channelTypeVoltage){
+    inputChannel[channel]->setVoltage(sampleVoltage(channel, inputChannel[channel]->_calibration));                                                                           
     return;
   }
 
          // Currently only voltage and power channels, so return if not one of those.
      
-  if(channelType[channel] != channelTypePower) return;
-
+  if(inputChannel[channel]->_type != channelTypePower) return;
 
          // From here on, dealing with a power channel and associated voltage channel.
-     
-  
-  byte Vchan = Vchannel[channel];
-  byte Ichan = channel;
 
+  IoTaInputChannel* Ichannel = inputChannel[channel];
+  IoTaInputChannel* Vchannel = inputChannel[Ichannel->_vchannel]; 
+          
+  byte Ichan = Ichannel->_channel;
+  byte Vchan = Vchannel->_channel;
+  
   double _Irms = 0;
   double _watts = 0;
   double _Vrms = 0;
@@ -33,7 +33,7 @@ void samplePower(int channel, int overSample){
   
          // Determine phase correction oversample requirement.
 
-  float _phaseCorrection = (phaseCorrection[Vchan] - phaseCorrection[Ichan]) * samplesPerCycle / 360.0;
+  float _phaseCorrection = (Vchannel->_phase - Ichannel->_phase) * samplesPerCycle / 360.0;
   int stepCorrection = int(_phaseCorrection);
   float stepFraction = _phaseCorrection - stepCorrection;
   int _overSample = 0;
@@ -50,10 +50,9 @@ void samplePower(int channel, int overSample){
         // Invoke high speed sample collection.
         // If it fails, set power to zero and return.
 
-  if( ! sampleCycle(Vchan, Ichan, _overSample)) { 
-    ageBucket(&buckets[Ichan], timeNow);
-    buckets[Ichan].watts = 0;
-    buckets[Ichan].amps = 0;
+  if( ! sampleCycle(Vchannel, Ichannel, _overSample)) {
+    PRINTL("sample failure", channel)
+    Ichannel->setPower(0.0, 0.0);
     return;
   }               
        
@@ -85,25 +84,25 @@ void samplePower(int channel, int overSample){
   
         // Adjust the offset values assuming symetric waves but within limits otherwise.
 
-  int16_t offsetV = offset[Vchan] + sumV / samples;
+  int16_t offsetV = Vchannel->_offset + sumV / samples;
   if(offsetV < minOffset) offsetV = minOffset;
   if(offsetV > maxOffset) offsetV = maxOffset;
-  offset[Vchan] = offsetV;
+  Vchannel->_offset = offsetV;
   
-  int16_t offsetI = offset[Ichan] + sumI / samples;
+  int16_t offsetI = Ichannel->_offset + sumI / samples;
   if(offsetI < minOffset) offsetI = minOffset;
   if(offsetI > maxOffset) offsetI = maxOffset;
-  offset[Ichan] = offsetI;
-    
+  Ichannel->_offset = offsetI;
+  
         // Voltage is relative to input and is attenuated more for 1.2V settings
         // so apply adjustment depending on Aref voltage.
     
-  double Vratio = calibration[Vchan] * Vadj_3 * getAref(Vchan) / double(ADC_range);
+  double Vratio = Vchannel->_calibration * Vadj_3 * getAref(Vchan) / double(ADC_range);
   if(getAref(Vchan) < 1.5) Vratio *= (double)Vadj_1 / Vadj_3;
 
         // Iratio is straight Amps/ADC volt.
   
-  double Iratio = calibration[Ichan] * getAref(Ichan) / double(ADC_range);
+  double Iratio = Ichannel->_calibration * getAref(Ichan) / double(ADC_range);
 
         // Now that the preliminaries are over, 
         // Getting Vrms, Irms, and Watts is easy.
@@ -114,31 +113,22 @@ void samplePower(int channel, int overSample){
 
         // If watts is negative and the channel is not explicitely signed, reverse it (backward CT).
         // If we do reverse it, mark it as such for reporting in the status API.
-  
-  if(_watts < 0 && !CTsigned[Ichan]){
-    _watts = -_watts;
-    if(_watts > 1) CTreversed[Ichan] = true;
-  } else {
-    CTreversed[Ichan] = false;
+
+  if( ! Ichannel->_signed){
+    Ichannel->_reversed = false;
+    if(_watts < -0.5){
+      _watts = -_watts;
+      Ichannel->_reversed = true;
+    }    
   }
 
-      // Age the previous power and voltage data and set new values
+      // Update with the new power and voltage values.
 
-  ageBucket(&buckets[Ichan], timeNow);   
-  buckets[Ichan].watts = _watts;
-  buckets[Ichan].amps = _Irms;
-  
-  ageBucket(&buckets[Vchan], timeNow);
-  buckets[Vchan].volts = _Vrms;
-
+  Ichannel->setPower(_watts, _Irms);
+  Vchannel->setVoltage(_Vrms);
+                                                                                 
   return;
 }
-
-
-
-
-
-
 
   /**********************************************************************************************
   * 
@@ -171,8 +161,11 @@ void samplePower(int channel, int overSample){
   * 
   ****************************************************************************************************/
   
-boolean sampleCycle(int Vchan, int Ichan, int overSample) {
-  
+boolean sampleCycle(IoTaInputChannel* Vchannel, IoTaInputChannel* Ichannel, int overSample){
+
+  int Vchan = Vchannel->_channel;
+  int Ichan = Ichannel->_channel;
+    
   #define cycles 1                            // Cycles to sample (>1 you're on your own)
   
   uint32_t cmdMask = ((4 << SPILMOSI) | (4 << SPILMISO));
@@ -183,8 +176,8 @@ boolean sampleCycle(int Vchan, int Ichan, int overSample) {
   uint8_t  Iport = chanAddr[Ichan] % 8;       // Port on ADC
   uint8_t  Vport = chanAddr[Vchan] % 8;
     
-  int16_t offsetV = offset[Vchan];            // Bias offset
-  int16_t offsetI = offset[Ichan];
+  int16_t offsetV = Vchannel->_offset;        // Bias offset
+  int16_t offsetI = Ichannel->_offset;
   
   int16_t rawV;                               // Raw ADC readings
   int16_t lastV;
@@ -200,6 +193,9 @@ boolean sampleCycle(int Vchan, int Ichan, int overSample) {
   uint32_t timeoutMs = 600 / frequency;       // Maximum time allowed per half cycle
   uint32_t firstCrossUs;                      // Time cycle at usec resolution for phase calculation
   uint32_t lastCrossUs;                       
+
+  int16_t midCrossSamples;                    // Sample count at mid cycle and end of cycle
+  int16_t lastCrossSamples;                   // Used to determine if sampling was interrupted
 
   byte ADC_IselectPin = ADC_selectPin[chanAddr[Ichan] >> 3];  // Chip select pin
   byte ADC_VselectPin = ADC_selectPin[chanAddr[Vchan] >> 3];
@@ -247,7 +243,7 @@ boolean sampleCycle(int Vchan, int Ichan, int overSample) {
         
           *VsamplePtr = (lastV + rawV) >> 1;                // Average before and after to align with I in time
           lastV = rawV;
-        
+
           if(crossCount) {                                  // If past first crossing 
             if(crossCount < crossLimit){
               samples++;
@@ -256,7 +252,7 @@ boolean sampleCycle(int Vchan, int Ichan, int overSample) {
               if(samples >= MAX_SAMPLES){                   // If over the legal limit
                 trace(T_SAMP,0);                            // shut down and return
                 if(ADC_Iselect16) GP16O = 1;                // (Chip select high)
-                else GPOS = ADC_IselectMask;                
+                else GPOS = ADC_IselectMask;             
                 return false;
               }
             }
@@ -334,7 +330,7 @@ boolean sampleCycle(int Vchan, int Ichan, int overSample) {
           ESP.wdtFeed();                                 // Red meat for the silicon dog
           WDT_FEED();
           startMs = millis();                            // Reset the cycle clock 
-          crossCount++;                                  // Count this crossing
+          crossCount++;                                  // Count the crossings 
           crossGuard = 10;                               // No more crosses for awhile
           if(crossCount == 1){
             trace(T_SAMP,4);
@@ -344,15 +340,24 @@ boolean sampleCycle(int Vchan, int Ichan, int overSample) {
             trace(T_SAMP,6);
             lastCrossUs = micros();                     // To compute frequency
             lastCrossMs = millis();                     // For main loop dispatcher to estimate when next crossing is imminent
+            lastCrossSamples = samples;
             crossGuard = overSample;                   // Collect caller's required oversamples;
-          }                               
-        }
-
-          // Keep sampling until prescribed crossings + phase shift overun
-   
-  } while(crossCount < crossLimit  || crossGuard > 0);  
+          }
+          else {
+            midCrossSamples = samples;                               
+          }
+        }   
+  } while(crossCount < crossLimit  || crossGuard > 0);  // Keep sampling until prescribed crossings + phase shift overun
   
   *VsamplePtr = (lastV + rawV) / 2;                     // Loose end
+
+          // Check that both halves of the cycle had the same sample count (+/-3)
+          // Insures no interrupts paused sampling.
+
+  midCrossSamples = midCrossSamples * 2 - lastCrossSamples;
+  if(midCrossSamples < -3 || midCrossSamples > 3){
+    return false;
+  }
 
         // If AC is floating, we can end up here with the noise looking enough like crossings.
         // If that's the case, this should detect it.  
@@ -413,10 +418,11 @@ int readADC(uint8_t channel)
  * It samples one cycle and returns the voltage corresponding to the supplied calibration factor.
  ****************************************************************************************************/
 float sampleVoltage(uint8_t Vchan, float Vcal){
+  IoTaInputChannel* _input = inputChannel[Vchan];
   uint32_t sumVsq = 0;
   int16_t rawV = 0;
   int16_t lastV = 0;
-  int16_t offsetV = offset[Vchan];
+  int16_t offsetV = _input->_offset;
   int16_t* VsamplePtr = Vsample;
   uint32_t startMs = millis();
   uint32_t firstCrossUs;
@@ -453,8 +459,9 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
     }
     
   }
-  buckets[Vchan].hz = 1000000.0  / float((uint32_t)(micros() - firstCrossUs));
-  frequency = (0.9 * frequency) + (0.1 * buckets[Vchan].hz);
+  float Hz = 1000000.0  / float((uint32_t)(micros() - firstCrossUs));
+  _input->setHz(Hz);
+  frequency = (0.8 * frequency) + (0.2 * Hz);
   samplesPerCycle = samplesPerCycle * .9 + (samples / cycles) * .1;
   cycleSamples++;
   double Vratio = Vcal * Vadj_3 * getAref(Vchan) / double(ADC_range);

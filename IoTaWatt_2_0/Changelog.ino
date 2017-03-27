@@ -12,4 +12,6 @@
  *   03/18/17 2.00.08 Fix rounding in API Json output
  *   03/18/17 2.00.09 Fix typo in json rework
  *   
+ *            2.01.00 Major update - move inputs to a class
+ *   
  *****************************************************************************************************/

@@ -145,12 +145,21 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       
       _logHours = logRecord->logHours;   
       for (int i = 0; i < channels; i++) {
+        IoTaInputChannel *_input = inputChannel[i];
         value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
         accum1Then[i] = logRecord->channel[i].accum1;
-        if(channelType[i] == channelTypeUndefined) req += "0,";
-        else if(channelType[i] == channelTypeVoltage) req += String(value1,1) + ',';
-        else if(channelType[i] == channelTypePower) req += String(long(value1+0.5)) + ',';
-        else req += String(long(value1+0.5)) + ',';
+        if( ! _input){
+          req += "0,";
+        }
+        else if(_input->_type == channelTypeVoltage){
+          req += String(value1,1) + ',';
+        }
+        else if(_input->_type == channelTypePower){
+          req += String(long(value1+0.5)) + ',';
+        }
+        else{
+          req += String(long(value1+0.5)) + ',';
+        }
       }
       trace(T_EMON,3);    
       req.setCharAt(req.length()-1,']');

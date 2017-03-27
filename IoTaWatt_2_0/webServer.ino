@@ -245,38 +245,39 @@ void handleStatus(){
     stats.set("runseconds", UNIXtime()-programStartTime);
     stats.set("stack",ESP.getFreeHeap());
     root.set("stats",stats);
-    statServiceInterval = 0;
   }
   
   if(server.hasArg("channels")){
     JsonArray& channelArray = jsonBuffer.createArray();
     
     for(int i=0; i<channels; i++){
-      if(channelType[i] == channelTypeUndefined) continue;
-      JsonObject& channelObject = jsonBuffer.createObject();
-      channelObject.set("channel",i);
-      if(channelType[i] == channelTypeVoltage){
-        channelObject.set("Vrms",statBuckets[i].volts,1);
-        channelObject.set("Hz",statBuckets[i].hz,1);
-      }
-      else if(channelType[i] == channelTypePower){
-        channelObject.set("Watts",long(statBuckets[i].watts + .5));
-        channelObject.set("Irms",statBuckets[i].amps,3);
-        if(statBuckets[i].watts > 10){
-          channelObject.set("Pf",statBuckets[i].watts/(statBuckets[i].amps*statBuckets[Vchannel[i]].volts),2);
-        } 
-        if(CTreversed[i]){
-          channelObject.set("reversed","true");
+      IoTaInputChannel *_input = inputChannel[i];
+      if(_input){
+        JsonObject& channelObject = jsonBuffer.createObject();
+        channelObject.set("channel",_input->_channel);
+        if(_input->_type == channelTypeVoltage){
+          channelObject.set("Vrms",statBucket[i].volts,1);
+          channelObject.set("Hz",statBucket[i].Hz,1);
         }
+        else if(_input->_type == channelTypePower){
+          channelObject.set("Watts",long(statBucket[i].watts + .5));
+          channelObject.set("Irms",statBucket[i].amps,3);
+          if(statBucket[i].watts > 10){
+            channelObject.set("Pf",statBucket[i].watts/(statBucket[i].amps*statBucket[inputChannel[i]->_vchannel].volts),2);
+          } 
+          if(_input->_reversed){
+            channelObject.set("reversed","true");
+          }
+        }
+        channelArray.add(channelObject);
       }
-      channelArray.add(channelObject);
     }
     root["channels"] = channelArray;
   }
 
   if(server.hasArg("voltage")){
     int Vchan = server.arg("channel").toInt();
-    root.set("voltage",buckets[Vchan].volts,1);
+    root.set("voltage", statBucket[Vchan].volts,1);
   }
   String response = "";
   root.printTo(response);
@@ -312,25 +313,27 @@ void handleCommand(){
 void handleGetFeedList(){ 
   DynamicJsonBuffer jsonBuffer;
   JsonArray& array = jsonBuffer.createArray();
-  for(int i=0; i<channels; i++){  
-    if(channelType[i] != channelTypeUndefined){
-      if(channelType[i] == channelTypeVoltage){
+  for(int i=0; i<channels; i++){
+    IoTaInputChannel *_input = inputChannel[i];  
+    if(_input){
+      if(_input->_type == channelTypeVoltage){
         JsonObject& voltage = jsonBuffer.createObject();
-        voltage["id"] = String(i*10+QUERY_VOLTAGE);
+        voltage["id"] = String(_input->_channel*10+QUERY_VOLTAGE);
         voltage["tag"] = "Voltage";
-        voltage["name"] = channelName[i];
+        voltage["name"] = _input->_name;
         array.add(voltage);
       } 
-      else if(channelType[i] == channelTypePower){
+      else
+        if(_input->_type == channelTypePower){
         JsonObject& power = jsonBuffer.createObject();
-        power["id"] = String(i*10+QUERY_POWER);
+        power["id"] = String(_input->_channel*10+QUERY_POWER);
         power["tag"] = "Power";
-        power["name"] = channelName[i];
+        power["name"] = _input->_name;
         array.add(power);
         JsonObject& energy = jsonBuffer.createObject();
-        energy["id"] = String(i*10+QUERY_ENERGY);
+        energy["id"] = String(_input->_channel*10+QUERY_ENERGY);
         energy["tag"] = "Energy";
-        energy["name"] = channelName[i];
+        energy["name"] = _input->_name;
         array.add(energy);
       }
     }
@@ -345,26 +348,26 @@ void handleGraphGetall(){                   // Stub to appease eMonCMS graph app
   server.send(200, "ok", "{}");
 }
 
-void handlePcal(){
-  if(!server.hasArg("channel") || !server.hasArg("refchan")){
-    server.send(400, "text/json", "Missing parameters");
-    return;
-  }
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& root = jsonBuffer.createObject();
-  int channel = server.arg("channel").toInt();
-  int refChan = server.arg("refchan").toInt();
-  float relPhase = calcPhaseDiff(refChan);
-  float difPhase = relPhase - phaseCorrection[refChan];
-  root.set("irms",buckets[refChan].amps,1);
-  if(buckets[refChan].amps >= 5){
-    root.set("relphase",relPhase,1);
-    root.set("ctphase",phaseCorrection[refChan],1);
-  }
-  String response = "";
-  root.printTo(response);
-  server.send(200, "text/json", response);   
-}
+//void handlePcal(){
+//  if(!server.hasArg("channel") || !server.hasArg("refchan")){
+//    server.send(400, "text/json", "Missing parameters");
+//    return;
+//  }
+//  DynamicJsonBuffer jsonBuffer;
+//  JsonObject& root = jsonBuffer.createObject();
+//  int channel = server.arg("channel").toInt();
+//  int refChan = server.arg("refchan").toInt();
+//  float relPhase = calcPhaseDiff(refChan);
+//  float difPhase = relPhase - phaseCorrection[refChan];
+//  root.set("irms",buckets[refChan].amps,1);
+//  if(buckets[refChan].amps >= 5){
+//    root.set("relphase",relPhase,1);
+//    root.set("ctphase",phaseCorrection[refChan],1);
+//  }
+//  String response = "";
+//  root.printTo(response);
+//  server.send(200, "text/json", response);   
+//}
 
 float calcPhaseDiff(int refChan){
   int Ishift = 40;
@@ -406,4 +409,5 @@ void sendMsgFile(File &dataFile, int32_t relPos){
     WiFiClient _client = server.client();
     _client.write(dataFile, 1460);
 }
-    
+
+

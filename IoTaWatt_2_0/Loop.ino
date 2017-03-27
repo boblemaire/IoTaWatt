@@ -17,7 +17,8 @@ void loop()
     samplePower(nextChannel, 0);
     trace(T_LOOP,2);
     nextCrossMs = lastCrossMs + 490 / int(frequency);
-    nextChannel = ++nextChannel % channels;
+    while( ! inputChannel[++nextChannel % channels]);
+    nextChannel = nextChannel % channels;
   }
 
   // --------- Give web server a shout out.
@@ -131,43 +132,52 @@ void AddService(struct serviceBlock* newBlock){
 /******************************************************************************************************** 
  * All of the other SERVICEs that harvest values from the main "buckets" do so for their own selfish 
  * purposes, and have no global scope to share with others. This simple service maintains periodic
- * values for each of the buckets in a global set of buckets called statBuckets.  It also is where 
- * status statistics like sample rates are maintained.  It runs at relatively low frequency (10 sec)
- * but is reved up while there is an active status session querrying the server.
+ * values for each of the buckets in a global set of buckets called statBucket.  It also is where 
+ * status statistics like sample rates are maintained.  
  *******************************************************************************************************/
 
-uint32_t statService(struct serviceBlock* _serviceBlock) {
-  static uint32_t timeThen = millis();              
-  uint32_t timeNow = millis();
+uint32_t statService(struct serviceBlock* _serviceBlock) { 
+  static uint32_t timeThen = millis();        
   static boolean started = false;
+  static float damping = .3;
+  uint32_t timeNow = millis();
 
   if(!started){
     msgLog("statService: started.");
     started = true;
+    for(int i=0; i<channels; i++){
+      IoTaInputChannel* _input = inputChannel[i];
+      if(_input){
+        statBucket[i].accum1 = _input->dataBucket.accum1;
+        statBucket[i].accum2 = _input->dataBucket.accum2;
+      }
+    }
     return (uint32_t)UNIXtime() + 1;
   }
 
-  if(float(cycleSamples) > 0){
+  for(int i=0; i<channels; i++){
+    IoTaInputChannel* _input = inputChannel[i];
+    if(_input){
+      _input->ageBuckets(timeNow);
+      double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
+      statBucket[i].value1 = (damping * statBucket[i].value1) + ((1.0 - damping) * (_input->dataBucket.accum1 - statBucket[i].accum1) / elapsedHrs);
+      statBucket[i].value2 = (damping * statBucket[i].value2) + ((1.0 - damping) * (_input->dataBucket.accum2 - statBucket[i].accum2) / elapsedHrs);
+      statBucket[i].accum1 = _input->dataBucket.accum1;
+      statBucket[i].accum2 = _input->dataBucket.accum2;
+    }
+    Serial.print(statBucket[i].value1,1); Serial.print(", ");
+    
+  }
+  Serial.println();
+  
+  if(cycleSamples){
     cycleSampleRate = .75 * cycleSampleRate + .25 * float(cycleSamples * 1000) / float((uint32_t)(timeNow - timeThen));
   } else {
     cycleSampleRate = cycleSampleRate * .75;
-  }
-  
-  double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
-  for(int i=0; i<channels; i++){
-    ageBucket(&buckets[i],timeNow);
-    statBuckets[i].value1 = (buckets[i].accum1 - statBuckets[i].accum1) / elapsedHrs;
-    statBuckets[i].value2 = (buckets[i].accum2 - statBuckets[i].accum2) / elapsedHrs;
-    statBuckets[i].value3 = (buckets[i].accum3 - statBuckets[i].accum3) / elapsedHrs;
-    statBuckets[i].accum1 = buckets[i].accum1;
-    statBuckets[i].accum2 = buckets[i].accum2;
-    statBuckets[i].accum3 = buckets[i].accum3;
-  }
-    
-  timeThen = timeNow;
+  }  
   cycleSamples = 0;
+  timeThen = timeNow;
   
-  if(statServiceInterval < 10)statServiceInterval++;
   return ((uint32_t)UNIXtime() + statServiceInterval);
 }
 

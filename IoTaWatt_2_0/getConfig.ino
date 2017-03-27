@@ -62,8 +62,8 @@ boolean getConfig(void)
     hasRTC = true;
   }
     
-  //************************************************ Configure channels ***************************
-  
+        //************************************ Configure input channels ***************************
+        
   uint16_t channelsCount = Config["inputs"].size();
   channels = 0;
   JsonObject* input;
@@ -71,33 +71,44 @@ boolean getConfig(void)
   {
     input = &Config["inputs"][i].as<JsonObject&>();
     int16_t channel = Config["inputs"][i]["channel"].as<int>();
-    if(channel >= maxChannels){
+          if(channel >= maxChannels){
       msgLog("Unsupported channel configured: ", channel);
       continue;
     }
+    if(inputChannel[channel] != NULL){
+      msgLog ("Duplicate input channel definition for channel: ", channel);
+      delete inputChannel[channel];
+    }
+    IoTaInputChannel* newChannel = new IoTaInputChannel(channel, chanAddr[channel], chanAref[channel], ADC_bits);
+    inputChannel[channel] = newChannel;
     channels = channel+1;
-    channelName[channel] = Config["inputs"][i]["name"].asString();
-    if(channelName[channel] == "") channelName[channel] = String("chan: ") + String(channel);
     String type = Config["inputs"][i]["type"].asString();
-    String model = Config["inputs"][i]["model"].asString();
-    calibration[channel] = Config["inputs"][i]["cal"].as<float>();
-    phaseCorrection[channel] = Config["inputs"][i]["phase"].as<float>();
+    String nombre = Config["inputs"][i]["name"];
+    if(nombre == "") nombre = String("chan: ") + String(channel);
+    newChannel->_name = new char[nombre.length()+1];
+    strcpy(newChannel->_name, nombre.c_str());
+    newChannel->_model = new char[sizeof(Config["inputs"][i]["model"])+1];
+    strcpy(newChannel->_model, Config["inputs"][i]["model"]);
+    newChannel->_calibration = Config["inputs"][i]["cal"].as<float>();
+    newChannel->_phase = Config["inputs"][i]["phase"].as<float>();
     if(type == "VT") {
-      channelType[channel] = channelTypeVoltage;
+      newChannel->_type = channelTypeVoltage;
     } 
     else if (type == "CT"){
-      channelType[channel] = channelTypePower;      
-      Vchannel[channel] = Config["inputs"][i]["vchan"].as<int>();
+      newChannel->_type = channelTypePower;
+      newChannel->_vchannel = Config["inputs"][i]["vchan"].as<int>();     
       if(input->containsKey("signed")){
-        CTsigned[channel] = true;
+        newChannel->_signed = true;
       }
     }  
     else msgLog("unsupported input type: ", type);
   }
-  
+
+        // Get server type
+                                                  
   String serverType = Config["server"]["type"].asString();
   
-  //************************************** configure eMonCMS **********************************
+      //************************************** configure eMonCMS **********************************
 
   if(serverType.equals("emoncms"))
   {
@@ -126,6 +137,7 @@ boolean getConfig(void)
     msgLog("server type is not supported: ", serverType);
     return false;
   }
+  
   return true;
 }
 
