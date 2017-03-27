@@ -25,7 +25,7 @@
   static states state = initialize;
   #define GapFill 600                                  // Fill in gaps of up to these seconds                             
   static IotaLogRecord* logRecord = new IotaLogRecord;
-  static double accum1Then [MAXCHANNELS];
+  static double accum1Then [MAXINPUTS];
   static uint32_t timeThen = 0;
   uint32_t timeNow = millis();
   static uint32_t timeNext;
@@ -35,7 +35,7 @@
 
       // Initialize local accumulators
       
-      for(int i=0; i<channels; i++){
+      for(int i=0; i<maxInputs; i++){
         IoTaInputChannel* _input = inputChannel[i];
         if(_input){
           inputChannel[i]->ageBuckets(timeNow);
@@ -84,7 +84,7 @@
           
       if(timeNext == (UNIXtime() - UNIXtime() % dataLogInterval)){
         double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
-        for(int i=0; i<channels; i++){
+        for(int i=0; i<maxInputs; i++){
           IoTaInputChannel* _input = inputChannel[i];
           if(_input){
             _input->ageBuckets(timeNow);

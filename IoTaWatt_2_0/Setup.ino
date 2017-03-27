@@ -1,6 +1,6 @@
 void setup()
 {
-  for(int i=0; i<MAXCHANNELS; i++){                     // Start with a clean slate.
+  for(int i=0; i<MAXINPUTS; i++){                     // Start with a clean slate.
     inputChannel[i] = NULL;    
   }
 

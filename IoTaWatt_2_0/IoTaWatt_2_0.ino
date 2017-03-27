@@ -23,7 +23,7 @@
       SOFTWARE.
       ***********************************************************************************/
 
-#define IOTAWATT_VERSION "2.00.09"
+#define IOTAWATT_VERSION "2.01.00"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -93,6 +93,11 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 #define T_GFD 40            // GetFeedData
 #define T_SAMP 100          // samplePower
 
+      // ADC descriptors
+
+#define ADC_BITS 12
+#define ADC_RANGE 4096      // 1 << ADC_BITS      
+
       /**************************************************************************************************
        * Core dispatching parameters - There's a lot going on, but the steady rhythm is sampling the
        * power channels, and that has to be done on their schedule - the AC frequency.  During sampling,
@@ -118,7 +123,7 @@ struct serviceBlock {                  // Scheduler/Dispatcher list item (see co
   
 serviceBlock* serviceQueue = NULL;     // Head of ordered list of services
 
-      // Define number of input channels. 
+      // Define maximum number of input channels. 
       // Channels are identified externally by consecutive numbers beginning with 1.
       // They are mapped to internal channel identifiers that are actually ADC*8 + port.
       // The ChanAddr and ChanAref mapping arrays, that may be specified in the config file
@@ -128,34 +133,22 @@ serviceBlock* serviceQueue = NULL;     // Head of ordered list of services
       // Can be specified in config.device.aref
       // Voltage adjustments are the values for AC reference attenuation in IoTaWatt 2.1.    
 
-#define MAXCHANNELS 21                          // Compiled channel support limit
-IoTaInputChannel* inputChannel [MAXCHANNELS];   // -->s to incidences of input channels 
-uint8_t maxChannels = 0;                        // channel limit based on configured hardware
-uint8_t channels = 0;                           // Number of highest channel actually configured
+#define MAXINPUTS 21                          // Compiled channel support limit
+IoTaInputChannel* inputChannel [MAXINPUTS];   // -->s to incidences of input channels 
+uint8_t maxInputs = 0;                        // channel limit based on configured hardware
 
       // chanAddr maps channel number to ADC port;
       // chanAref Maps channel number to Aref ADC port
       // index is logical channel, value is physical channel (adc * 8 + port)
       // These can be overiden with JSON config.device.chanaddr and config.device.chanaref
                                                 
-uint8_t chanAddr [MAXCHANNELS] = {0,1,2,3,4,5,6,   8, 9,10,11,12,13,14, 16,17,18,19,20,21,22};                                                        
-uint8_t chanAref [MAXCHANNELS] = {7,7,7,7,7,7,7,  15,15,15,15,15,15,15, 23,23,23,23,23,23,23};
+uint8_t chanAddr [MAXINPUTS] = {0,1,2,3,4,5,6,   8, 9,10,11,12,13,14, 16,17,18,19,20,21,22};                                                        
+uint8_t chanAref [MAXINPUTS] = {7,7,7,7,7,7,7,  15,15,15,15,15,15,15, 23,23,23,23,23,23,23};
 
 float VrefVolts = 1.0;                      // Voltage reference shunt value used to calibrate
                                             // the ADCs. (can be specified in config.device.refvolts)
 #define Vadj_1 38.532                       // IoTaWatt 2.1 attenuation at 1.2v Aref (VT input/ADC input)
 #define Vadj_3 13                           // IotaWatt 2.1 attenuation at 3.2v Aref            
-
-      // ADC setup.  Assume perfect split DC bias.
-      // Adjusted within min/max range after each sample.
-     
-uint8_t  ADC_bits = 12;                     // JWYT - ADC output bits
-uint16_t ADC_range = 1 << ADC_bits;         // integer range of ADC output
-
-int16_t minOffset = (ADC_range * 49) / 100;         // Allow +/- 1% variation
-int16_t maxOffset = (ADC_range * 51) / 100;
-
-
 
       // ****************************************************************************
       // statService maintains current averages of the channel values
@@ -167,7 +160,7 @@ float frequency = 55;                             // Split the difference to sta
 float samplesPerCycle = 550;                      // Here as well
 float cycleSampleRate = 0;
 int16_t cycleSamples = 0;
-dataBuckets statBucket[MAXCHANNELS];
+dataBuckets statBucket[MAXINPUTS];
 
       // ****************************** SDWebServer stuff ****************************
 

@@ -53,7 +53,7 @@ boolean getConfig(void)
   } 
 
   if(device.containsKey("channels")){
-    maxChannels = device["channels"].as<unsigned int>();
+    maxInputs = device["channels"].as<unsigned int>();
   }
   
   if(Config["device"]["version"].asString()[0] < '2'){
@@ -65,13 +65,12 @@ boolean getConfig(void)
         //************************************ Configure input channels ***************************
         
   uint16_t channelsCount = Config["inputs"].size();
-  channels = 0;
   JsonObject* input;
   for(int i=0; i<channelsCount; i++)
   {
     input = &Config["inputs"][i].as<JsonObject&>();
     int16_t channel = Config["inputs"][i]["channel"].as<int>();
-          if(channel >= maxChannels){
+          if(channel >= maxInputs){
       msgLog("Unsupported channel configured: ", channel);
       continue;
     }
@@ -79,9 +78,8 @@ boolean getConfig(void)
       msgLog ("Duplicate input channel definition for channel: ", channel);
       delete inputChannel[channel];
     }
-    IoTaInputChannel* newChannel = new IoTaInputChannel(channel, chanAddr[channel], chanAref[channel], ADC_bits);
+    IoTaInputChannel* newChannel = new IoTaInputChannel(channel, chanAddr[channel], chanAref[channel], ADC_BITS);
     inputChannel[channel] = newChannel;
-    channels = channel+1;
     String type = Config["inputs"][i]["type"].asString();
     String nombre = Config["inputs"][i]["name"];
     if(nombre == "") nombre = String("chan: ") + String(channel);

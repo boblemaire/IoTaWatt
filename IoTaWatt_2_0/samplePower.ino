@@ -84,6 +84,9 @@ void samplePower(int channel, int overSample){
   
         // Adjust the offset values assuming symetric waves but within limits otherwise.
 
+  int16_t minOffset = (ADC_RANGE * 49) / 100;         // Allow +/- 1% variation
+  int16_t maxOffset = (ADC_RANGE * 51) / 100;
+  
   int16_t offsetV = Vchannel->_offset + sumV / samples;
   if(offsetV < minOffset) offsetV = minOffset;
   if(offsetV > maxOffset) offsetV = maxOffset;
@@ -97,12 +100,12 @@ void samplePower(int channel, int overSample){
         // Voltage is relative to input and is attenuated more for 1.2V settings
         // so apply adjustment depending on Aref voltage.
     
-  double Vratio = Vchannel->_calibration * Vadj_3 * getAref(Vchan) / double(ADC_range);
+  double Vratio = Vchannel->_calibration * Vadj_3 * getAref(Vchan) / double(ADC_RANGE);
   if(getAref(Vchan) < 1.5) Vratio *= (double)Vadj_1 / Vadj_3;
 
         // Iratio is straight Amps/ADC volt.
   
-  double Iratio = Ichannel->_calibration * getAref(Ichan) / double(ADC_range);
+  double Iratio = Ichannel->_calibration * getAref(Ichan) / double(ADC_RANGE);
 
         // Now that the preliminaries are over, 
         // Getting Vrms, Irms, and Watts is easy.
@@ -169,7 +172,7 @@ boolean sampleCycle(IoTaInputChannel* Vchannel, IoTaInputChannel* Ichannel, int 
   #define cycles 1                            // Cycles to sample (>1 you're on your own)
   
   uint32_t cmdMask = ((4 << SPILMOSI) | (4 << SPILMISO));
-  uint32_t dataMask = ((ADC_bits + 1) << SPILMOSI) | ((ADC_bits + 1) << SPILMISO);
+  uint32_t dataMask = ((ADC_BITS + 1) << SPILMOSI) | ((ADC_BITS + 1) << SPILMISO);
   const uint32_t mask = ~((SPIMMOSI << SPILMOSI) | (SPIMMISO << SPILMISO));
   volatile uint8_t * fifoPtr8 = (volatile uint8_t *) &SPI1W0;
   
@@ -268,7 +271,7 @@ boolean sampleCycle(IoTaInputChannel* Vchannel, IoTaInputChannel* Ichannel, int 
 
               // extract the rawI from the SPI hardware buffer and adjust with offset.
         
-        *IsamplePtr = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_bits)) - offsetI;
+        *IsamplePtr = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_BITS)) - offsetI;
 
                       /************************************
                        *  Sample the Voltage (V) channel  *
@@ -320,7 +323,7 @@ boolean sampleCycle(IoTaInputChannel* Vchannel, IoTaInputChannel* Ichannel, int 
 
               // extract the rawV from the SPI hardware buffer and adjust with offset. 
                                                                     
-        rawV = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_bits)) - offsetV;  // Result is in left aligned in first FiFo word
+        rawV = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_BITS)) - offsetV;  // Result is in left aligned in first FiFo word
 
         // Finish up loop cycle by checking for zero crossing.
 
@@ -410,7 +413,7 @@ int readADC(uint8_t channel)
   SPI.transferBytes(ADC_out, ADC_in, 2);            // Start reading the results
   digitalWrite(ADCselectPin, HIGH);                 // Raise the chip select to deselect and reset
   
-  return (word(ADC_in[0] & 0x3F, ADC_in[1]) >> (14 - ADC_bits)); // Put the result together and return
+  return (word(ADC_in[0] & 0x3F, ADC_in[1]) >> (14 - ADC_BITS)); // Put the result together and return
 }
 
 /****************************************************************************************************
@@ -464,7 +467,7 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
   frequency = (0.8 * frequency) + (0.2 * Hz);
   samplesPerCycle = samplesPerCycle * .9 + (samples / cycles) * .1;
   cycleSamples++;
-  double Vratio = Vcal * Vadj_3 * getAref(Vchan) / double(ADC_range);
+  double Vratio = Vcal * Vadj_3 * getAref(Vchan) / double(ADC_RANGE);
   if(getAref(Vchan) < 1.5) Vratio *= (double)Vadj_1 / Vadj_3;
   return  Vratio * sqrt((double)(sumVsq / samples));
 }
@@ -493,9 +496,9 @@ float getAref(int channel) {
   SPI.transferBytes(ADC_out, ADC_in, 2);            // Start reading the results
   digitalWrite(ADCselectPin, HIGH);                 // Raise the chip select to deselect and reset
                                                     // Put the result together and return
-  uint16_t ADCvalue = (word(ADC_in[0] & 0x3F, ADC_in[1]) >> (14 - ADC_bits));
+  uint16_t ADCvalue = (word(ADC_in[0] & 0x3F, ADC_in[1]) >> (14 - ADC_BITS));
   if(ADCvalue == 4095 | ADCvalue == 0) return 0;    // no ADC
-  return VrefVolts * ADC_range / ADCvalue;  
+  return VrefVolts * ADC_RANGE / ADCvalue;  
 }
 
 //**********************************************************************************************

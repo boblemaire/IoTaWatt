@@ -250,7 +250,7 @@ void handleStatus(){
   if(server.hasArg("channels")){
     JsonArray& channelArray = jsonBuffer.createArray();
     
-    for(int i=0; i<channels; i++){
+    for(int i=0; i<maxInputs; i++){
       IoTaInputChannel *_input = inputChannel[i];
       if(_input){
         JsonObject& channelObject = jsonBuffer.createObject();
@@ -313,7 +313,7 @@ void handleCommand(){
 void handleGetFeedList(){ 
   DynamicJsonBuffer jsonBuffer;
   JsonArray& array = jsonBuffer.createArray();
-  for(int i=0; i<channels; i++){
+  for(int i=0; i<maxInputs; i++){
     IoTaInputChannel *_input = inputChannel[i];  
     if(_input){
       if(_input->_type == channelTypeVoltage){

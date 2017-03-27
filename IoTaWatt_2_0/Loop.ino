@@ -17,8 +17,8 @@ void loop()
     samplePower(nextChannel, 0);
     trace(T_LOOP,2);
     nextCrossMs = lastCrossMs + 490 / int(frequency);
-    while( ! inputChannel[++nextChannel % channels]);
-    nextChannel = nextChannel % channels;
+    while( ! inputChannel[++nextChannel % maxInputs]);
+    nextChannel = nextChannel % maxInputs;
   }
 
   // --------- Give web server a shout out.
@@ -145,7 +145,7 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   if(!started){
     msgLog("statService: started.");
     started = true;
-    for(int i=0; i<channels; i++){
+    for(int i=0; i<maxInputs; i++){
       IoTaInputChannel* _input = inputChannel[i];
       if(_input){
         statBucket[i].accum1 = _input->dataBucket.accum1;
@@ -155,7 +155,7 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
     return (uint32_t)UNIXtime() + 1;
   }
 
-  for(int i=0; i<channels; i++){
+  for(int i=0; i<maxInputs; i++){
     IoTaInputChannel* _input = inputChannel[i];
     if(_input){
       _input->ageBuckets(timeNow);

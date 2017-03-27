@@ -16,7 +16,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   static states state = initialize;
   static IotaLogRecord* logRecord = new IotaLogRecord;
   static File eMonPostLog;
-  static double accum1Then [MAXCHANNELS];
+  static double accum1Then [MAXINPUTS];
   static uint32_t UnixLastPost = UNIXtime();
   static uint32_t UnixNextPost = UNIXtime();
   static double _logHours;
@@ -69,7 +69,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
 
           // Save the value*hrs to date, and logHours to date
       
-      for(int i=0; i<channels; i++){ 
+      for(int i=0; i<maxInputs; i++){ 
         accum1Then[i] = logRecord->channel[i].accum1;
         if(accum1Then[i] != accum1Then[i]) accum1Then[i] = 0;
       }
@@ -144,7 +144,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       double value1;
       
       _logHours = logRecord->logHours;   
-      for (int i = 0; i < channels; i++) {
+      for (int i = 0; i < maxInputs; i++) {
         IoTaInputChannel *_input = inputChannel[i];
         value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
         accum1Then[i] = logRecord->channel[i].accum1;
