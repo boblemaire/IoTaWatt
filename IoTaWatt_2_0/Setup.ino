@@ -85,9 +85,9 @@ void setup()
 
   server.on("/status",HTTP_GET, handleStatus);
   server.on("/vcal",HTTP_GET, handleVcal);
-  // server.on("/pcal",HTTP_GET, handlePcal);
   server.on("/command", HTTP_GET, handleCommand);
   server.on("/list", HTTP_GET, printDirectory);
+  server.on("/config",HTTP_GET, handleConfig);
   server.on("/edit", HTTP_DELETE, handleDelete);
   server.on("/edit", HTTP_PUT, handleCreate);
   server.on("/edit", HTTP_POST, [](){returnOK(); }, handleFileUpload);

@@ -145,7 +145,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       
       _logHours = logRecord->logHours;   
       for (int i = 0; i < maxInputs; i++) {
-        IoTaInputChannel *_input = inputChannel[i];
+        IotaInputChannel *_input = inputChannel[i];
         value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
         accum1Then[i] = logRecord->channel[i].accum1;
         if( ! _input){

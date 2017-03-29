@@ -1,8 +1,8 @@
 boolean getConfig(void)
 {
+  DynamicJsonBuffer Json;              
   File ConfigFile;
   String ConfigFileURL = "config.txt";
-  DynamicJsonBuffer Json;
     
   //************************************** Load and parse Json Config file ************************
   
@@ -65,11 +65,10 @@ boolean getConfig(void)
         //************************************ Configure input channels ***************************
         
   uint16_t channelsCount = Config["inputs"].size();
-  JsonObject* input;
   for(int i=0; i<channelsCount; i++)
   {
-    input = &Config["inputs"][i].as<JsonObject&>();
-    int16_t channel = Config["inputs"][i]["channel"].as<int>();
+    JsonObject& input = Config["inputs"][i].as<JsonObject&>();
+    int16_t channel = input["channel"].as<int>();
           if(channel >= maxInputs){
       msgLog("Unsupported channel configured: ", channel);
       continue;
@@ -78,24 +77,24 @@ boolean getConfig(void)
       msgLog ("Duplicate input channel definition for channel: ", channel);
       delete inputChannel[channel];
     }
-    IoTaInputChannel* newChannel = new IoTaInputChannel(channel, chanAddr[channel], chanAref[channel], ADC_BITS);
+    IotaInputChannel* newChannel = new IotaInputChannel(channel, chanAddr[channel], chanAref[channel], ADC_BITS);
     inputChannel[channel] = newChannel;
-    String type = Config["inputs"][i]["type"].asString();
-    String nombre = Config["inputs"][i]["name"];
+    String type = input["type"].asString();
+    String nombre = input["name"];
     if(nombre == "") nombre = String("chan: ") + String(channel);
     newChannel->_name = new char[nombre.length()+1];
     strcpy(newChannel->_name, nombre.c_str());
-    newChannel->_model = new char[sizeof(Config["inputs"][i]["model"])+1];
-    strcpy(newChannel->_model, Config["inputs"][i]["model"]);
-    newChannel->_calibration = Config["inputs"][i]["cal"].as<float>();
-    newChannel->_phase = Config["inputs"][i]["phase"].as<float>();
+    newChannel->_model = new char[sizeof(input["model"])+1];
+    strcpy(newChannel->_model, input["model"]);
+    newChannel->_calibration = input["cal"].as<float>();
+    newChannel->_phase = input["phase"].as<float>();
     if(type == "VT") {
       newChannel->_type = channelTypeVoltage;
     } 
     else if (type == "CT"){
       newChannel->_type = channelTypePower;
-      newChannel->_vchannel = Config["inputs"][i]["vchan"].as<int>();     
-      if(input->containsKey("signed")){
+      newChannel->_vchannel = input["vchan"].as<int>();     
+      if(input.containsKey("signed")){
         newChannel->_signed = true;
       }
     }  
@@ -105,6 +104,28 @@ boolean getConfig(void)
         // Get server type
                                                   
   String serverType = Config["server"]["type"].asString();
+
+      // ************************************ configure output channels ***************************
+
+  if(Config.containsKey("outputs")){
+    for(int i=0; i<Config["outputs"].size(); i++){
+      JsonObject& outputObject = Config["outputs"][i].as<JsonObject&>();
+      if(outputObject.containsKey("name") &&
+         outputObject.containsKey("script")) {
+             IotaOutputChannel* output = new IotaOutputChannel(outputObject["name"], outputObject["script"]);
+             output->_channel = i+100;
+             outputList.insertTail(output, output->_name);
+         }
+    }
+    Serial.print("output Channels: ");
+    IotaOutputChannel* outputChannel = (IotaOutputChannel*)outputList.findFirst();
+    while(outputChannel != NULL){
+      Serial.print(outputChannel->_name);
+      Serial.print(" ");
+      outputChannel = (IotaOutputChannel*)outputList.findNext(outputChannel);
+    }
+    Serial.println();
+  }
   
       //************************************** configure eMonCMS **********************************
 
@@ -119,11 +140,9 @@ boolean getConfig(void)
     eMonCMSInterval = Config["server"]["postInterval"].as<int>();
     msg += ", post interval: " + String(eMonCMSInterval);
     String secure = Config["server"]["secure"].asString();
-    //if(Config["server"]["bulksend"].is<unsigned int>()){
-      eMonBulkSend = Config["server"]["bulksend"].as<int>();
-      if(eMonBulkSend > 10) eMonBulkSend = 10;
-      if(eMonBulkSend <1) eMonBulkSend = 1; 
-    //}
+    eMonBulkSend = Config["server"]["bulksend"].as<int>();
+    if(eMonBulkSend > 10) eMonBulkSend = 10;
+    if(eMonBulkSend <1) eMonBulkSend = 1;    
     if(secure == "secure"){
       eMonSecure = true;
       msg += ", HTTPS protocol";

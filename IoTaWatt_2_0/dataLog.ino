@@ -36,7 +36,7 @@
       // Initialize local accumulators
       
       for(int i=0; i<maxInputs; i++){
-        IoTaInputChannel* _input = inputChannel[i];
+        IotaInputChannel* _input = inputChannel[i];
         if(_input){
           inputChannel[i]->ageBuckets(timeNow);
           accum1Then[i] = inputChannel[i]->dataBucket.accum1;
@@ -85,7 +85,7 @@
       if(timeNext == (UNIXtime() - UNIXtime() % dataLogInterval)){
         double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
         for(int i=0; i<maxInputs; i++){
-          IoTaInputChannel* _input = inputChannel[i];
+          IotaInputChannel* _input = inputChannel[i];
           if(_input){
             _input->ageBuckets(timeNow);
             logRecord->channel[i].accum1 += _input->dataBucket.accum1 - accum1Then[i];

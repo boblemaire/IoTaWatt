@@ -146,7 +146,7 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
     msgLog("statService: started.");
     started = true;
     for(int i=0; i<maxInputs; i++){
-      IoTaInputChannel* _input = inputChannel[i];
+      IotaInputChannel* _input = inputChannel[i];
       if(_input){
         statBucket[i].accum1 = _input->dataBucket.accum1;
         statBucket[i].accum2 = _input->dataBucket.accum2;
@@ -156,7 +156,7 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   }
 
   for(int i=0; i<maxInputs; i++){
-    IoTaInputChannel* _input = inputChannel[i];
+    IotaInputChannel* _input = inputChannel[i];
     if(_input){
       _input->ageBuckets(timeNow);
       double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
@@ -164,11 +164,8 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
       statBucket[i].value2 = (damping * statBucket[i].value2) + ((1.0 - damping) * (_input->dataBucket.accum2 - statBucket[i].accum2) / elapsedHrs);
       statBucket[i].accum1 = _input->dataBucket.accum1;
       statBucket[i].accum2 = _input->dataBucket.accum2;
-    }
-    Serial.print(statBucket[i].value1,1); Serial.print(", ");
-    
+    }    
   }
-  Serial.println();
   
   if(cycleSamples){
     cycleSampleRate = .75 * cycleSampleRate + .25 * float(cycleSamples * 1000) / float((uint32_t)(timeNow - timeThen));

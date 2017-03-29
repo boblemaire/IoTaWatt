@@ -230,7 +230,7 @@ void handleNotFound(){
 
 /************************************************************************************************
  * 
- * Following handlers added to WebServer for IoTaWatt specific requests
+ * Following handlers added to WebServer for IotaWatt specific requests
  * 
  **********************************************************************************************/
 
@@ -247,11 +247,11 @@ void handleStatus(){
     root.set("stats",stats);
   }
   
-  if(server.hasArg("channels")){
+  if(server.hasArg("inputs")){
     JsonArray& channelArray = jsonBuffer.createArray();
     
     for(int i=0; i<maxInputs; i++){
-      IoTaInputChannel *_input = inputChannel[i];
+      IotaInputChannel *_input = inputChannel[i];
       if(_input){
         JsonObject& channelObject = jsonBuffer.createObject();
         channelObject.set("channel",_input->_channel);
@@ -272,7 +272,21 @@ void handleStatus(){
         channelArray.add(channelObject);
       }
     }
-    root["channels"] = channelArray;
+    root["inputs"] = channelArray;
+  }
+
+  if(server.hasArg("outputs")){
+    JsonArray& outputArray = jsonBuffer.createArray();
+    IotaOutputChannel* _output = (IotaOutputChannel*)outputList.findFirst();
+    while(_output){
+      JsonObject& channelObject = jsonBuffer.createObject();
+      channelObject.set("name",_output->_name);
+      channelObject.set("Watts", _output->runScript([](int i)->double {
+        return statBucket[i].watts;}),0);
+      outputArray.add(channelObject);
+      _output = (IotaOutputChannel*)outputList.findNext(_output);
+    }
+    root["outputs"] = outputArray;
   }
 
   if(server.hasArg("voltage")){
@@ -314,7 +328,7 @@ void handleGetFeedList(){
   DynamicJsonBuffer jsonBuffer;
   JsonArray& array = jsonBuffer.createArray();
   for(int i=0; i<maxInputs; i++){
-    IoTaInputChannel *_input = inputChannel[i];  
+    IotaInputChannel *_input = inputChannel[i];  
     if(_input){
       if(_input->_type == channelTypeVoltage){
         JsonObject& voltage = jsonBuffer.createObject();
@@ -337,7 +351,19 @@ void handleGetFeedList(){
         array.add(energy);
       }
     }
+    
   }
+  
+  IotaOutputChannel* _output = (IotaOutputChannel*)outputList.findFirst();
+  while(_output){
+    JsonObject& power = jsonBuffer.createObject();
+    power["id"] = String(_output->_channel*10+QUERY_POWER);
+    power["tag"] = "Power";
+    power["name"] = _output->_name;
+    array.add(power);
+    _output = (IotaOutputChannel*)outputList.findNext(_output);
+  }
+  
   String response = "";
   array.printTo(response);
   server.send(200, "application/json", response);
@@ -410,4 +436,7 @@ void sendMsgFile(File &dataFile, int32_t relPos){
     _client.write(dataFile, 1460);
 }
 
+void handleConfig(){
+  server.send(200, "ok", "{}");
+}
 

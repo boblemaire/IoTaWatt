@@ -1,4 +1,4 @@
- 
+
       /***********************************************************************************
       MIT License
       
@@ -37,9 +37,11 @@
 #include <ESP8266mDNS.h>
 #include <SD.h>
 #include <WiFiUDP.h>
+#include <ArduinoJson.h>
 #include <IotaLog.h>
 #include <IotaInputChannel.h>
-#include <ArduinoJson.h>
+#include <IotaOutputChannel.h>
+#include <IotaList.h>
 #include <math.h>
 #include <Wire.h>
 #include <RTClib.h>
@@ -50,12 +52,13 @@ WiFiClientSecure WifiClientSecure;
 WiFiClient WifiClient;    
 IotaLog iotaLog;                            // instance of IotaLog class
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
+
 const int HttpsPort = 443;
 const double MS_PER_HOUR = 3600000UL;       // useful constant
 
-      // Collection of filenames that IoTaWatt uses.
+      // Collection of filenames that IotaWatt uses.
 
-String deviceName = "IoTaWatt";             // can be specified in config.device.name
+String deviceName = "IotaWatt";             // can be specified in config.device.name
 String IotaLogFile = "/IotaWatt/IotaLog";
 String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
 String eMonPostLogFile = "/iotawatt/emonlog.log";
@@ -128,13 +131,13 @@ serviceBlock* serviceQueue = NULL;     // Head of ordered list of services
       // They are mapped to internal channel identifiers that are actually ADC*8 + port.
       // The ChanAddr and ChanAref mapping arrays, that may be specified in the config file
       // as config.device.chanaddr and config.device.aref.
-      // Initial values here are defaults for IoTaWatt 2.1.
+      // Initial values here are defaults for IotaWatt 2.1.
       // VrefVolts is the declared value of the voltage reference shunt,
       // Can be specified in config.device.aref
-      // Voltage adjustments are the values for AC reference attenuation in IoTaWatt 2.1.    
+      // Voltage adjustments are the values for AC reference attenuation in IotaWatt 2.1.    
 
 #define MAXINPUTS 21                          // Compiled channel support limit
-IoTaInputChannel* inputChannel [MAXINPUTS];   // -->s to incidences of input channels 
+IotaInputChannel* inputChannel [MAXINPUTS];   // -->s to incidences of input channels 
 uint8_t maxInputs = 0;                        // channel limit based on configured hardware
 
       // chanAddr maps channel number to ADC port;
@@ -147,7 +150,7 @@ uint8_t chanAref [MAXINPUTS] = {7,7,7,7,7,7,7,  15,15,15,15,15,15,15, 23,23,23,2
 
 float VrefVolts = 1.0;                      // Voltage reference shunt value used to calibrate
                                             // the ADCs. (can be specified in config.device.refvolts)
-#define Vadj_1 38.532                       // IoTaWatt 2.1 attenuation at 1.2v Aref (VT input/ADC input)
+#define Vadj_1 38.532                       // IotaWatt 2.1 attenuation at 1.2v Aref (VT input/ADC input)
 #define Vadj_3 13                           // IotaWatt 2.1 attenuation at 3.2v Aref            
 
       // ****************************************************************************
@@ -162,10 +165,14 @@ float cycleSampleRate = 0;
 int16_t cycleSamples = 0;
 dataBuckets statBucket[MAXINPUTS];
 
+      // ****************************** list of output channels **********************
+
+IotaList outputList; 
+
       // ****************************** SDWebServer stuff ****************************
 
 #define DBG_OUTPUT_PORT Serial
-char* host = "IoTaWatt";
+char* host = "IotaWatt";
 ESP8266WebServer server(80);
 static bool hasSD = false;
 File uploadFile;

@@ -18,8 +18,8 @@ void samplePower(int channel, int overSample){
 
          // From here on, dealing with a power channel and associated voltage channel.
 
-  IoTaInputChannel* Ichannel = inputChannel[channel];
-  IoTaInputChannel* Vchannel = inputChannel[Ichannel->_vchannel]; 
+  IotaInputChannel* Ichannel = inputChannel[channel];
+  IotaInputChannel* Vchannel = inputChannel[Ichannel->_vchannel]; 
           
   byte Ichan = Ichannel->_channel;
   byte Vchan = Vchannel->_channel;
@@ -51,7 +51,7 @@ void samplePower(int channel, int overSample){
         // If it fails, set power to zero and return.
 
   if( ! sampleCycle(Vchannel, Ichannel, _overSample)) {
-    PRINTL("sample failure", channel)
+    PRINTL("sample imbalance", channel)
     Ichannel->setPower(0.0, 0.0);
     return;
   }               
@@ -137,7 +137,7 @@ void samplePower(int channel, int overSample){
   * 
   *  sampleCycle(Vchan, Ichan)
   *  
-  *  This code accounts for up to 66% (60Hz) of the execution of IoTaWatt.
+  *  This code accounts for up to 66% (60Hz) of the execution of IotaWatt.
   *  It collects voltage and current sample pairs and saves them away for 
   *    
   *  The approach is to start sampling voltage/current pairs in a tight loop.
@@ -164,7 +164,7 @@ void samplePower(int channel, int overSample){
   * 
   ****************************************************************************************************/
   
-boolean sampleCycle(IoTaInputChannel* Vchannel, IoTaInputChannel* Ichannel, int overSample){
+boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int overSample){
 
   int Vchan = Vchannel->_channel;
   int Ichan = Ichannel->_channel;
@@ -421,7 +421,7 @@ int readADC(uint8_t channel)
  * It samples one cycle and returns the voltage corresponding to the supplied calibration factor.
  ****************************************************************************************************/
 float sampleVoltage(uint8_t Vchan, float Vcal){
-  IoTaInputChannel* _input = inputChannel[Vchan];
+  IotaInputChannel* _input = inputChannel[Vchan];
   uint32_t sumVsq = 0;
   int16_t rawV = 0;
   int16_t lastV = 0;
