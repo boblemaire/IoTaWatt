@@ -11,6 +11,7 @@
  *   03/17/17 2.00.07 Add partial read of message log. Dress up msgLog startup.
  *   03/18/17 2.00.08 Fix rounding in API Json output
  *   03/18/17 2.00.09 Fix typo in json rework
+ *   03/18/17 2.00.10 Change wifi retry interval
  *   
  *            2.01.00 Major update - move inputs to a class
  *   
