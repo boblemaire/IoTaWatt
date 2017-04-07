@@ -249,23 +249,21 @@ void handleStatus(){
   
   if(server.hasArg("inputs")){
     JsonArray& channelArray = jsonBuffer.createArray();
-    
     for(int i=0; i<maxInputs; i++){
-      IotaInputChannel *_input = inputChannel[i];
-      if(_input){
+      if(inputChannel[i]->isActive()){
         JsonObject& channelObject = jsonBuffer.createObject();
-        channelObject.set("channel",_input->_channel);
-        if(_input->_type == channelTypeVoltage){
+        channelObject.set("channel",inputChannel[i]->_channel);
+        if(inputChannel[i]->_type == channelTypeVoltage){
           channelObject.set("Vrms",statBucket[i].volts,1);
           channelObject.set("Hz",statBucket[i].Hz,1);
         }
-        else if(_input->_type == channelTypePower){
+        else if(inputChannel[i]->_type == channelTypePower){
           channelObject.set("Watts",long(statBucket[i].watts + .5));
           channelObject.set("Irms",statBucket[i].amps,3);
           if(statBucket[i].watts > 10){
             channelObject.set("Pf",statBucket[i].watts/(statBucket[i].amps*statBucket[inputChannel[i]->_vchannel].volts),2);
           } 
-          if(_input->_reversed){
+          if(inputChannel[i]->_reversed){
             channelObject.set("reversed","true");
           }
         }
@@ -328,30 +326,28 @@ void handleGetFeedList(){
   DynamicJsonBuffer jsonBuffer;
   JsonArray& array = jsonBuffer.createArray();
   for(int i=0; i<maxInputs; i++){
-    IotaInputChannel *_input = inputChannel[i];  
-    if(_input){
-      if(_input->_type == channelTypeVoltage){
+    if(inputChannel[i]->isActive()){
+      if(inputChannel[i]->_type == channelTypeVoltage){
         JsonObject& voltage = jsonBuffer.createObject();
-        voltage["id"] = String(_input->_channel*10+QUERY_VOLTAGE);
+        voltage["id"] = String(inputChannel[i]->_channel*10+QUERY_VOLTAGE);
         voltage["tag"] = "Voltage";
-        voltage["name"] = _input->_name;
+        voltage["name"] = inputChannel[i]->_name;
         array.add(voltage);
       } 
       else
-        if(_input->_type == channelTypePower){
+        if(inputChannel[i]->_type == channelTypePower){
         JsonObject& power = jsonBuffer.createObject();
-        power["id"] = String(_input->_channel*10+QUERY_POWER);
+        power["id"] = String(inputChannel[i]->_channel*10+QUERY_POWER);
         power["tag"] = "Power";
-        power["name"] = _input->_name;
+        power["name"] = inputChannel[i]->_name;
         array.add(power);
         JsonObject& energy = jsonBuffer.createObject();
-        energy["id"] = String(_input->_channel*10+QUERY_ENERGY);
+        energy["id"] = String(inputChannel[i]->_channel*10+QUERY_ENERGY);
         energy["tag"] = "Energy";
-        energy["name"] = _input->_name;
+        energy["name"] = inputChannel[i]->_name;
         array.add(energy);
       }
     }
-    
   }
   
   IotaOutputChannel* _output = (IotaOutputChannel*)outputList.findFirst();
@@ -373,27 +369,6 @@ void handleGraphGetall(){                   // Stub to appease eMonCMS graph app
   return;
   server.send(200, "ok", "{}");
 }
-
-//void handlePcal(){
-//  if(!server.hasArg("channel") || !server.hasArg("refchan")){
-//    server.send(400, "text/json", "Missing parameters");
-//    return;
-//  }
-//  DynamicJsonBuffer jsonBuffer;
-//  JsonObject& root = jsonBuffer.createObject();
-//  int channel = server.arg("channel").toInt();
-//  int refChan = server.arg("refchan").toInt();
-//  float relPhase = calcPhaseDiff(refChan);
-//  float difPhase = relPhase - phaseCorrection[refChan];
-//  root.set("irms",buckets[refChan].amps,1);
-//  if(buckets[refChan].amps >= 5){
-//    root.set("relphase",relPhase,1);
-//    root.set("ctphase",phaseCorrection[refChan],1);
-//  }
-//  String response = "";
-//  root.printTo(response);
-//  server.send(200, "text/json", response);   
-//}
 
 float calcPhaseDiff(int refChan){
   int Ishift = 40;
@@ -436,7 +411,11 @@ void sendMsgFile(File &dataFile, int32_t relPos){
     _client.write(dataFile, 1460);
 }
 
-void handleConfig(){
-  server.send(200, "ok", "{}");
+void handleGetConfig(){
+  if(getConfig()){
+    server.send(200, "text/plain", "OK");
+        return;
+  }
+  server.send(400, "text/plain", "Bad Request.");
 }
 

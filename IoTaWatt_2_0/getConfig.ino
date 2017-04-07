@@ -35,98 +35,82 @@ boolean getConfig(void)
     localTimeDiff = Config["timezone"].as<signed int>();
     msgLog("Local time zone: ",String(localTimeDiff));
   }
-    
-  if(device.containsKey("chanaddr")){
-    for(int i=0; i<device["chanaddr"].size(); i++){
-      chanAddr[i] = device["chanaddr"][i].as<unsigned int>();
-    }
-  }
-  
-  if(device.containsKey("chanaref")){
-    for(int i=0; i<device["chanaref"].size(); i++){
-      chanAref[i] = device["chanaref"][i].as<unsigned int>();
-    }
-  }
 
-  if(device.containsKey("refvolts")){
-    VrefVolts = device["refvolts"].as<float>();
-  } 
-
-  if(device.containsKey("channels")){
-    maxInputs = device["channels"].as<unsigned int>();
-  }
-  
   if(Config["device"]["version"].asString()[0] < '2'){
     hasRTC = false;
   } else {
     hasRTC = true;
   }
-    
-        //************************************ Configure input channels ***************************
-        
-  uint16_t channelsCount = Config["inputs"].size();
-  for(int i=0; i<channelsCount; i++)
-  {
-    JsonObject& input = Config["inputs"][i].as<JsonObject&>();
-    int16_t channel = input["channel"].as<int>();
-          if(channel >= maxInputs){
-      msgLog("Unsupported channel configured: ", channel);
-      continue;
-    }
-    if(inputChannel[channel] != NULL){
-      msgLog ("Duplicate input channel definition for channel: ", channel);
-      delete inputChannel[channel];
-    }
-    IotaInputChannel* newChannel = new IotaInputChannel(channel, chanAddr[channel], chanAref[channel], ADC_BITS);
-    inputChannel[channel] = newChannel;
-    String type = input["type"].asString();
-    String nombre = input["name"];
-    if(nombre == "") nombre = String("chan: ") + String(channel);
-    newChannel->_name = new char[nombre.length()+1];
-    strcpy(newChannel->_name, nombre.c_str());
-    newChannel->_model = new char[sizeof(input["model"])+1];
-    strcpy(newChannel->_model, input["model"]);
-    newChannel->_calibration = input["cal"].as<float>();
-    newChannel->_phase = input["phase"].as<float>();
-    if(type == "VT") {
-      newChannel->_type = channelTypeVoltage;
-    } 
-    else if (type == "CT"){
-      newChannel->_type = channelTypePower;
-      newChannel->_vchannel = input["vchan"].as<int>();     
-      if(input.containsKey("signed")){
-        newChannel->_signed = true;
+  
+  if(device.containsKey("refvolts")){
+    VrefVolts = device["refvolts"].as<float>();
+  }  
+
+          // Build or update the input channels
+   
+  if(device.containsKey("channels")){
+    int channels = MIN(device["channels"].as<unsigned int>(),MAXINPUTS);
+    if(maxInputs != channels) {
+      IotaInputChannel* *newList = new IotaInputChannel*[channels];
+      for(int i=0; i<MIN(channels,maxInputs); i++){
+        newList[i] = inputChannel[i];
       }
-    }  
-    else msgLog("unsupported input type: ", type);
+      for(int i=MIN(channels,maxInputs); i<maxInputs; i++){
+        delete inputChannel[i];
+      }
+      for(int i=MIN(channels,maxInputs); i<channels; i++){
+        newList[i] = new IotaInputChannel(i);
+        newList[i]->_name = "Input(" + String(i) + ")";
+      }
+      delete[] inputChannel;
+      inputChannel = newList;
+      maxInputs = channels;
+    }
+  }
+ 
+  if(device.containsKey("chanaddr")){
+    for(int i=0; i<MIN(maxInputs,device["chanaddr"].size()); i++){
+      inputChannel[i]->_addr = device["chanaddr"][i].as<unsigned int>();
+    }
+  }
+  
+  if(device.containsKey("chanaref")){
+    for(int i=0; i<MIN(maxInputs,device["chanaddr"].size()); i++){
+      inputChannel[i]->_aRef = device["chanaref"][i].as<unsigned int>();
+    }
   }
 
+   if(device.containsKey("burden")){
+    for(int i=0; i<MIN(maxInputs,device["burden"].size()); i++){
+      inputChannel[i]->_burden = device["burden"][i].as<float>();
+    }
+  }
+    
+        //************************************ Configure input channels ***************************
+  if(Config.containsKey("inputs")){
+    configInputs(Config["inputs"]);
+  }   
+
+   for(int i=0; i<maxInputs; i++){
+    PRINT(inputChannel[i]->_name," ")
+    PRINT(" name:", inputChannel[i]->_name)
+    PRINT(" model:", inputChannel[i]->_model)
+    PRINT(" burden:", inputChannel[i]->_burden)
+    PRINT(" addr: ", inputChannel[i]->_addr)
+    PRINTL(" aRef: ",inputChannel[i]->_aRef)
+  }
+     
+        // ************************************ configure output channels *************************
+
+  if(Config.containsKey("outputs")){
+    configOutputs(Config["outputs"]);
+  }
+  
         // Get server type
                                                   
   String serverType = Config["server"]["type"].asString();
 
-      // ************************************ configure output channels ***************************
-
-  if(Config.containsKey("outputs")){
-    for(int i=0; i<Config["outputs"].size(); i++){
-      JsonObject& outputObject = Config["outputs"][i].as<JsonObject&>();
-      if(outputObject.containsKey("name") &&
-         outputObject.containsKey("script")) {
-             IotaOutputChannel* output = new IotaOutputChannel(outputObject["name"], outputObject["script"]);
-             output->_channel = i+100;
-             outputList.insertTail(output, output->_name);
-         }
-    }
-    Serial.print("output Channels: ");
-    IotaOutputChannel* outputChannel = (IotaOutputChannel*)outputList.findFirst();
-    while(outputChannel != NULL){
-      Serial.print(outputChannel->_name);
-      Serial.print(" ");
-      outputChannel = (IotaOutputChannel*)outputList.findNext(outputChannel);
-    }
-    Serial.println();
-  }
-  
+      
       //************************************** configure eMonCMS **********************************
 
   if(serverType.equals("emoncms"))
@@ -158,4 +142,60 @@ boolean getConfig(void)
   return true;
 }
 
+void configOutputs(JsonArray& JsonOutputs){
+  while(outputList.size()){
+    IotaOutputChannel* output = (IotaOutputChannel*) outputList.findFirst();
+    outputList.remove(output);
+    delete output;
+  }
+  for(int i=0; i<JsonOutputs.size(); i++){
+    JsonObject& outputObject = JsonOutputs[i].as<JsonObject&>();
+    if(outputObject.containsKey("name") &&
+       outputObject.containsKey("script")) {
+           IotaOutputChannel* output = new IotaOutputChannel(outputObject["name"], outputObject["script"]);
+           output->_channel = i+100;
+           outputList.insertTail(output, output->_name);
+       }
+  }
+  Serial.print("output Channels: ");
+  IotaOutputChannel* outputChannel = (IotaOutputChannel*)outputList.findFirst();
+  while(outputChannel != NULL){
+    Serial.print(outputChannel->_name);
+    Serial.print(" ");
+    outputChannel = (IotaOutputChannel*)outputList.findNext(outputChannel);
+  }
+  Serial.println();
+}
+
+void configInputs(JsonArray& JsonInputs){
+  for(int i=0; i<MIN(maxInputs,JsonInputs.size()); i++) {
+    if(JsonInputs[i].is<JsonObject>()){
+      JsonObject& input = JsonInputs[i].as<JsonObject&>();
+      if(i != input["channel"].as<int>()){
+        msgLog("Config input channel mismatch: ", i);
+        continue;
+      }
+      inputChannel[i]->_name = input["name"].as<String>();
+      inputChannel[i]->_model = input["model"].as<String>();
+      inputChannel[i]->_calibration = input["cal"].as<float>();
+      inputChannel[i]->_phase = input["phase"].as<float>();
+      inputChannel[i]->active(true);
+      String type = input["type"]; 
+      if(type == "VT") {
+        inputChannel[i]->_type = channelTypeVoltage;
+      }
+      else if (type == "CT"){
+        inputChannel[i]->_type = channelTypePower;
+        inputChannel[i]->_vchannel = input["vchan"].as<int>();     
+        if(input.containsKey("signed")){
+          inputChannel[i]->_signed = true;
+        }
+      }  
+      else msgLog("unsupported input type: ", type);
+    }
+    else {
+      inputChannel[i]->active(false);
+    }
+  }
+}
 

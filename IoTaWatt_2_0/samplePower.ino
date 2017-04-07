@@ -51,7 +51,6 @@ void samplePower(int channel, int overSample){
         // If it fails, set power to zero and return.
 
   if( ! sampleCycle(Vchannel, Ichannel, _overSample)) {
-    PRINTL("sample imbalance", channel)
     Ichannel->setPower(0.0, 0.0);
     return;
   }               
@@ -176,8 +175,8 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
   const uint32_t mask = ~((SPIMMOSI << SPILMOSI) | (SPIMMISO << SPILMISO));
   volatile uint8_t * fifoPtr8 = (volatile uint8_t *) &SPI1W0;
   
-  uint8_t  Iport = chanAddr[Ichan] % 8;       // Port on ADC
-  uint8_t  Vport = chanAddr[Vchan] % 8;
+  uint8_t  Iport = inputChannel[Ichan]->_addr % 8;       // Port on ADC
+  uint8_t  Vport = inputChannel[Vchan]->_addr % 8;
     
   int16_t offsetV = Vchannel->_offset;        // Bias offset
   int16_t offsetI = Ichannel->_offset;
@@ -200,8 +199,8 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
   int16_t midCrossSamples;                    // Sample count at mid cycle and end of cycle
   int16_t lastCrossSamples;                   // Used to determine if sampling was interrupted
 
-  byte ADC_IselectPin = ADC_selectPin[chanAddr[Ichan] >> 3];  // Chip select pin
-  byte ADC_VselectPin = ADC_selectPin[chanAddr[Vchan] >> 3];
+  byte ADC_IselectPin = ADC_selectPin[inputChannel[Ichan]->_addr >> 3];  // Chip select pin
+  byte ADC_VselectPin = ADC_selectPin[inputChannel[Vchan]->_addr >> 3];
   uint32_t ADC_IselectMask = 1 << ADC_IselectPin;             // Mask for hardware chip select (pins 0-15)
   uint32_t ADC_VselectMask = 1 << ADC_VselectPin;
 
@@ -359,6 +358,7 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
 
   midCrossSamples = midCrossSamples * 2 - lastCrossSamples;
   if(midCrossSamples < -3 || midCrossSamples > 3){
+    PRINTL("sample imbalance", midCrossSamples)
     return false;
   }
 
@@ -401,9 +401,9 @@ int readADC(uint8_t channel)
   uint8_t ADCselectPin;
   
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));  // SD may have changed this
-  ADCselectPin = ADC_selectPin[chanAddr[channel] >> 3];
+  ADCselectPin = ADC_selectPin[inputChannel[channel]->_addr >> 3];
       
-  ADC_out[0] = 0x18 | (chanAddr[channel] & 0x07);
+  ADC_out[0] = 0x18 | (inputChannel[channel]->_addr & 0x07);
   
   digitalWrite(ADCselectPin, LOW);                  // Lower the chip select
   SPI.transferBytes(ADC_out, ADC_in, 1);            // Start bit, single bit, ADC port
@@ -485,8 +485,8 @@ float getAref(int channel) {
   uint8_t ADCselectPin;
   
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));  // SD may have changed this
-  ADCselectPin = ADC_selectPin[chanAref[channel] >> 3];    
-  ADC_out[0] = 0x18 | (chanAref[channel] & 0x07);            
+  ADCselectPin = ADC_selectPin[inputChannel[channel]->_aRef >> 3];    
+  ADC_out[0] = 0x18 | (inputChannel[channel]->_aRef & 0x07);            
 
   digitalWrite(ADCselectPin, LOW);                  // Lower the chip select
   SPI.transferBytes(ADC_out, ADC_in, 1);            // Start bit, single bit, ADC port

@@ -1,9 +1,5 @@
 void setup()
 {
-  for(int i=0; i<MAXINPUTS; i++){                     // Start with a clean slate.
-    inputChannel[i] = NULL;    
-  }
-
   //*************************************** Start Serial connection (if any)***************************
   
   Serial.begin(115200);
@@ -87,7 +83,7 @@ void setup()
   server.on("/vcal",HTTP_GET, handleVcal);
   server.on("/command", HTTP_GET, handleCommand);
   server.on("/list", HTTP_GET, printDirectory);
-  server.on("/config",HTTP_GET, handleConfig);
+  server.on("/config",HTTP_GET, handleGetConfig);
   server.on("/edit", HTTP_DELETE, handleDelete);
   server.on("/edit", HTTP_PUT, handleCreate);
   server.on("/edit", HTTP_POST, [](){returnOK(); }, handleFileUpload);

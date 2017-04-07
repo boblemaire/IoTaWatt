@@ -92,6 +92,9 @@
             if(logRecord->channel[i].accum1 != logRecord->channel[i].accum1) logRecord->channel[i].accum1 = 0;
             accum1Then[i] = _input->dataBucket.accum1;
           }
+          else {
+            accum1Then[i] = 0;
+          }
         }
         timeThen = timeNow;
         logRecord->logHours += elapsedHrs;

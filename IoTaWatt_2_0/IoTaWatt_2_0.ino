@@ -27,6 +27,9 @@
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
+#define MIN(a,b) ((a<b)?a:b)
+#define MAX(a,b) ((a>b)?a:b)
+
 
 #include <SPI.h>
 #include <ESP8266WiFi.h>
@@ -127,32 +130,20 @@ struct serviceBlock {                  // Scheduler/Dispatcher list item (see co
 serviceBlock* serviceQueue = NULL;     // Head of ordered list of services
 
       // Define maximum number of input channels. 
-      // Channels are identified externally by consecutive numbers beginning with 1.
-      // They are mapped to internal channel identifiers that are actually ADC*8 + port.
-      // The ChanAddr and ChanAref mapping arrays, that may be specified in the config file
-      // as config.device.chanaddr and config.device.aref.
+      // Create pointer for array of pointers to incidences of input channels
       // Initial values here are defaults for IotaWatt 2.1.
       // VrefVolts is the declared value of the voltage reference shunt,
       // Can be specified in config.device.aref
       // Voltage adjustments are the values for AC reference attenuation in IotaWatt 2.1.    
 
-#define MAXINPUTS 21                          // Compiled channel support limit
-IotaInputChannel* inputChannel [MAXINPUTS];   // -->s to incidences of input channels 
-uint8_t maxInputs = 0;                        // channel limit based on configured hardware
-
-      // chanAddr maps channel number to ADC port;
-      // chanAref Maps channel number to Aref ADC port
-      // index is logical channel, value is physical channel (adc * 8 + port)
-      // These can be overiden with JSON config.device.chanaddr and config.device.chanaref
-                                                
-uint8_t chanAddr [MAXINPUTS] = {0,1,2,3,4,5,6,   8, 9,10,11,12,13,14, 16,17,18,19,20,21,22};                                                        
-uint8_t chanAref [MAXINPUTS] = {7,7,7,7,7,7,7,  15,15,15,15,15,15,15, 23,23,23,23,23,23,23};
-
-float VrefVolts = 1.0;                      // Voltage reference shunt value used to calibrate
-                                            // the ADCs. (can be specified in config.device.refvolts)
-#define Vadj_1 38.532                       // IotaWatt 2.1 attenuation at 1.2v Aref (VT input/ADC input)
-#define Vadj_3 13                           // IotaWatt 2.1 attenuation at 3.2v Aref            
-
+#define MAXINPUTS 32                          // Arbitrary compile time limit for input channels
+IotaInputChannel* *inputChannel;              // -->s to incidences of input channels (maxInputs entries)
+uint8_t maxInputs = 0;                        // channel limit based on configured hardware (set in Config)
+float VrefVolts = 1.0;                        // Voltage reference shunt value used to calibrate
+                                              // the ADCs. (can be specified in config.device.refvolts)
+#define Vadj_1 38.532                         // IotaWatt 2.1 attenuation at 1.2v Aref (VT input/ADC input)
+#define Vadj_3 13                             // IotaWatt 2.1 attenuation at 3.2v Aref            
+ 
       // ****************************************************************************
       // statService maintains current averages of the channel values
       // so that current values can be displayed by web clients

@@ -164,7 +164,13 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
       statBucket[i].value2 = (damping * statBucket[i].value2) + ((1.0 - damping) * (_input->dataBucket.accum2 - statBucket[i].accum2) / elapsedHrs);
       statBucket[i].accum1 = _input->dataBucket.accum1;
       statBucket[i].accum2 = _input->dataBucket.accum2;
-    }    
+    }
+    else {
+      statBucket[i].value1 = 0;
+      statBucket[i].value2 = 0;
+      statBucket[i].accum1 = 0;
+      statBucket[i].accum2 = 0;
+    }
   }
   
   if(cycleSamples){
