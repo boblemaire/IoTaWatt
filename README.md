@@ -16,7 +16,7 @@ Any input channel may be used to monitor either voltage or current (watts), howe
 
 The ADC boards are selectable between 3.2V or 1.2V reference voltage to support either 1V type current transformers (like the popular YHDC STC013-000) or the better 33mv CTs (like the DENT CTHMC-100).  Voltage is individually selectable for each ADC in the stack, and each has a voltage reference to insure accuracy without the need for additional calibration.
 
-The configuration and monitoring app runs on any browser based device that is connected to the local WiFi network. 
+The configuration and monitoring app runs on any browser based device that is connected to the local WiFi network. There is a demo version at [iotawatt.com](http://iotawatt.com)
 
 Thanks to contributors of other open software that have been incorporated into this project.  In particular the ArduinoJSON and SDWebServer software made a lot of this possible, not to mention the Arduino/ESP8266 project and related forums.
 
