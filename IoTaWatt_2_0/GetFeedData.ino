@@ -17,9 +17,6 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   enum   states {Initialize, Setup, process};
   static states state = Initialize;
   static IotaLogRecord* logRecord = new IotaLogRecord;
-  static IotaLogRecord* lastRecord = new IotaLogRecord;
-  static IotaLogRecord* swapRecord;
-  static IotaOutputChannel* _output;
   static double accum1Then = 0;
   static double logHoursThen = 0;
   static double elapsedHours = 0;
@@ -64,19 +61,9 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       timePER = micros();
       timeSTART = micros();
         
-      channel = server.arg("id").toInt();
+      channel = server.arg("id").toInt() % 1000;
       queryType = channel % 10;
       channel /= 10;
-      if(channel >= 100){
-        _output = (IotaOutputChannel*)outputList.findFirst();
-        while(_output){
-          if(_output->_channel == channel){
-            Serial.println(_output->_name);
-            break;
-          }
-          _output = (IotaOutputChannel*)outputList.findNext(_output);
-        }
-      }
     
       startUnixTime = server.arg("start").substring(0,10).toInt();
       endUnixTime = server.arg("end").substring(0,10).toInt();
@@ -86,12 +73,13 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       logHoursThen = 0;
 
       if(startUnixTime >= iotaLog.firstKey()){   
-        lastRecord->UNIXtime = startUnixTime - intervalSeconds;
+        logRecord->UNIXtime = startUnixTime - intervalSeconds;
       } else {
-        lastRecord->UNIXtime = iotaLog.firstKey();
+        logRecord->UNIXtime = iotaLog.firstKey();
       }
-      if(!iotaLog.readKey(lastRecord)){
-        
+      if(!iotaLog.readKey(logRecord)){
+        accum1Then = logRecord->channel[channel].accum1;
+        logHoursThen = logRecord->logHours;
       } 
      
       server.setContentLength(CONTENT_LENGTH_UNKNOWN);
@@ -123,22 +111,20 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
         timeit(timePER,timeIO);
         trace(T_GFD,2);
         replyData += '[' + String(UnixTime) + "000,";
-        elapsedHours = logRecord->logHours - lastRecord->logHours;
-        if(rtc || logRecord->logHours == lastRecord->logHours){
+        if(rtc || logRecord->logHours == logHoursThen){
            replyData +=  "null";
         }
-
-          // input channel
-        
-        else if(channel < 100){       
-          trace(T_GFD,3);                  
+        else {
+          elapsedHours = logRecord->logHours - logHoursThen;
+          trace(T_GFD,3);
+                    
           switch (queryType) {
             case QUERY_VOLTAGE: {
-              replyData += String((logRecord->channel[channel].accum1 - lastRecord->channel[channel].accum1) / elapsedHours,1);
+              replyData += String((logRecord->channel[channel].accum1 - accum1Then) / elapsedHours,1);
               break;
             }
             case QUERY_POWER: {
-              replyData += String((logRecord->channel[channel].accum1 - lastRecord->channel[channel].accum1) / elapsedHours,1);
+              replyData += String((logRecord->channel[channel].accum1 - accum1Then) / elapsedHours,1);
               break;
             }
             case QUERY_ENERGY: {
@@ -147,30 +133,13 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
             }
           }  
         }
-
-         // output channel
-        
-        else {
-          trace(T_GFD,4);
-          
-          if(queryType == QUERY_ENERGY){
-            replyData += String(_output->runScript([](int i)->double {
-              return logRecord->channel[i].accum1 / 1000.0;}), 2);
-          }
-          else {
-            replyData += String(_output->runScript([](int i)->double {
-              return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;}), 1);
-          }
-        } 
-           
         replyData += ']';
-        swapRecord = lastRecord;
-        lastRecord = logRecord;
-        logRecord = swapRecord;
-        
-        trace(T_GFD,5);
+        accum1Then = logRecord->channel[channel].accum1;
+        logHoursThen = logRecord->logHours;
+
+        trace(T_GFD,4);
         if(replyData.length() > 2048){
-          trace(T_GFD,6);
+          trace(T_GFD,5);
           yield();
           timePER = micros();
           sendChunk(replyData);
@@ -186,7 +155,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
           return 1;
         }
       }
-      trace(T_GFD,7);
+      trace(T_GFD,6);
       yield();
       replyData.setCharAt(replyData.length()-1,']');
       timePER = micros();

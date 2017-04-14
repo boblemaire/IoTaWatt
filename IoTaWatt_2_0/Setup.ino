@@ -1,5 +1,22 @@
 void setup()
 {
+  for(int i=0; i<MAXCHANNELS; i++){                     // Start with a clean slate.
+    buckets[i].value1 = 0;
+    buckets[i].value2 = 0;
+    buckets[i].accum1 = 0;
+    buckets[i].accum2 = 0;
+    buckets[i].timeThen = millis();
+        
+    calibration[i] = 0.0;
+    phaseCorrection[i] = 0.0;
+    channelType [i] = channelTypeUndefined;
+    channelName [i] = "";
+    Vchannel[i] = 0;
+    offset[i] = ADC_range / 2;
+    CTreversed[i] = false;
+    CTsigned[i] = false;
+  }
+
   //*************************************** Start Serial connection (if any)***************************
   
   Serial.begin(115200);
@@ -81,9 +98,9 @@ void setup()
 
   server.on("/status",HTTP_GET, handleStatus);
   server.on("/vcal",HTTP_GET, handleVcal);
+  server.on("/pcal",HTTP_GET, handlePcal);
   server.on("/command", HTTP_GET, handleCommand);
   server.on("/list", HTTP_GET, printDirectory);
-  server.on("/config",HTTP_GET, handleGetConfig);
   server.on("/edit", HTTP_DELETE, handleDelete);
   server.on("/edit", HTTP_PUT, handleCreate);
   server.on("/edit", HTTP_POST, [](){returnOK(); }, handleFileUpload);

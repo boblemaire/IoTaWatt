@@ -16,7 +16,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   static states state = initialize;
   static IotaLogRecord* logRecord = new IotaLogRecord;
   static File eMonPostLog;
-  static double accum1Then [MAXINPUTS];
+  static double accum1Then [MAXCHANNELS];
   static uint32_t UnixLastPost = UNIXtime();
   static uint32_t UnixNextPost = UNIXtime();
   static double _logHours;
@@ -28,21 +28,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   static SDbuffer* buf = new SDbuffer;
   String eMonPostLogFile = "/iotawatt/emonlog.log";
     
-  trace(T_EMON,0);
-
-            // If stop signaled, do so.  
-
-  if(eMonStop) {
-    msgLog("EmonService: stopped.");
-    eMonStarted = false;
-     trace(T_EMON,4);
-    eMonPostLog.close();
-     trace(T_EMON,5);
-     SD.remove((char *)eMonPostLogFile.c_str());
-     trace(T_EMON,6);
-    return 0;
-  }
-      
+  trace(T_EMON,0);    
   switch(state){
 
     case initialize: {
@@ -83,7 +69,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
 
           // Save the value*hrs to date, and logHours to date
       
-      for(int i=0; i<maxInputs; i++){ 
+      for(int i=0; i<channels; i++){ 
         accum1Then[i] = logRecord->channel[i].accum1;
         if(accum1Then[i] != accum1Then[i]) accum1Then[i] = 0;
       }
@@ -158,22 +144,13 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       double value1;
       
       _logHours = logRecord->logHours;   
-      for (int i = 0; i < maxInputs; i++) {
-        IotaInputChannel *_input = inputChannel[i];
+      for (int i = 0; i < channels; i++) {
         value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
         accum1Then[i] = logRecord->channel[i].accum1;
-        if( ! _input){
-          req += "null,";
-        }
-        else if(_input->_type == channelTypeVoltage){
-          req += String(value1,1) + ',';
-        }
-        else if(_input->_type == channelTypePower){
-          req += String(long(value1+0.5)) + ',';
-        }
-        else{
-          req += String(long(value1+0.5)) + ',';
-        }
+        if(channelType[i] == channelTypeUndefined) req += "0,";
+        else if(channelType[i] == channelTypeVoltage) req += String(value1,1) + ',';
+        else if(channelType[i] == channelTypePower) req += String(long(value1+0.5)) + ',';
+        else req += String(long(value1+0.5)) + ',';
       }
       trace(T_EMON,3);    
       req.setCharAt(req.length()-1,']');

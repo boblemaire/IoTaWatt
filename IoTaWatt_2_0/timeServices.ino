@@ -79,7 +79,7 @@
     udp.write(packetBuffer, NTP_PACKET_SIZE);           // send an NTP packet to a time server
     udp.endPacket();
     
-    int maxWait = 5;                                    // We'll wait 3 100ms intervals
+    int maxWait = 5;                                   // We'll wait 10 100ms intervals
     while(maxWait--){
       if(udp.parsePacket()){
         udp.read(packetBuffer,NTP_PACKET_SIZE);
@@ -128,41 +128,25 @@ uint32_t MillisAtUNIXtime(uint32_t UnixTime){
  
 uint32_t timeSync(struct serviceBlock* _serviceBlock){
   static boolean firstCall = true;
-  enum states {initialize, sync};
-  static states state = initialize;
-  static int retryCount = 0;
-
-  switch(state){
-
-    case initialize: { 
-      msgLog("timeSync: service started.");
-      state = sync;
-      return 1;
-    }
-
-    case sync: {
-      uint32_t _NTPtime = getNTPtime();
-      if(! _NTPtime){
-        if(retryCount++ < 5){
-          return UNIXtime() + 60;
-        }
-        msgLog("timeSync: Failed to get NTPtime.");
+  if(firstCall){
+    msgLog("timeSync: service started.");
+    firstCall = false;
+  }
+  uint32_t _NTPtime = getNTPtime();
+  if(! _NTPtime){
+    msgLog("timeSynch: failed to get NTP time.");
+  } else {
+    timeRefNTP = _NTPtime;                 
+    timeRefMs = millis();
+    if(hasRTC){
+      int32_t timeDiff = UNIXtime() - rtc.now().unixtime();
+      if(timeDiff){
+        msgLog("timeSynch: adjusting RTC by ", String(timeDiff));
+        rtc.adjust(UNIXtime());
       }
-      else {
-        timeRefNTP = _NTPtime;                 
-        timeRefMs = millis();
-        if(hasRTC){
-          int32_t timeDiff = UNIXtime() - rtc.now().unixtime();
-          if(timeDiff){
-            msgLog("timeSync: adjusting RTC by ", String(timeDiff));
-            rtc.adjust(UNIXtime());
-          }
-        }
-      }
-      retryCount = 0;
-      return ((uint32_t) timeSynchInterval * ( 1 + UNIXtime() / timeSynchInterval));
     }
-  }    
+  }
+  return ((uint32_t) timeSynchInterval * ( 1 + UNIXtime() / timeSynchInterval));
 }
 
 /********************************************************************************
