@@ -28,7 +28,21 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   static SDbuffer* buf = new SDbuffer;
   String eMonPostLogFile = "/iotawatt/emonlog.log";
     
-  trace(T_EMON,0);    
+  trace(T_EMON,0);
+
+            // If stop signaled, do so.  
+
+  if(eMonStop) {
+    msgLog("EmonService: stopped.");
+    eMonStarted = false;
+     trace(T_EMON,4);
+    eMonPostLog.close();
+     trace(T_EMON,5);
+     SD.remove((char *)eMonPostLogFile.c_str());
+     trace(T_EMON,6);
+    return 0;
+  }
+      
   switch(state){
 
     case initialize: {
@@ -149,7 +163,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
         value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
         accum1Then[i] = logRecord->channel[i].accum1;
         if( ! _input){
-          req += "0,";
+          req += "null,";
         }
         else if(_input->_type == channelTypeVoltage){
           req += String(value1,1) + ',';

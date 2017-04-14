@@ -357,7 +357,7 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
           // Insures no interrupts paused sampling.
 
   midCrossSamples = midCrossSamples * 2 - lastCrossSamples;
-  if(midCrossSamples < -3 || midCrossSamples > 3){
+  if(midCrossSamples < -8 || midCrossSamples > 8){
     PRINTL("sample imbalance", midCrossSamples)
     return false;
   }

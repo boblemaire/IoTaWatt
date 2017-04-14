@@ -117,6 +117,11 @@ boolean getConfig(void)
   {
     msg = "server is: eMonCMS";
     eMonURL = Config["server"]["url"].asString();
+    if(eMonURL.startsWith("http://")) eMonURL = eMonURL.substring(7);
+   else if(eMonURL.startsWith("https://")){
+      eMonURL = eMonURL.substring(8);
+      eMonSecure = true;
+    }
     msg += ", url: " + eMonURL;
     apiKey = Config["server"]["apikey"].asString();
     node = Config["server"]["node"];
@@ -131,12 +136,20 @@ boolean getConfig(void)
       eMonSecure = true;
       msg += ", HTTPS protocol";
     }
-    msgLog(msg);
-    NewService(eMonService);
+    if( ! eMonStarted) {
+      msgLog(msg);
+      NewService(eMonService);
+      eMonStarted = true;
+      eMonStop = false;
+    }
+   
   }
-  else if(!serverType.equals("none")){
-    msgLog("server type is not supported: ", serverType);
-    return false;
+  else {
+    eMonStop = true;
+    if(!serverType.equals("none")){
+      msgLog("server type is not supported: ", serverType);
+      return false;
+    }
   }
   
   return true;
@@ -194,7 +207,7 @@ void configInputs(JsonArray& JsonInputs){
       else msgLog("unsupported input type: ", type);
     }
     else {
-      inputChannel[i]->active(false);
+      inputChannel[i]->reset();
     }
   }
 }

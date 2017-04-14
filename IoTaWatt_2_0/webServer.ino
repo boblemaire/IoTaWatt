@@ -412,9 +412,17 @@ void sendMsgFile(File &dataFile, int32_t relPos){
 }
 
 void handleGetConfig(){
-  if(getConfig()){
-    server.send(200, "text/plain", "OK");
-        return;
+  if(server.hasArg("update")){
+    if(server.arg("update") == "restart"){
+      msgLog("Restart command received.");
+      delay(500);
+      ESP.restart();
+    }
+    else if(server.arg("update") == "reload"){
+      getConfig(); 
+      server.send(200, "text/plain", "OK");
+      return;  
+    }
   }
   server.send(400, "text/plain", "Bad Request.");
 }
