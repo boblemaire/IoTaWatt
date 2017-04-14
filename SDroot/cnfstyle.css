@@ -1,0 +1,213 @@
+ * {
+   font-family: "arial", "sans-serif";
+   border-radius: 6px;
+ }
+ .color_outer {
+   background-color: #c2eaba;
+   border-color: black;
+ }
+ .color_menu{
+  background-color: #a7c4a0; 
+ }
+ .color_body {
+   background-color: #e6efe9;
+   border-color: grey;
+ }
+ .color_inputcontainer {
+   background-color: #b6dbab;
+   border-color: grey;
+ }
+ button{
+   background-color: #a9b4ce;
+   border-color: grey;
+ }
+ .buttonDown{
+   background-color: #e6efe9;
+ }
+ input, select {
+   background-color: whiteSmoke;
+ }
+ .actionDelete {background-color: red;}
+ .actionCancel {background-color: yellow;}
+ .actionSave {background-color: Green;}
+ .actionCal {background-color: linen;}
+ 
+  table {width: 100%}
+  
+  button {
+    height: 24px;
+    min-width: 40px;
+    border: 2px solid;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .actionDelete,
+  .actionCancel,
+  .actionSave,
+  .actionCal {
+    border: 2px solid grey;
+    height: 35px;
+    border-radius: 8px;
+    font-size: 120%;
+  }
+  
+  .mainMenuButton{
+    width: 100%;
+    height: 30px;
+    font-size: 100%;
+  }
+  
+  input, select {
+    height: 25px;
+    min-width: 50px;
+    padding: 2px 5px 2px 5px;
+    border: 2px solid;
+    border-radius: 5px;
+    font-size: 100%;
+  }
+  
+  h1, h2, h3, h4 {text-align: center;}
+  
+  .outerContainer{
+      border: 2px solid;
+      max-width: 600px;
+      padding-bottom: 10px;
+      border-radius: 6px;
+    }
+    
+  .bigIdeasDiv{
+    display: none;
+    width: 95%;
+    margin: 2px auto 1px auto;
+    border: 2px solid grey;
+    border-radius: inherit;
+    padding: 4px;
+  }
+  
+  #bigIdeasTable{
+    width: 100%;
+    border-radius: inherit;
+  }
+
+  .bodyDiv{
+    display: none;
+    width: 95%;
+    margin: 1px auto 1px auto;
+    border: 2px solid;
+    padding: 4px;
+  }
+  
+  .inputContainer{
+    width: 100%;
+    border-radius: inherit;
+  }
+  
+  #inputTable {
+    width: 100%;
+    padding: 5px 20px 10px 20px;
+    text-align: left;
+  }
+  #inputTable tr td {
+    height: 25px;
+  }
+  
+  .outputsRow{
+    vertical-align: top;
+  }
+  #inputCalCal {
+    width: 60px;
+  }
+  
+  #calConfirm{
+    width: 100px;
+    height: 40px;
+    text-align: center;
+    background-color: red;
+  }
+
+  #calcBody,
+  #inputEdit,
+  #inputCalVT {
+    width:338px;
+    padding: 20px;
+    border: 2px solid;
+    margin: auto;
+  }
+  
+  .calcDisplay{
+    font-family: "arial", "sans-serif";
+    background-color: whiteSmoke;
+    border: 2px;
+  	padding: 5px 10px 5px 10px;
+  	font-size: 100%;
+  	text-align: left;
+  }
+  
+  #calcName {width: 120px;}
+  
+  #calcUnits {width: 60px;}
+    
+  .calcTable {
+    width: 336px;
+    border: 2px;
+    border-style: ridge;
+    border-radius: inherit;
+  }
+  
+  .calcButton {
+  	border: 2px;
+  	border-style: ridge;
+  	width: 80px;
+  	height: 40px;
+  	border-radius: 8px;
+  	color: white;
+  	font-size: 150%;
+  	font-weight: bold;
+  	text-align:center;
+  }
+  
+  .calcNumeric {
+    background-color: lightSlateGrey;
+  }
+  .calcClr {
+    background-color: yellow;
+    color: black;
+  }
+  .calcBack {
+    background-color: grey;
+  }
+  .calcOp {
+    background-color: darkSlateGrey;
+  }
+  .calcParen {
+    background-color: dimgrey;
+  }
+  .calcInput {
+    background-color: darkOliveGreen;
+    cursor: pointer;
+  }
+  .calcInputDropdown:hover .calcInputDropdown-content{
+    display: table;
+  } 
+  .calcInputDropdown{
+    position: relative;
+    display: inline-block;
+  }
+  .calcInputDropdown-content{
+    display: none;
+    position: absolute;
+    left: 80px;
+    top:  0px;
+    z-index: 1;
+  }
+  .calcInputDropdown-content p{
+    background-color: whiteSmoke;
+    border: 1px solid grey;
+    min-width: 80px;
+    height: 20px;
+    margin: 0px;
+    text-align: center;
+  }
+  .calcAbs {
+    background-color: lightSteelBlue;
+  }

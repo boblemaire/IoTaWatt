@@ -3,199 +3,174 @@
 <head>
 <meta charset="utf-8">
 <title>IoTaWatt Configuration app</title>
+<link rel="stylesheet" type="text/css" href="/cnfstyle.css">
 
-<style>
-
-  .outerContainer{
-    border: 2px;
-    width: 600px;
-    padding: 5px;
-    background-color: lightgrey;
-    border-radius: 4px;
-    font-family: "arial", sans-serif;
-  }
-  
-  .bigIdeasDiv{
-    background-color: inherit
-    height: 20px;
-  }
-  
-  .bodyDiv{
-    margin: 5px;
-    display: none;
-  }
-  
-  .msgsFrame{
-    width:480px;
-    height:400px;
-    background-color:white;
-  }
-  
-  .advDivStep{
-    margin: 5px;
-    display: none;
-    background-color: crimson;
-  }
-  
-  .bigIdeasButton{
-    width: 100%;
-    height: 25px;
-    background-color: lightgreen;
-    border-radius: 4px;
-  }
-  
-  .chanButton{
-    width: 30px;
-    background-color: lightgrey;
-    border-radius; inherit;
-  }
-  
-  .chanEditButton{
-    width: 30px;
-    background-color: lightgreen;
-    border-radius; inherit;
-  }
-  
-  .editBox{
-    height: 22px;
-    margin-left: 2px;
-    padding: 0px;
-    background-color: lightgreen;
-    border-radius: inherit;
-  }
-  
-  .editButton{
-    width: 50px;
-    height: 22px;
-    background-color: lightgreen;
-    border-radius: inherit;
-  }
-  
-  .notesBox{
-    border: 1px;
-    height: 72px;
-    width: 350px;
-    background-color: lightyellow;
-    border-radius: inherit;
-    margin-left: 5px;
-  }
-  
-  .center{
-    text-align: center;
-  }
-  
-  #calConfirm{
-    width: 100px;
-    height: 40px;
-    text-align: center;
-    background-color: red;
-  }
-  
- }
-
-</style>
 </head>
 <body onload="setup()">
   
-<div class="outerContainer">
-  <h3 style="text-align:center">IoTaWatt Power Monitor</h3>
+<div class="outerContainer color_outer">
+  <h3 id="heading">IoTaWatt Power Monitor</h3>
   
-  <div class="bigIdeasDiv">
-    <table width="100%">
-      <tr><td width="50%">
-        <button ID="BIBinputs", class="bigIdeasButton", onclick="editInputs()">Configure Input</button>
-      </td><td width="50%">
-        <button ID="BIBstatus", class="bigIdeasButton", onclick="showStatus()">Input Channels Status</button>
-      </td></tr>
-      
-      <tr><td>
-        <button ID="BIBserver", class="bigIdeasButton", onclick="editWebServer()">Device and Web Server</button><br>
-      </td><td>
-        <button ID="BIBmsgs", class="bigIdeasButton", onclick="showMsgs()">Message Log</button><br>
-      </td></tr>
-      
-      <tr><td>
-        <button ID="BIBundo", class="bigIdeasButton", onclick="undoChanges()">Discard Changes</button><br>
-      </td><td>
-        <button ID="BIBgraph", class="bigIdeasButton", onclick="loadGraph()">Run Local Graph App</button><br>
-      </td></tr>
-      
-      <tr><td>
-        <button ID="BIBcommit", class="bigIdeasButton", onclick="commitChanges()">Commit and Restart</button>
-      </td><td>
-        <button ID="BIBedit", class="bigIdeasButton", onclick="loadEdit()">Run Edit and File Manager App</button><br>
-      </td></tr>
+  <div class="bigIdeasDiv color_menu" id="bigIdeas">
+    <table id="bigIdeasTable">
+      <tr>
+        <td width="50%"><button ID="BIBdevice", class="mainMenuButton", onclick="menuButton(this,configureDevice)">Configure Device</button></td>
+        <td width="50%"><button ID="BIBstatus", class="mainMenuButton", onclick="menuButton(this,statusBegin)">Input Channels Status</button></td>
+      </tr><tr>
+        <td><button ID="BIBinputs", class="mainMenuButton", onclick="menuButton(this,buildInputsList)">Configure Inputs</button></td>
+        <td><button ID="BIBmsgs", class="mainMenuButton", onclick="menuButton(this,showMsgs)">Message Log</button><br></td>
+      </tr><tr>
+        <td><button ID="BIBoutputs", class="mainMenuButton", onclick="menuButton(this,buildOutputsList)">Configure Outputs</button></td>
+        <td><button ID="BIBgraph", class="mainMenuButton", onclick="menuButton(this,loadGraph)">Run Local Graph App</button><br></td>
+      </tr><tr>
+        <td><button ID="BIBserver", class="mainMenuButton", onclick="menuButton(this,buildWebServer)">Setup Web Server</button><br></td>
+        <td><button ID="BIBedit", class="mainMenuButton", onclick="menuButton(this,loadEdit)">Run Edit and File Manager App</button></td>
+      </tr><tr>
+        <td></td>
+        <td></td>
+      </tr>
     </table>
+  </div>
+ 
+  <!-- ****************************** divInputs **********************************--> 
+  <div class="bodyDiv color_body", id="divInputs">
+    <div class="inputContainer" id="inputList">
+      <h3>Inputs</h4>
+      <table id="inputTable">
+        <tbody id="inputTableBody"></tbody>
+      </table>
+    </div>
     
+    <div class="inputContainer color_inputcontainer" id="inputEdit" display="none">
+      <h3 id="inputChannel"></h3>
+      <table id="inputEditTable"></table>
+      <p>
+        <button class="actionDelete" id="inputEditDelete" onclick="inputEditDelete()">delete</button>
+        <button class="actionCancel" id="inputEditCancel" onclick="inputEditCancel()">cancel</button>
+        <button class="actionSave" id="inputEditSave" onclick="inputEditSave()">save</button>
+      </p>
+    </div>
     
-    
-    
-    
-  </div width="100%">
-  
-  <div class="bodyDiv", id="divInputs">
-    <table id="inputTable"></table>
+    <div class="inputContainer color_inputcontainer" id="inputCalVT" display="none">
+      <h3 id="inputCalChannel"></h3>
+      <h1 id="inputCalVolts"></h1>
+      <p>
+        <span>calibration factor: </span>
+        <input id="inputCalCal" type="number" onchange="inputCalCal(this)" min="5" max="300" step="0.01"> </input></p>
+      <p>
+        <button class="actionCancel" onclick="calVTexit(this)">cancel</button>
+        <button class="actionSave" onclick="calVTsave(this)">save</button>
+      </p>
+      <p>Using a voltmeter to display the AC line voltage, adjust the calibration factor until the displayed
+      voltage reasonably matches the voltmeter reading.  Click save to update the channel
+      with the new calibration factor.</p>
+    </div>
   </div>
   
-  <div class="bodyDiv", id="divWebServer", width="100%">
-    <table id="serverTable"></table>
+  <!-- ****************************** divOutputs **********************************--> 
+  
+  <div class="bodyDiv color_body", id="divOutputs">
+    <h3>Outputs</h3>
+    <table id="outputTable"></table>
   </div>
   
-  <div class="bodyDiv", id="divStatus">
-    <h3 style="text-align:center">Status</h3>
+  <!-- ****************************** divDevice **********************************--> 
+  
+  <div class="bodyDiv color_body", id="divDevice">
+    <h3>Configure IoTaWatt Device</h3>
+    <table id="deviceTable"></table>
+    <p><button class="actionBurden" id="actionBurden" onclick="configBurden()">Configure Burden Resistors</button></p>
+    <p>
+      <button class="actionCancel" id="deviceCancel" onclick="deviceCancel()">cancel</button>
+      <button class="actionSave" id="deviceSave" onclick="deviceSave()">save</button>
+    </p>
+  </div>
+  
+  <!-- ****************************** divBurden **********************************--> 
+  
+  <div class="bodyDiv color_body", id="divBurden">
+    <h3>Specify on-board burden resistors</h3>
+    
+    <table id="burdenTable"></table>
+    <p>
+      <button class="actionCancel" id="burdenCancel" onclick="burdenCancel()">cancel</button>
+      <button class="actionSave" id="burdenSave" onclick="burdenSave()">save</button>
+    </p>
+  </div>
+ 
+ <!-- ****************************** divWebServer*********************************--> 
+  
+  <div class="bodyDiv color_body", id="divWebServer">
+    <h3>Setup Web Server</h3>
+    <form><table id="serverTable"></table></form>
+    <p>
+      <button class="actionCancel" id="serverCancel" onclick="serverCancel()">cancel</button>
+      <button class="actionSave" id="serverSave" onclick="serverSave()">save</button>
+    </p>
+  </div>
+  
+  <!-- ****************************** divStatus **********************************--> 
+  
+  <div class="bodyDiv color_body", id="divStatus">
+    <h3 >Status</h3>
     <table id="statusTable"></table>
-  </div>
-  
-  <div class="bodyDiv", id="divMsgs">
-      <h3 style="text-align:center">Message Log</h3>
-      <p id="msgsText"></p>
-   </div>
-  
-  <div class="bodyDiv", id="divCalVoltage">
-    <h3 style="text-align:center">VT Voltage Calibration</h3>
-    <table id="calTable">
-    <tr>
-      <td align="right">Calibrate channel:</td>
-      <td id="calVTchan"></td>
-    </tr>
-    <tr>
-      <td align="right">Sensed Voltage:</td>
-      <td id="calVTvolts"> </td>
-    </tr>
-    <tr>
-      <td align="right"></td>
-      <td>
-        <input id="calVTcal", class="editBox", style="width:60px", type="number", step="0.01"></input>
-      </td>
-    </tr>
-    <tr>
-      <td align="right"></td>
-      <td id="calVTbuttons">
-        <button class="editButton" style="width:70px" onclick="calVTsave(this)">save</button>
-        <button class="editButton" style="width:70px" onclick="calVTexit(this)">cancel</button>
-      </td>
-    </tr>
+    <hr>
+    <table width="100%">
+      <tr><th width="50%">Inputs</th><th width="50%">Outputs</th></tr>
+      <tr valign="top">
+        <td><table id="inputStatusTable"></table></td>
+        <td><table id="outputStatusTable"></table></td>
+      </tr>
     </table>
-    
-    <p>Using a voltmeter to display the current AC line voltage, adjust the calibration factor until the Sensed
-    Voltage reasonably matches the voltmeter reading.  Click save, and then save again to update the channel
-    with the new calibration factor.  The new calibration will not take effect until you then click the <strong>Commit and Restart</strong> button.</p>
   </div>
   
-  <div class="bodyDiv", id="divCalPhase">
-    <h3 style="text-align:center">VT Phase Calibration</h3>
-    
-    <p>This procedure estimates the phase shift of the voltage transformer by comparing it to
-    the output of a CT channel with a known phase shift. From the list of related CTs, chose a
-    reference channel with a small phase shift that is subjected to a modest (>10 A) 
-    resistive load.</p>
-    
-    <p>Reference channel:<select id="calPHref"> </select> </p>
-    <p id="calPHresult"></p>
-    <button id="PHmeasureButton" display="no" class="editButton" style="width:70px" onclick="calPHmeasure(this)">measure</button>
-    <button class="editButton" onclick="calVTexit(this)">return</button>
-    <p>After measurement, press <strong>return</strong> to return to VT editing where you can alter
-    the phase setting for this VT.</p>
+  <!-- ******************************divCalc **********************************--> 
+  
+  <div class="bodyDiv color_body" id="divCalc">
+    <div class="inputContainer color_inputcontainer" id="calcBody">
+      <h3 style="text-align:center">Configure Output</h3>
+      <h3> Name: <input id="calcName" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="refreshCalcDisplay()"></input></h3>
+      <h3> Units: <input id="calcUnits" oninput="refreshCalcDisplay()"></input></h3>
+      <h3 class="calcDisplay" id="calcDisplay">0</h3>  
+      <table class="calcTable"><tr><th></th><th></th><th></th><th></th></tr>
+        <tr><td><button class="calcButton calcClr" onclick="keyClearAll()" value="C">C</td>
+        <td><button class="calcButton calcBack" onclick="keyClearEntry()" value="CE">CE</td>
+        <td> <button class="calcButton calcBack" onclick="keyClearChar()" value="del">&#x21e6</td>
+        <td class="calcInputDropdown">
+          <button class="calcButton calcInput" value="@">input</button>
+          <span class="calcInputDropdown-content" id="calcInputDropdown-content" display="none">
+            <p onclick="keyInput(this)">Input_1</p>
+            <p onclick="keyInput(this)">Input_2</p>
+          </span>
+        </td></tr>
+        <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="1">1</td>
+        <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="2">2</td>
+        <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="3">3</td>
+        <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="+">+</td></tr>
+        <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="4">4</td>
+        <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="5">5</td>
+        <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="6">6</td>
+        <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="-">-</td></tr>
+        <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="7">7</td>
+        <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="8">8</td>
+        <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="9">9</td>
+        <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="*">x</td></tr>
+        <tr><td><button class="calcButton calcNumeric" onclick="keyDecimal()" value=".">.</td>
+        <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="0">0</td>
+        <td> <button class="calcButton calcNumeric" onclick="keyUniNeg()" value="+/-">+/-</td>
+        <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="/">&#247</td></tr>
+        <tr><td><button class="calcButton calcParen" onclick="keyPush()" value="(">(</td>
+        <td><button class="calcButton calcParen" onclick="keyPop()" value=")">)</td>
+        <td> <button class="calcButton calcAbs" onclick="keyUniPos()" value="abs">abs</td>
+        <td></td></tr>
+      </table>
+      <p>
+        <button class="actionDelete" id="calcDelete" onclick="calcDelete()">delete</button>
+        <button class="actionCancel" id="calcCancel" onclick="buildOutputsList();">cancel</button>
+        <button class="actionSave" id="calcSave" onclick="calcSave()">save</button>
+      </p>
+      <p id="calcJson"></p>
+    </div>
   </div>
   
 </div> 
@@ -208,97 +183,343 @@ var configTablesURL = "tables.txt";
 var editURL = "edit.htm";
 var graphURL = "graph.htm";
 var msgsFileURL = "/iotawatt/iotamsgs.txt?textpos=-10000";
-var inputTypes = ["CT", "VT"];
+var demo = false;
+var demoConfig = null;
 
-// device configuration
-var configFileImage;                // congiguration file as String()
 var config;                         // configuration as Js Object
-var tables;
-var channels = 21;
+var tables;                         // tables as Js Object
 var editing = false;
 var getStatus = false;
 var calVoltageUpdate = false;
 var avgVoltage = 0;
-var statusTimer;
-var calVTindex;
-var calRefChan;
 var calVTvolts = 0;
-var calPHphase = 0;
+var originalName;
+var timezone = 0;
+var faults = 0;
+var tokens = [{oper:"const",value:"0"}];
+var calcDisplay = "0";
+var parenLevel = 0;
+var inputEditChannel;
 
+/***************************************************************************************************
+ *                        Configure Inputs
+ * ************************************************************************************************/
+ 
+ function buildInputsList(){
+   document.getElementById("divInputs").style.display = "table";
+  document.getElementById("inputEdit").style.display="none";
+  document.getElementById("inputCalVT").style.display="none";
+  document.getElementById("inputList").style.display="table";
+  var inputsTable = document.getElementById("inputTableBody");
+  inputsTable.innerHTML = "";
+  for( i in config.inputs){
+    var newRow = inputsTable.insertRow(-1);
+    newRow.setAttribute("class","chanEditRow");
+    var newColumn = newRow.insertCell(-1);
+    var inputButton = document.createElement("button");
+    inputButton.setAttribute("class","chanButton");
+    inputButton.setAttribute("onclick","inputEdit(" + i +")");
+    inputButton.innerHTML = i;
+    newColumn.appendChild(inputButton);
+    nameColumn = newRow.insertCell(-1);
+    newColumn = newRow.insertCell(-1);
+    if(config.inputs[i] !== null){
+      nameColumn.innerHTML += "<strong>" + config.inputs[i].name + "</strong>";
+      newColumn.innerHTML = "<small>type:</small>" + config.inputs[i].type;
+      newColumn.innerHTML += ", <small>model:</small>" + config.inputs[i].model;
+      newColumn.innerHTML += ", <small>cal:</small>" + config.inputs[i].cal;
+      newColumn.innerHTML += ", <small>phase:</small>" + config.inputs[i].phase;
+    }
+  }
+  document.getElementById("inputList").style.display="table";
+}
 
+function inputEdit(channel){
+  document.getElementById("inputEdit").style.display="table";
+  document.getElementById("inputList").style.display="none";
+  document.getElementById("inputCalVT").style.display="none";
+  inputEditObject = config.inputs[channel];
+  inputEditChannel = channel;
+  editing = true;
+  if(inputEditObject === null){
+    inputEditObject = {channel:channel, name:"Input_" + channel};
+    inputEditNewType("CT");
+  }
+  refreshInputEdit();
+}
 
-function calVTphase(obj){
-  var index = objectIndex(obj);
-  calVTindex = index;
-  document.getElementById("divInputs").style.display = "none";
-  document.getElementById("calPHresult").innerHTML = "";
-  document.getElementById("divCalPhase").style.display = "inline";
-  var calref = document.getElementById("calPHref");
-  calref.innerHTML = "";
+function inputEditMsg(element, msg){
+  element.parentNode.appendChild(document.createElement("br"));
+  element.parentNode.appendChild(document.createTextNode(msg));
+}
+
+function refreshInputEdit(){
+  var complete = true;
+  var table = document.getElementById("inputEditTable");
+  table.innerHTML = "";
+  document.getElementById("inputChannel").innerHTML = "Configure Input " + inputEditChannel;
   
-  for(var i=0; i<config.inputs.length; i++){
-    if(config.inputs[i].type == "CT" &&
-       config.inputs[i].vchan == config.inputs[index].channel){
-      var option = document.createElement("option");
-      option.text = config.inputs[i].channel;
-      calref.add(option);
-      if(calref.value = i){
-        calref.selectedIndex = i;
-      }
-    } 
+  var newInput = addTableRow(table, "Burden:", "inputBurden", "span");
+  if(config.device.burden[inputEditChannel] == 0) inputBurden.innerHTML = "none configured.";
+  else if(Number.isInteger(config.device.burden[inputEditChannel])) inputBurden.innerHTML = config.device.burden[inputEditChannel].toFixed(0) + " ohms";
+  else inputBurden.innerHTML = config.device.burden[inputEditChannel].toFixed(1) + " ohms";
+  
+  var inputName = addTableRow(table, "Name: ", "inputName", "input", 12);
+  inputName.setAttribute("onblur","inputEditObject.name=this.value.trim(); refreshInputEdit();");
+  inputName.value = inputEditObject.name;
+  inputName.pattern = "[A-Za-z]{1}[a-zA-Z0-9_]*";
+  
+  if(inputName.value == ""){
+    inputEditMsg(inputName, "Please specify a name");
+    complete = false;
+  }
+  if(inputName.validationMessage != ""){
+    inputEditMsg(inputName, "Invalid name");
+    complete = false;
+  }
+  for(i in config.inputs){
+    if(i != inputEditChannel && config.inputs[i] !== null && config.inputs[i].name == inputName.value){
+      inputName.parentNode.appendChild(document.createElement("br"));
+      keyInput.parentNode.appendChild(document.createTextNode(" API key should be 16 hex digits."));
+      inputEditMsg(inputName, "Name already used for channel " + inputEditChannel);
+      complete = false;
+    }
   }
   
-}
-function calPHmeasure(obj){
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      var response = JSON.parse(xmlHttp.responseText);
-      document.getElementById("calPHresult").innerHTML = "CT current: " + response.irms.toFixed(1) + "Amps";
-      if(response.irms < 10){
-        document.getElementById("calPHresult").innerHTML += " should be at least 10A to calibrate phase.";
+  newInput = addTableRow(table, "Type: ", "inputType", "select");
+  newInput.setAttribute("oninput","inputEditNewType(this.value); refreshInputEdit();");
+  var option = document.createElement("option");
+  option.text = inputEditObject.type;
+  option.selected = true;
+  newInput.add(option); 
+  option = document.createElement("option");
+  option.text = (inputEditObject.type == "CT") ? "VT" : "CT";
+  newInput.add(option);
+  
+  inputModel = addTableRow(table, "Model: ", "inputModel", "select");
+  inputModel.setAttribute("oninput","inputEditObject.model=this.value; refreshInputEdit();");
+  
+  var option = document.createElement("option");
+  option.text = "generic";
+  inputModel.add(option); 
+  if(inputEditObject.type == "VT"){
+    for(i in tables.VT){
+      option = document.createElement("option");
+      option.text = tables.VT[i].model;
+      inputModel.add(option);
+      if(inputEditObject.model == option.text){
+        option.selected = true;
+      } 
+    }
+  }
+  else {
+    for(i in tables.CT){
+      if(tables.CT[i].type == "C" && config.device.burden[inputEditChannel] > 0){
+        option = document.createElement("option");
+        option.text = tables.CT[i].model;
+        inputModel.add(option);
+        if(inputEditObject.model == option.text){
+          option.selected = true;
+          inputEditObject.turns = tables.CT[i].turns;
+          inputEditObject.phase = tables.CT[i].phase;
+          inputEditObject.cal = (inputEditObject.turns / config.device.burden[inputEditChannel]).toPrecision(4);
+        }
       }
-      else {
-        var difPhase = response.ctphase - response.relphase;
-        document.getElementById("calPHresult").innerHTML += "<br>Relative phase difference: " + response.relphase.toFixed(1) +
-        "<br>CT phase calibration: " + response.ctphase.toFixed(1) +
-        "<br>differential VT phase shift: " + difPhase.toFixed(1);
+      else if(tables.CT[i].type == "V" && config.device.burden[inputEditChannel] == 0){
+        option = document.createElement("option");
+        option.text = tables.CT[i].model;
+        inputModel.add(option);
+        if(inputEditObject.model == option.text){
+          option.selected = true;
+          inputEditObject.cal = tables.CT[i].cal;
+          inputEditObject.phase = tables.CT[i].phase;
+        } 
       }
     }
   }
-  xmlHttp.open("GET","/pcal?channel=" + config.inputs[calVTindex].channel + "&refchan=" + Number(document.getElementById("calPHref").value), true);
-  xmlHttp.send(null);
+  
+  if(inputEditObject.model == "generic" && 
+    (inputEditObject.type == "VT" ||
+    (inputEditObject.type == "CT" && config.device.burden[inputEditChannel] == 0))){
+    inputCal = addTableRow(table, "Cal: ", "inputCal", "input", 5);
+    inputCal.setAttribute("onblur","inputEditObject.cal=this.value.trim(); refreshInputEdit();");
+    inputCal.value = inputEditObject.cal;
+    if(Number.isNaN(inputCal.value)){
+      inputEditMsg(inputCal,"Numeric value required");
+      complete = false;
+    }
+    else{
+      inputCal.value = parseFloat(inputCal.value).toPrecision(4);
+    }
+  }
+  
+  if(inputEditObject.model == "generic" && inputEditObject.type == "CT" && config.device.burden[inputEditChannel] > 0){
+    inputTurns = addTableRow(table, "Turns: ", "inputTurns", "input", 5);
+    inputTurns.setAttribute("onblur","inputEditObject.turns = this.value.trim(); refreshInputEdit();");
+    inputTurns.value = inputEditObject.turns;
+    if(Number.isNaN(inputTurns.value)) {
+      inputEditMsg(inputTurns, "Numeric value required");
+      complete = false;
+    }
+    else {
+      inputTurns.value = parseInt(inputTurns.value);
+      var cal = inputTurns.value / config.device.burden[inputEditChannel];
+      if(cal < 5 || cal >= 1000) {
+        inputEditMsg(inputTurns, " Range is " + (config.device.burden[inputEditChannel] * 5).toString() + " to " + (config.device.burden[inputEditChannel] * 900).toString());
+        complete = false;
+      } 
+    }
+  }
+ 
+  if(inputEditObject.model == "generic"){
+    inputPhase = addTableRow(table, "Phase: ", "inputPhase", "input", 4);
+    inputPhase.setAttribute("onblur","inputEditObject.phase = this.value.trim(); refreshInputEdit();");
+    inputPhase.value = inputEditObject.phase;
+    if(Number.isNaN(inputPhase.value)){
+      inputEditMsg(inputPhase, "Numeric value required");
+      complete = false;
+    }
+    else {
+      inputPhase.value = Number(inputPhase.value).toFixed(1);
+      if(inputPhase.value > 5) {
+        inputEditMsg(inputPhase, "Must be less than 5 degrees.");
+        complete = false;
+      }
+    }
+  }
+  
+  if(inputEditObject.type == "CT"){
+    inputNeg = addTableRow(table, "", "inputNeg", "input");
+    inputNeg.parentNode.appendChild(document.createTextNode("Allow negative power value"));
+    inputNeg.setAttribute("type","checkbox");
+    //inputNeg.setAttribute("type","checkbox");
+    //inputNeg.setAttribute("type","checkbox");
+  }
+
+  if(complete && inputEditObject.type == "VT"){
+    inputCal = addTableRow(table, "", "inputCal", "button");
+    inputCal.innerHTML = "calibrate";
+    inputCal.setAttribute("class","actionCal");
+    inputCal.setAttribute("onclick","calVTvoltage();");
+  }
+
+  document.getElementById("inputEditDelete").style.display = (config.inputs[inputEditChannel] !== null) ? "inline" : "none";
+  document.getElementById("inputEditSave").style.display = complete ? "inline" : "none";
 }
 
-function calPHsave(obj){
-  config.inputs[calVTindex].phase = Number(document.getElementById("calVTcal").value);
-  calVTexit();
+function inputEditNewModel(obj){
+  inputEditObject.model = obj.value;
+  if(inputEditObj.model == "generic"){
+    inputEditNewType(inputEditObj.type);
+  }
+  else if(inputEditObject.type == "VT"){
+    for(i in tables.VT){
+      if(tables.VT[i].model == obj.value){
+        inputEditObject.cal = tables.VT[i].cal;
+        inputEditObject.phase = tables.VT[i].phase;
+        break;
+      }
+    }
+  }
+  else {
+    for(i in tables.CT){
+      if(tables.CT[i].model == obj.value){
+        inputEditObject.phase = tables.CT[i].phase;
+        if(config.device.burden[inputEditChannel] == 0){
+          inputEditObject.cal = tables.CT[i].cal;
+        }
+        else {
+          inputEditObject.turns = tables.CT[i].turns;
+          inputEditObject.cal = (tables.CT[i].turns / config.device.burden[inputEditChannel]).toPrecision(4);
+        }
+        break;
+      }
+    }
+  }
 }
+
+function inputEditNewType(type){
+   inputEditObject = {channel:inputEditChannel, name:inputEditObject.name, type:type, model:"generic", phase:0,};
+  if(type == "CT"){
+     if(config.device.burden[inputEditChannel] == 0){
+       inputEditObject.cal = 0;
+     }
+     else {
+       inputEditObject.turns = "0";
+     }
+   }
+   refreshInputEdit()
+}
+
+function inputEditDelete(){
+  inputEditObject = null;
+  inputEditSave();
+}
+
+function inputEditCancel(){
+  buildInputsList();
+  document.getElementById("inputEdit").style.display="none";
+  document.getElementById("inputCalVT").style.display="none";
+  getConfig(buildInputsList);
+  editing = false;
+}
+
+function inputEditSave(){
+  config.inputs[inputEditChannel] = inputEditObject;
+  editing = false;
+  document.getElementById("inputEdit").style.display="none";
+  uploadConfig();
+  buildInputsList();
+}
+
+      // This is used by other sections as well
+
+function addTableRow(table, text, id, elementType, size) {
+  var newRow = table.insertRow(-1);
+  var column = newRow.insertCell(-1);
+  column.innerHTML = text;
+  column.setAttribute("align","right");
+  column = newRow.insertCell(-1);
+  var newInput = document.createElement(elementType);
+  column.appendChild(newInput);
+  if(id !== null) newInput.setAttribute("id",id);
+  if(size !== undefined) newInput.setAttribute("size",size);
+  return newInput;
+}
+
+/**********************************************************************************************************************************
+ * 
+ *  Voltage calibration
+ * 
+ * *******************************************************************************************************************************/
 
 function calVTvoltage(obj){
-  var index = objectIndex(obj);
-  calVTindex = index;
-  document.getElementById("divInputs").style.display = "none";
-  document.getElementById("divCalVoltage").style.display = "inline";
-  document.getElementById("calVTchan").innerHTML = config.inputs[index].channel;
-  document.getElementById("calVTvolts").innerHTML = "";
-  document.getElementById("calVTcal").value = config.inputs[index].cal;
+  document.getElementById("inputEdit").style.display = "none";
+  document.getElementById("inputCalVT").style.display = "table";
+  document.getElementById("inputCalChannel").innerHTML = "Calibrate Voltage Channel " + inputEditChannel;
+  document.getElementById("inputCalVolts").innerHTML = "120.1";
+  document.getElementById("inputCalCal").value = inputEditObject.cal;
+  
   calRefreshVoltage = true;
   calVTvolts = 0;
   calUpdateVoltage();
 }
 
 function calVTexit(){
-  var index = calVTindex;
-  document.getElementById("divCalVoltage").style.display = "none";
-  document.getElementById("divCalPhase").style.display = "none";
-  document.getElementById("divInputs").style.display = "inline";
+  var index = inputEditChannel;
+  document.getElementById("inputCalVT").style.display = "none";
+  document.getElementById("inputEdit").style.display = "table";
   calRefreshVoltage = false;
-  editChannel(calVTindex);
+  refreshInputEdit();
+}
+
+function inputCalCal(obj){
+  var step = (obj.value / 8).toFixed(0) / 100;
+  obj.setAttribute("step",step);
 }
 
 function calUpdateVoltage(){
-  var index = calVTindex;
+  var index = inputEditChannel;
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
@@ -306,513 +527,447 @@ function calUpdateVoltage(){
         var response = JSON.parse(xmlHttp.responseText);
         if(calVTvolts == 0) calVTvolts = response.vrms;
         else calVTvolts = .8 * calVTvolts + .2 * response.vrms;
-        document.getElementById("calVTvolts").innerHTML = calVTvolts.valueOf().toFixed(1);
+        document.getElementById("inputCalVolts").innerHTML = calVTvolts.valueOf().toFixed(1);
         calUpdateVoltage();
       }
     }
   }
-  xmlHttp.open("GET","/vcal?channel=" + config.inputs[index].channel + "&cal=" + Number(document.getElementById("calVTcal").value), true);
+  xmlHttp.open("GET","/vcal?channel=" + inputEditChannel + "&cal=" + Number(document.getElementById("inputCalCal").value), true);
   xmlHttp.send(null);
 }
 
 function calVTsave(obj){
-  config.inputs[calVTindex].cal = Number(document.getElementById("calVTcal").value);
-  calVTexit();
+  inputEditObject.cal = Number(document.getElementById("inputCalCal").value);
+  calRefreshVoltage = false;
+  inputEditSave();
 }
 
-/***************************************************************************************************
- * 
- * Configure Inputs related code.
- * 
- * ************************************************************************************************/
-function buildInputsList(){
-  config.inputs.sort(function(a,b){return a.channel - b.channel});
-  var vchannels = [];
-  for(var i=0; i<config.inputs.length; i++){
-    if(config.inputs[i].type == "VT"){
-      vchannels.push(config.inputs[i].channel);
-    } 
+/*******************************************************************************************
+ *                    Configure Outputs
+ * ****************************************************************************************/
+ function buildOutputsList(){
+    document.getElementById("divCalc").style.display = "none";
+    document.getElementById("divOutputs").style.display = "table";
+    
+    getConfig(function(response){
+      var table = document.getElementById("outputTable");
+      table.innerHTML = "";
+      calcBuildDropdown();
+      for(i in config.outputs){
+        var newRow = document.createElement("tr");
+        table.appendChild(newRow);
+        newRow.setAttribute("class","outputsRow")
+        var selColumn = document.createElement("td");
+        newRow.appendChild(selColumn);
+        var nameColumn = document.createElement("td");
+        newRow.appendChild(nameColumn);
+        var unitsColumn = document.createElement("td");
+        newRow.appendChild(unitsColumn);
+        var scriptColumn = document.createElement("td");
+        newRow.appendChild(scriptColumn);
+        nameColumn.innerHTML = "<strong>" + config.outputs[i].name + "</strong>";
+        unitsColumn.innerHTML = config.outputs[i].units;
+        scriptColumn.innerHTML = " = " + scriptDisplay(config.outputs[i].script);
+        var editButton = document.createElement("button");
+        editButton.setAttribute("class","outputEditButton");
+        editButton.appendChild(document.createTextNode("edit"));
+        editButton.setAttribute("onclick","editOutput(" + i +")");
+        selColumn.appendChild(editButton);
+        editing = false;
+      }
+      var newRow = document.createElement("tr");
+      table.appendChild(newRow);
+      newRow.setAttribute("class","outputsRow")
+      var selColumn = document.createElement("td");
+      newRow.appendChild(selColumn);
+      var editButton = document.createElement("button");
+      editButton.setAttribute("class","outputEditButton");
+      editButton.appendChild(document.createTextNode("add"));
+      editButton.setAttribute("onclick","addOutput()");
+      selColumn.appendChild(editButton);
+    });
   }
-  var inputsTable = document.getElementById("inputTable");
-  inputsTable.innerHTML = "";
-  var addList = document.createElement("select");
-  var newElement = document.createElement("option");
-  newElement.text = "  ";
-  newElement.value = -1;
-  addList.appendChild(newElement);
-  addList.setAttribute("class","editBox")
-  var lastUsed = -1;
-  for(var i=0; i<config.inputs.length; i++){
-    var inputRow = document.createElement("tr");
-    inputsTable.appendChild(inputRow);
-    inputRow.setAttribute("class","chanEditRow")
-    var inputColumn1 = document.createElement("td");
-    inputRow.appendChild(inputColumn1);
-    inputColumn1.setAttribute("valign","top");
-    var inputColumn2 = document.createElement("td");
-    inputRow.appendChild(inputColumn2);
-    
-    var inputButton = document.createElement("button");
-    inputButton.appendChild(document.createTextNode(config.inputs[i].channel));
-    if(!editing)inputButton.setAttribute("class","chanEditButton");
-    else inputButton.setAttribute("class","chanButton");
-    inputColumn1.appendChild(inputButton);
-    if(!editing){
-      inputButton.setAttribute("onclick","newEdit(" + i +")");
-    }
-    
-    var inputItem = "";
-    if(config.inputs[i].name !== undefined){
-      inputColumn2.innerHTML += "<strong>" + config.inputs[i].name + "</strong>, ";
-    } 
-    inputColumn2.innerHTML += config.inputs[i].type;
-    inputColumn2.innerHTML += ", model:" + config.inputs[i].model;
-    
-    if(config.inputs[i].type == "CT"){
-      if(config.inputs[i].burden !== undefined && config.inputs[i].turns !== undefined){
-        inputColumn2.innerHTML += "<small>" + ", burden:" + config.inputs[i].burden + "</small>";}
-      if(vchannels.length > 1){
-        inputColumn2.innerHTML += "<small>" + ", vref:" + config.inputs[i].vchan + "</small>";
+  
+  function calcBuildDropdown(){
+    var inputDropdown = document.getElementById("calcInputDropdown-content");
+    inputDropdown.innerHTML = "";
+    for(i in config.inputs){
+      if(config.inputs[i] != null){
+        var newItem = document.createElement("p");
+        inputDropdown.appendChild(newItem);
+        newItem.innerHTML = config.inputs[i].name;
+        newItem.value = Number(i);
+        newItem.setAttribute("onclick", "keyInput(this)");
       }
     }
-    
-    inputColumn2.innerHTML += "<small>" + ", cal:" + config.inputs[i].cal + "</small>";
-    inputColumn2.innerHTML += "<small>" + ", phase:" + config.inputs[i].phase + "</small>";
-
-    //inputColumn2.innerHTML += ",";
-    //displayCalPhase(inputColumn2, i);
-    
-    if(config.inputs[i].notes !== undefined){
-      inputColumn2.innerHTML += "<br><small>" + config.inputs[i].notes;
+  }
+  
+  function editOutput(index){
+    document.getElementById("calcName").value = config.outputs[index].name;
+    document.getElementById("calcUnits").value = config.outputs[index].units;
+    tokens = config.outputs[index].script;
+    document.getElementById("divOutputs").style.display = "none";
+    document.getElementById("divCalc").style.display = "table";
+    document.getElementById("calcDelete").style.display = "inline";
+    outputEditIndex = index;
+    editing = true;
+    refreshCalcDisplay();
+  }
+  
+  function addOutput(){
+    document.getElementById("calcName").value = "";
+    document.getElementById("calcUnits").value = "";
+    tokens = [{oper:"const",value:"0"}];
+    document.getElementById("divOutputs").style.display = "none";
+    document.getElementById("divCalc").style.display = "table";
+    document.getElementById("calcDelete").style.display = "none";
+    outputEditIndex = config.outputs.length;
+    refreshCalcDisplay();
+    editing = true;
+  }
+  
+  function calcSave(){
+    if(outputEditIndex == config.outputs.length){
+      config.outputs.push({});
     }
+    config.outputs[outputEditIndex].name = document.getElementById("calcName").value.trim();
+    config.outputs[outputEditIndex].units = document.getElementById("calcUnits").value.trim();
+    config.outputs[outputEditIndex].script = tokens;
+    calcUpdateConfig();
+  }
     
-    while(++lastUsed < config.inputs[i].channel) unused(lastUsed);
+  function calcUpdateConfig(){
+    document.getElementById("divCalc").style.display = "none";
+    document.getElementById("divOutputs").style.display = "table";
+    uploadConfig(buildOutputsList);
   }
   
-  while(++lastUsed < channels) unused(lastUsed);
-  
-  if(!editing && addList.length > 1) {
-    var inputRow = document.createElement("tr");
-    inputsTable.appendChild(inputRow);
-    inputRow.setAttribute("class","chanEditRow")
-    var inputColumn1 = document.createElement("td");
-    inputRow.appendChild(inputColumn1);
-    var inputColumn2 = document.createElement("td");
-    inputRow.appendChild(inputColumn2);
-    inputColumn2.appendChild(document.createTextNode("Add Channel: "));
-    inputColumn2.appendChild(addList);
-    addList.setAttribute("oninput","addChannel(this.value)")
+  function calcDelete(){
+    config.outputs.splice(outputEditIndex,1);
+    calcUpdateConfig();
   }
   
-  function unused(channel){
-    var newElement = document.createElement("option");
-    newElement.text = channel;
-    newElement.value = channel;
-    addList.appendChild(newElement);
-  }
-}
-
-/******************************************************************************************************
- * editChannel - This is the essense of channel editing.
- * 
- * When a channel is selected, this function is invoked to transform the <li> element into the 
- * edit format.
- * 
- * When a new channel is added, an "undefined" object is inserted into the config.inputs object
- * list, the <ul> channel list is rebuilt (buildInputLists()), then this function is invoked
- * to initiate editing of the added channel.
- * 
- * While in edit mode (editing), any editing action is handled by the various oninput, onselect etc.
- * to process the input into the config.inputs[index] object and then this function is invoked.
- * 
- * ***************************************************************************************************/
-function editChannel(index){
-  
-  editing = true; // assume a new demeanor
-  buildInputsList();
-  var vchannels = [];
-  for(var i=0; i<config.inputs.length; i++){
-    if(config.inputs[i].type == "VT"){
-      vchannels.push(Number(config.inputs[i].channel));
+  function refreshCalcDisplay(){
+    document.getElementById("calcDisplay").innerHTML = scriptDisplay(tokens);
+    if(document.getElementById("calcName").value.trim() == "" ||
+       document.getElementById("calcUnits").value.trim() == "" ||
+       tokens[tokens.length-1].oper == "binop" ||
+       (tokens[tokens.length-1].oper == "input" &&
+       tokens[tokens.length-1].value.length == 0)){
+      document.getElementById("calcSave").style.display = "none";
+    }
+    else{
+      document.getElementById("calcSave").style.display = "inline";
     }
   }
-  var tableRow = document.getElementById("inputTable").children[index]; // identify the <table> element
-  var inputColumn2 = tableRow.children[1];
-  inputColumn2.setAttribute("style","editChannel");
-  var complete = true;  // innocent until proven guilty
-  inputColumn2.innerHTML = "";
   
-  // Create an <input> element for the name
-  
-  inputColumn2.appendChild(document.createTextNode("name:"));
-  var nameInput = document.createElement("input");
-  nameInput.setAttribute("class","editBox");
-  nameInput.setAttribute("style","width: 80px;");
-  nameInput.setAttribute("onchange","newName(this)");
-  if(config.inputs[index].name != undefined) nameInput.setAttribute("value",config.inputs[index].name);
-  inputColumn2.appendChild(nameInput);
-  
-  // Create a select element to specify the type of input (eg. CT or VT)
-  
-  var typeSelect = document.createElement("select");
-  typeSelect.setAttribute("class","editBox");
-  typeSelect.setAttribute("style","width: 45px;");
-  typeSelect.setAttribute("oninput","newType(this)");
-  inputColumn2.appendChild(typeSelect);
-  
-  // Now add the permissible options
-  
-  for(var i=0; i<inputTypes.length; i++){  
-    var option = document.createElement("option");
-    option.text = inputTypes[i];
-    typeSelect.add(option);
-    
-    // When adding an option that matches the config.inputs type
-    
-    if(option.text == config.inputs[index].type){
-      typeSelect.selectedIndex = i;  // Make it the selection
-      
-      // Add a select element for model
-      
-      var modelSelect = document.createElement("select");
-      modelSelect.setAttribute("class","editBox");
-      modelSelect.setAttribute("style","width: 110px;");
-      modelSelect.setAttribute("oninput","newModel(this)");
-      inputColumn2.appendChild(modelSelect);
-      var modelTable = tables.CT;  // set to use the appropriate table
-      if(config.inputs[index].type == "VT") modelTable = tables.VT;
-      modelSelect.selectedIndex = 0;  // default to the first option (generic)
-      
-      // add options for all the models in the table
-      
-      for(var j=0; j<modelTable.length; j++){
-        var option = document.createElement("option");
-        option.text = modelTable[j].model;
-        modelSelect.add(option);
-        
-        // When adding an option that matches the config.inputs model
-        
-        if(option.text == config.inputs[index].model) {
-          modelSelect.selectedIndex = j;  // indicate this is the selection
-          
-          // if model type (not to be confused with channel type) is the generic entry
-          // add <input> elements for cal and phase
-          
-          if (modelTable[j].type == "U"){
-            inputColumn2.appendChild(document.createTextNode(" cal"));
-            var calInput = document.createElement("input");
-            calInput.setAttribute("class","editBox");
-            calInput.setAttribute("style","width: 30px;");
-            calInput.setAttribute("onchange","newCal(this)");
-            inputColumn2.appendChild(calInput);
-            if(config.inputs[index].cal !== undefined  && config.inputs[index].cal > 0){
-              calInput.setAttribute("value",config.inputs[index].cal);
-            }
-            else complete = false;  // entry not valid if cal not specified
-            inputColumn2.appendChild(document.createTextNode(" phase"));
-            var phaseInput = document.createElement("input");
-            phaseInput.setAttribute("class","editBox");
-            phaseInput.setAttribute("style","width: 30px;");
-            phaseInput.setAttribute("onchange","newPhase(this)");
-            inputColumn2.appendChild(phaseInput);
-            if(config.inputs[index].phase !== undefined && config.inputs[index].phase >= 0){
-              phaseInput.setAttribute("value",config.inputs[index].phase);
-            }
-            else complete = false;  // entry not valid if phase not specified
-          }
-          
-          // if it's a "C"urrent type CT, we need to know the burden resistor value
-          
-          else if(typeSelect.value == "CT"){
-            if (modelTable[j].type == "C") {
-              inputColumn2.appendChild(document.createTextNode(" burden:"));
-              var burdenInput = document.createElement("input");
-              burdenInput.setAttribute("class","editBox");
-              burdenInput.setAttribute("style","width: 30px;");
-              burdenInput.setAttribute("oninput","newBurden(this)");
-              inputColumn2.appendChild(burdenInput);
-              if(config.inputs[index].burden !== undefined && config.inputs[index].burden > 0){
-                burdenInput.setAttribute("value",config.inputs[index].burden);
-              }
-              else complete = false;  // We really need it
-            } else {
-              delete config.inputs[index].turns;
-            }
-            if(vchannels.length > 1){
-              inputColumn2.appendChild(document.createTextNode(" vref:"));
-              var vchanSelect = document.createElement("select");
-              vchanSelect.setAttribute("class","editBox");
-              vchanSelect.setAttribute("style","width: 45px;");
-              vchanSelect.setAttribute("oninput","newVchan(this)");
-              inputColumn2.appendChild(vchanSelect);
-              for(var k=0; k<vchannels.length; k++){
-                var option = document.createElement("option");
-                option.text = vchannels[k];
-                vchanSelect.add(option);
-                if(config.inputs[index].vchan == vchannels[k]){
-                  vchanSelect.selectedIndex = k;
-                } 
-              }
-            }
-          }
+  function scriptDisplay(tokens){
+    calcDisplay = "";
+    for(var i=0; i<tokens.length; i++){
+      var token = tokens[i];
+      if(token.oper == "const"){
+        calcDisplay += token.value;
+        if(token.value.indexOf(".") == token.value.length){
+          calcDisplay += ".";
         }
       }
+      else if(token.oper == "input"){
+        var name = name = "Input_" + token.value;
+        if(config.inputs[token.value] != null) name = config.inputs[token.value].name;
+        if(name == "") name = "Input_" + token.value;
+        calcDisplay += name;
+      }
+      else if(token.oper == "binop"){
+        if(token.value == "*") calcDisplay += " x ";
+        else if (token.value == "/") calcDisplay += " &#247 ";
+        else calcDisplay += " " + token.value + " ";
+      }
+      else if(token.oper == "push"){
+        calcDisplay += "(";
+      }
+      else if(token.oper == "pop"){
+        calcDisplay += ")";
+      }
+      else if(token.oper == "abs"){
+        calcDisplay += " abs";
+      }
     }
+    return calcDisplay;
   }
   
-  if(config.inputs[index].cal !== undefined){
-    inputColumn2.appendChild(document.createTextNode(", cal:" + config.inputs[index].cal));
-  }
-  if(config.inputs[index].phase !== undefined){
-    inputColumn2.appendChild(document.createTextNode(", phase:" + config.inputs[index].phase.toFixed(2)));
-  }
-  if(config.inputs[index].signed !== undefined){
-    inputColumn2.appendChild(document.createTextNode(", signed"));
+  function keyClearAll(){
+    while(tokens.length > 1){
+      keyClearEntry();
+    }
+    keyClearEntry();
   }
   
-  inputColumn2.appendChild(document.createElement("br"));
-  
-  if(complete){
-    addEditButton("save","editSave(this)");
-  }
-  addEditButton("cancel","editCancel(this)");
-  
-  var vtx = VTused(config.inputs[index].channel);
-  if(config.inputs[index].type != "VT" || !VTused(config.inputs[index].channel)){
-    addEditButton("delete","editDelete(this)");
-  }
-  
-  if(config.inputs[index].type == "CT"){
-    if(config.inputs[index].signed != "yes"){
-      addEditButton("signed","editSigned(this)","65px");
+  function keyClearEntry(){
+    if(tokens.length == 1){
+      tokens[0] = {oper:"const",value:"0"};
     }
     else {
-      addEditButton("unsigned","editUnsigned(this)","65px");
+      if(tokens[tokens.length-1].oper == "pop"){
+        parenLevel++;
+      }
+      else if(tokens[tokens.length-1].oper == "push"){
+        parenLevel--;
+      }
+      tokens.pop();
+    } 
+    refreshCalcDisplay();
+  }
+  
+  function keyClearChar(){
+    var curToken = tokens[tokens.length-1];
+    if(tokens[tokens.length-1].oper == "const"){
+      tokens[tokens.length-1].value = tokens[tokens.length-1].value.slice(0,-1);
+      if(tokens[tokens.length-1].value == "" || tokens[tokens.length-1].value == "-"){
+        keyClearEntry();
+      }
+    }
+    else {
+      keyClearEntry();
+    }
+    refreshCalcDisplay();
+  }
+  
+  function keyDigit(digit){
+    if(tokens[tokens.length-1].oper == "const"){
+      if(tokens[tokens.length-1].value == "0") {
+        tokens[tokens.length-1].value = digit;
+      }
+      else {
+        tokens[tokens.length-1].value += digit;
+      }
+    }
+    else if(tokens[tokens.length-1].oper != "pop"){
+      tokens.push({oper:"const",value:digit});
+    }
+    refreshCalcDisplay();
+  }
+  
+  function keyDecimal(){
+    if(tokens[tokens.length-1].oper == "const"){
+      if(tokens[tokens.length-1].value.indexOf(".") < 0) {
+        tokens[tokens.length-1].value += ".";
+      }
+    }
+    else if(tokens[tokens.length-1].oper != "input"){
+      tokens.push({oper:"const",value:"0."});
+    }
+    refreshCalcDisplay();
+  }
+  
+  function keyUniNeg(){
+    if(tokens[tokens.length-1].oper == "const"){
+      tokens[tokens.length-1].value = (tokens[tokens.length-1].value * -1).toString();
+      refreshCalcDisplay();
     }
   }
   
-  
-  if(config.inputs[index].notes === undefined){
-    addEditButton("notes","editNotes(this)");
-  }
-  else
-  {
-    inputColumn2.appendChild(document.createElement("br"));
-    var notesBox = document.createElement("textarea");
-    notesBox.setAttribute("onchange","editNotes(this)");
-    notesBox.setAttribute("class","notesBox");
-    notesBox.value = config.inputs[index].notes;
-    inputColumn2.appendChild(notesBox);
+  function keyUniPos(){
+    if(tokens[tokens.length-1].oper == "input" || tokens[tokens.length-1].oper == "pop"){
+       tokens.push({oper:"abs"});
+       refreshCalcDisplay();
+     }
   }
   
-  if(complete && config.inputs[index].type == "VT" || !VTused(config.inputs[index].vchan)){
-    inputColumn2.appendChild(document.createTextNode(" calibrate: "));
-    addEditButton("voltage","calVTvoltage (this)","60px");
-    addEditButton("phase","calVTphase (this)","65px");
+  function keyBinFunc(op){
+    if(tokens[tokens.length-1].oper == "binop"){
+      tokens[tokens.length-1].value = op;
+    }
+    else {
+      tokens.push({oper:"binop",value:op}); 
+    }
+    refreshCalcDisplay();
   }
   
-  function addEditButton(text, handler, width="50px"){
-  var newButton = document.createElement("button");
-  inputColumn2.appendChild(newButton);
-  newButton.setAttribute("onclick",handler);
-  newButton.setAttribute("class","editButton");
-  newButton.appendChild(document.createTextNode(text));
-  newButton.setAttribute("style","width: " + width);
-  }
-}  
-
-function newEdit(index){
-  if(!editing){
-    editing = true;
-    editChannel(index);
-  }
-}
-
-function newName(obj){
-  var index = objectIndex(obj);
-  if(obj.value.trim() == "") delete config.inputs[index].name;
-  else config.inputs[index].name = obj.value.trim();
-}
-
-function newType(obj){
-  var index = objectIndex(obj);
-  config.inputs[index].type = obj.value;
-  config.inputs[index].model = "generic";
-  config.inputs[index].phase = 0;
-  delete config.inputs[index].burden;
-  delete config.inputs[index].cal;
-  delete config.inputs[index].turns;
-  config.inputs[index].phase = 0.0;
-  if(obj.type == "CT"){
-    config.inputs[index].Vchan = 0;
-  }
-  else {
-    config.inputs[index].cal = 10.0;
-  }
-  editChannel(index);
-}
-
-function newModel(obj){
-  var index = objectIndex(obj);
-  config.inputs[index].model = obj.value;
-  var modelTable = tables.CT;
-  if(config.inputs[index].type == "VT") modelTable = tables.VT;
-  for(var j=0; j<modelTable.length; j++){
-    if(modelTable[j].model == obj.value)break;
-  }
-  config.inputs[index].phase = modelTable[j].phase;
-  config.inputs[index].cal = modelTable[j].cal;
-  if(modelTable[j].turns === undefined) delete config.inputs[index].turns;
-  else {
-    config.inputs[index].turns = modelTable[j].turns;
-    if(config.inputs[index].burden !== undefined){
-      var cal = config.inputs[index].turns / config.inputs[index].burden;
-      config.inputs[index].cal = cal.toFixed(2);
+  function keyPush(){
+    var curToken = tokens[tokens.length-1];
+    if(tokens.length == 1 && curToken.oper == "const" && curToken.value == "0") {
+        tokens.pop();
+        tokens.push({oper:"push"});
+        parenLevel++;
+        refreshCalcDisplay();
+      }
+    else if(curToken.oper == "binop"){
+      tokens.push({oper:"push"});
+      parenLevel++;
+      refreshCalcDisplay();
     }
   }
-  editChannel(index);
-}
-
-function VTused(vtchan){
-  for(var i=0; i<config.inputs.length; i++){
-    if(config.inputs[i].type == "CT" && config.inputs[i].vchan == vtchan) return true;
+  
+  function keyPop(){
+    if(tokens[tokens.length-1].oper != "binop" && parenLevel > 0){
+      tokens.push({oper:"pop"});
+      parenLevel--;
+      refreshCalcDisplay();
+    }
   }
-  return false;
-}
-   
-function newVchan(obj){
-  var index = objectIndex(obj);
-  config.inputs[index].vchan = Number(obj.value);
-  editChannel(index);
-}
-
-function newBurden(obj){
-  var index = objectIndex(obj);
-  config.inputs[index].burden = Number(obj.value);
-  var cal = config.inputs[index].turns / config.inputs[index].burden;
-  //config.inputs[index].cal = Math.round(config.inputs[index].turns / config.inputs[index].burden);
-  config.inputs[index].cal = cal.toFixed(2);
-  editChannel(index);
-}
-
-function newCal(obj){
-  var index = objectIndex(obj);
-  config.inputs[index].cal = Number(obj.value);
-  if(config.inputs[index].phase !== undefined) editChannel(index);
-}
-
-function newPhase(obj){
-  var index = objectIndex(obj);
-  config.inputs[index].phase = Number(obj.value);
-  if(config.inputs[index].cal !== undefined) editChannel(index);
-}
-
-function deleteSiblings(obj){
-  var parent = obj.parentNode;
-  var nextNode = obj.nextSibling;
-  while(nextNode !== null) {
-    parent.removeChild(nextNode);
-    nextNode = obj.nextSibling;
+  
+  function keyInput(obj){
+    var curToken = tokens[tokens.length-1];
+    if(tokens.length == 1 && curToken.oper == "const" && curToken.value == "0") {
+        tokens.pop();
+        tokens.push({oper:"input",value:obj.value});
+        refreshCalcDisplay();
+      }
+    if( curToken.oper != "input" && curToken.oper != "pop" && curToken.oper != "const"){
+      tokens.push({oper:"input",value:obj.value});
+      refreshCalcDisplay();
+    }
   }
+  
+/********************************************************************************************
+ *                                    Configure Device
+ * ******************************************************************************************/
+
+function configureDevice(){
+  document.getElementById("divDevice").style.display = "table";
+  originalName = config.device.name;
+  timezone = config.timezone;
+  buildDevice();
 }
 
-function editSave(obj){
-  var index = objectIndex(obj);
+function buildDevice(){
+  var deviceTable = document.getElementById("deviceTable");
+  deviceTable.innerHTML = "";
   editing = false;
-  if(config.inputs[index].notes !== undefined &&
-     config.inputs[index].notes.trim() == "") delete config.inputs[index].notes;
-  saveLocalConfig();
-  buildInputsList();
+  originalName = config.device.name;
+  
+  var deviceName = addTableRow(deviceTable, "Device name:","deviceName", "input", 8);
+  deviceName.value = config.device.name;
+  deviceName.setAttribute("oninput","config.device.name = this.value.trim(); checkDevice();");
+  deviceName.pattern = "[a-zA-Z]{1}[0-9a-zA-Z]{3,7}";
+  
+  var deviceChannels = addTableRow(deviceTable, "Input channels:","deviceChannels", "input", 3);
+  deviceChannels.value = config.device.channels;
+  deviceChannels.setAttribute("onchange","config.device.channels = this.value; checkDevice();");
+  deviceChannels.setAttribute("style","width: 40px;");
+  deviceChannels.setAttribute("type","number");
+  deviceChannels.setAttribute("min","7");
+  deviceChannels.setAttribute("max","21");
+  deviceChannels.setAttribute("step","7");
+  
+  var deviceTimezone = addTableRow(deviceTable, "Time Zone:","deviceTimezone", "input", 3);
+  deviceTimezone.value = config.timezone;
+  deviceTimezone.setAttribute("onchange","config.timezone = this.value; checkDevice();");
+  deviceTimezone.setAttribute("style","width: 40px;");
+  deviceTimezone.setAttribute("type","number");
+  deviceTimezone.setAttribute("min","-12");
+  deviceTimezone.setAttribute("max","12");
+  deviceTimezone.setAttribute("step","1");
 }
 
-function editCancel(obj){
-  config = JSON.parse(configFileString);
-  editing = false;
-  buildInputsList();
-}
-
-function editDelete(obj){
-  var index = objectIndex(obj);
-  config.inputs.splice(index, 1);
-  saveLocalConfig();
-  editing = false;
-  buildInputsList();
-}
-
-function editNotes(obj){
-  var index = objectIndex(obj);
-  if(config.inputs[index].notes === undefined) config.inputs[index].notes = "";
-  else config.inputs[index].notes = obj.value.trim();
-  editChannel(index);
-}
-
-function editSigned(obj){
-  var index = objectIndex(obj);
-  config.inputs[index].signed = "yes";
-  editChannel(index);
-}
-
-function editUnsigned(obj){
-  var index = objectIndex(obj);
-  delete config.inputs[index].signed;
-  editChannel(index);
-}
-
-function objectIndex(object){
-  var obj = object;
-  while(obj.nodeName != "TR") obj = obj.parentNode;
-  var parent = obj.parentNode;
-  var index = 0;
-  while(!obj.isSameNode(parent.children[index])) index++;
-  return index;
-}
-
-function addChannel(channel){
-  if(channel == -1)return;
-  var index = 0;
-  for(index=0; index<config.inputs.length; index++){
-    if(channel < config.inputs[index].channel) break;
+function checkDevice(){
+  var complete = true;
+  var nameChange = false;
+  if( ! validateInput("deviceName")) complete = false;
+  else {
+    if(config.device.name != originalName){
+      nameChange = true;
+      var obj = document.getElementById("deviceName");
+      obj.parentNode.appendChild(document.createElement("BR"));
+      obj.parentNode.appendChild(document.createTextNode("Name changed, IoTaWatt will restart on Save."));
+      obj.parentNode.appendChild(document.createElement("BR"));
+      obj.parentNode.appendChild(document.createTextNode("Then restart app at " + config.device.name + ".local"));
+    }
   }
-  config.inputs.splice(index,0,{"channel":Number(channel),"type":"CT","model":"generic","phase":0,"vchan":0});
-  buildInputsList();
-  editChannel(index);
+  if( ! validateInput("deviceChannels")) complete = false;
+  if( ! validateInput("deviceTimezone")) complete = false;
+  document.getElementById("actionBurden").style.display = (complete && (!nameChange)) ? "inline" : "none";
+  document.getElementById("deviceSave").style.display = complete ? "inline" : "none";
+}
+
+function deviceCancel(){
+  config.device.name = originalName;
+  config.timezone = timezone;
+  editing = false;
+  resetDisplay();
+}
+
+function deviceSave(){
+  uploadConfig(inputEditCancel, (config.device.name != deviceName) ? "restart" : "reload");
+  resetDisplay();
 }
 
 /********************************************************************************************
- * 
- * Setup Web Server related handling
- * 
+ *                                    Specify Burden Resistors
+ * ******************************************************************************************/
+
+function configBurden(){
+  document.getElementById("divDevice").style.display = "none";
+  document.getElementById("divBurden").style.display = "table";
+  buildBurden();
+}
+
+function buildBurden(){
+  var burdenTable = document.getElementById("burdenTable");
+  burdenTable.innerHTML = "";
+  for(var i=0; i<config.device.channels; i++){
+    var newRow = burdenTable.insertRow(-1);
+    var newCol = newRow.insertCell(-1);
+    newCol.innerHTML = "Input: " + i;
+    newCol.setAttribute("align","right");
+    newCol = newRow.insertCell(-1);
+    var newInput = document.createElement("input");
+    newInput.setAttribute("size","3");
+    newInput.setAttribute("tabindex","0");
+    newInput.setAttribute("onblur","newBurden(this," + i + ")");
+    newInput.value = config.device.burden[i];
+    newCol.appendChild(newInput);
+    faults = 0;
+    document.getElementById("burdenSave").style.display = "inline";
+  }
+}
+
+function newBurden(obj, index){
+  var val = Number(obj.value);
+  var msg = obj.nextSibling;
+  if (msg != null){
+    faults--;
+    obj.parentNode.removeChild(obj.nextSibling);
+  } 
+  if(Number.isNaN(val)){
+    obj.parentNode.appendChild(document.createTextNode(" Must be numeric."));
+    faults++;
+  }
+  else if(val.toFixed(1) < 0){
+    obj.parentNode.appendChild(document.createTextNode(" Must be positive."));
+    faults++;
+  }
+  else {
+    config.device.burden[index] = Number(val.toFixed(1));
+    if(Number.isInteger(val)){
+      config.device.burden[index] = Number(val.toFixed(0));
+    }
+    obj.value = config.device.burden[index];
+  }
+  document.getElementById("burdenSave").style.display = faults ? "none" : "inline";
+}
+
+function burdenCancel(){
+  getConfig();
+  document.getElementById("divBurden").style.display = "none";
+  document.getElementById("divDevice").style.display = "table";
+}  
+ 
+function burdenSave(){
+  document.getElementById("divBurden").style.display = "none";
+  uploadConfig(resetDisplay);
+}
+
+/********************************************************************************************
+ *                                     Setup Web Server 
  * ******************************************************************************************/
 
 function buildWebServer(){
+  document.getElementById("divWebServer").style.display = "table";
   var serverTable = document.getElementById("serverTable");
   serverTable.innerHTML = "";
-  var complete = true;
-  
-  var nameInput = serverRow("Device name:", config.device.name, 8);
-  nameInput.setAttribute("onchange","newDeviceName(this)");
-  if(config.device.name.length == 0 || 
-    config.device.name.length > 8 ||
-    /[^0-9a-zA-Z]/.test(config.device.name)) {
-    nameInput.parentNode.appendChild(document.createTextNode(" Name must be 1-8 characters."));
-    complete = false;
-  }
-  
-  var timeZoneInput = serverRow("Time Zone:", config.timezone, 3);
-  timeZoneInput.setAttribute("onchange","newTimeZone(this)");
-  timeZoneInput.setAttribute("style","width: 40px;");
-  timeZoneInput.setAttribute("type","number");
-  timeZoneInput.setAttribute("min","-12");
-  timeZoneInput.setAttribute("max","12");
-  timeZoneInput.setAttribute("step","1");
-  
-  tableRule(serverTable,2);
-  
-  var column2 = serverRow("Web service type:").parentNode;
-  column2.removeChild(column2.lastChild);
-  var serverSelect = document.createElement("select");
+  var serverSelect = addTableRow(serverTable, "Web Service Type", "serverType", "select");
   serverSelect.setAttribute("oninput","newServer(this)");
-  column2.appendChild(serverSelect);
   var optionNone = document.createElement("option");
   optionNone.text = "none";
   serverSelect.add(optionNone);
@@ -825,211 +980,131 @@ function buildWebServer(){
   }
   else if (config.server.type == "emoncms"){
     serverSelect.selectedIndex = 1;
-    buildEmonCMS(complete);
-  }
- 
-  
-  function tableRule(table,columns=1){
-    var newRow = document.createElement("tr");
-    table.appendChild(newRow);
-    newRow.innerHTML = "<td colspan=" + columns +"><hr></td>"; 
-  }
-  
-  if(editing) {
-    tableRule(serverTable,2)
-    var column2 = serverRow("").parentNode;
-    column2.removeChild(column2.lastChild);
-    
-    if(complete){
-      var saveButton = document.createElement("button");
-      saveButton.setAttribute("onclick","configSave(this)"); // allow save if complete
-      saveButton.setAttribute("class","editButton");
-      saveButton.appendChild(document.createTextNode("save"));
-      saveButton.setAttribute("style","width: 40px;");
-      column2.appendChild(saveButton);
-    }
-  
-    var cancelButton = document.createElement("button");
-    column2.appendChild(cancelButton);
-    cancelButton.setAttribute("onclick","configCancel(this)");
-    cancelButton.setAttribute("class","editButton");
-    cancelButton.appendChild(document.createTextNode("cancel"));
-    cancelButton.setAttribute("style","width: 50px;");
+    buildEmonCMS();
   }
 }
 
 function newServer(obj){
   editing = true;
-  if(obj.selectedIndex == 0){
-    delete config.server;
+  if(obj.value == "none"){
+    config.server = {type:"none"};
   }
-  else if(obj.selectedIndex == 1){
-    config.server = {"type":"emoncms",
-                     "node":0,
-                     "postInterval":10,
-                     "bulksend":1,
-                     "url":"emoncms.org",
-                     "apikey":""};
+  else if(obj.value == "eMonCMS"){
+    config.server =  {type:"emoncms",
+                         node:1,
+                         postInterval:10,
+                         bulksend:1,
+                         url:"http://emoncms.org",
+                         apikey:""};
   }
   buildWebServer();
 }
 
-function buildEmonCMS(complete){
+function serverSave(){
+  editing = false;
+  uploadConfig();
+  resetDisplay();
+}
+
+function serverCancel(){
+  editing = false;
+  getConfig(resetDisplay);
+}
+/***********************************************************************************************
+ *                                Configure eMonCMS
+ * ********************************************************************************************/
+function buildEmonCMS(){
   var serverTable = document.getElementById("serverTable");
   
-  var nodeInput = serverRow("node:", config.server.node, 1)
-  nodeInput.setAttribute("onchange","newNode(this)");
+  var nodeInput = addTableRow(serverTable, "Node:", "serverNode", "input", 1);
+  nodeInput.value = Number(config.server.node);
+  nodeInput.setAttribute("onchange","config.server.node = Number(this.value); checkEmonCMS();");
   nodeInput.setAttribute("style","width: 40px;");
   nodeInput.setAttribute("type","number");
   nodeInput.setAttribute("min","0");
   nodeInput.setAttribute("max","99");
   nodeInput.setAttribute("step","1");
   
-  var postInput = serverRow("post interval(sec):", config.server.postInterval.valueOf(), 3);
-  postInput.setAttribute("onchange","newPost(this)");
+  var postInput =   addTableRow(serverTable, "post interval(sec): ", "serverPost", "input", 3);
+  postInput.value = Number(config.server.postInterval);
+  postInput.setAttribute("onchange","config.server.postInterval = Number(this.value); checkEmonCMS();");
   postInput.setAttribute("style","width: 40px;");
-  postInput.setAttribute("type","number");
+  postInput.type = "number";
   postInput.setAttribute("min","0");
   postInput.setAttribute("max","3600");
   postInput.setAttribute("step","5");
   
   if(isNaN(config.server.bulksend)) config.server.bulksend = 1;
-  var bulksendInput = serverRow("bulk send:", config.server.bulksend.valueOf(), 3);
-  bulksendInput.setAttribute("onchange","newBulkSend(this)");
+  var bulksendInput = addTableRow(serverTable, "bulk send:", "serverBulk", "input", 3);
+  bulksendInput.value = Number(config.server.bulksend);
+  bulksendInput.setAttribute("onchange","config.server.bulksend = Number(this.value); checkEmonCMS();");
   bulksendInput.setAttribute("style","width: 40px;");
   bulksendInput.setAttribute("type","number");
   bulksendInput.setAttribute("min","1");
   bulksendInput.setAttribute("max","10");
   bulksendInput.setAttribute("step","1");
-  bulksendInput.parentNode.appendChild(document.createTextNode(" post(s) in each update."));
   
-  var urlInput = serverRow("server URL:", config.server.url, 32);
-  urlInput.setAttribute("onchange","newUrl(this)");
-  if(config.server.url.length == 0){
-    urlInput.parentNode.appendChild(document.createElement("br"));
-    urlInput.parentNode.appendChild(document.createTextNode(" Please enter the server URL."));
-    complete = false;
-  }
+  var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 32);
+  urlInput.value = config.server.url
+  urlInput.setAttribute("onchange","config.server.url = this.value; checkEmonCMS();");
+  urlInput.setAttribute("type","url");
   
-  var keyInput = serverRow("api key:", config.server.apikey, 32);
-  keyInput.setAttribute("onchange","newApikey(this)");
-  if(config.server.apikey.length == 0) {
-    keyInput.parentNode.appendChild(document.createElement("br"));
-    keyInput.parentNode.appendChild(document.createTextNode(" Please enter your API key."));
-    complete = false;
-  }
-  else if(config.server.apikey.length != 32 || /[^0-9a-f]/.test(config.server.apikey)) {
-    keyInput.parentNode.appendChild(document.createElement("br"));
-    keyInput.parentNode.appendChild(document.createTextNode(" API key should be 16 hex digits."));
-    complete = false;
-  }
   
-  var newRow = document.createElement("tr");
-  serverTable.appendChild(newRow);
-  var column1 = document.createElement("td");
-  newRow.appendChild(column1);
-  var column2 = document.createElement("td");
-  newRow.appendChild(column2);
-  
-  return complete;
- 
-}
-function serverRow(text, value, size){
-  var serverTable = document.getElementById("serverTable");
-  var newRow = document.createElement("tr");
-  serverTable.appendChild(newRow);
-  var column1 = document.createElement("td");
-  newRow.appendChild(column1);
-  var column2 = document.createElement("td");
-  newRow.appendChild(column2);
-  column1.appendChild(document.createTextNode(text));
-  column1.setAttribute("align","right");
-  var newInput = document.createElement("input");
-  column2.appendChild(newInput);
-  newInput.value = value;
-  newInput.setAttribute("size",size);
-  return newInput;
+  var keyInput = addTableRow(serverTable, "api key:", "serverKey", "input", 32);
+  keyInput.value = config.server.apikey;
+  keyInput.setAttribute("oninput","config.server.apikey = this.value; checkEmonCMS();");
+  keyInput.setAttribute("size","32");
+  keyInput.pattern = "[0-9a-f]{32}";
+  checkEmonCMS();
 }
 
-function newDeviceName(obj){
-  config.device.name = obj.value;
-  editing = true;
-  buildWebServer();
+function checkEmonCMS(){
+  var complete = true;
+  if( ! validateInput("serverNode")) complete = false;
+  if( ! validateInput("serverPost")) complete = false;
+  if( ! validateInput("serverBulk")) complete = false;
+  if( ! validateInput("serverURL")) complete = false;
+  if( ! validateInput("serverKey")) complete = false;
+  if(config.server.apikey == "") complete = false;
+  document.getElementById("serverSave").style.display = complete ? "inline" : "none";
+}
+function validateInput(id){
+  var obj = document.getElementById(id);
+  while(obj.nextSibling !== null) obj.parentNode.removeChild(obj.nextSibling);
+  if(obj.validationMessage == "") return true;
+  obj.parentNode.appendChild(document.createElement("BR"));
+  obj.parentNode.appendChild(document.createTextNode(obj.validationMessage));
+  return false;
 }
 
-function newTimeZone(obj){
-  config.timezone = obj.value;
-  editing = true;
-  buildWebServer();
-}
-
-function newNode(obj){
-  config.server.node = obj.value;
-  editing = true;
-  buildWebServer();
-}
-
-function newPost(obj){
-  config.server.postInterval = obj.value;
-  editing = true;
-  buildWebServer();
-}
-
-function newBulkSend(obj){
-  config.server.bulksend = obj.value;
-  editing = true;
-  buildWebServer();
-}
-
-function newUrl(obj){
-  config.server.url = obj.value;
-  editing = true;
-  buildWebServer();
-}
-
-function newApikey(obj){
-  config.server.apikey = obj.value;
-  editing = true;
-  buildWebServer();
-}
-
-function configSave(){
-  editing = false;
-  saveLocalConfig();
-  buildWebServer();  
-}
-
-function configCancel(){
-  config = JSON.parse(configFileString);
-  editing = false;
-  buildWebServer();
-}
 
 /***********************************************************************************************
- * 
- * Setup and run status display
- * 
+ *                        Setup and run status display
  * *******************************************************************************************/
 function statusBegin(){
+  document.getElementById("divStatus").style.display = "table";
   getStatus = true;
   statusGet();
-  
 }
 
 function statusGet(){
+  if(demo){
+    statusDisplay(demoStatus());
+    return;
+  }
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       statusDisplay(xmlHttp.responseText);
     }
   }
-  xmlHttp.open("GET","/status?channels=yes&stats=yes", true);
+  xmlHttp.open("GET","/status?inputs=yes&outputs=yes&stats=yes", true);
   xmlHttp.send(null);
 }
 
 function statusDisplay(statusMessage){
   var status = JSON.parse(statusMessage);
-  statusTable = document.getElementById("statusTable");
+  var statusTable = document.getElementById("statusTable");
   statusTable.innerHTML = null;
   addRow();
   column3.appendChild(document.createTextNode(status.stats.cyclerate + " samples per AC cycle"));
@@ -1038,45 +1113,56 @@ function statusDisplay(statusMessage){
   addRow();
   column3.appendChild(document.createTextNode("Running time: " + formatRunTime(status.stats.runseconds)));
   addRow();
-  //column3.appendChild(document.createTextNode("free Heap: " + status.stats.stack));
-  //addRow();
-  column3.innerHTML = "<hr>";
-  
-  for(var i=0; i<status.channels.length; i++){
+  column3.appendChild(document.createTextNode("free Heap: " + status.stats.stack));
+ 
+  statusTable = document.getElementById("inputStatusTable");
+  statusTable.innerHTML = "";
+  for(i in status.inputs){
     addRow();
-    column2.appendChild(document.createTextNode("(" + status.channels[i].channel + ")"));
+    // column2.appendChild(document.createTextNode("(" + status.inputs[i].channel + ")"));
     
-    for(var j=0; j<config.inputs.length; j++){
-      if(config.inputs[j].channel == status.channels[i].channel){
-        if(config.inputs[i].name !== undefined) column1.innerHTML += "<strong>" + config.inputs[i].name + "</strong>";
+    for(j in config.inputs){
+      if(config.inputs[j] !== null && config.inputs[j].channel == status.inputs[i].channel){
+        if(config.inputs[j].name !== undefined) column1.innerHTML += "<strong>" + config.inputs[j].name + ":</strong>";
         break;
       }
     }
     
     
-    if(status.channels[i].Watts !== undefined){
+    if(status.inputs[i].Watts !== undefined){
       var wattNode = document.createElement("font");
-      wattNode.innerHTML = status.channels[i].Watts + " watts";
-      
+      wattNode.innerHTML = status.inputs[i].Watts + " watts";
       column3.appendChild(wattNode);
-      if(status.channels[i].reversed == "yes"){
+      
+      if(status.inputs[i].reversed == "true"){
         wattNode.setAttribute("color","DarkRed");
       } 
-      if(status.channels[i].Watts < 0){
+      if(status.inputs[i].Watts < 0){
           wattNode.setAttribute("color","DarkGreen");
       }
-      if(status.channels[i].Watts >= 60){
-        var pf = status.channels[i].Pf;
-        column3.appendChild(document.createTextNode(", pf: " + pf.toFixed(2)));
+      if(status.inputs[i].Watts >= 60){
+        var pf = status.inputs[i].Pf;
+        //column3.appendChild(document.createTextNode(",<small> pf: " + pf.toFixed(2) + "</small>"));
       }
       
     }
-    else if(status.channels[i].Vrms !== undefined){
-      column3.appendChild(document.createTextNode(status.channels[i].Vrms.toFixed(1) + " volts"));
-      column3.appendChild(document.createTextNode(", " + status.channels[i].Hz.toFixed(1) + " Hz"));
+    else if(status.inputs[i].Vrms !== undefined){
+      column3.appendChild(document.createTextNode(status.inputs[i].Vrms.toFixed(1) + " volts"));
+      //column3.appendChild(document.createTextNode(", <small>" + status.inputs[i].Hz.toFixed(1) + " Hz</small>"));
     }
   }
-  setTimeout(function(){if(getStatus)statusGet();},1000);
+  
+  statusTable = document.getElementById("outputStatusTable");
+  statusTable.innerHTML = "";
+  for(i in status.outputs){
+    addRow();
+    column1.innerHTML += "<strong>" + config.outputs[i].name + ":</strong>";
+    var wattNode = document.createElement("font");
+    wattNode.innerHTML = status.outputs[i].Watts.toFixed(0) + " watts";
+    column3.appendChild(wattNode);
+  }
+    
+  setTimeout(function(){if(getStatus)statusGet();},1500);
   
   function addRow(){
     newRow = document.createElement("tr");
@@ -1099,95 +1185,152 @@ function formatRunTime(time){
   var seconds = parseInt(time % 60, 10);
   return (hours + ':' + (minutes < 10 ? '0' + minutes : minutes) + ':' + (seconds < 10 ? '0' + seconds : seconds));
 }
-  
-/********************************************************************************************
- * 
- * Startup and "Big Ideas" navigation.
- * 
- * *****************************************************************************************/
 
-function editInputs(){
-  if(!editing) {
-    buildInputsList();
-    resetDisplay();
-    document.getElementById("divInputs").style.display = "inline";
-    document.getElementById("BIBinputs").setAttribute("style","background-color: lightgrey");
+function checkConfig(){
+  if(config.device.channels === undefined){
+    config.device.channels = 7;
+  }
+  if(config.inputs === undefined){
+    config.inputs = [{channel:0, type:"VT", model:"generic", cal:10, phase:0}];
+  }
+  for(var i=0; i<config.inputs.length; i++){
+    if(config.inputs[i] === undefined ||
+    (config.inputs[i] !== null && config.inputs[i].channel > i)){
+      config.inputs.splice(i,0,null);
+    }
+  }
+ for(var i=config.inputs.length; i<config.device.channels; i++){
+    config.inputs.push(null);
+  }
+  config.inputs.splice(config.device.channels,config.inputs.length-config.device.channels);
+  
+  if(config.device.burden === undefined){
+    config.device.burden = [];
+  } 
+  for(var i=config.device.burden.length; i<config.device.channels; i++){
+    config.device.burden.push(0);
   }
 }
 
-function editWebServer(){
-  if(!editing) {
-    resetDisplay();
-    document.getElementById("divWebServer").style.display = "inline";
-    document.getElementById("BIBserver").setAttribute("style","background-color: lightgrey");
-    buildWebServer();
+function demoStatus(){
+  var status = {};
+  status.stats = {cyclerate:505, chanrate:38.4, runseconds:3046, stack:17632};
+  status.inputs = [];
+  status.outputs = [];
+  for(i in config.inputs){
+    if(config.inputs[i] != null){
+      if(config.inputs[i].type == "VT"){
+       status.inputs.push({channel:i,Vrms:120.4});
+      }
+      else {
+       status.inputs.push({channel:i,Watts:0});
+      }
+    }
   }
+  for(i in config.outputs){
+    status.outputs.push({name:config.outputs[i].name, Watts:0});
+  }
+  return JSON.stringify(status);
+}
+  
+/********************************************************************************************
+ *                       Main menu navigation.
+ * *****************************************************************************************/
+function menuButton(obj, handler){
+  if( ! editing){
+    resetDisplay();
+    obj.className = "mainMenuButton buttonDown";
+    handler();
+  }
+} 
+ 
+function resetDisplay(){
+  getStatus = false;
+  document.getElementById("divDevice").style.display = "none";
+  document.getElementById("BIBdevice").className = "mainMenuButton";
+  document.getElementById("divInputs").style.display = "none";
+  document.getElementById("BIBinputs").className = "mainMenuButton";
+  document.getElementById("divOutputs").style.display = "none";
+  document.getElementById("BIBoutputs").className = "mainMenuButton";
+  document.getElementById("divWebServer").style.display = "none";
+  document.getElementById("BIBserver").className = "mainMenuButton";
+  document.getElementById("divStatus").style.display = "none";
+  document.getElementById("BIBstatus").className = "mainMenuButton";
+  document.getElementById("BIBmsgs").className = "mainMenuButton";
+  document.getElementById("BIBgraph").className = "mainMenuButton";
+  document.getElementById("BIBedit").className = "mainMenuButton";
 }
 
 function loadGraph(){
   var myWindow = window.open(graphURL, "_self");
+  resetDisplay();
 }
-
 function loadEdit(){
   var myWindow = window.open(editURL, "_self");
+  resetDisplay();
 }
-
 function showMsgs(){
-  if(!editing){
-    var myWindow = window.open(msgsFileURL, "_self");
-  }
+  var myWindow = window.open(msgsFileURL, "_self");
+  resetDisplay();
 }
 
-function showStatus(){
-  if(!editing){
-    resetDisplay();
-    document.getElementById("divStatus").style.display = "inline";
-    document.getElementById("BIBstatus").setAttribute("style","background-color: lightgrey");
-    statusBegin();
+/**********************************************************************************************
+ *              File I/O and management
+ * *******************************************************************************************/
+
+function getConfig(callback){
+  if(demo && demoConfig != null){
+    config = JSON.parse(demoConfig);
+    checkConfig();
+    if(callback !== undefined) callback();
+    return;
   }
+  readFile(configFileURL, function(response){
+    config = JSON.parse(response);
+    checkConfig();
+    if(callback !== undefined) callback();
+    });
+    document.getElementById("bigIdeas").style.display = "table";
 }
 
-function saveLocalConfig(){configFileString = JSON.stringify(config, null,'\t');}
+function getTables(){
+  readFile(configTablesURL, function(response){tables = JSON.parse(response);});
+}
 
-function commitChanges(){
-  if(editing) return;
-  writeFile(configFileString,configNewURL);
+function readFile(path, responseHandler){
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      return;
-    }
-  }
-  xmlHttp.open("GET","/command?restart=yes", true);
-  xmlHttp.send(null);
-}
-
-function undoChanges(){
-  if(!editing) {
-    configFileString = readFile(configFileURL);
-    config = JSON.parse(configFileString);
-    buildInputsList();
-    buildWebServer();
-  }
-}
-
-function readFile(url){
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
+      responseHandler(xmlHttp.responseText);
     }
   };
-  xmlHttp.open("GET", url, false);
+  xmlHttp.open("GET", path, true);
   xmlHttp.send();
-  return xmlHttp.responseText;
 }
 
+function uploadConfig(callback, action="reload"){
+  writeFile(JSON.stringify(config, null, "\t"), configNewURL, function(){
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        if(callback !== undefined) callback(); 
+      }
+    }
+    xmlHttp.open("GET","/config?update=" + action, true);
+    xmlHttp.send(null);
+  });
+}
 
-function writeFile(fileString, url){
+function writeFile(fileString, url, responseHandler){
+  if(demo){
+    demoConfig = fileString;
+    responseHandler();
+    return;
+  }
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      
+      responseHandler();
     }
   };
   var formData = new FormData();
@@ -1197,24 +1340,14 @@ function writeFile(fileString, url){
   xmlHttp.send(formData);
 }
 
-function resetDisplay(){
-  getStatus = false;
-  document.getElementById("divInputs").style.display = "none";
-  document.getElementById("BIBinputs").setAttribute("style","background-color: lightgreen");
-  document.getElementById("divWebServer").style.display = "none";
-  document.getElementById("BIBserver").setAttribute("style","background-color: lightgreen");
-  document.getElementById("divStatus").style.display = "none";
-  document.getElementById("BIBstatus").setAttribute("style","background-color: lightgreen");
-  document.getElementById("BIBundo").setAttribute("style","background-color: lightgreen");
-  document.getElementById("BIBcommit").setAttribute("style","background-color: lightgreen");
-  document.getElementById("BIBmsgs").setAttribute("style","background-color: lightgreen");
-  document.getElementById("divMsgs").style.display = "none";
-}
 
 function setup(){
-  configFileString = readFile(configFileURL);
-  config = JSON.parse(configFileString);
-  tables = JSON.parse(readFile(configTablesURL));
+  getConfig();
+  getTables();
+  if(document.domain == "iotawatt.com"){
+    demo = true;
+    document.getElementById("heading").innerHTML += " Demo Mode";
+  } 
   resetDisplay();
 }
 
