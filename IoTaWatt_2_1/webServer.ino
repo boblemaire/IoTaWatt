@@ -279,8 +279,8 @@ void handleStatus(){
     while(_output){
       JsonObject& channelObject = jsonBuffer.createObject();
       channelObject.set("name",_output->_name);
-      channelObject.set("Watts", _output->runScript([](int i)->double {
-        return statBucket[i].watts;}),0);
+      channelObject.set("Watts",long( _output->runScript([](int i)->double {
+        return statBucket[i].watts;}) + 0.5));
       outputArray.add(channelObject);
       _output = (IotaOutputChannel*)outputList.findNext(_output);
     }
