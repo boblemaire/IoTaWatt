@@ -30,27 +30,11 @@ void samplePower(int channel, int overSample){
 
   int16_t* VsamplePtr = Vsample;
   int16_t* IsamplePtr = Isample;
-  
-         // Determine phase correction oversample requirement.
-
-  float _phaseCorrection = (Vchannel->_phase - Ichannel->_phase) * samplesPerCycle / 360.0;
-  int stepCorrection = int(_phaseCorrection);
-  float stepFraction = _phaseCorrection - stepCorrection;
-  int _overSample = 0;
-  if(_phaseCorrection >= 0){
-    IsamplePtr += stepCorrection;
-    _overSample = stepCorrection + 2;
-  }
-  else {
-    VsamplePtr += -stepCorrection;
-    _overSample = -stepCorrection + 2;
-  }
-  if(overSample > _overSample) _overSample = overSample;
-  
+   
         // Invoke high speed sample collection.
         // If it fails, set power to zero and return.
 
-  if( ! sampleCycle(Vchannel, Ichannel, _overSample)) {
+  if( ! sampleCycle(Vchannel, Ichannel)) {
     Ichannel->setPower(0.0, 0.0);
     return;
   }               
@@ -63,25 +47,40 @@ void samplePower(int channel, int overSample){
   int32_t sumI = 0;
   int32_t sumP = 0;
   int32_t sumVsq = 0;
-  int32_t sumIsq = 0;       
+  int32_t sumIsq = 0;  
+
+      // Determine phase correction components.
+      // stepCorrection is the number of I samples to add or subtract.
+      // stepFraction is the interpolation to apply to the next I sample (0.0 - 1.0)
+      // The phase correction is the net phase lead (+) of voltage computed as the 
+      // (VT lead - CT lead) + any gross phase correction for 3 phase measurement.
+      // Note that a reversed CT can be corrected by introducing a 180deg gross correction.
+
+  float _phaseCorrection = (Vchannel->_phase - Ichannel->_phase) * samples / 360.0;  // fractional Isamples correction
+  int stepCorrection = int(_phaseCorrection);                                                // whole steps to correct 
+  float stepFraction = _phaseCorrection - stepCorrection;                                    // fractional step correction
+  if(stepFraction < 0){                                                                      // if current lead
+    stepCorrection--;                                                                        // One sample back
+    stepFraction += 1.0;                                                                     // and forward 1-fraction
+  }
   
         // get sums, squares, and all that stuff.
-  
+  Isample[samples] = Isample[0];      
+  int Iindex = (samples + stepCorrection) % samples;
   for(int i=0; i<samples; i++){  
     rawV = *VsamplePtr;
-    rawI = *IsamplePtr;
-    if(stepFraction > 0) rawI += int(stepFraction * (*(IsamplePtr + 1) - *IsamplePtr));
-    if(stepFraction < 0) rawV += int(-stepFraction * (*(VsamplePtr + 1) - *VsamplePtr));
+    rawI = Isample[Iindex]; 
+    rawI += int(stepFraction * (Isample[Iindex + 1] - Isample[Iindex]));
     sumV += rawV;
     sumVsq += rawV * rawV;
     sumI += rawI;
     sumIsq += rawI * rawI;
     sumP += rawV * rawI;      
     VsamplePtr++;
-    IsamplePtr++;  
+    Iindex = (Iindex + 1) % samples;
   }
   
-        // Adjust the offset values assuming symetric waves but within limits otherwise.
+        // Adjust the offset values assuming symmetric waves but within limits otherwise.
 
   int16_t minOffset = (ADC_RANGE * 49) / 100;         // Allow +/- 1% variation
   int16_t maxOffset = (ADC_RANGE * 51) / 100;
@@ -141,7 +140,7 @@ void samplePower(int channel, int overSample){
   *    
   *  The approach is to start sampling voltage/current pairs in a tight loop.
   *  When voltage crosses zero, we start recording the pairs.
-  *  When we have crossed zero cycles*2 more times, we grab 100 more then stop and compute the results.
+  *  When we have crossed zero cycles*2 more times we stop and return to compute the results.
   *  
   *  Note:  If ever there was a time for low-level hardware manipulation, this is it.
   *  the tighter and faster the samples can be taken, the more accurate the results can be.
@@ -163,7 +162,7 @@ void samplePower(int channel, int overSample){
   * 
   ****************************************************************************************************/
   
-boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int overSample){
+boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel){
 
   int Vchan = Vchannel->_channel;
   int Ichan = Ichannel->_channel;
@@ -218,7 +217,7 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
 
           // Have at it.
                       
-  do {                                     
+  while(true) {                                     
                       /************************************
                        *  Sample the Current (I) channel  *
                        ************************************/
@@ -343,14 +342,13 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
             lastCrossUs = micros();                     // To compute frequency
             lastCrossMs = millis();                     // For main loop dispatcher to estimate when next crossing is imminent
             lastCrossSamples = samples;
-            crossGuard = overSample;                   // Collect caller's required oversamples;
+            break;                                      // That's all folks
           }
           else {
             midCrossSamples = samples;                               
           }
         }   
-  } while(crossCount < crossLimit  || crossGuard > 0);  // Keep sampling until prescribed crossings + phase shift overun
-  
+  } 
   *VsamplePtr = (lastV + rawV) / 2;                     // Loose end
 
           // Check that both halves of the cycle had the same sample count (+/-3)
@@ -365,10 +363,10 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
         // If AC is floating, we can end up here with the noise looking enough like crossings.
         // If that's the case, this should detect it.  
   
-  if(*VsamplePtr > -10 && *VsamplePtr < 10){
-    trace(T_SAMP,7);
-    return false;
-  }
+//  if(*VsamplePtr > -10 && *VsamplePtr < 10){
+//    trace(T_SAMP,7);
+//    return false;
+//  }
   trace(T_SAMP,8);
 
           // Update damped frequency.
