@@ -1,6 +1,6 @@
 
 
-### IotaWatt 2.0
+### IotaWatt 2.1
 
 IotaWatt is an open-hardware/open-source project to produce an accurate, low-cost, multi-channel, and easy to use electric power monitor.  It's based on the ESP8266 IoT platform using MCP3208 12 bit ADCs to sample voltage and current at high sample rates.
 
