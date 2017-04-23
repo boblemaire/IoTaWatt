@@ -2,6 +2,8 @@
 
 ### IotaWatt 2.1
 
+See the [WiKi](https://github.com/boblemaire/IoTaWatt/wiki) for detailed information concerning installation and use of IoTaWatt.
+
 IotaWatt is an open-hardware/open-source project to produce an accurate, low-cost, multi-channel, and easy to use electric power monitor.  It's based on the ESP8266 IoT platform using MCP3208 12 bit ADCs to sample voltage and current at high sample rates.
 
 The newer PCB and schematic set contained here are the next iteration of development. It is based on the Adafruit "feather" series and uses their ESP8266 feather board stacked on their feather datalogger board with real-time-clock and SDcard.  The IotaWatt ADC board described in this git's Eagle files stacks under the Adafruit boards.  Each ADC board has up to seven inputs, and up to three can be stacked for a total of 7, 14 or 21 input channels.
