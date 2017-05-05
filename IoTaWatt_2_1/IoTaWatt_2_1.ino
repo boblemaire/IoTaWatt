@@ -65,6 +65,7 @@ String deviceName = "IotaWatt";             // can be specified in config.device
 String IotaLogFile = "/IotaWatt/IotaLog";
 String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
 String eMonPostLogFile = "/iotawatt/emonlog.log";
+uint16_t deviceVersion = 0;
 
         // Define the hardware pins
 

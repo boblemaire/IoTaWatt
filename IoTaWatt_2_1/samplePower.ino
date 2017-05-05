@@ -38,9 +38,7 @@ void samplePower(int channel, int overSample){
     Ichannel->setPower(0.0, 0.0);
     return;
   }               
-       
-    // Samples are collected, process them.
-    
+      
   int16_t rawV;
   int16_t rawI;  
   int32_t sumV = 0;

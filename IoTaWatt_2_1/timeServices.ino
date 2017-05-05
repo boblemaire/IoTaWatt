@@ -153,7 +153,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock){
         timeRefMs = millis();
         if(hasRTC){
           int32_t timeDiff = UNIXtime() - rtc.now().unixtime();
-          if(timeDiff){
+          if(timeDiff < -1 || timeDiff > 1){
             msgLog("timeSync: adjusting RTC by ", String(timeDiff));
             rtc.adjust(UNIXtime());
           }
