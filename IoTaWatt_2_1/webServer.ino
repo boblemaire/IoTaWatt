@@ -279,8 +279,8 @@ void handleStatus(){
     while(_output){
       JsonObject& channelObject = jsonBuffer.createObject();
       channelObject.set("name",_output->_name);
-      channelObject.set("Watts",long( _output->runScript([](int i)->double {
-        return statBucket[i].watts;}) + 0.5));
+      channelObject.set("Watts", _output->runScript([](int i)->double {
+        return statBucket[i].watts;}),0);
       outputArray.add(channelObject);
       _output = (IotaOutputChannel*)outputList.findNext(_output);
     }
@@ -318,7 +318,13 @@ void handleCommand(){
     msgLog("Restart command received.");
     delay(500);
     ESP.restart();
-  } 
+  }
+  if(server.hasArg("vtphase")){
+    uint16_t refInput = server.arg("vtphase").toInt();
+    String response = "Calculated shift: " + String(calcPhaseDiff(refInput),2);
+    server.send(200, "text/plain", response);
+    return; 
+  }
   server.send(400, "text/json", "Unrecognized request");
 }
 
@@ -371,25 +377,23 @@ void handleGraphGetall(){                   // Stub to appease eMonCMS graph app
 }
 
 float calcPhaseDiff(int refChan){
-  int Ishift = 40;
   double phaseShift = 0;
   for(int i=0; i<4; i++){
-    samplePower(refChan, Ishift);
+    samplePower(refChan, 0);
     double sumVsq = 0;
     double sumIsq = 0;
     double sumVI = 0;  
     for(int i=0; i<samples; i++){
       sumVsq += (double)Vsample[i] * Vsample[i];
-      sumIsq += (double)Isample[i+Ishift] * Isample[i+Ishift];
-      sumVI += (double)Vsample[i] * Isample[i+Ishift]; 
+      sumIsq += (double)Isample[i] * Isample[i];
+      sumVI += (double)Vsample[i] * Isample[i]; 
     }
     double Vrms = sqrt(sumVsq/double(samples));
     double Irms = sqrt(sumIsq/double(samples));
     double VI = sumVI/double(samples);
-    float shiftedDeg = (float)360.0 * Ishift / samples;
-    phaseShift += 57.29578 * acos(VI / (Vrms * Irms)) - shiftedDeg;
+    phaseShift += 57.29578 * acos(VI / (Vrms * Irms));
   }  
-  return phaseShift / 4;
+  return phaseShift / 4.0;
 }
 
 // Had to roll our own streamFile function so we can set the actual partial
