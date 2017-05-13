@@ -33,13 +33,26 @@ boolean getConfig(void)
 
   if(Config.containsKey("timezone")){
     localTimeDiff = Config["timezone"].as<signed int>();
-    msgLog("Local time zone: ",String(localTimeDiff));
+    msgLog("Local time zone: ",String(localTimeDiff)); 
   }
 
-  if(Config["device"]["version"].asString()[0] < '2'){
-    hasRTC = false;
-  } else {
-    hasRTC = true;
+  int channels = 21;
+  if(device.containsKey("version")){
+    deviceVersion = device["version"].as<unsigned int>();
+    if(deviceVersion == 2){
+      hasRTC = true;
+      VrefVolts = 1.0;
+      ADC_selectPin[0] = 0;
+      ADC_selectPin[1] = 16;
+      ADC_selectPin[2] = 2;
+    }
+    else if(deviceVersion == 3){
+      hasRTC = true;
+      VrefVolts = 2.5;
+      ADC_selectPin[0] = 0;
+      ADC_selectPin[1] = 2;
+      channels = 15;
+    }
   }
   
   if(device.containsKey("refvolts")){
@@ -49,23 +62,24 @@ boolean getConfig(void)
           // Build or update the input channels
    
   if(device.containsKey("channels")){
-    int channels = MIN(device["channels"].as<unsigned int>(),MAXINPUTS);
-    if(maxInputs != channels) {
-      IotaInputChannel* *newList = new IotaInputChannel*[channels];
-      for(int i=0; i<MIN(channels,maxInputs); i++){
-        newList[i] = inputChannel[i];
-      }
-      for(int i=MIN(channels,maxInputs); i<maxInputs; i++){
-        delete inputChannel[i];
-      }
-      for(int i=MIN(channels,maxInputs); i<channels; i++){
-        newList[i] = new IotaInputChannel(i);
-        newList[i]->_name = "Input(" + String(i) + ")";
-      }
-      delete[] inputChannel;
-      inputChannel = newList;
-      maxInputs = channels;
+    channels = MIN(device["channels"].as<unsigned int>(),MAXINPUTS);
+  }
+  
+  if(maxInputs != channels) {
+    IotaInputChannel* *newList = new IotaInputChannel*[channels];
+    for(int i=0; i<MIN(channels,maxInputs); i++){
+      newList[i] = inputChannel[i];
     }
+    for(int i=MIN(channels,maxInputs); i<maxInputs; i++){
+      delete inputChannel[i];
+    }
+    for(int i=MIN(channels,maxInputs); i<channels; i++){
+      newList[i] = new IotaInputChannel(i);
+      newList[i]->_name = "Input(" + String(i) + ")";
+    }
+    delete[] inputChannel;
+    inputChannel = newList;
+    maxInputs = channels;
   }
  
   if(device.containsKey("chanaddr")){
@@ -90,15 +104,6 @@ boolean getConfig(void)
   if(Config.containsKey("inputs")){
     configInputs(Config["inputs"]);
   }   
-
-   for(int i=0; i<maxInputs; i++){
-    PRINT(inputChannel[i]->_name," ")
-    PRINT(" name:", inputChannel[i]->_name)
-    PRINT(" model:", inputChannel[i]->_model)
-    PRINT(" burden:", inputChannel[i]->_burden)
-    PRINT(" addr: ", inputChannel[i]->_addr)
-    PRINTL(" aRef: ",inputChannel[i]->_aRef)
-  }
      
         // ************************************ configure output channels *************************
 
@@ -170,14 +175,10 @@ void configOutputs(JsonArray& JsonOutputs){
            outputList.insertTail(output, output->_name);
        }
   }
-  Serial.print("output Channels: ");
   IotaOutputChannel* outputChannel = (IotaOutputChannel*)outputList.findFirst();
   while(outputChannel != NULL){
-    Serial.print(outputChannel->_name);
-    Serial.print(" ");
     outputChannel = (IotaOutputChannel*)outputList.findNext(outputChannel);
   }
-  Serial.println();
 }
 
 void configInputs(JsonArray& JsonInputs){
@@ -192,6 +193,7 @@ void configInputs(JsonArray& JsonInputs){
       inputChannel[i]->_model = input["model"].as<String>();
       inputChannel[i]->_calibration = input["cal"].as<float>();
       inputChannel[i]->_phase = input["phase"].as<float>();
+      inputChannel[i]->_vchannel = input.containsKey("vref") ? input["vref"].as<int>() : 0;
       inputChannel[i]->active(true);
       String type = input["type"]; 
       if(type == "VT") {

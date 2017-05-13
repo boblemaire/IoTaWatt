@@ -30,58 +30,56 @@ void samplePower(int channel, int overSample){
 
   int16_t* VsamplePtr = Vsample;
   int16_t* IsamplePtr = Isample;
-  
-         // Determine phase correction oversample requirement.
-
-  float _phaseCorrection = (Vchannel->_phase - Ichannel->_phase) * samplesPerCycle / 360.0;
-  int stepCorrection = int(_phaseCorrection);
-  float stepFraction = _phaseCorrection - stepCorrection;
-  int _overSample = 0;
-  if(_phaseCorrection >= 0){
-    IsamplePtr += stepCorrection;
-    _overSample = stepCorrection + 2;
-  }
-  else {
-    VsamplePtr += -stepCorrection;
-    _overSample = -stepCorrection + 2;
-  }
-  if(overSample > _overSample) _overSample = overSample;
-  
+   
         // Invoke high speed sample collection.
         // If it fails, set power to zero and return.
 
-  if( ! sampleCycle(Vchannel, Ichannel, _overSample)) {
+  if( ! sampleCycle(Vchannel, Ichannel, 1, 0)) {
     Ichannel->setPower(0.0, 0.0);
     return;
-  }               
-       
-    // Samples are collected, process them.
-    
+  }          
+      
   int16_t rawV;
   int16_t rawI;  
   int32_t sumV = 0;
   int32_t sumI = 0;
   int32_t sumP = 0;
   int32_t sumVsq = 0;
-  int32_t sumIsq = 0;       
-  
+  int32_t sumIsq = 0;  
+
+      // Determine phase correction components.
+      // stepCorrection is the number of I samples to add or subtract.
+      // stepFraction is the interpolation to apply to the next I sample (0.0 - 1.0)
+      // The phase correction is the net phase lead (+) of voltage computed as the 
+      // (VT lead - CT lead) + any gross phase correction for 3 phase measurement.
+      // Note that a reversed CT can be corrected by introducing a 180deg gross correction.
+
+  float _phaseCorrection = (Vchannel->_phase - Ichannel->_phase) * samples / 360.0;  // fractional Isamples correction
+  int stepCorrection = int(_phaseCorrection);                                                // whole steps to correct 
+  float stepFraction = _phaseCorrection - stepCorrection;                                    // fractional step correction
+  if(stepFraction < 0){                                                                      // if current lead
+    stepCorrection--;                                                                        // One sample back
+    stepFraction += 1.0;                                                                     // and forward 1-fraction
+  }
+
+  trace(T_TEMP,3);
         // get sums, squares, and all that stuff.
-  
+  Isample[samples] = Isample[0];      
+  int Iindex = (samples + stepCorrection) % samples;
   for(int i=0; i<samples; i++){  
     rawV = *VsamplePtr;
-    rawI = *IsamplePtr;
-    if(stepFraction > 0) rawI += int(stepFraction * (*(IsamplePtr + 1) - *IsamplePtr));
-    if(stepFraction < 0) rawV += int(-stepFraction * (*(VsamplePtr + 1) - *VsamplePtr));
+    rawI = Isample[Iindex]; 
+    rawI += int(stepFraction * (Isample[Iindex + 1] - Isample[Iindex]));
     sumV += rawV;
     sumVsq += rawV * rawV;
     sumI += rawI;
     sumIsq += rawI * rawI;
     sumP += rawV * rawI;      
     VsamplePtr++;
-    IsamplePtr++;  
+    Iindex = (Iindex + 1) % samples;
   }
   
-        // Adjust the offset values assuming symetric waves but within limits otherwise.
+        // Adjust the offset values assuming symmetric waves but within limits otherwise.
 
   int16_t minOffset = (ADC_RANGE * 49) / 100;         // Allow +/- 1% variation
   int16_t maxOffset = (ADC_RANGE * 51) / 100;
@@ -128,7 +126,7 @@ void samplePower(int channel, int overSample){
 
   Ichannel->setPower(_watts, _Irms);
   Vchannel->setVoltage(_Vrms);
-                                                                                 
+  trace(T_TEMP,9);                                                                               
   return;
 }
 
@@ -141,7 +139,7 @@ void samplePower(int channel, int overSample){
   *    
   *  The approach is to start sampling voltage/current pairs in a tight loop.
   *  When voltage crosses zero, we start recording the pairs.
-  *  When we have crossed zero cycles*2 more times, we grab 100 more then stop and compute the results.
+  *  When we have crossed zero cycles*2 more times we stop and return to compute the results.
   *  
   *  Note:  If ever there was a time for low-level hardware manipulation, this is it.
   *  the tighter and faster the samples can be taken, the more accurate the results can be.
@@ -163,13 +161,11 @@ void samplePower(int channel, int overSample){
   * 
   ****************************************************************************************************/
   
-boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int overSample){
+boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles, int overSamples){
 
   int Vchan = Vchannel->_channel;
   int Ichan = Ichannel->_channel;
     
-  #define cycles 1                            // Cycles to sample (>1 you're on your own)
-  
   uint32_t cmdMask = ((4 << SPILMOSI) | (4 << SPILMISO));
   uint32_t dataMask = ((ADC_BITS + 1) << SPILMOSI) | ((ADC_BITS + 1) << SPILMISO);
   const uint32_t mask = ~((SPIMMOSI << SPILMOSI) | (SPIMMISO << SPILMISO));
@@ -183,14 +179,17 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
   
   int16_t rawV;                               // Raw ADC readings
   int16_t lastV;
-      
+  int16_t rawI;
+  int16_t lastI = 0;
+        
   int16_t * VsamplePtr = Vsample;             // -> to sample storage arrays
   int16_t * IsamplePtr = Isample;
     
   int16_t crossLimit = cycles * 2 + 1;        // number of crossings in total
   int16_t crossCount = 0;                     // number of crossings encountered
-  int16_t crossGuard = 0;                     // Guard against faux crossings
-  
+  int16_t crossGuard = 3;                     // Guard against faux crossings (must be >= 2 initially)
+
+  uint32_t shStart;
   uint32_t startMs = millis();                // Start of current half cycle
   uint32_t timeoutMs = 600 / frequency;       // Maximum time allowed per half cycle
   uint32_t firstCrossUs;                      // Time cycle at usec resolution for phase calculation
@@ -213,12 +212,75 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
  
   if(readADC(Ichan) < 4) return false;                // channel is unplugged (grounded)
 
-  rawV = readADC(Vchan) - offsetV;                    // Prime the pump
+  *VsamplePtr = readADC(Vchan) - offsetV;             // Prime the pump
   samples = 0;                                        // Start with nothing
 
           // Have at it.
-                      
-  do {                                     
+
+  ESP.wdtFeed();                                     // Red meat for the silicon dog
+  WDT_FEED();     
+  do{  
+                      /************************************
+                       *  Sample the Voltage (V) channel  *
+                       ************************************/
+                                   
+        if(ADC_Vselect16) GP16O &= ~1;                      // digitalWrite(ADC_VselectPin, LOW); Select the ADC
+        else GPOC = ADC_VselectMask;   
+
+              // hardware send 5 bit start + sgl/diff + port_addr
+                                            
+        SPI1U1 = (SPI1U1 & mask) | cmdMask;                 // Set number of bits 
+        SPI1W0 = (0x18 | Vport) << 3;                      // Data left aligned in low byte 
+        SPI1CMD |= SPIBUSY;                                // Start the SPI clock  
+        while(SPI1CMD & SPIBUSY) {}                        // Loop till SPI completes
+
+              // Extend the sample and hold time.
+        
+        delayMicroseconds(1);
+                                                         
+              // Sample and Hold then...
+              // Start reading the results
+            
+        SPI1U1 = (SPI1U1 & mask) | dataMask;                                // Set number of bits (n-1)
+        SPI1W0 = 0xFFFF;                                                    // Pad buffer with ones (don't know why)
+        SPI1CMD |= SPIBUSY;                                                 // Start the SPI clock
+
+              // Do some loop housekeeping asynchronously while SPI runs.
+              
+          *VsamplePtr = rawV;
+          lastV = rawV;
+          *IsamplePtr = (rawI + lastI) >> 1;
+          lastI = rawI;
+                 
+          if((*IsamplePtr > -3) && (*IsamplePtr < 3)) *IsamplePtr = 0;       // Filter noise from previous reading while SPI reads ADC  
+              
+          if(crossCount) {                                  // If past first crossing 
+            VsamplePtr++;                                   // Accumulate samples
+            IsamplePtr++; 
+            if(crossCount < crossLimit){
+              samples++;
+              if(samples >= MAX_SAMPLES){                   // If over the legal limit
+                trace(T_SAMP,0);                            // shut down and return
+                if(ADC_Iselect16) GP16O = 1;                // (Chip select high)
+                else GPOS = ADC_IselectMask;           
+                return false;
+              }
+            }
+          }
+          crossGuard--;    
+          lastV = rawV;
+          
+              // Now wait for SPI to complete
+        
+        while(SPI1CMD & SPIBUSY) {}                                         // Loop till SPI completes
+        if(ADC_Vselect16) GP16O = 1;                                        // digitalWrite(ADC_VselectPin, HIGH); Deselect the ADC
+        else GPOS = ADC_VselectMask;    
+
+              // extract the rawV from the SPI hardware buffer and adjust with offset. 
+                                                                    
+        rawV = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_BITS)) - offsetV;  // Result is in left aligned in first FiFo word
+        
+                                             
                       /************************************
                        *  Sample the Current (I) channel  *
                        ************************************/
@@ -232,7 +294,7 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
         SPI1W0 = (0x18 | Iport) << 3;
         SPI1CMD |= SPIBUSY;
         while(SPI1CMD & SPIBUSY) {} 
-        delayMicroseconds(1);                           // extend the sample&hold time
+        delayMicroseconds(1);
             
               // Sample and Hold then...
               // Read the results
@@ -242,62 +304,7 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
         SPI1CMD |= SPIBUSY;
         
               // Do some housekeeping asynchronously while SPI runs.
-        
-          *VsamplePtr = (lastV + rawV) >> 1;                // Average before and after to align with I in time
-          lastV = rawV;
-
-          if(crossCount) {                                  // If past first crossing 
-            if(crossCount < crossLimit){
-              samples++;
-              VsamplePtr++;                                 // Accumulate samples
-              IsamplePtr++;                                 // Only count samples between crossings
-              if(samples >= MAX_SAMPLES){                   // If over the legal limit
-                trace(T_SAMP,0);                            // shut down and return
-                if(ADC_Iselect16) GP16O = 1;                // (Chip select high)
-                else GPOS = ADC_IselectMask;             
-                return false;
-              }
-            }
-          }
-          crossGuard--;                                     // count down crossGuard                         
-        
-              // Now wait for SPI to complete
-        
-        while(SPI1CMD & SPIBUSY) {}                       
-                  
-        if(ADC_Iselect16) GP16O = 1;                        // digitalWrite(ADC_IselectPin, HIGH);  Deselect the ADC
-        else GPOS = ADC_IselectMask;                       
-
-              // extract the rawI from the SPI hardware buffer and adjust with offset.
-        
-        *IsamplePtr = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_BITS)) - offsetI;
-
-                      /************************************
-                       *  Sample the Voltage (V) channel  *
-                       ************************************/
-                                   
-        if(ADC_Vselect16) GP16O &= ~1;                      // digitalWrite(ADC_VselectPin, LOW); Select the ADC
-        else GPOC = ADC_VselectMask;   
-
-              // hardware send 5 bit start + sgl/diff + port_addr
-                                            
-        SPI1U1 = (SPI1U1 & mask) | cmdMask;                 // Set number of bits 
-        SPI1W0 = (0x18 | Vport) << 3;                      // Data left aligned in low byte 
-        SPI1CMD |= SPIBUSY;                                // Start the SPI clock  
-        while(SPI1CMD & SPIBUSY) {}                        // Loop till SPI completes  
-        delayMicroseconds(1);
-                                                 
-              // Sample and Hold then...
-              // Start reading the results
-            
-        SPI1U1 = (SPI1U1 & mask) | dataMask;                                // Set number of bits (n-1)
-        SPI1W0 = 0xFFFF;                                                    // Pad buffer with ones (don't know why)
-        SPI1CMD |= SPIBUSY;                                                 // Start the SPI clock
-
-              // Do some loop housekeeping asynchronously while SPI runs.
-        
-         if((*IsamplePtr > -3) && (*IsamplePtr < 3)) *IsamplePtr = 0;       // Filter noise from previous reading while SPI reads ADC
-
+              
               // Check for timeout.  The clock gets reset at each crossing, so the
               // timeout value is a little more than a half cycle - 10ms @ 60Hz, 12ms @ 50Hz.
               // The most common cause of timeout here is unplugging the AC reference VT.  Since the
@@ -310,49 +317,53 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
             trace(T_SAMP,Ichan);
             trace(T_SAMP,Vchan);
             if(ADC_Vselect16) GP16O = 1;                                    // ADC select pin high
-            else GPOS = ADC_VselectMask;                                    // Diagnostic stuff if anybody is listening
+            else GPOS = ADC_VselectMask;                                    
+            PRINTL("Sample timeout.","")                                    // Diagnostic stuff if anybody is listening
             return false;                                                   // Return a failure
           }
-          
+                              
               // Now wait for SPI to complete
         
-        while(SPI1CMD & SPIBUSY) {}                                         // Loop till SPI completes
-        if(ADC_Vselect16) GP16O = 1;                                        // digitalWrite(ADC_VselectPin, HIGH); Deselect the ADC
-        else GPOS = ADC_VselectMask;    
+        while(SPI1CMD & SPIBUSY) {}                       
+                  
+        if(ADC_Iselect16) GP16O = 1;                        // digitalWrite(ADC_IselectPin, HIGH);  Deselect the ADC
+        else GPOS = ADC_IselectMask;                       
 
-              // extract the rawV from the SPI hardware buffer and adjust with offset. 
-                                                                    
-        rawV = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_BITS)) - offsetV;  // Result is in left aligned in first FiFo word
+              // extract the rawI from the SPI hardware buffer and adjust with offset.
 
+        rawI = (word((*fifoPtr8 & 0x3f), *(fifoPtr8+1)) >> (14 - ADC_BITS)) - offsetI;
+             
+       
         // Finish up loop cycle by checking for zero crossing.
-
         // Crossing is defined by I and V having different signs (Xor) and crossGuard negative.
 
         if(((rawV ^ lastV) & crossGuard) >> 15) {        // If crossed unambiguously (one but not both Vs negative and crossGuard negative 
-          ESP.wdtFeed();                                 // Red meat for the silicon dog
-          WDT_FEED();
           startMs = millis();                            // Reset the cycle clock 
           crossCount++;                                  // Count the crossings 
           crossGuard = 10;                               // No more crosses for awhile
           if(crossCount == 1){
             trace(T_SAMP,4);
             firstCrossUs = micros();
+            samples++;   
+            VsamplePtr++;                                 // Accumulate samples
+            IsamplePtr++;  
           }
           else if(crossCount == crossLimit) {
             trace(T_SAMP,6);
             lastCrossUs = micros();                     // To compute frequency
             lastCrossMs = millis();                     // For main loop dispatcher to estimate when next crossing is imminent
             lastCrossSamples = samples;
-            crossGuard = overSample;                   // Collect caller's required oversamples;
+            crossGuard = overSamples + 1;
           }
           else {
             midCrossSamples = samples;                               
           }
         }   
-  } while(crossCount < crossLimit  || crossGuard > 0);  // Keep sampling until prescribed crossings + phase shift overun
-  
-  *VsamplePtr = (lastV + rawV) / 2;                     // Loose end
+  } while(crossCount < crossLimit || crossGuard > 0); 
 
+  *VsamplePtr = rawV;                                       
+  *IsamplePtr = (rawI + lastI) >> 1;
+   
           // Check that both halves of the cycle had the same sample count (+/-3)
           // Insures no interrupts paused sampling.
 
@@ -362,15 +373,8 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
     return false;
   }
 
-        // If AC is floating, we can end up here with the noise looking enough like crossings.
-        // If that's the case, this should detect it.  
-  
-  if(*VsamplePtr > -10 && *VsamplePtr < 10){
-    trace(T_SAMP,7);
-    return false;
-  }
   trace(T_SAMP,8);
-
+  
           // Update damped frequency.
 
   frequency = (0.9 * frequency) + (0.1 * (1000000.0 * cycles)  / float((uint32_t)(lastCrossUs - firstCrossUs)));
@@ -465,7 +469,7 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
   float Hz = 1000000.0  / float((uint32_t)(micros() - firstCrossUs));
   _input->setHz(Hz);
   frequency = (0.8 * frequency) + (0.2 * Hz);
-  samplesPerCycle = samplesPerCycle * .9 + (samples / cycles) * .1;
+  samplesPerCycle = samplesPerCycle * .9 + samples * .1;
   cycleSamples++;
   double Vratio = Vcal * Vadj_3 * getAref(Vchan) / double(ADC_RANGE);
   if(getAref(Vchan) < 1.5) Vratio *= (double)Vadj_1 / Vadj_3;
@@ -511,8 +515,10 @@ float getAref(int channel) {
 
 void printSamples() {
   Serial.println(samples);
-  for(int i=0; i<(samples + 50); i++)
+  for(int i=0; i<(samples + 2); i++)
   {
+    Serial.print(i);
+    Serial.print(", ");
     Serial.print(Vsample[i]);
     Serial.print(", ");
     Serial.print(Isample[i]);
@@ -537,4 +543,42 @@ void fileSamples() {
   return;
 }
 
+float samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
+  
+  int16_t cycles = 1;
+    
+  IotaInputChannel* Vchannel = inputChannel[Vchan]; 
+  IotaInputChannel* Ichannel = inputChannel[Ichan];
+  
+  int16_t rawV;                               // Raw ADC readings
+  int16_t rawI;
+    
+  double sumVsq = 0;
+  double sumIsq = 0;
+  double sumVI = 0;
+
+  sampleCycle(Vchannel, Ichannel, cycles, Ishift);
+  PRINTL("samples: ",samples)
+  PRINTL("Vsample[0]: ", Vsample[0])
+  PRINTL("Vsample[1]: ", Vsample[1])
+  PRINTL("Vsample[n-1]: ", Vsample[samples-1])
+  PRINTL("Vsample[n]: ", Vsample[samples])
+
+  double IshiftDeg = (double)Ishift * 360.0 / (samples / cycles);
+  PRINTL("ShiftDeg: ", IshiftDeg) 
+
+  for(int i=0; i<samples; i++){
+    sumVsq += Vsample[i] * Vsample[i];
+    sumIsq += Isample[(i + Ishift) % samples] * Isample[(i + Ishift) % samples];
+    sumVI += Vsample[i] * Isample[(i + Ishift) % samples];
+  }
+
+  double Vrms = sqrt(sumVsq / (double)samples);
+  double Irms = sqrt(sumIsq / (double)samples);
+  double VI = sumVI / (double)samples;
+
+  float phaseDiff = (double)57.29578 * acos(VI / (Vrms * Irms)) - IshiftDeg;
+  PRINTL("phaseDiff: ",phaseDiff)
+  return phaseDiff;
+}
 
