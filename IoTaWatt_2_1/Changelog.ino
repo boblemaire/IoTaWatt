@@ -1,4 +1,4 @@
-/*********************************** Change log ****************************************************
+ /*********************************** Change log ****************************************************
  *  
  *   03/05/17 2.00.01 Cleaned up and added more documentation to Sample Power.  Also streamlined
  *                    it a little more and fixed a few loose ends.
@@ -14,5 +14,7 @@
  *   03/18/17 2.00.10 Change wifi retry interval
  *   
  *   04/14/17 2.01.00 Major update - move inputs to a class, add outputs, CSS
+ *   04/21/17 2.01.01 Add polyphase correction with single VT
+ *   05/06/17 2.01.02 Rework samplePower for better phase correction
  *   
  *****************************************************************************************************/

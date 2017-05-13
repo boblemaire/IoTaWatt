@@ -23,7 +23,7 @@
       SOFTWARE.
       ***********************************************************************************/
 
-#define IOTAWATT_VERSION "2.01.01"
+#define IOTAWATT_VERSION "2.01.02"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -65,6 +65,7 @@ String deviceName = "IotaWatt";             // can be specified in config.device
 String IotaLogFile = "/IotaWatt/IotaLog";
 String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
 String eMonPostLogFile = "/iotawatt/emonlog.log";
+uint16_t deviceVersion = 0;
 
         // Define the hardware pins
 
@@ -76,8 +77,8 @@ String eMonPostLogFile = "/iotawatt/emonlog.log";
 #define pin_I2C_SDA 4                       // I2C for rtc.  Wish it were SPI.
 #define pin_I2C_SCL 5
 
-#define pin_RED_LED 15                      // Your particular ESP board may differ
-#define pin_BLUE_LED 2
+#define pin_RED_LED 16                      // IoTaWatt overusage of pins
+#define pin_GREEN_LED 0
 
 const int chipSelect = pin_CS_SDcard;       // for the benefit of SD.h
                             
@@ -98,6 +99,7 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 #define T_EMON 30           // eMonService
 #define T_GFD 40            // GetFeedData
 #define T_SAMP 100          // samplePower
+#define T_TEMP 120
 
       // ADC descriptors
 
