@@ -33,7 +33,7 @@ boolean getConfig(void)
 
   if(Config.containsKey("timezone")){
     localTimeDiff = Config["timezone"].as<signed int>();
-    msgLog("Local time zone: ",String(localTimeDiff));
+    msgLog("Local time zone: ",String(localTimeDiff)); 
   }
 
   int channels = 21;
@@ -104,16 +104,6 @@ boolean getConfig(void)
   if(Config.containsKey("inputs")){
     configInputs(Config["inputs"]);
   }   
-
-   for(int i=0; i<maxInputs; i++){
-    PRINT(inputChannel[i]->_name," ")
-    PRINT(" name:", inputChannel[i]->_name)
-    PRINT(" model:", inputChannel[i]->_model)
-    PRINT(" burden:", inputChannel[i]->_burden)
-    PRINT(" addr: ", inputChannel[i]->_addr)
-    PRINT(" vref: ", inputChannel[i]->_vchannel)
-    PRINTL(" aRef: ",inputChannel[i]->_aRef)
-  }
      
         // ************************************ configure output channels *************************
 
@@ -185,14 +175,10 @@ void configOutputs(JsonArray& JsonOutputs){
            outputList.insertTail(output, output->_name);
        }
   }
-  Serial.print("output Channels: ");
   IotaOutputChannel* outputChannel = (IotaOutputChannel*)outputList.findFirst();
   while(outputChannel != NULL){
-    Serial.print(outputChannel->_name);
-    Serial.print(" ");
     outputChannel = (IotaOutputChannel*)outputList.findNext(outputChannel);
   }
-  Serial.println();
 }
 
 void configInputs(JsonArray& JsonInputs){

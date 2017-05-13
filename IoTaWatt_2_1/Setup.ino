@@ -17,7 +17,10 @@ void setup()
   digitalWrite(pin_CS_ADC2,HIGH);
   pinMode(pin_CS_SDcard,OUTPUT);
   digitalWrite(pin_CS_SDcard,HIGH);
-
+  
+  pinMode(pin_RED_LED,OUTPUT);
+  digitalWrite(16,LOW);
+  
   SPI.begin();
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
   msgLog("SPI started.");
@@ -51,7 +54,7 @@ void setup()
   //*************************************** Start the internet connection *****************************
 
   WiFiManager wifiManager;
-  wifiManager.setConfigPortalTimeout(120);
+  wifiManager.setConnectTimeout(120);
   wifiManager.setDebugOutput(false);
   boolean WiFiRetry = false;
   while( ! wifiManager.autoConnect(deviceName.c_str())) {
@@ -117,6 +120,7 @@ void dropDead(void){dropDead(1);}
 void dropDead(int secs){
   msgLog("Program halted.");
   while(1){
+    digitalWrite(pin_GREEN_LED, LOW);
     digitalWrite(pin_RED_LED, HIGH);
     delay(secs*1000);
     yield();

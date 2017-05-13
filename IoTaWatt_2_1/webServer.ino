@@ -261,7 +261,7 @@ void handleStatus(){
           channelObject.set("Watts",long(statBucket[i].watts + .5));
           channelObject.set("Irms",statBucket[i].amps,3);
           if(statBucket[i].watts > 10){
-            channelObject.set("Pf",statBucket[i].watts/(statBucket[i].amps*statBucket[inputChannel[i]->_vchannel].volts),2);
+            channelObject.set("Pf",statBucket[i].watts/(statBucket[i].amps*statBucket[inputChannel[i]->_vchannel].volts),4);
           } 
           if(inputChannel[i]->_reversed){
             channelObject.set("reversed","true");
@@ -320,8 +320,16 @@ void handleCommand(){
     ESP.restart();
   }
   if(server.hasArg("vtphase")){
-    uint16_t refInput = server.arg("vtphase").toInt();
-    String response = "Calculated shift: " + String(calcPhaseDiff(refInput),2);
+    uint16_t chan = server.arg("vtphase").toInt();
+    int refChan = 0;
+    if(server.hasArg("refchan")){
+      refChan = server.arg("refchan").toInt();
+    }
+    uint16_t shift = 0;
+    if(server.hasArg("shift")){
+      shift = server.arg("shift").toInt();
+    }
+    String response = "Calculated shift: " + String(samplePhase(chan, refChan, shift),2);
     server.send(200, "text/plain", response);
     return; 
   }
@@ -374,26 +382,6 @@ void handleGetFeedList(){
 void handleGraphGetall(){                   // Stub to appease eMonCMS graph app
   return;
   server.send(200, "ok", "{}");
-}
-
-float calcPhaseDiff(int refChan){
-  double phaseShift = 0;
-  for(int i=0; i<4; i++){
-    samplePower(refChan, 0);
-    double sumVsq = 0;
-    double sumIsq = 0;
-    double sumVI = 0;  
-    for(int i=0; i<samples; i++){
-      sumVsq += (double)Vsample[i] * Vsample[i];
-      sumIsq += (double)Isample[i] * Isample[i];
-      sumVI += (double)Vsample[i] * Isample[i]; 
-    }
-    double Vrms = sqrt(sumVsq/double(samples));
-    double Irms = sqrt(sumIsq/double(samples));
-    double VI = sumVI/double(samples);
-    phaseShift += 57.29578 * acos(VI / (Vrms * Irms));
-  }  
-  return phaseShift / 4.0;
 }
 
 // Had to roll our own streamFile function so we can set the actual partial

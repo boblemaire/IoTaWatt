@@ -1,9 +1,11 @@
 {
 "VT":[
-  {"model":"generic","type":"U","cal":10.00,"phase":0.0},
-  {"model":"Jameco/100061","cal":11.00,"phase":3.0},
-  {"model":"MGT1240","cal":11.00,"phase":0.3},
-  {"model":"CUI","cal":10.03,"phase":0.4}
+  {"model":"generic","type":"U","cal":10.50,"phase":2.0},
+  {"model":"Jameco/100061","cal":11.68,"phase":4.8},
+  {"model":"Jameco/102234","cal":11.43,"phase":3.5},
+  {"model":"Jameco/2227444","cal":11.51,"phase":2.0},
+  {"model":"MGT1240","cal":9.37,"phase":1.75},
+  {"model":"CUI","cal":10.10,"phase":1.9}
   ],
   
 "CT":[
