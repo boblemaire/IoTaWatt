@@ -76,9 +76,10 @@ uint16_t deviceVersion = 0;
 
 #define pin_I2C_SDA 4                       // I2C for rtc.  Wish it were SPI.
 #define pin_I2C_SCL 5
+                    
+#define redLed 16                           // IoTaWatt overusage of pins
+#define greenLed 0
 
-#define pin_RED_LED 16                      // IoTaWatt overusage of pins
-#define pin_GREEN_LED 0
 
 const int chipSelect = pin_CS_SDcard;       // for the benefit of SD.h
                             

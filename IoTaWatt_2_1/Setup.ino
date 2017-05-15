@@ -18,8 +18,8 @@ void setup()
   pinMode(pin_CS_SDcard,OUTPUT);
   digitalWrite(pin_CS_SDcard,HIGH);
   
-  pinMode(pin_RED_LED,OUTPUT);
-  digitalWrite(16,LOW);
+  pinMode(redLed,OUTPUT);
+  digitalWrite(redLed,LOW);
   
   SPI.begin();
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
@@ -30,9 +30,10 @@ void setup()
   if(!SD.begin(pin_CS_SDcard)) {
     msgLog("SD initiatization failed. Retrying.");
     while(!SD.begin(pin_CS_SDcard, SPI_FULL_SPEED)){
-      delay(100); 
+      ledMsg(redLed, redLed, greenLed);
       yield();
-    } 
+    }
+    digitalWrite(greenLed,HIGH); 
   }
   msgLog("SD initialized.");
   hasSD = true;
@@ -120,17 +121,27 @@ void dropDead(void){dropDead(1);}
 void dropDead(int secs){
   msgLog("Program halted.");
   while(1){
-    digitalWrite(pin_GREEN_LED, LOW);
-    digitalWrite(pin_RED_LED, HIGH);
-    delay(secs*1000);
-    yield();
-    
-    digitalWrite(pin_RED_LED, LOW);
-    delay(secs*1000);
+    ledMsg(redLed, redLed, redLed);
     yield();   
   }  
 }
 
+void ledMsg(int first, int second, int third){
+  digitalWrite(greenLed, LOW);
+  digitalWrite(redLed, LOW);
+  digitalWrite(first, HIGH);
+  delay(500);
+  digitalWrite(first, LOW);
+  delay(500);
+  digitalWrite(second, HIGH);
+  delay(500);
+  digitalWrite(second, LOW);
+  delay(500);
+  digitalWrite(third, HIGH);
+  delay(500);
+  digitalWrite(third, LOW);
+  delay(2000);  
+}
    
 
 
