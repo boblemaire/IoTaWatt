@@ -206,6 +206,7 @@ void printDirectory() {
 
 void handleNotFound(){
   String serverURI = server.uri();
+  Serial.println(serverURI);
   if(serverURI.startsWith("//")) serverURI.remove(0,1);   // fix eMonCMS graph bug
   if(serverURI.startsWith("/feed/list")){
     handleGetFeedList();
@@ -220,12 +221,13 @@ void handleNotFound(){
     NewService(handleGetFeedData);
     return;
   }
-  if(hasSD && loadFromSdCard(server.uri())) return;
+  if(loadFromSdCard(server.uri())) return;
   String message = "Not found: ";
   message += (server.method() == HTTP_GET)?"GET":"POST";
   message += ", URI: ";
   message += server.uri();
   server.send(404, "text/plain", message);
+  Serial.println(message);
 }
 
 /************************************************************************************************
