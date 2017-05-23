@@ -107,6 +107,13 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
         
     case post: {
 
+          // If WiFi is not connected,
+          // just return without attempting to log and try again in a few seconds.
+
+      if(WiFi.status() != WL_CONNECTED) {
+        return 2; 
+      }
+
           // If we are current,
           // Anticipate next posting at next regular interval and break to reschedule.
  

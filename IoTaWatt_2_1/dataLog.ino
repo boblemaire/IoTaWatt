@@ -21,7 +21,7 @@
  **********************************************************************************************/
  uint32_t dataLog(struct serviceBlock* _serviceBlock){
   // trace 2x
-  enum states {initialize, logData, noLog};
+  enum states {initialize, checkClock, logData};
   static states state = initialize;
   #define GapFill 600                                  // Fill in gaps of up to these seconds                             
   static IotaLogRecord* logRecord = new IotaLogRecord;
@@ -33,16 +33,6 @@
 
     case initialize: {
 
-      // Initialize local accumulators
-      
-      for(int i=0; i<maxInputs; i++){
-        IotaInputChannel* _input = inputChannel[i];
-        if(_input){
-          inputChannel[i]->ageBuckets(timeNow);
-          accum1Then[i] = inputChannel[i]->dataBucket.accum1;
-        }
-      }
-      timeThen = timeNow;
       msgLog("dataLog: service started.");
 
       // Initialize the IotaLog class
@@ -59,6 +49,29 @@
         iotaLog.readKey(logRecord);
         msgLog("dataLog: Last log entry:", iotaLog.lastKey());
       }
+
+      state = checkClock;
+
+      // Fall through to checkClock
+
+    }
+
+    case checkClock: {
+      
+      // Initialize local accumulators
+      
+      for(int i=0; i<maxInputs; i++){
+        IotaInputChannel* _input = inputChannel[i];
+        if(_input){
+          inputChannel[i]->ageBuckets(timeNow);
+          accum1Then[i] = inputChannel[i]->dataBucket.accum1;
+        }
+      }
+      timeThen = timeNow;
+
+            // If clock is not running, return
+
+      if( ! RTCrunning) break;
 
       // If it's been a long time since last entry, skip ahead.
       
