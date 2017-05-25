@@ -19,7 +19,7 @@ void msgLog(char* segment1, char* segment2, char* segment3){
   uint32_t _NTPtime = NTPtime();
   DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
   
-  if(_NTPtime != 0){
+  if(RTCrunning){
     msg = String(now.month()) + '/' + String(now.day()) + '/' + String(now.year()%100) + ' ' + 
           timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second()) + ' ';
   } else {

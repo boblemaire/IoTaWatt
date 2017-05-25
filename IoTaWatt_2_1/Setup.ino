@@ -20,6 +20,27 @@ void setup()
   
   pinMode(redLed,OUTPUT);
   digitalWrite(redLed,LOW);
+
+  //*************************************** Set the clock if RTC running *****************************
+
+  Wire.pins(pin_I2C_SDA, pin_I2C_SCL);
+    rtc.begin();
+
+    if(rtc.initialized()){
+      timeRefNTP = rtc.now().unixtime() + SEVENTY_YEAR_SECONDS;
+      timeRefMs = millis();
+      RTCrunning = true;
+      msgLog("Real Time Clock is running.");
+      msgLog("Unix time:", UNIXtime());
+    }
+    else {
+      msgLog("Real Time Clock not initialized.");
+    }
+    programStartTime = UNIXtime();
+
+  
+  
+  //*************************************** Initialize SPI *******************************************
   
   SPI.begin();
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
@@ -38,7 +59,11 @@ void setup()
   msgLog("SD initialized.");
   hasSD = true;
 
+  //**************************************** Display software version *********************************
+
   msgLog("Version: ", IOTAWATT_VERSION);
+
+  //**************************************** Display the trace ****************************************
 
   msgLog("Reset reason: ",(char*)ESP.getResetReason().c_str());
   logTrace();
@@ -51,28 +76,18 @@ void setup()
     msgLog("Configuration failed");
     dropDead();
   }
+//*************************************** Start the WiFi  connection *****************************
 
-  //*************************************** Start the internet connection *****************************
-
-  WiFiManager wifiManager;
-  wifiManager.setConnectTimeout(120);
-  wifiManager.setDebugOutput(false);
-  boolean WiFiRetry = false;
-  while( ! wifiManager.autoConnect(deviceName.c_str())) {
-    if( ! WiFiRetry){
-      msgLog("Failed to connect to WiFi at startup. Retrying until successful.");
-      WiFiRetry = true;
-    }
+  WiFi.begin();
+  WiFi.setAutoConnect(true);
+  delay(3000);
+  if(WiFi.status() != WL_CONNECTED){
+    wifiManager.setTimeout(120);
+    String ssid = "iota" + String(ESP.getChipId());
+    String pwd = "iotawatt";
+    wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
   }
-  msgLog("WiFi connected, IP address: ", formatIP(WiFi.localIP()));
   
-  //*************************************** Initialize timer and time of day *************************
-
-  initTime();
-  msgLog("Unix time:", UNIXtime());
-  NewService(timeSync);
-  programStartTime = UNIXtime();
-
  //*************************************** Start the local DNS service ****************************
 
   if (MDNS.begin(host)) {
@@ -80,7 +95,7 @@ void setup()
       msgLog("MDNS responder started");
       msgLog("You can now connect to http://", host, ".local");
   }
-
+  
  //*************************************** Start the web server ****************************
 
   server.on("/status",HTTP_GET, handleStatus);
@@ -91,19 +106,24 @@ void setup()
   server.on("/edit", HTTP_DELETE, handleDelete);
   server.on("/edit", HTTP_PUT, handleCreate);
   server.on("/edit", HTTP_POST, [](){returnOK(); }, handleFileUpload);
+  server.on("/disconnect",HTTP_GET, handleDisconnect);
   server.onNotFound(handleNotFound);
 
   SdFile::dateTimeCallback(dateTime);
 
   server.begin();
   msgLog("HTTP server started");
+  WiFi.mode(WIFI_STA);
+  
 
  //*************************************** Start the logging services *********************************
    
   NewService(dataLog);
   NewService(statService);
-}
-
+  NewService(timeSync);
+  NewService(WiFiService);
+  
+}  // setup()
 /***************************************** End of Setup **********************************************/
 
 String formatHex(uint32_t data){
@@ -142,7 +162,7 @@ void ledMsg(int first, int second, int third){
   digitalWrite(third, LOW);
   delay(2000);  
 }
-   
+      
 
 
 

@@ -36,8 +36,9 @@
 #include <WiFiClientSecure.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
-#include <WiFiManager.h>
 #include <ESP8266mDNS.h>
+#include <WiFiManager.h>
+#include <DNSServer.h>
 #include <SD.h>
 #include <WiFiUDP.h>
 #include <ArduinoJson.h>
@@ -52,7 +53,9 @@
       // Declare instances of various classes above
 
 WiFiClientSecure WifiClientSecure;
-WiFiClient WifiClient;    
+WiFiClient WifiClient;
+WiFiManager wifiManager;
+DNSServer dnsServer;    
 IotaLog iotaLog;                            // instance of IotaLog class
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 
@@ -172,18 +175,21 @@ static bool hasSD = false;
 File uploadFile;
 void handleNotFound();
 boolean serverAvailable = true;   // Set false when asynchronous handler active to avoid new requests
+boolean wifiConnected = false;
 
       // ****************************** Timing and time data *************************
+#define  SEVENTY_YEAR_SECONDS 2208988800UL
 int      localTimeDiff = 0;
 uint32_t programStartTime = 0;               // Time program started (UnixTime)
-uint32_t timeRefNTP = 0;                     // Last time from NTP server (NTPtime)
+uint32_t timeRefNTP = SEVENTY_YEAR_SECONDS;  // Last time from NTP server (NTPtime)
 uint32_t timeRefMs = 0;                      // Internal MS clock corresponding to timeRefNTP
 uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forward and try to refresh
 uint32_t dataLogInterval = 5;                // Interval (sec) to invoke dataLog
 uint32_t eMonCMSInterval = 10;               // Interval (sec) to invoke eMonCMS 
 uint32_t statServiceInterval = 1;            // Interval (sec) to invoke statService
-#define  SEVENTY_YEAR_SECONDS 2208988800UL
+
 boolean  hasRTC = false;
+boolean  RTCrunning = false;
 
       // *********************** eMonCMS configuration stuff *************************
       // Note: nee dto move out to a class and change for dynamic configuration
