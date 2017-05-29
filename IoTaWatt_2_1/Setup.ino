@@ -82,6 +82,7 @@ void setup()
   WiFi.setAutoConnect(true);
   delay(3000);
   if(WiFi.status() != WL_CONNECTED){
+    wifiManager.setDebugOutput(false);
     wifiManager.setTimeout(120);
     String ssid = "iota" + String(ESP.getChipId());
     String pwd = "iotawatt";
@@ -122,6 +123,7 @@ void setup()
   NewService(statService);
   NewService(timeSync);
   NewService(WiFiService);
+  NewService(updater);
   
 }  // setup()
 /***************************************** End of Setup **********************************************/

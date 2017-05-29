@@ -23,7 +23,7 @@
       SOFTWARE.
       ***********************************************************************************/
 
-#define IOTAWATT_VERSION "2.01.02"
+#define IOTAWATT_VERSION "2.01.03"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -39,6 +39,7 @@
 #include <ESP8266mDNS.h>
 #include <WiFiManager.h>
 #include <DNSServer.h>
+#include <ESP8266httpUpdate.h>
 #include <SD.h>
 #include <WiFiUDP.h>
 #include <ArduinoJson.h>
@@ -103,6 +104,7 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 #define T_EMON 30           // eMonService
 #define T_GFD 40            // GetFeedData
 #define T_SAMP 100          // samplePower
+#define T_UPDATE 50         // updater
 #define T_TEMP 120
 
       // ADC descriptors
@@ -187,6 +189,7 @@ uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forwa
 uint32_t dataLogInterval = 5;                // Interval (sec) to invoke dataLog
 uint32_t eMonCMSInterval = 10;               // Interval (sec) to invoke eMonCMS 
 uint32_t statServiceInterval = 1;            // Interval (sec) to invoke statService
+uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for software updates 
 
 boolean  hasRTC = false;
 boolean  RTCrunning = false;
