@@ -16,6 +16,6 @@
  *   04/14/17 2.01.00 Major update - move inputs to a class, add outputs, CSS
  *   04/21/17 2.01.01 Add polyphase correction with single VT
  *   05/06/17 2.01.02 Rework samplePower for better phase correction
- *                    Work on captive portal
+ *   05/28/17 2.01.03 Add automatic update and rework WiFiManager use
  *   
  *****************************************************************************************************/
