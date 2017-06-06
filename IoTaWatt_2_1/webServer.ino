@@ -206,7 +206,6 @@ void printDirectory() {
 
 void handleNotFound(){
   String serverURI = server.uri();
-  Serial.println(serverURI);
   if(serverURI.startsWith("//")) serverURI.remove(0,1);   // fix eMonCMS graph bug
   if(serverURI.startsWith("/feed/list")){
     handleGetFeedList();
@@ -408,6 +407,7 @@ void sendMsgFile(File &dataFile, int32_t relPos){
 void handleGetConfig(){
   if(server.hasArg("update")){
     if(server.arg("update") == "restart"){
+      server.send(200, "text/plain", "OK");
       msgLog("Restart command received.");
       delay(500);
       ESP.restart();

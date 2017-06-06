@@ -297,8 +297,6 @@ function refreshInputEdit(){
   newInput.add(option);
   
   inputModel = addTableRow(table, "Model: ", "inputModel", "select");
-  inputModel.setAttribute("oninput","inputEditObject.model=this.value; refreshInputEdit();");
-  
   var option = document.createElement("option");
   option.text = "generic";
   inputModel.add(option); 
@@ -337,6 +335,7 @@ function refreshInputEdit(){
       }
     }
   }
+  inputModel.setAttribute("oninput","inputEditNewModel(this)");
   
   if(inputEditObject.model == "generic" && 
     (inputEditObject.type == "VT" ||
@@ -409,7 +408,7 @@ function refreshInputEdit(){
 
 function inputEditNewModel(obj){
   inputEditObject.model = obj.value;
-  if(inputEditObj.model == "generic"){
+  if(inputEditObject.model == "generic"){
     inputEditNewType(inputEditObj.type);
   }
   else if(inputEditObject.type == "VT"){
@@ -457,7 +456,6 @@ function inputEditDelete(){
 }
 
 function inputEditCancel(){
-  buildInputsList();
   document.getElementById("inputEdit").style.display="none";
   document.getElementById("inputCalVT").style.display="none";
   getConfig(buildInputsList);
@@ -616,7 +614,7 @@ function calVTsave(obj){
   
   function addOutput(){
     document.getElementById("calcName").value = "";
-    document.getElementById("calcUnits").value = "";
+    document.getElementById("calcUnits").value = "watts";
     tokens = [{oper:"const",value:"0"}];
     document.getElementById("divOutputs").style.display = "none";
     document.getElementById("divCalc").style.display = "table";
@@ -1107,9 +1105,9 @@ function statusDisplay(statusMessage){
   var statusTable = document.getElementById("statusTable");
   statusTable.innerHTML = null;
   addRow();
-  column3.appendChild(document.createTextNode(status.stats.cyclerate + " samples per AC cycle"));
+  column3.appendChild(document.createTextNode(status.stats.cyclerate.toFixed(0) + " samples per AC cycle"));
   addRow();
-  column3.appendChild(document.createTextNode(status.stats.chanrate + " AC cycles sampled/second"));
+  column3.appendChild(document.createTextNode(status.stats.chanrate.toFixed(1) + " AC cycles sampled/second"));
   addRow();
   column3.appendChild(document.createTextNode("Running time: " + formatRunTime(status.stats.runseconds)));
   addRow();
@@ -1142,7 +1140,7 @@ function statusDisplay(statusMessage){
       }
       if(status.inputs[i].Watts >= 60){
         var pf = status.inputs[i].Pf;
-        //column3.appendChild(document.createTextNode(",<small> pf: " + pf.toFixed(2) + "</small>"));
+        column3.appendChild(document.createTextNode(", pf: " + pf.toFixed(2)));
       }
       
     }
@@ -1178,12 +1176,14 @@ function statusDisplay(statusMessage){
 }
 
 function formatRunTime(time){
+  var days = Math.floor(time / 86400);
+  time -= days * 86400;
   var hours = Math.floor(time / 3600);
   time -= hours * 3600;
   var minutes = Math.floor(time / 60);
   time -= minutes * 60;
   var seconds = parseInt(time % 60, 10);
-  return (hours + ':' + (minutes < 10 ? '0' + minutes : minutes) + ':' + (seconds < 10 ? '0' + seconds : seconds));
+  return (days > 0 ? days + "d  " : "") +  hours + "h " + minutes + "m " + seconds + "s";
 }
 
 function checkConfig(){
