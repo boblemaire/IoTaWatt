@@ -71,11 +71,13 @@ void setup()
 
   //************************************* Process Config file *****************************************
   
-  if(!getConfig())
-  {
+  if(!getConfig()) {
     msgLog("Configuration failed");
     dropDead();
   }
+  String msg = "device name: " + deviceName + ", version: " + String(deviceVersion);
+  msgLog(msg);
+  msgLog("Local time zone: ",String(localTimeDiff));
 //*************************************** Start the WiFi  connection *****************************
 
   WiFi.begin();

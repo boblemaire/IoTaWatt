@@ -28,12 +28,9 @@ boolean getConfig(void)
   }
   deviceName.toCharArray(host,9);
   host[8] = 0;
-  String msg = "device name: " + deviceName + ", version: " + Config["device"]["version"].asString();
-  msgLog(msg);
-
+  
   if(Config.containsKey("timezone")){
-    localTimeDiff = Config["timezone"].as<signed int>();
-    msgLog("Local time zone: ",String(localTimeDiff)); 
+    localTimeDiff = Config["timezone"].as<signed int>(); 
   }
 
   int channels = 21;
@@ -120,7 +117,7 @@ boolean getConfig(void)
 
   if(serverType.equals("emoncms"))
   {
-    msg = "server is: eMonCMS";
+    String msg = "server is: eMonCMS";
     eMonURL = Config["server"]["url"].asString();
     if(eMonURL.startsWith("http://")) eMonURL = eMonURL.substring(7);
    else if(eMonURL.startsWith("https://")){

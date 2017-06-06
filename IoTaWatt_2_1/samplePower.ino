@@ -189,9 +189,8 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
   int16_t crossCount = 0;                     // number of crossings encountered
   int16_t crossGuard = 3;                     // Guard against faux crossings (must be >= 2 initially)
 
-  uint32_t shStart;
   uint32_t startMs = millis();                // Start of current half cycle
-  uint32_t timeoutMs = 600 / frequency;       // Maximum time allowed per half cycle
+  uint32_t timeoutMs = 12;                    // Maximum time allowed per half cycle
   uint32_t firstCrossUs;                      // Time cycle at usec resolution for phase calculation
   uint32_t lastCrossUs;                       
 
@@ -212,6 +211,16 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
  
   if(readADC(Ichan) < 4) return false;                // channel is unplugged (grounded)
 
+          // Make sure there is a voltage signal,
+          // if not, return false.
+
+  lastV = readADC(Vchan);
+  do {
+    if((uint32_t)millis() - startMs > 2){
+      return false;
+    }    
+  } while(abs(readADC(Vchan) - lastV) < 20);
+  
   *VsamplePtr = readADC(Vchan) - offsetV;             // Prime the pump
   samples = 0;                                        // Start with nothing
 
@@ -318,7 +327,9 @@ boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
             trace(T_SAMP,Vchan);
             if(ADC_Vselect16) GP16O = 1;                                    // ADC select pin high
             else GPOS = ADC_VselectMask;                                    
-            PRINTL("Sample timeout.","")                                    // Diagnostic stuff if anybody is listening
+            PRINT("Sample timeout.","")                                    // Diagnostic stuff if anybody is listening
+            PRINT(", timeoutMs: ", timeoutMs)
+            PRINTL(", frequency: ", frequency)
             return false;                                                   // Return a failure
           }
                               
