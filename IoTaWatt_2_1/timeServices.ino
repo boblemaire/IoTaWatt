@@ -125,6 +125,13 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock){
         if(timeDiff < -1 || timeDiff > 1){
           msgLog("timeSync: adjusting RTC by ", String(timeDiff));
           rtc.adjust(UNIXtime());
+
+            // set 12.5pF crystal load capacitance.
+          
+          Wire.beginTransmission(PCF8523_ADDRESS);
+          Wire.write((byte)0);
+          Wire.write((byte)0x80);
+          Wire.endTransmission();
         }
       }
       retryCount = 0;
