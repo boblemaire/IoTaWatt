@@ -40,17 +40,20 @@ class IotaOutputChannel {
 	
 	
 	public:
-		IotaOutputChannel(const char* name, JsonArray& script){
+		IotaOutputChannel(const char* name, const char* units, JsonArray& script){
 			_name = new char[sizeof(name)+1];
 			strcpy(_name, name);
 			IS.encodeScript(script);
-			//IS.printScript();
+			_units = new char[sizeof(units)+1];
+			strcpy(_units, units);
 		}
 		~IotaOutputChannel(){
 			delete[] _name;
+			delete[] _units;
 		}
 		
 		char*     	_name;                  // External name
+		char*		_units;					// Watts or Volts
 		uint8_t     _channel;               // Internal identifying number
 		IotaScript	IS;						// Incidence of script interpreter
 			

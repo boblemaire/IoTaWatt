@@ -280,8 +280,10 @@ void handleStatus(){
     while(_output){
       JsonObject& channelObject = jsonBuffer.createObject();
       channelObject.set("name",_output->_name);
-      channelObject.set("Watts", _output->runScript([](int i)->double {
-        return statBucket[i].watts;}),0);
+      channelObject.set("units",_output->_units);
+      double value = _output->runScript([](int i)->double {return statBucket[i].value1;});
+      channelObject.set("value",value);
+      channelObject.set("Watts",value);  // depricated 3.04
       outputArray.add(channelObject);
       _output = (IotaOutputChannel*)outputList.findNext(_output);
     }
