@@ -1,4 +1,4 @@
-void loop()
+ void loop()
 {
 /******************************************************************************
  * The main loop is very simple:
@@ -139,45 +139,29 @@ void AddService(struct serviceBlock* newBlock){
 uint32_t statService(struct serviceBlock* _serviceBlock) { 
   static uint32_t timeThen = millis();        
   static boolean started = false;
-  static float damping = .3;
+  static float damping = .5;
   uint32_t timeNow = millis();
 
   if(!started){
     msgLog("statService: started.");
     started = true;
     for(int i=0; i<maxInputs; i++){
-      IotaInputChannel* _input = inputChannel[i];
-      if(_input){
-        statBucket[i].accum1 = _input->dataBucket.accum1;
-        statBucket[i].accum2 = _input->dataBucket.accum2;
-      }
+      statBucket[i].accum1 = inputChannel[i]->dataBucket.accum1;
+      statBucket[i].accum2 = inputChannel[i]->dataBucket.accum2;
     }
     return (uint32_t)UNIXtime() + 1;
   }
-
+  
+  double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
   for(int i=0; i<maxInputs; i++){
-    IotaInputChannel* _input = inputChannel[i];
-    if(_input){
-      _input->ageBuckets(timeNow);
-      double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
-      statBucket[i].value1 = (damping * statBucket[i].value1) + ((1.0 - damping) * (_input->dataBucket.accum1 - statBucket[i].accum1) / elapsedHrs);
-      statBucket[i].value2 = (damping * statBucket[i].value2) + ((1.0 - damping) * (_input->dataBucket.accum2 - statBucket[i].accum2) / elapsedHrs);
-      statBucket[i].accum1 = _input->dataBucket.accum1;
-      statBucket[i].accum2 = _input->dataBucket.accum2;
-    }
-    else {
-      statBucket[i].value1 = 0;
-      statBucket[i].value2 = 0;
-      statBucket[i].accum1 = 0;
-      statBucket[i].accum2 = 0;
-    }
+    inputChannel[i]->ageBuckets(timeNow); 
+    statBucket[i].value1 = (damping * statBucket[i].value1) + ((1.0 - damping) * (inputChannel[i]->dataBucket.accum1 - statBucket[i].accum1) / elapsedHrs);
+    statBucket[i].value2 = (damping * statBucket[i].value2) + ((1.0 - damping) * (inputChannel[i]->dataBucket.accum2 - statBucket[i].accum2) / elapsedHrs);
+    statBucket[i].accum1 = inputChannel[i]->dataBucket.accum1;
+    statBucket[i].accum2 = inputChannel[i]->dataBucket.accum2;
   }
   
-  if(cycleSamples){
-    cycleSampleRate = .75 * cycleSampleRate + .25 * float(cycleSamples * 1000) / float((uint32_t)(timeNow - timeThen));
-  } else {
-    cycleSampleRate = cycleSampleRate * .75;
-  }  
+  cycleSampleRate = damping * cycleSampleRate + (1.0 - damping) * float(cycleSamples * 1000) / float((uint32_t)(timeNow - timeThen));
   cycleSamples = 0;
   timeThen = timeNow;
   

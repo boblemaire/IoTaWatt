@@ -78,6 +78,17 @@ boolean getConfig(void)
     inputChannel = newList;
     maxInputs = channels;
   }
+
+        // Override V3 defaults if V2 device
+
+  if(deviceVersion == 2){
+    for(int i=0; i<MIN(maxInputs,device["chanaddr"].size()); i++){
+      inputChannel[i]->_addr = int(i / 7) * 8 + i % 7;
+      inputChannel[i]->_aRef = int(i / 7) * 8 + 7;
+    }
+  }
+
+        // Override all defaults with user specification
  
   if(device.containsKey("chanaddr")){
     for(int i=0; i<MIN(maxInputs,device["chanaddr"].size()); i++){
@@ -90,6 +101,7 @@ boolean getConfig(void)
       inputChannel[i]->_aRef = device["chanaref"][i].as<unsigned int>();
     }
   }
+ 
 
    if(device.containsKey("burden")){
     for(int i=0; i<MIN(maxInputs,device["burden"].size()); i++){
