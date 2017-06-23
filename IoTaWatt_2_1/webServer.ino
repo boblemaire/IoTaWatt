@@ -259,8 +259,8 @@ void handleStatus(){
           channelObject.set("Hz",statBucket[i].Hz,1);
         }
         else if(inputChannel[i]->_type == channelTypePower){
-          channelObject.set("Watts",long(statBucket[i].watts + .5));
-          channelObject.set("Irms",statBucket[i].amps,3);
+          channelObject.set("Watts",String(statBucket[i].watts,1));
+          channelObject.set("Irms",String(statBucket[i].amps,3));
           if(statBucket[i].watts > 10){
             channelObject.set("Pf",statBucket[i].watts/(statBucket[i].amps*statBucket[inputChannel[i]->_vchannel].volts),4);
           } 
@@ -280,8 +280,10 @@ void handleStatus(){
     while(_output){
       JsonObject& channelObject = jsonBuffer.createObject();
       channelObject.set("name",_output->_name);
-      channelObject.set("Watts", _output->runScript([](int i)->double {
-        return statBucket[i].watts;}),0);
+      channelObject.set("units",_output->_units);
+      double value = _output->runScript([](int i)->double {return statBucket[i].value1;});
+      channelObject.set("value",value);
+      channelObject.set("Watts",value);  // depricated 3.04
       outputArray.add(channelObject);
       _output = (IotaOutputChannel*)outputList.findNext(_output);
     }

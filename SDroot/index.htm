@@ -1156,7 +1156,7 @@ function statusDisplay(statusMessage){
     addRow();
     column1.innerHTML += "<strong>" + config.outputs[i].name + ":</strong>";
     var wattNode = document.createElement("font");
-    wattNode.innerHTML = status.outputs[i].Watts.toFixed(0) + " watts";
+    wattNode.innerHTML = status.outputs[i].value.toFixed(0) + " " + status.outputs[i].units;
     column3.appendChild(wattNode);
   }
     

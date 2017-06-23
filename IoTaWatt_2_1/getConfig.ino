@@ -11,11 +11,18 @@ boolean getConfig(void)
     msgLog("Config file open failed.");
     return false;
   }
-  JsonObject& Config = Json.parseObject(ConfigFile);  
+  int filesize = ConfigFile.size();
+  char* ConfigBuffer = new char[condensedJsonSize(ConfigFile)+1];
+  ConfigFile.seek(0);
+  condenseJson(ConfigBuffer, ConfigFile);
+  ConfigFile.close();
+  ConfigFile = SD.open(ConfigFileURL, FILE_READ);
+  JsonObject& Config = Json.parseObject(ConfigBuffer);  
   ConfigFile.close();
   
   if (!Config.success()) {
     msgLog("Config file parse failed.");
+    delete[] ConfigBuffer;
     return false;
   }
   
@@ -78,6 +85,17 @@ boolean getConfig(void)
     inputChannel = newList;
     maxInputs = channels;
   }
+
+        // Override V3 defaults if V2 device
+
+  if(deviceVersion == 2){
+    for(int i=0; i<MIN(maxInputs,device["chanaddr"].size()); i++){
+      inputChannel[i]->_addr = int(i / 7) * 8 + i % 7;
+      inputChannel[i]->_aRef = int(i / 7) * 8 + 7;
+    }
+  }
+
+        // Override all defaults with user specification
  
   if(device.containsKey("chanaddr")){
     for(int i=0; i<MIN(maxInputs,device["chanaddr"].size()); i++){
@@ -90,6 +108,7 @@ boolean getConfig(void)
       inputChannel[i]->_aRef = device["chanaref"][i].as<unsigned int>();
     }
   }
+ 
 
    if(device.containsKey("burden")){
     for(int i=0; i<MIN(maxInputs,device["burden"].size()); i++){
@@ -150,10 +169,10 @@ boolean getConfig(void)
     eMonStop = true;
     if(!serverType.equals("none")){
       msgLog("server type is not supported: ", serverType);
-      return false;
     }
   }
-  
+
+  delete[] ConfigBuffer;
   return true;
 }
 
@@ -166,8 +185,9 @@ void configOutputs(JsonArray& JsonOutputs){
   for(int i=0; i<JsonOutputs.size(); i++){
     JsonObject& outputObject = JsonOutputs[i].as<JsonObject&>();
     if(outputObject.containsKey("name") &&
+       outputObject.containsKey("units") &&
        outputObject.containsKey("script")) {
-           IotaOutputChannel* output = new IotaOutputChannel(outputObject["name"], outputObject["script"]);
+           IotaOutputChannel* output = new IotaOutputChannel(outputObject["name"], outputObject["units"], outputObject["script"]);
            output->_channel = i+100;
            outputList.insertTail(output, output->_name);
        }
@@ -208,6 +228,33 @@ void configInputs(JsonArray& JsonInputs){
     else {
       inputChannel[i]->reset();
     }
+  }
+}
+
+uint32_t condensedJsonSize(File JsonFile){
+  uint32_t size = 0;
+  bool inQuote = false;
+  char Json;
+  while(JsonFile.available()){
+    Json = JsonFile.read();
+    if(inQuote || (Json != ' ' && Json != 9 && Json != 10 && Json != 13)){
+      size++;
+    }
+    if(Json == '"') inQuote = !inQuote;
+  }
+  return size;
+}
+
+void condenseJson(char* ConfigBuffer, File JsonFile){
+  char* buffer = ConfigBuffer;
+  bool inQuote = false;
+  char Json;
+   while(JsonFile.available()){
+    Json = JsonFile.read();
+    if(inQuote || (Json != ' ' && Json != 9 && Json != 10 && Json != 13)){
+      *buffer++ = Json;
+    }
+    if(Json == '"') inQuote = !inQuote;
   }
 }
 
