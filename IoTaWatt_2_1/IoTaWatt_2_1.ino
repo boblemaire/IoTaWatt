@@ -43,10 +43,10 @@
 #include <SD.h>
 #include <WiFiUDP.h>
 #include <ArduinoJson.h>
-#include <IotaLog.h>
-#include <IotaInputChannel.h>
-#include <IotaOutputChannel.h>
-#include <IotaList.h>
+#include "IotaLog.h"
+#include "IotaInputChannel.h"
+#include "IotaOutputChannel.h"
+#include "IotaList.h"
 #include <math.h>
 #include <Wire.h>
 #include <RTClib.h>
