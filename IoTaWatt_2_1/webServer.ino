@@ -259,7 +259,8 @@ void handleStatus(){
           channelObject.set("Hz",statBucket[i].Hz,1);
         }
         else if(inputChannel[i]->_type == channelTypePower){
-          channelObject.set("Watts",String(statBucket[i].watts,1));
+          if(statBucket[i].watts < 0 && statBucket[i].watts > -.5) statBucket[i].watts = 0;
+          channelObject.set("Watts",String(statBucket[i].watts,0));
           channelObject.set("Irms",String(statBucket[i].amps,3));
           if(statBucket[i].watts > 10){
             channelObject.set("Pf",statBucket[i].watts/(statBucket[i].amps*statBucket[inputChannel[i]->_vchannel].volts),4);
@@ -332,7 +333,17 @@ void handleCommand(){
     if(server.hasArg("shift")){
       shift = server.arg("shift").toInt();
     }
-    String response = "Calculated shift: " + String(samplePhase(chan, refChan, shift),2);
+    String response = "Calculated shift: " + String(samplePhase(refChan, chan, shift),2);
+    server.send(200, "text/plain", response);
+    return; 
+  }
+  if(server.hasArg("sample")){
+    uint16_t chan = server.arg("sample").toInt();
+    samplePower(chan,0);
+    String response = String(samples) + "\n\r";
+    for(int i=0; i<samples; i++){
+      response += String(Vsample[i]) + "," + String(Isample[i]) + "\n";
+    }
     server.send(200, "text/plain", response);
     return; 
   }

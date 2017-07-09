@@ -366,7 +366,9 @@ function refreshInputEdit(){
       if(cal < 5 || cal >= 1000) {
         inputEditMsg(inputTurns, " Range is " + (config.device.burden[inputEditChannel] * 5).toString() + " to " + (config.device.burden[inputEditChannel] * 900).toString());
         complete = false;
-      } 
+      } else {
+        inputEditObject.cal = cal;
+      }
     }
   }
  
@@ -571,7 +573,6 @@ function calVTsave(obj){
         editButton.appendChild(document.createTextNode("edit"));
         editButton.setAttribute("onclick","editOutput(" + i +")");
         selColumn.appendChild(editButton);
-        editing = false;
       }
       var newRow = document.createElement("tr");
       table.appendChild(newRow);
@@ -583,6 +584,7 @@ function calVTsave(obj){
       editButton.appendChild(document.createTextNode("add"));
       editButton.setAttribute("onclick","addOutput()");
       selColumn.appendChild(editButton);
+      editing = false;
     });
   }
   
@@ -844,9 +846,9 @@ function buildDevice(){
   deviceChannels.setAttribute("onchange","config.device.channels = this.value; checkDevice();");
   deviceChannels.setAttribute("style","width: 40px;");
   deviceChannels.setAttribute("type","number");
-  deviceChannels.setAttribute("min","7");
+  deviceChannels.setAttribute("min","1");
   deviceChannels.setAttribute("max","21");
-  deviceChannels.setAttribute("step","7");
+  deviceChannels.setAttribute("step","1");
   
   var deviceTimezone = addTableRow(deviceTable, "Time Zone:","deviceTimezone", "input", 3);
   deviceTimezone.value = config.timezone;
