@@ -18,5 +18,6 @@
  *   05/06/17 2.01.02 Rework samplePower for better phase correction
  *   05/28/17 2.01.03 Add automatic update and rework WiFiManager use
  *   06/04/17 2.01.04 Miscelaneous cleanup
+ *   07/06/17 2.01.05 General hardware 4.1 development
  *   
  *****************************************************************************************************/
