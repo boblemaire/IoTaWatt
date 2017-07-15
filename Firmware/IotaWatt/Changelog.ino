@@ -20,5 +20,6 @@
  *   06/04/17 2.01.04 Miscelaneous cleanup
  *   06/26/17 2.01.05 Ongoing development
  *   07/09/17 2.02.00 Version 4 hardware support
+ *   07/12/17 2.02.01 Fix sample power, enhance graph
  *   
  *****************************************************************************************************/

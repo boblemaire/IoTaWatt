@@ -15,11 +15,14 @@
 uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   // trace T_GFD
   enum   states {Initialize, Setup, process};
+ 
   static states state = Initialize;
   static IotaLogRecord* logRecord = new IotaLogRecord;
   static IotaLogRecord* lastRecord = new IotaLogRecord;
   static IotaLogRecord* swapRecord;
-  static IotaOutputChannel* _output;
+  static char* bufr = nullptr;
+  static uint32_t bufrSize = 0;
+  static uint32_t bufrPos = 0;
   static double accum1Then = 0;
   static double logHoursThen = 0;
   static double elapsedHours = 0;
@@ -27,28 +30,19 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   static uint32_t endUnixTime;
   static uint32_t intervalSeconds;
   static uint32_t UnixTime;
-  static int channel;
-  static int queryType;
-  static int intervalNumber;
   static int voltageChannel = 0;
   static boolean Kwh = false;
   static String replyData = "";
-  static int directReads = 0;
-  
-  static uint32_t timeIO;
-  static uint32_t timeCOM;
-  static uint32_t timeWAIT;
-  static uint32_t timeTOT;
-  static uint32_t timePER;
-  static uint32_t timeSTART;
-  
-  static uint32_t Init;
-  static uint32_t Io;
-  static uint32_t Send;
-  static uint32_t Idle;
-  static uint32_t Comp;
-  static uint32_t Start;
     
+  struct req {
+    req* next;
+    int channel;
+    int queryType;
+    IotaOutputChannel* output;
+    req(){next=nullptr; channel=0; queryType=0; output=nullptr;};
+    ~req(){delete next;};
+  } static reqRoot;
+     
   switch (state) {
     case Initialize: {
       state = Setup;
@@ -58,30 +52,40 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
     case Setup: {
       trace(T_GFD,0);
 
-      timeIO = 0;
-      timeCOM = 0;
-      timeWAIT = 0;
-      timePER = micros();
-      timeSTART = micros();
-        
-      channel = server.arg("id").toInt();
-      queryType = channel % 10;
-      channel /= 10;
-      if(channel >= 100){
-        _output = (IotaOutputChannel*)outputList.findFirst();
-        while(_output){
-          if(_output->_channel == channel){
-            Serial.println(_output->_name);
-            break;
+          // Parse the ID parm into a list.
+      
+      String idParm = server.arg("id");
+      reqRoot.next = nullptr;
+      req* reqPtr = &reqRoot;
+      int i = 0;
+      if(idParm.startsWith("[")){
+        idParm[idParm.length()-1] = ',';
+        i = 1;
+      } else {
+        idParm += ",";
+      }
+      while(i < idParm.length()){
+        reqPtr->next = new req;
+        reqPtr = reqPtr->next;
+        int id = idParm.substring(i,idParm.indexOf(',',i)).toInt();
+        i = idParm.indexOf(',',i) + 1;
+        reqPtr->channel = id / 10;
+        reqPtr->queryType = id % 10;
+        if(reqPtr->channel >= 100){
+          IotaOutputChannel* _output = (IotaOutputChannel*)outputList.findFirst();
+          while(_output){
+            if(_output->_channel == reqPtr->channel){
+              break;
+            }
+            _output = (IotaOutputChannel*)outputList.findNext(_output);
           }
-          _output = (IotaOutputChannel*)outputList.findNext(_output);
+          reqPtr->output = _output;
         }
       }
-    
+          
       startUnixTime = server.arg("start").substring(0,10).toInt();
       endUnixTime = server.arg("end").substring(0,10).toInt();
       intervalSeconds = server.arg("interval").toInt();
-    
       accum1Then = 0;
       logHoursThen = 0;
 
@@ -90,138 +94,142 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       } else {
         lastRecord->UNIXtime = iotaLog.firstKey();
       }
-      if(!iotaLog.readKey(lastRecord)){
-        
-      } 
-     
+
+          // Using String for a large buffer abuses the heap
+          // and takes up a lot of time. We will build 
+          // relatively short response elements with String
+          // and copy them to this larger buffer.
+
+      bufrSize = ESP.getFreeHeap() / 2;
+      if(bufrSize > 4096) bufrSize = 4096;
+      bufr = new char [bufrSize];
+
+          // Setup buffer to do it "chunky-style"
+      
+      bufr[3] = '\r';
+      bufr[4] = '\n'; 
+      bufrPos = 5;
       server.setContentLength(CONTENT_LENGTH_UNKNOWN);
       server.sendHeader("Accept-Ranges","none");
       server.sendHeader("Transfer-Encoding","chunked");
       server.send(200,"application/json","");
 
       replyData = "[";
-      intervalNumber = 0;
       UnixTime = startUnixTime;
-  
       state = process;
       _serviceBlock->priority = priorityLow;
       return 1;
-      
-      timePER = micros();
-      
     }
   
     case process: {
-      timeit(timePER,timeWAIT);
       trace(T_GFD,1);
       uint32_t exitTime = nextCrossMs + 5000 / frequency;              // Take an additional half cycle
       SPI.beginTransaction(SPISettings(SPI_FULL_SPEED, MSBFIRST, SPI_MODE0));
+
+          // Loop to generate entries
+      
       while(UnixTime <= endUnixTime) {
         logRecord->UNIXtime = UnixTime;
-        timePER = micros();
         int rtc = iotaLog.readKey(logRecord);
-        timeit(timePER,timeIO);
         trace(T_GFD,2);
-        replyData += '[' + String(UnixTime) + "000,";
+        replyData += '[';  //  + String(UnixTime) + "000,";
         elapsedHours = logRecord->logHours - lastRecord->logHours;
-        if(rtc || logRecord->logHours == lastRecord->logHours){
-           replyData +=  "null";
-        }
+        req* reqPtr = &reqRoot;
+        while((reqPtr = reqPtr->next) != nullptr){
+          int channel = reqPtr->channel;
+          if(rtc || logRecord->logHours == lastRecord->logHours){
+             replyData +=  "null";
+          }
+  
+            // input channel
 
-          // input channel
-        
-        else if(channel < 100){       
-          trace(T_GFD,3);                  
-          switch (queryType) {
-            case QUERY_VOLTAGE: {
+          else if(channel < 100){
+            trace(T_GFD,3);       
+            if(reqPtr->queryType == QUERY_VOLTAGE) {
               replyData += String((logRecord->channel[channel].accum1 - lastRecord->channel[channel].accum1) / elapsedHours,1);
-              break;
-            }
-            case QUERY_POWER: {
+            } 
+            else if(reqPtr->queryType == QUERY_POWER) {
               replyData += String((logRecord->channel[channel].accum1 - lastRecord->channel[channel].accum1) / elapsedHours,1);
-              break;
             }
-            case QUERY_ENERGY: {
+            else if(reqPtr->queryType == QUERY_ENERGY) {
               replyData += String((logRecord->channel[channel].accum1 / 1000.0),2);
-              break;
-            }
-          }  
-        }
-
-         // output channel
-        
-        else {
-          trace(T_GFD,4);
+            }  
+          }
+  
+           // output channel
           
-          if(queryType == QUERY_ENERGY){
-            replyData += String(_output->runScript([](int i)->double {
-              return logRecord->channel[i].accum1 / 1000.0;}), 2);
-          }
           else {
-            replyData += String(_output->runScript([](int i)->double {
-              return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;}), 1);
+            trace(T_GFD,4);
+            if(reqPtr->output == nullptr){
+              replyData += "null";
+            }
+            else if(reqPtr->queryType == QUERY_ENERGY){
+              replyData += String(reqPtr->output->runScript([](int i)->double {
+                return logRecord->channel[i].accum1 / 1000.0;}), 2);
+            }
+            else {
+              replyData += String(reqPtr->output->runScript([](int i)->double {
+                return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;}), 1);
+            }
           }
+          replyData += ',';
         } 
            
-        replyData += ']';
+        replyData.setCharAt(replyData.length()-1,']');
         swapRecord = lastRecord;
         lastRecord = logRecord;
         logRecord = swapRecord;
+        UnixTime += intervalSeconds;
+
+            // When buffer is full, send a chunk.
         
         trace(T_GFD,5);
-        if(replyData.length() > 2048){
+        if((bufrSize - bufrPos - 5) < replyData.length()){
           trace(T_GFD,6);
-          yield();
-          timePER = micros();
-          sendChunk(replyData);
-          timeit(timePER,timeCOM);
-          yield();
-          replyData = "";
+          sendChunk(bufr, bufrPos);
+          bufrPos = 5;
         }
-        replyData += ',';
-        UnixTime += intervalSeconds;
-        intervalNumber++;
-        if(millis() >= exitTime){
-          timePER = micros();
-          return 1;
+
+            // Copy this element into the buffer
+        
+        for(int i = 0; i < replyData.length(); i++) {
+          bufr[bufrPos++] = replyData[i];  
         }
+        replyData = ',';
       }
       trace(T_GFD,7);
-      yield();
-      replyData.setCharAt(replyData.length()-1,']');
-      timePER = micros();
-      sendChunk(replyData); 
+
+          // All entries generated, terminate Json and send.
       
-      yield();
-      replyData = "";
-      sendChunk(replyData); 
-      timeit(timePER,timeCOM);
+      replyData.setCharAt(replyData.length()-1,']');
+      for(int i = 0; i < replyData.length(); i++) {
+        bufr[bufrPos++] = replyData[i];  
+      }
+      sendChunk(bufr, bufrPos); 
+
+          // Send terminating zero chunk, clean up and exit.
+      
+      sendChunk(bufr, 5); 
       trace(T_GFD,7);
-      serverAvailable = true;
+      delete reqRoot.next;
+      delete[] bufr;
       state = Setup;
-      timeTOT = micros() - timeSTART;
-//      PRINTL("IO:",timeIO)
-//      PRINTL("COM:",timeCOM)
-//      PRINTL("WAIT:",timeWAIT)
-//      PRINTL("Elapsed:",timeTOT);
+      serverAvailable = true;
       return 0;                                       // Done for now, return without scheduling.
     }
   }
 }
 
-void timeit(uint32_t &timePER,uint32_t &timeACCT){
-  timeACCT += micros() - timePER;
-  timePER = micros();
-}
-
-void sendChunk(String replyData){
-  char * chunkHeader = "000\r\n";
+void sendChunk(char* bufr, const uint32_t bufrPos){
+  trace(T_GFD,9);
   const char* hexDigit = "0123456789ABCDEF";
-  int _len = replyData.length();
-  chunkHeader[0] = hexDigit[_len/256];
-  chunkHeader[1] = hexDigit[(_len/16) % 16];
-  chunkHeader[2] = hexDigit[_len % 16];
-  server.sendContent(String(chunkHeader));
-  replyData += "\r\n";
-  server.sendContent(replyData);
-}     
+  int _len = bufrPos - 5;
+  bufr[0] = hexDigit[_len/256];
+  bufr[1] = hexDigit[(_len/16) % 16];
+  bufr[2] = hexDigit[_len % 16]; 
+  bufr[bufrPos] = '\r';
+  bufr[bufrPos+1] = '\n';
+  bufr[bufrPos+2] = 0;
+  server.sendContent(bufr);
+} 
+   
