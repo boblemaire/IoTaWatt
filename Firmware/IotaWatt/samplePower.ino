@@ -96,7 +96,11 @@ void samplePower(int channel, int overSample){
   int16_t offsetI = Ichannel->_offset + sumI / samples;
   if(offsetI < minOffset) offsetI = minOffset;
   if(offsetI > maxOffset) offsetI = maxOffset;
-// 
+//  if(Ichannel->_offset != offsetI){
+//    PRINT("chan: ",Ichannel->_channel)
+//    PRINT(", from: ",Ichannel->_offset)
+//    PRINTL(", to: ",offsetI)
+//  }
   Ichannel->_offset = offsetI;
   
         // Voltage is relative to input and is attenuated more for 1.2V settings
@@ -191,7 +195,7 @@ void samplePower(int channel, int overSample){
     
   int16_t crossLimit = cycles * 2 + 1;        // number of crossings in total
   int16_t crossCount = 0;                     // number of crossings encountered
-  int16_t crossGuard = 3;                     // Guard against faux crossings (must be >= 2 initially)  
+  int16_t crossGuard = 3;                     // Guard against faux crossings (must be >= 2 initially)
 
   uint32_t startMs = millis();                // Start of current half cycle
   uint32_t timeoutMs = 12;                    // Maximum time allowed per half cycle
@@ -212,9 +216,11 @@ void samplePower(int channel, int overSample){
  
   lastV = readADC(Vchan);
   do {
-    if((millis() - startMs) > 2){
-      PRINT("No voltage signal: ", readADC(Vchan))
-      PRINTL(", Ichan: ",readADC(Ichan))
+    if((uint32_t)millis() - startMs > 2){
+      PRINTL("No voltage signal.","")
+      for(int i=0; i<1000; i++){
+        Serial.println(readADC(Vchan));
+      }
       return false;
     }    
   } while(abs(readADC(Vchan) - lastV) < 10);
@@ -343,6 +349,17 @@ void samplePower(int channel, int overSample){
   *VsamplePtr = rawV;                                       
   *IsamplePtr = (rawI + lastI) >> 1;
    
+          // Check that both halves of the cycle had the same sample count (+/-3)
+          // Insures no interrupts paused sampling.
+
+  midCrossSamples = midCrossSamples * 2 - lastCrossSamples;
+  if(midCrossSamples < -8 || midCrossSamples > 8){
+    PRINT("sample imbalance ", midCrossSamples)
+    PRINT(", samples ", samples)
+    PRINTL(", chan ", Ichan)
+    return false;
+  }
+
   trace(T_SAMP,8);
   
           // Update damped frequency.

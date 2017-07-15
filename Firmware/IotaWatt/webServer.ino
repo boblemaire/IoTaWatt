@@ -216,7 +216,6 @@ void handleNotFound(){
     return;
   }
   if(serverURI.startsWith("/feed/data")){
-    Serial.println(serverURI);
     serverAvailable = false;
     NewService(handleGetFeedData);
     return;
