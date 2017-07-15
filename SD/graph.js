@@ -2,7 +2,9 @@ var savedgraphs = [];
 var feeds = [];
 var feedlist = [];
 var plotdata = [];
-var loadsteps = 1;
+
+var reloading = false;
+var reload = false;
 
 var embed = false;
 var skipmissing = 0;
@@ -390,12 +392,22 @@ function pushfeedlist(feedid, yaxis) {
     feedlist.push({id:feedid, name:feeds[index].name, tag:feeds[index].tag, yaxis:yaxis, fill:0, scale: 1.0, delta:false, getaverage:false, dp:1, plottype:'lines'});
 }
 
-function graph_reload()
-{
+function graph_reload() {
+  
     if(feedlist.length == 0) {
       graph_draw();
       return;
     }
+    
+    if(reloading) {
+      reload = true;
+      return;
+    } else {
+      reload = false;
+    }
+    reloading = true;
+    
+    
     
     var intervalms = view.interval * 1000;
     view.start = Math.round(view.start / intervalms) * intervalms;
@@ -419,6 +431,7 @@ function graph_reload()
     var backup_param = "";
     if (getbackup) backup_param = "&backup=true";
     var request = path+"feed/"+method+".json?id="+id+"&start="+view.start+"&end="+view.end + mode + backup_param;
+    
     
     $.ajax({                                      
         url: request,
@@ -479,6 +492,8 @@ function graph_reload()
                 $("#error").hide();
                 graph_draw();
             }
+            reloading = false;
+            if(reload) graph_reload();
         }
     });
     
