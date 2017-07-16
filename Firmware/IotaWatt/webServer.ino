@@ -246,6 +246,8 @@ void handleStatus(){
     stats.set("chanrate",cycleSampleRate,1);
     stats.set("runseconds", UNIXtime()-programStartTime);
     stats.set("stack",ESP.getFreeHeap());
+    stats.set("version",IOTAWATT_VERSION);
+    stats.set("frequency",frequency);
     root.set("stats",stats);
   }
   
