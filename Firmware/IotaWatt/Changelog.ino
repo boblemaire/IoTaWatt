@@ -21,6 +21,5 @@
  *   06/26/17 2.01.05 Ongoing development
  *   07/09/17 2.02.00 Version 4 hardware support
  *   07/12/17 2.02.01 Fix sample power, enhance graph
- *   07/15/17 2.02.02 Add version and frequency to stats API
  *   
  *****************************************************************************************************/
