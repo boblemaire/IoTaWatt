@@ -232,11 +232,11 @@
     </div>
 </div>
 
-<script language="javascript" type="text/javascript" src="https://emoncms.org/Modules/graph/graph.js"></script>
+<script language="javascript" type="text/javascript" src="graph.js"></script>
 
 <script>
-    var path = "http://" + location.host + "/";
-	var getbackup = false;
+    var path = "http://" + location.host + "/";;
+	  var getbackup = false;
     
     sidebar_resize();
     graph_init_editor();
@@ -252,14 +252,14 @@
     load_feed_selector();
     graph_resize();
     
-    var timeWindow = 3600000*24.0*7;
+    var timeWindow = 3600000*24.0;
     var now = Math.round(+new Date * 0.001)*1000;
     view.start = now - timeWindow;
     view.end = now;
     view.calc_interval();
     
     
-    graph_reloaddraw();
+    graph_reload();
     
 </script>
 

@@ -244,8 +244,10 @@ void handleStatus(){
     JsonObject& stats = jsonBuffer.createObject();
     stats.set("cyclerate", samplesPerCycle,0);
     stats.set("chanrate",cycleSampleRate,1);
-    stats.set("runseconds", UNIXtime()-programStartTime);
+    stats.set("runtime", UNIXtime()-programStartTime);
     stats.set("stack",ESP.getFreeHeap());
+    stats.set("version",IOTAWATT_VERSION);
+    stats.set("frequency",frequency);
     root.set("stats",stats);
   }
   
