@@ -1115,7 +1115,7 @@ function statusDisplay(statusMessage){
   addRow();
   column3.appendChild(document.createTextNode("Firmware version: " + status.stats.version));
   addRow();
-  column3.appendChild(document.createTextNode("Running time: " + formatRunTime(status.stats.runtime)));
+  column3.appendChild(document.createTextNode("Running time: " + formatRunTime(status.stats.runseconds)));
   addRow();
   column3.appendChild(document.createTextNode("free Heap: " + status.stats.stack));
   statusTable = document.getElementById("statusTableR");
