@@ -206,6 +206,8 @@ var tokens = [{oper:"const",value:"0"}];
 var calcDisplay = "0";
 var parenLevel = 0;
 var inputEditChannel;
+var voltageChannels = [];
+var vchanUsed = [];
 
 /***************************************************************************************************
  *                        Configure Inputs
@@ -218,6 +220,13 @@ var inputEditChannel;
   document.getElementById("inputList").style.display="table";
   var inputsTable = document.getElementById("inputTableBody");
   inputsTable.innerHTML = "";
+  voltageChannels = [];
+  for(i in config.inputs){
+    vchanUsed[i] = false;
+    if(config.inputs[i].type == "VT"){
+      voltageChannels.push(i);
+    }
+  }
   for( i in config.inputs){
     var newRow = inputsTable.insertRow(-1);
     newRow.setAttribute("class","chanEditRow");
@@ -235,6 +244,12 @@ var inputEditChannel;
       newColumn.innerHTML += ", <small>model:</small>" + config.inputs[i].model;
       newColumn.innerHTML += ", <small>cal:</small>" + config.inputs[i].cal;
       newColumn.innerHTML += ", <small>phase:</small>" + config.inputs[i].phase;
+      if(config.inputs[i].vchan !== undefined){
+        vchanUsed[config.inputs[i].vchan] = true;
+        if(config.inputs[i].vchan != 0){
+          newColumn.innerHTML += ", <small>Vref:</small>" + config.inputs[i].vchan;
+        }
+      }
     }
   }
   document.getElementById("inputList").style.display="table";
@@ -395,22 +410,38 @@ function refreshInputEdit(){
     }
   }
   
+   if(inputEditObject.type == "CT" && voltageChannels.length > 1){
+    inputVchan = addTableRow(table, "VRef", "inputVchan", "select");
+    inputVchan.setAttribute("oninput","inputEditObject.vchan = Number(this.value); refreshInputEdit();");
+    for(i in voltageChannels){
+      option = document.createElement("option");
+      option.value = voltageChannels[i];
+      option.text = config.inputs[voltageChannels[i]].name;
+      inputVchan.add(option);
+      if(inputEditObject.vchan !== undefined && inputEditObject.vchan == voltageChannels[i]){
+        option.selected = true;
+      } 
+    }
+  }
+  
   if(inputEditObject.type == "CT"){
     inputNeg = addTableRow(table, "", "inputNeg", "input");
     inputNeg.parentNode.appendChild(document.createTextNode("Allow negative power value"));
     inputNeg.setAttribute("type","checkbox");
-    //inputNeg.setAttribute("type","checkbox");
-    //inputNeg.setAttribute("type","checkbox");
+    document.getElementById("inputEditDelete").style.display = (config.inputs[inputEditChannel] == null) ? "none" : "inline";
   }
 
-  if(complete && inputEditObject.type == "VT"){
-    inputCal = addTableRow(table, "", "inputCal", "button");
-    inputCal.innerHTML = "calibrate";
-    inputCal.setAttribute("class","actionCal");
-    inputCal.setAttribute("onclick","calVTvoltage();");
+  if(inputEditObject.type == "VT"){
+    document.getElementById("inputEditDelete").style.display = 
+      (config.inputs[inputEditChannel] == null || vchanUsed[inputEditChannel]) ? "none" : "inline";
+    if(complete){
+      inputCal = addTableRow(table, "", "inputCal", "button");
+      inputCal.innerHTML = "calibrate";
+      inputCal.setAttribute("class","actionCal");
+      inputCal.setAttribute("onclick","calVTvoltage();");
+    }
   }
 
-  document.getElementById("inputEditDelete").style.display = (config.inputs[inputEditChannel] !== null) ? "inline" : "none";
   document.getElementById("inputEditSave").style.display = complete ? "inline" : "none";
 }
 
