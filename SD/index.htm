@@ -223,7 +223,7 @@ var vchanUsed = [];
   voltageChannels = [];
   for(i in config.inputs){
     vchanUsed[i] = false;
-    if(config.inputs[i].type == "VT"){
+    if(config.inputs[i] !== null && config.inputs[i].type == "VT"){
       voltageChannels.push(i);
     }
   }
