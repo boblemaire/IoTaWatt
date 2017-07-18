@@ -474,19 +474,25 @@ function inputEditNewModel(obj){
       }
     }
   }
+  refreshInputEdit();
 }
 
 function inputEditNewType(type){
-   inputEditObject = {channel:inputEditChannel, name:inputEditObject.name, type:type, model:"generic", phase:0,};
+  inputEditObject = {channel:inputEditChannel, name:inputEditObject.name, type:type, model:"generic"};
   if(type == "CT"){
-     if(config.device.burden[inputEditChannel] == 0){
-       inputEditObject.cal = 0;
-     }
-     else {
-       inputEditObject.turns = "0";
-     }
-   }
-   refreshInputEdit()
+    inputEditObject.phase = 0;        
+    if(config.device.burden[inputEditChannel] == 0){
+     inputEditObject.cal = 0;
+    }
+    else {
+     inputEditObject.turns = "0";
+    }
+  }
+  if(type == "VT"){
+    inputEditObject.phase = 2.0;
+    inputEditObject.cal = 10.5;
+  }
+  refreshInputEdit();
 }
 
 function inputEditDelete(){
