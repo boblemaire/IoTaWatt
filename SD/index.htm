@@ -665,8 +665,8 @@ function calVTsave(obj){
     document.getElementById("divCalc").style.display = "table";
     document.getElementById("calcDelete").style.display = "none";
     outputEditIndex = config.outputs.length;
-    refreshCalcDisplay();
     editing = true;
+    refreshCalcDisplay();
   }
   
   function calcSave(){
@@ -739,15 +739,15 @@ function calVTsave(obj){
   }
   
   function keyClearAll(){
-    while(tokens.length > 1){
-      keyClearEntry();
-    }
-    keyClearEntry();
+    tokens.splice(0,tokens.length,{oper:"const",value:"0"});
+    parenLevel = 0;
+    refreshCalcDisplay();
   }
   
   function keyClearEntry(){
     if(tokens.length == 1){
       tokens[0] = {oper:"const",value:"0"};
+      parenLevel = 0;
     }
     else {
       if(tokens[tokens.length-1].oper == "pop"){
@@ -784,7 +784,7 @@ function calVTsave(obj){
         tokens[tokens.length-1].value += digit;
       }
     }
-    else if(tokens[tokens.length-1].oper != "pop"){
+    else if(tokens[tokens.length-1].oper != "pop" && tokens[tokens.length-1].oper != "input" && tokens[tokens.length-1].oper != "abs"){
       tokens.push({oper:"const",value:digit});
     }
     refreshCalcDisplay();
