@@ -134,9 +134,9 @@ boolean getConfig(void)
       
       //************************************** configure eMonCMS **********************************
 
-  if(serverType.equals("emoncms"))
+  if(serverType.equals("Emoncms"))
   {
-    String msg = "server is: eMonCMS";
+    String msg = "server is: Emoncms";
     eMonURL = Config["server"]["url"].asString();
     if(eMonURL.startsWith("http://")) eMonURL = eMonURL.substring(7);
    else if(eMonURL.startsWith("https://")){
@@ -145,7 +145,7 @@ boolean getConfig(void)
     }
     msg += ", url: " + eMonURL;
     apiKey = Config["server"]["apikey"].asString();
-    node = Config["server"]["node"];
+    node = Config["server"]["node"].as<String>();
     msg += ", node: " + String(node);
     eMonCMSInterval = Config["server"]["postInterval"].as<int>();
     msg += ", post interval: " + String(eMonCMSInterval);

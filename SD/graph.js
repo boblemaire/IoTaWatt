@@ -5,6 +5,7 @@ var plotdata = [];
 
 var reloading = false;
 var reload = false;
+var reloadId = [];
 
 var embed = false;
 var skipmissing = 0;
@@ -420,9 +421,9 @@ function graph_reload() {
     
     var errorstr = ""; 
     
-    var id = [];
+    reloadId = [];
     for (var z in feedlist) {
-      id.push(feedlist[z].id);
+      reloadId.push(feedlist[z].id);
     }
     
     var mode = "&interval="+view.interval+"&skipmissing="+skipmissing+"&limitinterval="+view.limitinterval;
@@ -430,7 +431,7 @@ function graph_reload() {
     var method = "data";
     var backup_param = "";
     if (getbackup) backup_param = "&backup=true";
-    var request = path+"feed/"+method+".json?id="+id+"&start="+view.start+"&end="+view.end + mode + backup_param;
+    var request = path+"feed/"+method+".json?id="+reloadId+"&start="+view.start+"&end="+view.end + mode + backup_param;
     
     
     $.ajax({                                      
@@ -449,12 +450,16 @@ function graph_reload() {
             
             if (!valid) errorstr += "<div class='alert alert-danger'><b>Request error</b> "+data_in+"</div>";
             else {
-              for(var z = 0; z<feedlist.length; z++){
-                feedlist[z].data = new Array(response.length);
-                var time = view.start;
-                for (var t = 0; t < response.length; t++){
-                  feedlist[z].data[t] = [time, response[t][z]];
-                  time += intervalms;
+              for(i in reloadId){
+                for(z in feedlist){
+                  if(reloadId[i] == feedlist[z].id){
+                    feedlist[z].data = new Array(response.length);
+                    var time = view.start;
+                    for (var t = 0; t < response.length; t++){
+                      feedlist[z].data[t] = [time, response[t][i]];
+                      time += intervalms;
+                    }
+                  }
                 }
               }
             }
