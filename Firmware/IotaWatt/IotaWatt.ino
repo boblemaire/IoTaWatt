@@ -22,8 +22,7 @@
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
       ***********************************************************************************/
-
-#define IOTAWATT_VERSION "2.02.03"
+#define IOTAWATT_VERSION "2.02.04"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -197,11 +196,12 @@ boolean  RTCrunning = false;
       // *********************** eMonCMS configuration stuff *************************
       // Note: nee dto move out to a class and change for dynamic configuration
       // Start stop is a kludge for now.
+      
 bool eMonStarted = false;                    // set true when Service started
 bool eMonStop = false;                       // set true to stop the Service                                         
 String  eMonURL;                             // These are set from the config file 
 String apiKey;
-int16_t node = 9;
+String node = "IotaWatt";
 boolean eMonSecure = false;
 int16_t eMonBulkSend = 1;
 const char* eMonSHA1 = "A2 FB AA 81 59 E2 B5 12 10 5D 38 22 23 A7 4E 74 B0 11 7D AA";
