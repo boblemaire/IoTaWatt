@@ -187,7 +187,7 @@ void configOutputs(JsonArray& JsonOutputs){
     if(outputObject.containsKey("name") &&
        outputObject.containsKey("units") &&
        outputObject.containsKey("script")) {
-           IotaOutputChannel* output = new IotaOutputChannel(outputObject["name"], outputObject["units"], outputObject["script"]);
+           IotaOutputChannel* output = new IotaOutputChannel(outputObject["name"], outputObject["units"], outputObject["script2"]);
            output->_channel = i+100;
            outputList.insertTail(output, output->_name);
        }

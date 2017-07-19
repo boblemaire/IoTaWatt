@@ -19,7 +19,7 @@ class IotaScript {
 		const byte getInputOp = 32;
 		const byte getConstOp = 64;
 		enum  opCodes	   {
-							opEq	= 0,
+							opEq	  = 0,
 							opAdd 	= 1,
 							opSub 	= 2,
 							opMult 	= 3,
@@ -27,7 +27,10 @@ class IotaScript {
 							opAbs 	= 5,
 							opPush 	= 6,
 							opPop 	= 7};
-		char opChars[8] = {'=','+','-','*','/','|','(',')'};
+		
+    // opcode         01234567
+    String opChars = "=+-*/|()";
+    
 		IStoken *_tokens = NULL;						// The script operators
 		float *_constants = NULL;				// Numeric constants
 		
@@ -82,44 +85,22 @@ bool IotaScript::encodeScript(JsonArray& script){
 		size_t newConstantCount = 0;
 				
 		for(int i=0; i<script.size(); i++){
-			
-			if(script[i]["oper"] == "const"){
-				newTokens[newTokenCount++] = getConstOp + newConstantCount;
-			 	newConstants[newConstantCount++] = script[i]["value"].as<float>();
-				continue;
-			}
-			
-			else if(script[i]["oper"] == "binop"){
-				char opCode = script[i]["value"].as<char *>()[0];
-				for(int i=0; i<sizeof(opChars); i++){
-					if(opCode == opChars[i]){
-						newTokens[newTokenCount++] = i;
-						break;
-					}
-				}
-			}
-			
-			else if(script[i]["oper"] == "push"){
-				newTokens[newTokenCount++] = opPush;
-			}
-			
-			else if(script[i]["oper"] == "pop"){
-				newTokens[newTokenCount++] = opPop;
-			}
-			
-			else if(script[i]["oper"] == "abs"){
-				newTokens[newTokenCount++] = opAbs;
-			}
-			
-			else if(script[i]["oper"] == "input"){
-				newTokens[newTokenCount++] = getInputOp + script[i]["value"].as<unsigned int>();
-			}
+      String entry = script[i];
+      if(entry.startsWith("@")){
+        newTokens[newTokenCount++] = getInputOp + entry.substring(1).toInt();
+      } 
+      else if (entry.startsWith("#")){
+        newTokens[newTokenCount++] = getConstOp + newConstantCount;
+        newConstants[newConstantCount++] = entry.substring(1).toFloat();
+      }
+      else {
+        newTokens[newTokenCount++] = opChars.indexOf(entry);
+      }
 		}
-		
-		newTokens[newTokenCount] = 0;
-		if(_tokens) delete[] _tokens;
-		_tokens = newTokens;
-		
+    newTokens[newTokenCount] = 0;
+    if(_tokens) delete[] _tokens;
+    _tokens = newTokens;
+   
 		if(_constants){
 			delete[] _constants;
 			_constants = NULL;
