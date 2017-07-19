@@ -80,30 +80,29 @@ void samplePower(int channel, int overSample){
   }
   
         // Adjust the offset values assuming symmetric waves but within limits otherwise.
-
-  int16_t minOffset = (ADC_RANGE * 49) / 100;         // Allow +/- 1% variation
-  int16_t maxOffset = (ADC_RANGE * 51) / 100;
-
+ 
+  const uint16_t minOffset = ADC_RANGE / 2 - ADC_RANGE / 200;    // Allow +/- .5% variation
+  const uint16_t maxOffset = ADC_RANGE / 2 + ADC_RANGE / 200;
+  
   if(sumV >= 0) sumV += samples / 2;
   else sumV -= samples / 2;
   int16_t offsetV = Vchannel->_offset + sumV / samples;
   if(offsetV < minOffset) offsetV = minOffset;
   if(offsetV > maxOffset) offsetV = maxOffset;
   Vchannel->_offset = offsetV;
-
+  
   if(sumI >= 0) sumI += samples / 2;
   else sumI -= samples / 2;
   int16_t offsetI = Ichannel->_offset + sumI / samples;
   if(offsetI < minOffset) offsetI = minOffset;
   if(offsetI > maxOffset) offsetI = maxOffset;
-// 
   Ichannel->_offset = offsetI;
-  
-        // Voltage is relative to input and is attenuated more for 1.2V settings
-        // so apply adjustment depending on Aref voltage.
+    
+        // Voltage calibration is the ratio of line voltage to voltage presented at the input.
+        // Input voltage is further attenuated with voltage dividing resistors (Vadj_3).
+        // So ratio of voltage at ADC vs line is calibration * Vadj_3.
     
   double Vratio = Vchannel->_calibration * Vadj_3 * getAref(Vchan) / double(ADC_RANGE);
-  if(getAref(Vchan) < 1.5) Vratio *= (double)Vadj_1 / Vadj_3;
 
         // Iratio is straight Amps/ADC volt.
   
@@ -117,7 +116,7 @@ void samplePower(int channel, int overSample){
   _watts = Vratio * Iratio * (double)(sumP / samples);
 
         // If watts is negative and the channel is not explicitely signed, reverse it (backward CT).
-        // If we do reverse it, mark it as such for reporting in the status API.
+        // If we do reverse it, and it's significant, mark it as such for reporting in the status API.
 
   if( ! Ichannel->_signed){
     Ichannel->_reversed = false;
@@ -126,7 +125,7 @@ void samplePower(int channel, int overSample){
       if(_watts > 0.5){
         Ichannel->_reversed = true;
       }
-    }    
+    }
   }
 
       // Update with the new power and voltage values.
@@ -212,14 +211,13 @@ void samplePower(int channel, int overSample){
 
           // Make sure there is a voltage signal
  
-  lastV = readADC(Vchan);
+  lastV = readADC(Vchan) - offsetV;
   do {
     if((millis() - startMs) > 2){
-      PRINT("No voltage signal: ", readADC(Vchan))
-      PRINTL(", Ichan: ",readADC(Ichan))
       return false;
-    }    
-  } while(abs(readADC(Vchan) - lastV) < 10);
+    }
+    rawV = readADC(Vchan) - offsetV;   
+  } while(abs(rawV - lastV) < 20);
   
   *VsamplePtr = readADC(Vchan) - offsetV;             // Prime the pump
   samples = 0;                                        // Start with nothing
@@ -402,7 +400,14 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
   int16_t crossGuard = 0;
   samples = 0;
 
-  rawV = readADC(Vchan) - offsetV;
+  lastV = readADC(Vchan) - offsetV;
+  do {
+    if((millis() - startMs) > 2){
+      return 0.0;
+    } 
+    rawV = readADC(Vchan) - offsetV;   
+  } while(abs(rawV - lastV) < 20);
+  
   while(crossCount < crossLimit){
     lastV = rawV;
     rawV = readADC(Vchan) - offsetV;
@@ -428,7 +433,7 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
       return 0;
     } 
   }
-  float Hz = 1000000.0  / float((uint32_t)(micros() - firstCrossUs));
+  float Hz = 1000000.0  / float(micros() - firstCrossUs);
   _input->setHz(Hz);
   frequency = (0.8 * frequency) + (0.2 * Hz);
   samplesPerCycle = samplesPerCycle * .9 + samples * .1;
