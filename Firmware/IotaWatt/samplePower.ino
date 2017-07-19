@@ -121,9 +121,11 @@ void samplePower(int channel, int overSample){
 
   if( ! Ichannel->_signed){
     Ichannel->_reversed = false;
-    if(_watts < -0.5){
+    if(_watts < 0){
       _watts = -_watts;
-      Ichannel->_reversed = true;
+      if(_watts > 0.5){
+        Ichannel->_reversed = true;
+      }
     }    
   }
 
