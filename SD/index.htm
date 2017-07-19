@@ -474,25 +474,19 @@ function inputEditNewModel(obj){
       }
     }
   }
-  refreshInputEdit();
 }
 
 function inputEditNewType(type){
-  inputEditObject = {channel:inputEditChannel, name:inputEditObject.name, type:type, model:"generic"};
+   inputEditObject = {channel:inputEditChannel, name:inputEditObject.name, type:type, model:"generic", phase:0,};
   if(type == "CT"){
-    inputEditObject.phase = 0;        
-    if(config.device.burden[inputEditChannel] == 0){
-     inputEditObject.cal = 0;
-    }
-    else {
-     inputEditObject.turns = "0";
-    }
-  }
-  if(type == "VT"){
-    inputEditObject.phase = 2.0;
-    inputEditObject.cal = 10.5;
-  }
-  refreshInputEdit();
+     if(config.device.burden[inputEditChannel] == 0){
+       inputEditObject.cal = 0;
+     }
+     else {
+       inputEditObject.turns = "0";
+     }
+   }
+   refreshInputEdit()
 }
 
 function inputEditDelete(){
@@ -665,8 +659,8 @@ function calVTsave(obj){
     document.getElementById("divCalc").style.display = "table";
     document.getElementById("calcDelete").style.display = "none";
     outputEditIndex = config.outputs.length;
-    editing = true;
     refreshCalcDisplay();
+    editing = true;
   }
   
   function calcSave(){
@@ -739,15 +733,15 @@ function calVTsave(obj){
   }
   
   function keyClearAll(){
-    tokens.splice(0,tokens.length,{oper:"const",value:"0"});
-    parenLevel = 0;
-    refreshCalcDisplay();
+    while(tokens.length > 1){
+      keyClearEntry();
+    }
+    keyClearEntry();
   }
   
   function keyClearEntry(){
     if(tokens.length == 1){
       tokens[0] = {oper:"const",value:"0"};
-      parenLevel = 0;
     }
     else {
       if(tokens[tokens.length-1].oper == "pop"){
@@ -784,7 +778,7 @@ function calVTsave(obj){
         tokens[tokens.length-1].value += digit;
       }
     }
-    else if(tokens[tokens.length-1].oper != "pop" && tokens[tokens.length-1].oper != "input" && tokens[tokens.length-1].oper != "abs"){
+    else if(tokens[tokens.length-1].oper != "pop"){
       tokens.push({oper:"const",value:digit});
     }
     refreshCalcDisplay();
@@ -1015,13 +1009,13 @@ function buildWebServer(){
   optionNone.text = "none";
   serverSelect.add(optionNone);
   var optioneMonCMS = document.createElement("option");
-  optioneMonCMS.text = "eMonCMS";
+  optioneMonCMS.text = "Emoncms";
   serverSelect.add(optioneMonCMS);
   
   if(config.server === undefined){
     serverSelect.selectedIndex = 0;
   }
-  else if (config.server.type == "emoncms"){
+  else if (config.server.type == "Emoncms"){
     serverSelect.selectedIndex = 1;
     buildEmonCMS();
   }
@@ -1032,9 +1026,9 @@ function newServer(obj){
   if(obj.value == "none"){
     config.server = {type:"none"};
   }
-  else if(obj.value == "eMonCMS"){
-    config.server =  {type:"emoncms",
-                         node:1,
+  else if(obj.value == "Emoncms"){
+    config.server =  {type:"Emoncms",
+                         node:config.device.name,
                          postInterval:10,
                          bulksend:1,
                          url:"http://emoncms.org",
@@ -1059,11 +1053,10 @@ function serverCancel(){
 function buildEmonCMS(){
   var serverTable = document.getElementById("serverTable");
   
-  var nodeInput = addTableRow(serverTable, "Node:", "serverNode", "input", 1);
-  nodeInput.value = Number(config.server.node);
-  nodeInput.setAttribute("onchange","config.server.node = Number(this.value); checkEmonCMS();");
-  nodeInput.setAttribute("style","width: 40px;");
-  nodeInput.setAttribute("type","number");
+  var nodeInput = addTableRow(serverTable, "Node:", "serverNode", "input", 8);
+  nodeInput.value = config.server.node;
+  nodeInput.setAttribute("onchange","config.server.node = this.value; checkEmonCMS();");
+  nodeInput.setAttribute("style","width: 80px;");
   nodeInput.setAttribute("min","0");
   nodeInput.setAttribute("max","99");
   nodeInput.setAttribute("step","1");

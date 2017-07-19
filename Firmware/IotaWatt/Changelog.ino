@@ -22,5 +22,6 @@
  *   07/09/17 2.02.00 Version 4 hardware support
  *   07/12/17 2.02.01 Fix sample power, enhance graph
  *   07/15/17 2.02.02 Enhance status display
+ *   07/19/17 2.02.04 Changes to Emoncms support 
  *   
  *****************************************************************************************************/
