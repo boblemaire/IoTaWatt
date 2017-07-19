@@ -161,7 +161,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
      
       trace(T_EMON,2);
 
-      req += '[' + String(UnixNextPost - currentReqUnixtime) + ',' + String(node) + ',';
+      req += '[' + String(UnixNextPost - currentReqUnixtime) + ",\"" + String(node) + "\",";
       double value1;
       
       _logHours = logRecord->logHours;   
@@ -198,15 +198,15 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
 
       req += ']';
       uint32_t sendTime = millis();
-      if(!eMonSend(req)){
-        state = resend;
-        return UNIXtime() + 30;
-      }
       Serial.print(formatHMS(NTPtime() + (localTimeDiff * 3600)));
       Serial.print(" ");
       Serial.print(millis()-sendTime);
       Serial.print(" ");
       Serial.println(req);
+      if(!eMonSend(req)){
+        state = resend;
+        return UNIXtime() + 30;
+      }
       buf->data = UnixLastPost;
       eMonPostLog.write((byte*)buf,4);
       eMonPostLog.flush();
