@@ -24,5 +24,6 @@
  *   07/15/17 2.02.02 Enhance status display
  *   07/17/17 2.02.03 Fix problems with sample power & multiple V channels
  *   07/19/17 2.02.04 Changes to Emoncms support 
+ *   07/19/17 2.02.05 Bump version
  *   
  *****************************************************************************************************/
