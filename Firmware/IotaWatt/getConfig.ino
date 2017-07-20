@@ -129,17 +129,16 @@ boolean getConfig(void)
   
         // Get server type
                                                   
-  String serverType = Config["server"]["type"].asString();
-
+  String serverType = Config["server"]["type"].as<String>();
+  serverType.toLowerCase();
       
       //************************************** configure eMonCMS **********************************
 
-  if(serverType.equals("Emoncms"))
-  {
+  if(serverType.equals("emoncms")) {
     String msg = "server is: Emoncms";
     eMonURL = Config["server"]["url"].asString();
     if(eMonURL.startsWith("http://")) eMonURL = eMonURL.substring(7);
-   else if(eMonURL.startsWith("https://")){
+    else if(eMonURL.startsWith("https://")){
       eMonURL = eMonURL.substring(8);
       eMonSecure = true;
     }
