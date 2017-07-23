@@ -23,7 +23,7 @@
       SOFTWARE.
       ***********************************************************************************/
 
-#define IOTAWATT_VERSION "2.02.06"
+#define IOTAWATT_VERSION "2.02.07"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -99,6 +99,7 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 
      // RTC trace trace module values by module. (See trace routines in Loop tab)
 
+#define T_SETUP 60          // Setup
 #define T_LOOP 10           // Loop
 #define T_LOG 20            // dataLog
 #define T_EMON 30           // eMonService
