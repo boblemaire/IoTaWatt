@@ -26,5 +26,6 @@
  *   07/19/17 2.02.04 Changes to Emoncms support 
  *   07/19/17 2.02.05 Bump version
  *   07/19/17 2.02.06 Accept emoncms or Emoncms (compatibility)
+ *   07/23/17 2.02.07 Overhaul RTC initialization and power fail logging
  *   
  *****************************************************************************************************/

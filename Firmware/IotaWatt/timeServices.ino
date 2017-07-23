@@ -126,12 +126,12 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock){
           msgLog("timeSync: adjusting RTC by ", String(timeDiff));
           rtc.adjust(UNIXtime());
 
-            // set 12.5pF crystal load capacitance.
+            // Reset battery to "direct" mode (adjust sets "standard" mode
           
-          Wire.beginTransmission(PCF8523_ADDRESS);
-          Wire.write((byte)0);
-          Wire.write((byte)0x80);
-          Wire.endTransmission();
+//          Wire.beginTransmission(PCF8523_ADDRESS);            // Set direct battery switchover
+//          Wire.write((byte)2);
+//          Wire.write((byte)0x20);
+//          Wire.endTransmission();
         }
       }
       retryCount = 0;

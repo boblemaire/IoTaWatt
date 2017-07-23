@@ -21,25 +21,6 @@ void setup()
   pinMode(redLed,OUTPUT);
   digitalWrite(redLed,LOW);
 
-  //*************************************** Set the clock if RTC running *****************************
-
-  Wire.pins(pin_I2C_SDA, pin_I2C_SCL);
-    rtc.begin();
-
-    if(rtc.initialized()){
-      timeRefNTP = rtc.now().unixtime() + SEVENTY_YEAR_SECONDS;
-      timeRefMs = millis();
-      RTCrunning = true;
-      msgLog("Real Time Clock is running.");
-      msgLog("Unix time:", UNIXtime());
-    }
-    else {
-      msgLog("Real Time Clock not initialized.");
-    }
-    programStartTime = UNIXtime();
-
-  
-  
   //*************************************** Initialize SPI *******************************************
   
   SPI.begin();
@@ -59,6 +40,40 @@ void setup()
   msgLog("SD initialized.");
   hasSD = true;
 
+  //*************************************** Check RTC   *****************************
+
+  Wire.pins(pin_I2C_SDA, pin_I2C_SCL);
+  rtc.begin();
+    
+  Wire.beginTransmission(PCF8523_ADDRESS);            // Read Control_3
+  Wire.write((byte)2);
+  Wire.endTransmission();
+  Wire.requestFrom(PCF8523_ADDRESS, 1);
+  uint8_t Control_3 = Wire.read();
+  
+  if(rtc.initialized()){
+    timeRefNTP = rtc.now().unixtime() + SEVENTY_YEAR_SECONDS;
+    timeRefMs = millis();
+    RTCrunning = true;
+    msgLog("Real Time Clock is running. Unix time: ", UNIXtime());
+    if((Control_3 & 0x08) != 0){
+      msgLog("Power failure detected.");
+      Wire.beginTransmission(PCF8523_ADDRESS);            
+      Wire.write((byte)PCF8523_CONTROL_3);
+      Wire.write((byte)0);
+      Wire.endTransmission();
+    }
+  }
+  else {
+    msgLog("Real Time Clock not initialized.");
+  }
+  programStartTime = UNIXtime();
+  
+  Wire.beginTransmission(PCF8523_ADDRESS);            // Set crystal load capacitance
+  Wire.write((byte)0);
+  Wire.write((byte)0x80);
+  Wire.endTransmission();
+
   //**************************************** Display software version *********************************
 
   msgLog("Version: ", IOTAWATT_VERSION);
@@ -75,7 +90,7 @@ void setup()
     msgLog("Configuration failed");
     dropDead();
   }
-  String msg = "device name: " + deviceName + ", version: " + String(deviceVersion);
+  String msg = "device name: " + deviceName + ", version: " + String(deviceVersion); 
   msgLog(msg);
   msgLog("Local time zone: ",String(localTimeDiff));
 //*************************************** Start the WiFi  connection *****************************
@@ -88,7 +103,11 @@ void setup()
     wifiManager.setTimeout(120);
     String ssid = "iota" + String(ESP.getChipId());
     String pwd = "iotawatt";
+    msgLog("Connecting with WiFiManager.");
     wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
+  }
+  if(WiFi.status() != WL_CONNECTED){
+    msgLog("No WiFi connection.");
   }
   
  //*************************************** Start the local DNS service ****************************
