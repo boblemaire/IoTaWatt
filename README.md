@@ -14,7 +14,7 @@ The software samples input channels at a rate of 35-40 channels per second, and 
 
 In addition, the data can be uploaded to the Emoncms.org server. In the event of WiFi or internet service disruptions, the IotaWatt will continue to log locally and bulk update Emoncms.org when service is restored.
 
-Any input channel may be used to monitor either voltage or current (watts), however the 14 power channel version requires removing the burden resistors and some minimal external circuitry (2 resistors) to sense voltage on a power channel.  The software requires no changes, and additional voltage references make it possible to monitor three phase power.
+The basic configuration calls for one voltage reference channel and fourteen current sense channels for monitoring up to fourteen single phase circuits.  Current sense channels may be used, with slight modification, as additional voltage reference channels to allow monitoring power polyphase systems, and the software provides for single or polyphase monitoring.
 
 The configuration and monitoring app runs on any browser based device that is connected to the local WiFi network. There is a demo version at [iotawatt.com](http://iotawatt.com)
 
