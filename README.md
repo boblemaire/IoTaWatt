@@ -14,7 +14,7 @@ The software samples input channels at a rate of 35-40 channels per second, and 
 
 In addition, the data can be uploaded to the Emoncms.org server. In the event of WiFi or internet service disruptions, the IotaWatt will continue to log locally and bulk update Emoncms.org when service is restored.
 
-The basic configuration calls for one voltage reference channel and fourteen current sense channels for monitoring up to fourteen single phase circuits.  Current sense channels may be used, with slight modification, as additional voltage reference channels to allow monitoring of polyphase power systems.
+The basic configuration calls for one voltage reference channel and fourteen current sense channels for monitoring up to fourteen single phase circuits.  Current sense channels may be used, with slight modification, as additional voltage/phase reference channels to allow monitoring of polyphase power systems.
 
 The configuration and monitoring app runs on any browser based device that is connected to the local WiFi network. There is a demo version at [iotawatt.com](http://iotawatt.com)
 
