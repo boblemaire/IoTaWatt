@@ -350,6 +350,12 @@ void handleCommand(){
     server.send(200, "text/plain", response);
     return; 
   }
+  if(server.hasArg("disconnect")) {
+    server.send(200, "text/plain", "ok");
+    msgLog("Disconnect command received.");
+    WiFi.disconnect(false);
+    return;
+  }
   server.send(400, "text/json", "Unrecognized request");
 }
 
