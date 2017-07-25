@@ -9,6 +9,8 @@
  *  Go back, Jack, and do it again.
  ******************************************************************************/
 
+  setLedState();
+
   // ------- If AC zero crossing approaching, go sample a channel.
 
   if((uint32_t)(millis() - lastCrossMs) >= (490 / int(frequency))){

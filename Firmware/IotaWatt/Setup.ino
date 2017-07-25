@@ -195,8 +195,7 @@ void setLedCycle(char* pattern){
 
 void endLedCycle(){
   ticker.detach();
-  digitalWrite(greenLed, HIGH);
-  digitalWrite(redLed, LOW);
+  setLedState();
 }
 
 void ledBlink(){
@@ -206,6 +205,14 @@ void ledBlink(){
   if(ledColor[ledCount] == 'R')digitalWrite(redLed, HIGH);
   else if(ledColor[ledCount] == 'G')digitalWrite(greenLed, HIGH);
   ledCount++;
+}
+
+void setLedState(){
+  digitalWrite(greenLed, HIGH);
+  digitalWrite(redLed, LOW);
+  if( !RTCrunning || WiFi.status() != WL_CONNECTED){
+    digitalWrite(redLed, HIGH);
+  }
 }
 
       
