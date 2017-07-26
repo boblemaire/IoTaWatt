@@ -22,7 +22,8 @@
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
       ***********************************************************************************/
-#define IOTAWATT_VERSION "2.02.04"
+
+#define IOTAWATT_VERSION "2.02.09"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -49,6 +50,7 @@
 #include <math.h>
 #include <Wire.h>
 #include <RTClib.h>
+#include <Ticker.h>
 
       // Declare instances of various classes above
 
@@ -58,6 +60,7 @@ WiFiManager wifiManager;
 DNSServer dnsServer;    
 IotaLog iotaLog;                            // instance of IotaLog class
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
+Ticker ticker;
 
 const int HttpsPort = 443;
 const double MS_PER_HOUR = 3600000UL;       // useful constant
@@ -98,6 +101,7 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 
      // RTC trace trace module values by module. (See trace routines in Loop tab)
 
+#define T_SETUP 60          // Setup
 #define T_LOOP 10           // Loop
 #define T_LOG 20            // dataLog
 #define T_EMON 30           // eMonService
@@ -192,6 +196,9 @@ uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for soft
 
 boolean  hasRTC = false;
 boolean  RTCrunning = false;
+
+char    ledColor[12];                         // Pattern to display led, each char is 500ms color - R, G, Blank
+uint8_t ledCount;                             // Current index into cycle
 
       // *********************** eMonCMS configuration stuff *************************
       // Note: nee dto move out to a class and change for dynamic configuration

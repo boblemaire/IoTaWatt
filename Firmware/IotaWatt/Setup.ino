@@ -21,25 +21,6 @@ void setup()
   pinMode(redLed,OUTPUT);
   digitalWrite(redLed,LOW);
 
-  //*************************************** Set the clock if RTC running *****************************
-
-  Wire.pins(pin_I2C_SDA, pin_I2C_SCL);
-    rtc.begin();
-
-    if(rtc.initialized()){
-      timeRefNTP = rtc.now().unixtime() + SEVENTY_YEAR_SECONDS;
-      timeRefMs = millis();
-      RTCrunning = true;
-      msgLog("Real Time Clock is running.");
-      msgLog("Unix time:", UNIXtime());
-    }
-    else {
-      msgLog("Real Time Clock not initialized.");
-    }
-    programStartTime = UNIXtime();
-
-  
-  
   //*************************************** Initialize SPI *******************************************
   
   SPI.begin();
@@ -50,14 +31,49 @@ void setup()
 
   if(!SD.begin(pin_CS_SDcard)) {
     msgLog("SD initiatization failed. Retrying.");
-    while(!SD.begin(pin_CS_SDcard, SPI_FULL_SPEED)){
-      ledMsg(redLed, redLed, greenLed);
+    setLedCycle("G.R.R...");
+    while(!SD.begin(pin_CS_SDcard, SPI_FULL_SPEED)){ 
       yield();
     }
+    endLedCycle();
     digitalWrite(greenLed,HIGH); 
   }
   msgLog("SD initialized.");
   hasSD = true;
+
+  //*************************************** Check RTC   *****************************
+
+  Wire.pins(pin_I2C_SDA, pin_I2C_SCL);
+  rtc.begin();
+    
+  Wire.beginTransmission(PCF8523_ADDRESS);            // Read Control_3
+  Wire.write((byte)2);
+  Wire.endTransmission();
+  Wire.requestFrom(PCF8523_ADDRESS, 1);
+  uint8_t Control_3 = Wire.read();
+  
+  if(rtc.initialized()){
+    timeRefNTP = rtc.now().unixtime() + SEVENTY_YEAR_SECONDS;
+    timeRefMs = millis();
+    RTCrunning = true;
+    msgLog("Real Time Clock is running. Unix time: ", UNIXtime());
+    if((Control_3 & 0x08) != 0){
+      msgLog("Power failure detected.");
+      Wire.beginTransmission(PCF8523_ADDRESS);            
+      Wire.write((byte)PCF8523_CONTROL_3);
+      Wire.write((byte)0);
+      Wire.endTransmission();
+    }
+  }
+  else {
+    msgLog("Real Time Clock not initialized.");
+  }
+  programStartTime = UNIXtime();
+  
+  Wire.beginTransmission(PCF8523_ADDRESS);            // Set crystal load capacitance
+  Wire.write((byte)0);
+  Wire.write((byte)0x80);
+  Wire.endTransmission();
 
   //**************************************** Display software version *********************************
 
@@ -75,20 +91,38 @@ void setup()
     msgLog("Configuration failed");
     dropDead();
   }
-  String msg = "device name: " + deviceName + ", version: " + String(deviceVersion);
+  String msg = "device name: " + deviceName + ", version: " + String(deviceVersion); 
   msgLog(msg);
   msgLog("Local time zone: ",String(localTimeDiff));
+  
 //*************************************** Start the WiFi  connection *****************************
-
+  
   WiFi.begin();
   WiFi.setAutoConnect(true);
-  delay(3000);
+  uint32_t autoConnectTimeout = millis() + 3000UL;
+  while(WiFi.status() != WL_CONNECTED){
+    if(millis() > autoConnectTimeout){
+      setLedCycle("R.G.G...");
+      wifiManager.setDebugOutput(false);
+      wifiManager.setConfigPortalTimeout(120);
+      String ssid = "iota" + String(ESP.getChipId());
+      String pwd = "iotawatt";
+      msgLog("Connecting with WiFiManager.");
+      wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
+      endLedCycle();
+      while(WiFi.status() != WL_CONNECTED && RTCrunning == false){
+        msgLog("RTC not running, waiting for WiFi.");
+        setLedCycle("R.R.G...");
+        wifiManager.setConfigPortalTimeout(3600);
+        wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
+        endLedCycle();
+      }
+      break;
+    }
+    yield();
+  }
   if(WiFi.status() != WL_CONNECTED){
-    wifiManager.setDebugOutput(false);
-    wifiManager.setTimeout(120);
-    String ssid = "iota" + String(ESP.getChipId());
-    String pwd = "iotawatt";
-    wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
+    msgLog("No WiFi connection.");
   }
   
  //*************************************** Start the local DNS service ****************************
@@ -141,31 +175,46 @@ String formatHex(uint32_t data){
   return str;
 }
 
-void dropDead(void){dropDead(1);}
-void dropDead(int secs){
+void dropDead(void){dropDead("R.R.R...");}
+void dropDead(char* pattern){
   msgLog("Program halted.");
+  setLedCycle(pattern);
   while(1){
-    ledMsg(redLed, redLed, redLed);
-    yield();   
+    delay(1000);   
   }  
 }
 
-void ledMsg(int first, int second, int third){
+void setLedCycle(char* pattern){
+  ledCount = 0;
+  for(int i=0; i<13; i++){
+    ledColor[i] = pattern[i];
+    if(pattern[i] == 0) break;
+  }
+  ticker.attach(0.5, ledBlink);
+}
+
+void endLedCycle(){
+  ticker.detach();
+  setLedState();
+}
+
+void ledBlink(){
   digitalWrite(greenLed, LOW);
   digitalWrite(redLed, LOW);
-  digitalWrite(first, HIGH);
-  delay(500);
-  digitalWrite(first, LOW);
-  delay(500);
-  digitalWrite(second, HIGH);
-  delay(500);
-  digitalWrite(second, LOW);
-  delay(500);
-  digitalWrite(third, HIGH);
-  delay(500);
-  digitalWrite(third, LOW);
-  delay(2000);  
+  if(ledColor[ledCount] == 0) ledCount = 0;
+  if(ledColor[ledCount] == 'R')digitalWrite(redLed, HIGH);
+  else if(ledColor[ledCount] == 'G')digitalWrite(greenLed, HIGH);
+  ledCount++;
 }
+
+void setLedState(){
+  digitalWrite(greenLed, HIGH);
+  digitalWrite(redLed, LOW);
+  if( !RTCrunning || WiFi.status() != WL_CONNECTED){
+    digitalWrite(redLed, HIGH);
+  }
+}
+
       
 
 

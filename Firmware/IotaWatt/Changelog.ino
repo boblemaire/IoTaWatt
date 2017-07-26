@@ -22,6 +22,12 @@
  *   07/09/17 2.02.00 Version 4 hardware support
  *   07/12/17 2.02.01 Fix sample power, enhance graph
  *   07/15/17 2.02.02 Enhance status display
+ *   07/17/17 2.02.03 Fix problems with sample power & multiple V channels
  *   07/19/17 2.02.04 Changes to Emoncms support 
+ *   07/19/17 2.02.05 Bump version
+ *   07/19/17 2.02.06 Accept emoncms or Emoncms (compatibility)
+ *   07/23/17 2.02.07 Overhaul RTC initialization and power fail logging
+ *   07/23/17 2.02.08 Add LED problem indicators during startup
+ *   07/23/17 2.02.09 Add LED indication of connection and timer status
  *   
  *****************************************************************************************************/
