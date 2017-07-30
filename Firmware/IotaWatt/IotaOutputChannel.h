@@ -88,7 +88,7 @@ bool IotaScript::encodeScript(String script){
       if(script[i] == '#')constCount++;
       if((!isDigit(script[i])) && (script[i] != '.')) tokenCount++;
     }
-    _tokens = new IStoken[tokenCount];
+    _tokens = new IStoken[tokenCount + 1];
     _constants = new float[constCount];
 
     int j = 0;      
@@ -108,6 +108,7 @@ bool IotaScript::encodeScript(String script){
         _tokens[i] = opChars.indexOf(script[j++]);
       }      
 		}
+    _tokens[tokenCount] = 0;
 }
 
 double IotaScript::runScript(double inputCallback(int)){
@@ -153,8 +154,7 @@ double IotaScript::recursiveRunScript(IStoken** tokens, double inputCallback(int
 			if(*token & getConstOp){
 				operand = _constants[*token % 32];
 			}
-		}while(*token++);
-	return result;
+		} while(token++);
 }
 
 double IotaScript::evaluate(double result, IStoken token, double operand){

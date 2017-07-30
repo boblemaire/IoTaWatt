@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<title>IoTaWatt Configuration app</title>
+<link rel="stylesheet" type="text/css" href="/cnfstyle.css">
+
+</head>
+<body onload="setup()">
+  
+<div class="outerContainer color_outer">
+  <h3 id="heading">IoTaWatt Power Monitor</h3>
+  
+  <div class="bigIdeasDiv color_menu" id="bigIdeas">
+    <table id="bigIdeasTable">
+      <tr>
+        <td width="50%"><button ID="BIBdevice", class="mainMenuButton", onclick="menuButton(this,configureDevice)">Configure Device</button></td>
+        <td width="50%"><button ID="BIBstatus", class="mainMenuButton", onclick="menuButton(this,statusBegin)">Input Channels Status</button></td>
+      </tr><tr>
+        <td><button ID="BIBinputs", class="mainMenuButton", onclick="menuButton(this,buildInputsList)">Configure Inputs</button></td>
+        <td><button ID="BIBmsgs", class="mainMenuButton", onclick="menuButton(this,showMsgs)">Message Log</button><br></td>
+      </tr><tr>
+        <td><button ID="BIBoutputs", class="mainMenuButton", onclick="menuButton(this,buildOutputsList)">Configure Outputs</button></td>
+        <td><button ID="BIBgraph", class="mainMenuButton", onclick="menuButton(this,loadGraph)">Run Local Graph App</button><br></td>
+      </tr><tr>
+        <td><button ID="BIBserver", class="mainMenuButton", onclick="menuButton(this,buildWebServer)">Setup Web Server</button><br></td>
+        <td><button ID="BIBedit", class="mainMenuButton", onclick="menuButton(this,loadEdit)">Run Edit and File Manager App</button></td>
+      </tr><tr>
+        <td></td>
+        <td></td>
+      </tr>
+    </table>
+  </div>
+ 
+  <!-- ****************************** divInputs **********************************--> 
+  <div class="bodyDiv color_body", id="divInputs">
+    <div class="inputContainer" id="inputList">
+      <h3>Inputs</h4>
+      <table id="inputTable">
+        <tbody id="inputTableBody"></tbody>
+      </table>
+    </div>
+    
+    <div class="inputContainer color_inputcontainer" id="inputEdit" display="none">
+      <h3 id="inputChannel"></h3>
+      <table id="inputEditTable"></table>
+      <p>
+        <button class="actionDelete" id="inputEditDelete" onclick="inputEditDelete()">delete</button>
+        <button class="actionCancel" id="inputEditCancel" onclick="inputEditCancel()">cancel</button>
+        <button class="actionSave" id="inputEditSave" onclick="inputEditSave()">save</button>
+      </p>
+    </div>
+    
+    <div class="inputContainer color_inputcontainer" id="inputCalVT" display="none">
+      <h3 id="inputCalChannel"></h3>
+      <h1 id="inputCalVolts"></h1>
+      <p>
+        <span>calibration factor: </span>
+        <input id="inputCalCal" type="number" onchange="inputCalCal(this)" min="5" max="300" step="0.01"> </input></p>
+      <p>
+        <button class="actionCancel" onclick="calVTexit(this)">cancel</button>
+        <button class="actionSave" onclick="calVTsave(this)">save</button>
+      </p>
+      <p>Using a voltmeter to display the AC line voltage, adjust the calibration factor until the displayed
+      voltage reasonably matches the voltmeter reading.  Click save to update the channel
+      with the new calibration factor.</p>
+    </div>
+  </div>
+  
+  <!-- ****************************** divOutputs **********************************--> 
+  
+  <div class="bodyDiv color_body", id="divOutputs">
+    <h3>Outputs</h3>
+    <table id="outputTable"></table>
+  </div>
+  
+  <!-- ****************************** divDevice **********************************--> 
+  
+  <div class="bodyDiv color_body", id="divDevice">
+    <h3>Configure IoTaWatt Device</h3>
+    <table id="deviceTable"></table>
+    <p><button class="actionBurden" id="actionBurden" onclick="configBurden()">Configure Burden Resistors</button></p>
+    <p>
+      <button class="actionCancel" id="deviceCancel" onclick="deviceCancel()">cancel</button>
+      <button class="actionSave" id="deviceSave" onclick="deviceSave()">save</button>
+    </p>
+  </div>
+  
+  <!-- ****************************** divBurden **********************************--> 
+  
+  <div class="bodyDiv color_body", id="divBurden">
+    <h3>Specify on-board burden resistors</h3>
+    
+    <table id="burdenTable"></table>
+    <p>
+      <button class="actionCancel" id="burdenCancel" onclick="burdenCancel()">cancel</button>
+      <button class="actionSave" id="burdenSave" onclick="burdenSave()">save</button>
+    </p>
+  </div>
+ 
+ <!-- ****************************** divWebServer*********************************--> 
+  
+  <div class="bodyDiv color_body", id="divWebServer">
+    <h3>Setup Web Server</h3>
+    <form><table id="serverTable"></table></form>
+    <p>
+      <button class="actionCancel" id="serverCancel" onclick="serverCancel()">cancel</button>
+      <button class="actionSave" id="serverSave" onclick="serverSave()">save</button>
+    </p>
+  </div>
+  
+  <!-- ****************************** divStatus **********************************--> 
+  
+  <div class="bodyDiv color_body", id="divStatus">
+    <table width="100%">
+      <tr><th width="50%">Inputs</th><th width="50%">Outputs</th></tr>
+      <tr valign="top">
+        <td><table id="inputStatusTable"></table></td>
+        <td><table id="outputStatusTable"></table></td>
+      </tr>
+    </table>
+    <hr>
+    <table width="100%">
+      <tr><th width="50%"></th><th width="50%"></th></tr>
+      <tr valign="top">
+        <td><table id="statusTableL"></table></td>
+        <td><table id="statusTableR"></table></td>
+      </tr>
+    </table>
+    <table id="statusTable"></table>
+  </div>
+  
+  <!-- ******************************divCalc **********************************--> 
+  
+  <div class="bodyDiv color_body" id="divCalc">
+    <div class="inputContainer color_inputcontainer" id="calcBody">
+      <h3 style="text-align:center">Configure Output</h3>
+      <h3> Name: <input id="calcName" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="refreshCalcDisplay()"></input></h3>
+      <h3> Units: <input id="calcUnits" oninput="refreshCalcDisplay()"></input></h3>
+      <h3 class="calcDisplay" id="calcDisplay">0</h3>  
+      <table class="calcTable"><tr><th></th><th></th><th></th><th></th></tr>
+        <tr><td><button class="calcButton calcClr" onclick="keyClearAll()" value="C">C</td>
+        <td><button class="calcButton calcBack" onclick="keyClearEntry()" value="CE">CE</td>
+        <td> <button class="calcButton calcBack" onclick="keyClearChar()" value="del">&#x21e6</td>
+        <td class="calcInputDropdown">
+          <button class="calcButton calcInput" value="@">input</button>
+          <span class="calcInputDropdown-content" id="calcInputDropdown-content" display="none">
+            <p onclick="keyInput(this)">Input_1</p>
+            <p onclick="keyInput(this)">Input_2</p>
+          </span>
+        </td></tr>
+        <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="1">1</td>
+        <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="2">2</td>
+        <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="3">3</td>
+        <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="+">+</td></tr>
+        <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="4">4</td>
+        <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="5">5</td>
+        <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="6">6</td>
+        <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="-">-</td></tr>
+        <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="7">7</td>
+        <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="8">8</td>
+        <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="9">9</td>
+        <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="*">x</td></tr>
+        <tr><td><button class="calcButton calcNumeric" onclick="keyDecimal()" value=".">.</td>
+        <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="0">0</td>
+        <td> <button class="calcButton calcNumeric" onclick="keyUniNeg()" value="+/-">+/-</td>
+        <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="/">&#247</td></tr>
+        <tr><td><button class="calcButton calcParen" onclick="keyPush()" value="(">(</td>
+        <td><button class="calcButton calcParen" onclick="keyPop()" value=")">)</td>
+        <td> <button class="calcButton calcAbs" onclick="keyUniPos()" value="abs">abs</td>
+        <td></td></tr>
+      </table>
+      <p>
+        <button class="actionDelete" id="calcDelete" onclick="calcDelete()">delete</button>
+        <button class="actionCancel" id="calcCancel" onclick="buildOutputsList();">cancel</button>
+        <button class="actionSave" id="calcSave" onclick="calcSave()">save</button>
+      </p>
+      <p id="calcJson"></p>
+    </div>
+  </div>
+  
+</div> 
+
+<script>
+// configuration files
+var configFileURL = "config.txt";
+var configNewURL = "config.txt";
+var configTablesURL = "tables.txt";
+var editURL = "edit.htm";
+var graphURL = "graph.htm";
+var msgsFileURL = "/iotawatt/iotamsgs.txt?textpos=-10000";
+var demo = false;
+var demoConfig = null;
+
+var config;                         // configuration as Js Object
+var tables;                         // tables as Js Object
+var editing = false;
+var getStatus = false;
+var calVoltageUpdate = false;
+var avgVoltage = 0;
+var calVTvolts = 0;
+var originalName;
+var timezone = 0;
+var faults = 0;
+var tokens = [{oper:"const",value:"0"}];
+var calcDisplay = "0";
+var parenLevel = 0;
+var inputEditChannel;
+var voltageChannels = [];
+var vchanUsed = [];
+
+/***************************************************************************************************
+ *                        Configure Inputs
+ * ************************************************************************************************/
+ 
+ function buildInputsList(){
+   document.getElementById("divInputs").style.display = "table";
+  document.getElementById("inputEdit").style.display="none";
+  document.getElementById("inputCalVT").style.display="none";
+  document.getElementById("inputList").style.display="table";
+  var inputsTable = document.getElementById("inputTableBody");
+  inputsTable.innerHTML = "";
+  voltageChannels = [];
+  for(i in config.inputs){
+    vchanUsed[i] = false;
+    if(config.inputs[i] !== null && config.inputs[i].type == "VT"){
+      voltageChannels.push(i);
+    }
+  }
+  for( i in config.inputs){
+    var newRow = inputsTable.insertRow(-1);
+    newRow.setAttribute("class","chanEditRow");
+    var newColumn = newRow.insertCell(-1);
+    var inputButton = document.createElement("button");
+    inputButton.setAttribute("class","chanButton");
+    inputButton.setAttribute("onclick","inputEdit(" + i +")");
+    inputButton.innerHTML = i;
+    newColumn.appendChild(inputButton);
+    nameColumn = newRow.insertCell(-1);
+    newColumn = newRow.insertCell(-1);
+    if(config.inputs[i] !== null){
+      nameColumn.innerHTML += "<strong>" + config.inputs[i].name + "</strong>";
+      newColumn.innerHTML = "<small>type:</small>" + config.inputs[i].type;
+      newColumn.innerHTML += ", <small>model:</small>" + config.inputs[i].model;
+      newColumn.innerHTML += ", <small>cal:</small>" + config.inputs[i].cal;
+      newColumn.innerHTML += ", <small>phase:</small>" + config.inputs[i].phase;
+      if(config.inputs[i].vchan !== undefined){
+        vchanUsed[config.inputs[i].vchan] = true;
+        if(config.inputs[i].vchan != 0){
+          newColumn.innerHTML += ", <small>Vref:</small>" + config.inputs[i].vchan;
+        }
+      }
+    }
+  }
+  document.getElementById("inputList").style.display="table";
+}
+
+function inputEdit(channel){
+  document.getElementById("inputEdit").style.display="table";
+  document.getElementById("inputList").style.display="none";
+  document.getElementById("inputCalVT").style.display="none";
+  inputEditObject = config.inputs[channel];
+  inputEditChannel = channel;
+  editing = true;
+  if(inputEditObject === null){
+    inputEditObject = {channel:channel, name:"Input_" + channel};
+    inputEditNewType("CT");
+  }
+  refreshInputEdit();
+}
+
+function inputEditMsg(element, msg){
+  element.parentNode.appendChild(document.createElement("br"));
+  element.parentNode.appendChild(document.createTextNode(msg));
+}
+
+function refreshInputEdit(){
+  var complete = true;
+  var table = document.getElementById("inputEditTable");
+  table.innerHTML = "";
+  document.getElementById("inputChannel").innerHTML = "Configure Input " + inputEditChannel;
+  
+  var newInput = addTableRow(table, "Burden:", "inputBurden", "span");
+  if(config.device.burden[inputEditChannel] == 0) inputBurden.innerHTML = "none configured.";
+  else if(Number.isInteger(config.device.burden[inputEditChannel])) inputBurden.innerHTML = config.device.burden[inputEditChannel].toFixed(0) + " ohms";
+  else inputBurden.innerHTML = config.device.burden[inputEditChannel].toFixed(1) + " ohms";
+  
+  var inputName = addTableRow(table, "Name: ", "inputName", "input", 12);
+  inputName.setAttribute("onblur","inputEditObject.name=this.value.trim(); refreshInputEdit();");
+  inputName.value = inputEditObject.name;
+  inputName.pattern = "[A-Za-z]{1}[a-zA-Z0-9_]*";
+  
+  if(inputName.value == ""){
+    inputEditMsg(inputName, "Please specify a name");
+    complete = false;
+  }
+  if(inputName.validationMessage != ""){
+    inputEditMsg(inputName, "Invalid name");
+    complete = false;
+  }
+  for(i in config.inputs){
+    if(i != inputEditChannel && config.inputs[i] !== null && config.inputs[i].name == inputName.value){
+      inputName.parentNode.appendChild(document.createElement("br"));
+      keyInput.parentNode.appendChild(document.createTextNode(" API key should be 16 hex digits."));
+      inputEditMsg(inputName, "Name already used for channel " + inputEditChannel);
+      complete = false;
+    }
+  }
+  
+  newInput = addTableRow(table, "Type: ", "inputType", "select");
+  newInput.setAttribute("oninput","inputEditNewType(this.value); refreshInputEdit();");
+  var option = document.createElement("option");
+  option.text = inputEditObject.type;
+  option.selected = true;
+  newInput.add(option); 
+  option = document.createElement("option");
+  option.text = (inputEditObject.type == "CT") ? "VT" : "CT";
+  newInput.add(option);
+  
+  inputModel = addTableRow(table, "Model: ", "inputModel", "select");
+  var option = document.createElement("option");
+  option.text = "generic";
+  inputModel.add(option); 
+  if(inputEditObject.type == "VT"){
+    for(i in tables.VT){
+      option = document.createElement("option");
+      option.text = tables.VT[i].model;
+      inputModel.add(option);
+      if(inputEditObject.model == option.text){
+        option.selected = true;
+      } 
+    }
+  }
+  else {
+    for(i in tables.CT){
+      if(tables.CT[i].type == "C" && config.device.burden[inputEditChannel] > 0){
+        option = document.createElement("option");
+        option.text = tables.CT[i].model;
+        inputModel.add(option);
+        if(inputEditObject.model == option.text){
+          option.selected = true;
+          inputEditObject.turns = tables.CT[i].turns;
+          inputEditObject.phase = tables.CT[i].phase;
+          inputEditObject.cal = (inputEditObject.turns / config.device.burden[inputEditChannel]).toPrecision(4);
+        }
+      }
+      else if(tables.CT[i].type == "V" && config.device.burden[inputEditChannel] == 0){
+        option = document.createElement("option");
+        option.text = tables.CT[i].model;
+        inputModel.add(option);
+        if(inputEditObject.model == option.text){
+          option.selected = true;
+          inputEditObject.cal = tables.CT[i].cal;
+          inputEditObject.phase = tables.CT[i].phase;
+        } 
+      }
+    }
+  }
+  inputModel.setAttribute("oninput","inputEditNewModel(this)");
+  
+  if(inputEditObject.model == "generic" && 
+    (inputEditObject.type == "VT" ||
+    (inputEditObject.type == "CT" && config.device.burden[inputEditChannel] == 0))){
+    inputCal = addTableRow(table, "Cal: ", "inputCal", "input", 5);
+    inputCal.setAttribute("onblur","inputEditObject.cal=this.value.trim(); refreshInputEdit();");
+    inputCal.value = inputEditObject.cal;
+    if(Number.isNaN(inputCal.value)){
+      inputEditMsg(inputCal,"Numeric value required");
+      complete = false;
+    }
+    else{
+      inputCal.value = parseFloat(inputCal.value).toPrecision(4);
+    }
+  }
+  
+  if(inputEditObject.model == "generic" && inputEditObject.type == "CT" && config.device.burden[inputEditChannel] > 0){
+    inputTurns = addTableRow(table, "Turns: ", "inputTurns", "input", 5);
+    inputTurns.setAttribute("onblur","inputEditObject.turns = this.value.trim(); refreshInputEdit();");
+    inputTurns.value = inputEditObject.turns;
+    if(Number.isNaN(inputTurns.value)) {
+      inputEditMsg(inputTurns, "Numeric value required");
+      complete = false;
+    }
+    else {
+      inputTurns.value = parseInt(inputTurns.value);
+      var cal = inputTurns.value / config.device.burden[inputEditChannel];
+      if(cal < 5 || cal >= 1000) {
+        inputEditMsg(inputTurns, " Range is " + (config.device.burden[inputEditChannel] * 5).toString() + " to " + (config.device.burden[inputEditChannel] * 900).toString());
+        complete = false;
+      } else {
+        inputEditObject.cal = cal;
+      }
+    }
+  }
+ 
+  if(inputEditObject.model == "generic"){
+    inputPhase = addTableRow(table, "Phase: ", "inputPhase", "input", 4);
+    inputPhase.setAttribute("onblur","inputEditObject.phase = this.value.trim(); refreshInputEdit();");
+    inputPhase.value = inputEditObject.phase;
+    if(Number.isNaN(inputPhase.value)){
+      inputEditMsg(inputPhase, "Numeric value required");
+      complete = false;
+    }
+    else {
+      inputPhase.value = Number(inputPhase.value).toFixed(1);
+      if(inputPhase.value > 5) {
+        inputEditMsg(inputPhase, "Must be less than 5 degrees.");
+        complete = false;
+      }
+    }
+  }
+  
+   if(inputEditObject.type == "CT" && voltageChannels.length > 1){
+    inputVchan = addTableRow(table, "VRef", "inputVchan", "select");
+    inputVchan.setAttribute("oninput","inputEditObject.vchan = Number(this.value); refreshInputEdit();");
+    for(i in voltageChannels){
+      option = document.createElement("option");
+      option.value = voltageChannels[i];
+      option.text = config.inputs[voltageChannels[i]].name;
+      inputVchan.add(option);
+      if(inputEditObject.vchan !== undefined && inputEditObject.vchan == voltageChannels[i]){
+        option.selected = true;
+      } 
+    }
+  }
+  
+  if(inputEditObject.type == "CT"){
+    inputNeg = addTableRow(table, "", "inputNeg", "input");
+    inputNeg.parentNode.appendChild(document.createTextNode("Allow negative power value"));
+    inputNeg.setAttribute("type","checkbox");
+    document.getElementById("inputEditDelete").style.display = (config.inputs[inputEditChannel] == null) ? "none" : "inline";
+  }
+
+  if(inputEditObject.type == "VT"){
+    document.getElementById("inputEditDelete").style.display = 
+      (config.inputs[inputEditChannel] == null || vchanUsed[inputEditChannel]) ? "none" : "inline";
+    if(complete){
+      inputCal = addTableRow(table, "", "inputCal", "button");
+      inputCal.innerHTML = "calibrate";
+      inputCal.setAttribute("class","actionCal");
+      inputCal.setAttribute("onclick","calVTvoltage();");
+    }
+  }
+
+  document.getElementById("inputEditSave").style.display = complete ? "inline" : "none";
+}
+
+function inputEditNewModel(obj){
+  inputEditObject.model = obj.value;
+  if(inputEditObject.model == "generic"){
+    inputEditNewType(inputEditObj.type);
+  }
+  else if(inputEditObject.type == "VT"){
+    for(i in tables.VT){
+      if(tables.VT[i].model == obj.value){
+        inputEditObject.cal = tables.VT[i].cal;
+        inputEditObject.phase = tables.VT[i].phase;
+        break;
+      }
+    }
+  }
+  else {
+    for(i in tables.CT){
+      if(tables.CT[i].model == obj.value){
+        inputEditObject.phase = tables.CT[i].phase;
+        if(config.device.burden[inputEditChannel] == 0){
+          inputEditObject.cal = tables.CT[i].cal;
+        }
+        else {
+          inputEditObject.turns = tables.CT[i].turns;
+          inputEditObject.cal = (tables.CT[i].turns / config.device.burden[inputEditChannel]).toPrecision(4);
+        }
+        break;
+      }
+    }
+  }
+}
+
+function inputEditNewType(type){
+   inputEditObject = {channel:inputEditChannel, name:inputEditObject.name, type:type, model:"generic", phase:0,};
+  if(type == "CT"){
+     if(config.device.burden[inputEditChannel] == 0){
+       inputEditObject.cal = 0;
+     }
+     else {
+       inputEditObject.turns = "0";
+     }
+   }
+   refreshInputEdit()
+}
+
+function inputEditDelete(){
+  inputEditObject = null;
+  inputEditSave();
+}
+
+function inputEditCancel(){
+  document.getElementById("inputEdit").style.display="none";
+  document.getElementById("inputCalVT").style.display="none";
+  getConfig(buildInputsList);
+  editing = false;
+}
+
+function inputEditSave(){
+  config.inputs[inputEditChannel] = inputEditObject;
+  editing = false;
+  document.getElementById("inputEdit").style.display="none";
+  uploadConfig();
+  buildInputsList();
+}
+
+      // This is used by other sections as well
+
+function addTableRow(table, text, id, elementType, size) {
+  var newRow = table.insertRow(-1);
+  var column = newRow.insertCell(-1);
+  column.innerHTML = text;
+  column.setAttribute("align","right");
+  column = newRow.insertCell(-1);
+  var newInput = document.createElement(elementType);
+  column.appendChild(newInput);
+  if(id !== null) newInput.setAttribute("id",id);
+  if(size !== undefined) newInput.setAttribute("size",size);
+  return newInput;
+}
+
+/**********************************************************************************************************************************
+ * 
+ *  Voltage calibration
+ * 
+ * *******************************************************************************************************************************/
+
+function calVTvoltage(obj){
+  document.getElementById("inputEdit").style.display = "none";
+  document.getElementById("inputCalVT").style.display = "table";
+  document.getElementById("inputCalChannel").innerHTML = "Calibrate Voltage Channel " + inputEditChannel;
+  document.getElementById("inputCalVolts").innerHTML = "120.1";
+  document.getElementById("inputCalCal").value = inputEditObject.cal;
+  
+  calRefreshVoltage = true;
+  calVTvolts = 0;
+  calUpdateVoltage();
+}
+
+function calVTexit(){
+  var index = inputEditChannel;
+  document.getElementById("inputCalVT").style.display = "none";
+  document.getElementById("inputEdit").style.display = "table";
+  calRefreshVoltage = false;
+  refreshInputEdit();
+}
+
+function inputCalCal(obj){
+  var step = (obj.value / 8).toFixed(0) / 100;
+  obj.setAttribute("step",step);
+}
+
+function calUpdateVoltage(){
+  var index = inputEditChannel;
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      if(calRefreshVoltage){
+        var response = JSON.parse(xmlHttp.responseText);
+        if(calVTvolts == 0) calVTvolts = response.vrms;
+        else calVTvolts = .8 * calVTvolts + .2 * response.vrms;
+        document.getElementById("inputCalVolts").innerHTML = calVTvolts.valueOf().toFixed(1);
+        calUpdateVoltage();
+      }
+    }
+  }
+  xmlHttp.open("GET","/vcal?channel=" + inputEditChannel + "&cal=" + Number(document.getElementById("inputCalCal").value), true);
+  xmlHttp.send(null);
+}
+
+function calVTsave(obj){
+  inputEditObject.cal = Number(document.getElementById("inputCalCal").value);
+  calRefreshVoltage = false;
+  inputEditSave();
+}
+
+/*******************************************************************************************
+ *                    Configure Outputs
+ * ****************************************************************************************/
+ function buildOutputsList(){
+    document.getElementById("divCalc").style.display = "none";
+    document.getElementById("divOutputs").style.display = "table";
+    
+    getConfig(function(response){
+      var table = document.getElementById("outputTable");
+      table.innerHTML = "";
+      calcBuildDropdown();
+      for(i in config.outputs){
+        var newRow = document.createElement("tr");
+        table.appendChild(newRow);
+        newRow.setAttribute("class","outputsRow")
+        var selColumn = document.createElement("td");
+        newRow.appendChild(selColumn);
+        var nameColumn = document.createElement("td");
+        newRow.appendChild(nameColumn);
+        var unitsColumn = document.createElement("td");
+        newRow.appendChild(unitsColumn);
+        var scriptColumn = document.createElement("td");
+        newRow.appendChild(scriptColumn);
+        nameColumn.innerHTML = "<strong>" + config.outputs[i].name + "</strong>";
+        unitsColumn.innerHTML = config.outputs[i].units;
+        scriptColumn.innerHTML = " = " + scriptDisplay(parseScript(config.outputs[i].script));
+        var editButton = document.createElement("button");
+        editButton.setAttribute("class","outputEditButton");
+        editButton.appendChild(document.createTextNode("edit"));
+        editButton.setAttribute("onclick","editOutput(" + i +")");
+        selColumn.appendChild(editButton);
+      }
+      var newRow = document.createElement("tr");
+      table.appendChild(newRow);
+      newRow.setAttribute("class","outputsRow")
+      var selColumn = document.createElement("td");
+      newRow.appendChild(selColumn);
+      var editButton = document.createElement("button");
+      editButton.setAttribute("class","outputEditButton");
+      editButton.appendChild(document.createTextNode("add"));
+      editButton.setAttribute("onclick","addOutput()");
+      selColumn.appendChild(editButton);
+      editing = false;
+    });
+  }
+  
+  function calcBuildDropdown(){
+    var inputDropdown = document.getElementById("calcInputDropdown-content");
+    inputDropdown.innerHTML = "";
+    for(i in config.inputs){
+      if(config.inputs[i] != null){
+        var newItem = document.createElement("p");
+        inputDropdown.appendChild(newItem);
+        newItem.innerHTML = config.inputs[i].name;
+        newItem.value = Number(i);
+        newItem.setAttribute("onclick", "keyInput(this)");
+      }
+    }
+  }
+  
+  function editOutput(index){
+    document.getElementById("calcName").value = config.outputs[index].name;
+    document.getElementById("calcUnits").value = config.outputs[index].units;
+    tokens = parseScript(config.outputs[index].script);
+    document.getElementById("divOutputs").style.display = "none";
+    document.getElementById("divCalc").style.display = "table";
+    document.getElementById("calcDelete").style.display = "inline";
+    outputEditIndex = index;
+    editing = true;
+    refreshCalcDisplay();
+  }
+  
+  function addOutput(){
+    document.getElementById("calcName").value = "";
+    document.getElementById("calcUnits").value = "watts";
+    tokens = ["#0"];
+    document.getElementById("divOutputs").style.display = "none";
+    document.getElementById("divCalc").style.display = "table";
+    document.getElementById("calcDelete").style.display = "none";
+    outputEditIndex = config.outputs.length;
+    refreshCalcDisplay();
+    editing = true;
+  }
+  
+  function calcSave(){
+    if(outputEditIndex == config.outputs.length){
+      config.outputs.push({});
+    }
+    config.outputs[outputEditIndex].name = document.getElementById("calcName").value.trim();
+    config.outputs[outputEditIndex].units = document.getElementById("calcUnits").value.trim();
+    config.outputs[outputEditIndex].script = tokens.join("");
+    calcUpdateConfig();
+  }
+    
+  function calcUpdateConfig(){
+    document.getElementById("divCalc").style.display = "none";
+    document.getElementById("divOutputs").style.display = "table";
+    uploadConfig(buildOutputsList);
+  }
+  
+  function calcDelete(){
+    config.outputs.splice(outputEditIndex,1);
+    calcUpdateConfig();
+  }
+  
+  function refreshCalcDisplay(){
+    document.getElementById("calcDisplay").innerHTML = scriptDisplay(tokens);
+    if(document.getElementById("calcName").value.trim() == "" ||
+       document.getElementById("calcUnits").value.trim() == "" ||
+       parenLevel > 0 || 
+       RegExp("^#0").test(tokens[tokens.length-1]) ||
+       RegExp("^[-+*\/]").test(tokens[tokens.length-1])){
+      document.getElementById("calcSave").style.display = "none";
+    }
+    else{
+      document.getElementById("calcSave").style.display = "inline";
+    }
+  }
+  
+  function parseScript(script){
+    return script.match(/@\d+|#-?\d+\.?\d*|[-+*\/()|=]/g);
+  }
+  
+  function scriptDisplay(tokens){
+    calcDisplay = "";
+    for(var i=0; i<tokens.length; i++){
+      if(tokens[i].startsWith("#")){
+        calcDisplay += tokens[i].substr(1);
+      }
+      else if(tokens[i].startsWith("@")){
+        var channel = tokens[i].substr(1);
+        var name = "Input_" + channel;
+        if(config.inputs[channel] != null) name = config.inputs[channel].name;
+        if(name == "") name = "Input_" + channel;
+        calcDisplay += name;
+      }
+      else if(tokens[i] == "*") calcDisplay += " x ";
+      else if(tokens[i] == "+") calcDisplay += " + ";
+      else if(tokens[i] == "-") calcDisplay += " - ";
+      else if(tokens[i] == "/") calcDisplay += " &#247 ";
+      else if(tokens[i] == "(") calcDisplay += "(";
+      else if(tokens[i] == ")") calcDisplay += ")";
+      else if(tokens[i] == "|") calcDisplay += " abs ";
+    }
+    return calcDisplay;
+  }
+  
+  function keyClearAll(){
+    while(tokens.length > 1){
+      keyClearEntry();
+    }
+    keyClearEntry();
+  }
+  
+  function keyClearEntry(){
+    if(tokens[tokens.length-1] == ")"){
+      parenLevel++;
+    }
+    else if(tokens[tokens.length-1] == "("){
+      parenLevel--;
+    }
+    if(tokens.length > 1){
+      tokens.pop();
+    }
+    else {
+      tokens[0] = "#0";
+    }
+    refreshCalcDisplay();
+  }
+  
+  function keyClearChar(){
+    if(RegExp("^[-+*\/()|@]").test(tokens[tokens.length-1])){
+      keyClearEntry();
+    }
+    else if(RegExp("#-?[0-9]$").test(tokens[tokens.length-1])){
+       keyClearEntry();
+    }
+    else {
+      tokens[tokens.length-1] = tokens[tokens.length-1].substr(0,tokens[tokens.length-1].length-1);
+    }
+    refreshCalcDisplay();
+  }
+  
+  function keyDigit(digit){
+    if(RegExp("^#0").test(tokens[tokens.length-1])){
+      tokens[tokens.length-1] = "#" + digit;
+    }
+    else if(RegExp("^#").test(tokens[tokens.length-1])){
+      tokens[tokens.length-1] += digit;
+    }
+    else if(RegExp("^[-+*\/(]").test(tokens[tokens.length-1])){
+      tokens.push("#" + digit);
+    }
+    refreshCalcDisplay();
+  }
+  
+  function keyDecimal(){
+    if(RegExp("^#-?[0-9]*$").test(tokens[tokens.length-1])){
+      tokens[tokens.length-1] += ".";
+    }
+    else if(RegExp("^[-+*\/(]").test(tokens[tokens.length-1])){
+      tokens.push("#0.");
+    }
+    refreshCalcDisplay();
+  }
+  
+  function keyUniNeg(){
+    if(RegExp("^#[0-9]+\.?[0-9]*").test(tokens[tokens.length-1])){
+      tokens[tokens.length-1] = tokens[tokens.length-1].charAt(0) + "-" + tokens[tokens.length-1].substr(1);
+    }
+    else if(RegExp("^#\-[0-9]+\.?[0-9]*").test(tokens[tokens.length-1])){
+      tokens[tokens.length-1] = tokens[tokens.length-1].charAt(0) + tokens[tokens.length-1].substr(2);
+    }
+    refreshCalcDisplay();
+  }
+  
+  function keyUniPos(){
+    if(RegExp("[@)]").test(tokens[tokens.length-1])){
+       tokens.push("|");
+     }
+     refreshCalcDisplay();
+  }
+  
+  function keyBinFunc(op){
+    if(RegExp("^[@#)\|]").test(tokens[tokens.length-1])){
+      tokens.push(op);
+    }
+    else if(RegExp("^[-+*\/]").test(tokens[tokens.length-1])){
+      tokens[tokens.length-1] = op;
+    }
+    refreshCalcDisplay();
+  }
+  
+  function keyPush(){
+    if(tokens.length == 1 && tokens[0] == "#0") {
+        tokens[0] = "(";
+        parenLevel++;
+      }
+    else if(RegExp("^[-+*\/(]").test(tokens[tokens.length-1])){
+      tokens.push("(");
+      parenLevel++;
+    }
+    refreshCalcDisplay();
+  }
+  
+  function keyPop(){
+    if(parenLevel > 0 && RegExp("^[@#|)]").test(tokens[tokens.length-1])){
+      tokens.push(")");
+      parenLevel--;
+      refreshCalcDisplay();
+    }
+  }
+  
+  function keyInput(obj){
+    if(tokens.length == 1 && tokens[0] == "#0") {
+      tokens[0] = "@" + obj.value;
+    }
+    else if(RegExp("^[-+*\/(]").test(tokens[tokens.length-1])){
+      tokens.push("@" + obj.value);
+    }
+    refreshCalcDisplay();
+  }
+  
+/********************************************************************************************
+ *                                    Configure Device
+ * ******************************************************************************************/
+
+function configureDevice(){
+  document.getElementById("divDevice").style.display = "table";
+  originalName = config.device.name;
+  timezone = config.timezone;
+  buildDevice();
+}
+
+function buildDevice(){
+  var deviceTable = document.getElementById("deviceTable");
+  deviceTable.innerHTML = "";
+  editing = false;
+  originalName = config.device.name;
+  
+  var deviceName = addTableRow(deviceTable, "Device name:","deviceName", "input", 8);
+  deviceName.value = config.device.name;
+  deviceName.setAttribute("oninput","config.device.name = this.value.trim(); checkDevice();");
+  deviceName.pattern = "[a-zA-Z]{1}[0-9a-zA-Z]{3,7}";
+  
+  var deviceChannels = addTableRow(deviceTable, "Input channels:","deviceChannels", "input", 3);
+  deviceChannels.value = config.device.channels;
+  deviceChannels.setAttribute("onchange","config.device.channels = this.value; checkDevice();");
+  deviceChannels.setAttribute("style","width: 40px;");
+  deviceChannels.setAttribute("type","number");
+  deviceChannels.setAttribute("min","1");
+  deviceChannels.setAttribute("max","21");
+  deviceChannels.setAttribute("step","1");
+  
+  var deviceTimezone = addTableRow(deviceTable, "Time Zone:","deviceTimezone", "input", 3);
+  deviceTimezone.value = config.timezone;
+  deviceTimezone.setAttribute("onchange","config.timezone = this.value; checkDevice();");
+  deviceTimezone.setAttribute("style","width: 40px;");
+  deviceTimezone.setAttribute("type","number");
+  deviceTimezone.setAttribute("min","-12");
+  deviceTimezone.setAttribute("max","12");
+  deviceTimezone.setAttribute("step","1");
+}
+
+function checkDevice(){
+  var complete = true;
+  var nameChange = false;
+  if( ! validateInput("deviceName")) complete = false;
+  else {
+    if(config.device.name != originalName){
+      nameChange = true;
+      var obj = document.getElementById("deviceName");
+      obj.parentNode.appendChild(document.createElement("BR"));
+      obj.parentNode.appendChild(document.createTextNode("Name changed, IoTaWatt will restart on Save."));
+      obj.parentNode.appendChild(document.createElement("BR"));
+      obj.parentNode.appendChild(document.createTextNode("Then restart app at " + config.device.name + ".local"));
+    }
+  }
+  if( ! validateInput("deviceChannels")) complete = false;
+  if( ! validateInput("deviceTimezone")) complete = false;
+  document.getElementById("actionBurden").style.display = (complete && (!nameChange)) ? "inline" : "none";
+  document.getElementById("deviceSave").style.display = complete ? "inline" : "none";
+}
+
+function deviceCancel(){
+  config.device.name = originalName;
+  config.timezone = timezone;
+  editing = false;
+  resetDisplay();
+}
+
+function deviceSave(){
+  uploadConfig(inputEditCancel, (config.device.name != deviceName) ? "restart" : "reload");
+  resetDisplay();
+}
+
+/********************************************************************************************
+ *                                    Specify Burden Resistors
+ * ******************************************************************************************/
+
+function configBurden(){
+  document.getElementById("divDevice").style.display = "none";
+  document.getElementById("divBurden").style.display = "table";
+  buildBurden();
+}
+
+function buildBurden(){
+  var burdenTable = document.getElementById("burdenTable");
+  burdenTable.innerHTML = "";
+  for(var i=0; i<config.device.channels; i++){
+    var newRow = burdenTable.insertRow(-1);
+    var newCol = newRow.insertCell(-1);
+    newCol.innerHTML = "Input: " + i;
+    newCol.setAttribute("align","right");
+    newCol = newRow.insertCell(-1);
+    var newInput = document.createElement("input");
+    newInput.setAttribute("size","3");
+    newInput.setAttribute("tabindex","0");
+    newInput.setAttribute("onblur","newBurden(this," + i + ")");
+    newInput.value = config.device.burden[i];
+    newCol.appendChild(newInput);
+    faults = 0;
+    document.getElementById("burdenSave").style.display = "inline";
+  }
+}
+
+function newBurden(obj, index){
+  var val = Number(obj.value);
+  var msg = obj.nextSibling;
+  if (msg != null){
+    faults--;
+    obj.parentNode.removeChild(obj.nextSibling);
+  } 
+  if(Number.isNaN(val)){
+    obj.parentNode.appendChild(document.createTextNode(" Must be numeric."));
+    faults++;
+  }
+  else if(val.toFixed(1) < 0){
+    obj.parentNode.appendChild(document.createTextNode(" Must be positive."));
+    faults++;
+  }
+  else {
+    config.device.burden[index] = Number(val.toFixed(1));
+    if(Number.isInteger(val)){
+      config.device.burden[index] = Number(val.toFixed(0));
+    }
+    obj.value = config.device.burden[index];
+  }
+  document.getElementById("burdenSave").style.display = faults ? "none" : "inline";
+}
+
+function burdenCancel(){
+  getConfig();
+  document.getElementById("divBurden").style.display = "none";
+  document.getElementById("divDevice").style.display = "table";
+}  
+ 
+function burdenSave(){
+  document.getElementById("divBurden").style.display = "none";
+  uploadConfig(resetDisplay);
+}
+
+/********************************************************************************************
+ *                                     Setup Web Server 
+ * ******************************************************************************************/
+
+function buildWebServer(){
+  document.getElementById("divWebServer").style.display = "table";
+  var serverTable = document.getElementById("serverTable");
+  serverTable.innerHTML = "";
+  var serverSelect = addTableRow(serverTable, "Web Service Type", "serverType", "select");
+  serverSelect.setAttribute("oninput","newServer(this)");
+  var optionNone = document.createElement("option");
+  optionNone.text = "none";
+  serverSelect.add(optionNone);
+  var optioneMonCMS = document.createElement("option");
+  optioneMonCMS.text = "Emoncms";
+  serverSelect.add(optioneMonCMS);
+  
+  if(config.server === undefined){
+    serverSelect.selectedIndex = 0;
+  }
+  else if (config.server.type == "Emoncms"){
+    serverSelect.selectedIndex = 1;
+    buildEmonCMS();
+  }
+}
+
+function newServer(obj){
+  editing = true;
+  if(obj.value == "none"){
+    config.server = {type:"none"};
+  }
+  else if(obj.value == "Emoncms"){
+    config.server =  {type:"Emoncms",
+                         node:config.device.name,
+                         postInterval:10,
+                         bulksend:1,
+                         url:"http://emoncms.org",
+                         apikey:""};
+  }
+  buildWebServer();
+}
+
+function serverSave(){
+  editing = false;
+  uploadConfig();
+  resetDisplay();
+}
+
+function serverCancel(){
+  editing = false;
+  getConfig(resetDisplay);
+}
+/***********************************************************************************************
+ *                                Configure eMonCMS
+ * ********************************************************************************************/
+function buildEmonCMS(){
+  var serverTable = document.getElementById("serverTable");
+  
+  var nodeInput = addTableRow(serverTable, "Node:", "serverNode", "input", 8);
+  nodeInput.value = config.server.node;
+  nodeInput.setAttribute("onchange","config.server.node = this.value; checkEmonCMS();");
+  nodeInput.setAttribute("style","width: 80px;");
+  nodeInput.setAttribute("min","0");
+  nodeInput.setAttribute("max","99");
+  nodeInput.setAttribute("step","1");
+  
+  var postInput =   addTableRow(serverTable, "post interval(sec): ", "serverPost", "input", 3);
+  postInput.value = Number(config.server.postInterval);
+  postInput.setAttribute("onchange","config.server.postInterval = Number(this.value); checkEmonCMS();");
+  postInput.setAttribute("style","width: 40px;");
+  postInput.type = "number";
+  postInput.setAttribute("min","0");
+  postInput.setAttribute("max","3600");
+  postInput.setAttribute("step","5");
+  
+  if(isNaN(config.server.bulksend)) config.server.bulksend = 1;
+  var bulksendInput = addTableRow(serverTable, "bulk send:", "serverBulk", "input", 3);
+  bulksendInput.value = Number(config.server.bulksend);
+  bulksendInput.setAttribute("onchange","config.server.bulksend = Number(this.value); checkEmonCMS();");
+  bulksendInput.setAttribute("style","width: 40px;");
+  bulksendInput.setAttribute("type","number");
+  bulksendInput.setAttribute("min","1");
+  bulksendInput.setAttribute("max","10");
+  bulksendInput.setAttribute("step","1");
+  
+  var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 32);
+  urlInput.value = config.server.url
+  urlInput.setAttribute("onchange","config.server.url = this.value; checkEmonCMS();");
+  urlInput.setAttribute("type","url");
+  
+  
+  var keyInput = addTableRow(serverTable, "api key:", "serverKey", "input", 32);
+  keyInput.value = config.server.apikey;
+  keyInput.setAttribute("oninput","config.server.apikey = this.value; checkEmonCMS();");
+  keyInput.setAttribute("size","32");
+  keyInput.pattern = "[0-9a-f]{32}";
+  checkEmonCMS();
+}
+
+function checkEmonCMS(){
+  var complete = true;
+  if( ! validateInput("serverNode")) complete = false;
+  if( ! validateInput("serverPost")) complete = false;
+  if( ! validateInput("serverBulk")) complete = false;
+  if( ! validateInput("serverURL")) complete = false;
+  if( ! validateInput("serverKey")) complete = false;
+  if(config.server.apikey == "") complete = false;
+  document.getElementById("serverSave").style.display = complete ? "inline" : "none";
+}
+function validateInput(id){
+  var obj = document.getElementById(id);
+  while(obj.nextSibling !== null) obj.parentNode.removeChild(obj.nextSibling);
+  if(obj.validationMessage == "") return true;
+  obj.parentNode.appendChild(document.createElement("BR"));
+  obj.parentNode.appendChild(document.createTextNode(obj.validationMessage));
+  return false;
+}
+
+
+/***********************************************************************************************
+ *                        Setup and run status display
+ * *******************************************************************************************/
+function statusBegin(){
+  document.getElementById("divStatus").style.display = "table";
+  getStatus = true;
+  statusGet();
+}
+
+function statusGet(){
+  if(demo){
+    statusDisplay(demoStatus());
+    return;
+  }
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      statusDisplay(xmlHttp.responseText);
+    }
+  }
+  xmlHttp.open("GET","/status?inputs=yes&outputs=yes&stats=yes", true);
+  xmlHttp.send(null);
+}
+
+function statusDisplay(statusMessage){
+  var status = JSON.parse(statusMessage);
+  var statusTable = document.getElementById("statusTableL");
+  statusTable.innerHTML = null;
+  addRow();
+  column3.appendChild(document.createTextNode("Firmware version: " + status.stats.version));
+  addRow();
+  column3.appendChild(document.createTextNode("Running time: " + formatRunTime(status.stats.runseconds)));
+  addRow();
+  column3.appendChild(document.createTextNode("free Heap: " + status.stats.stack));
+  statusTable = document.getElementById("statusTableR");
+  statusTable.innerHTML = null;
+  addRow();
+  column3.appendChild(document.createTextNode(status.stats.cyclerate.toFixed(0) + " samples per AC cycle"));
+  addRow();
+  column3.appendChild(document.createTextNode(status.stats.chanrate.toFixed(1) + " AC cycles sampled/second"));
+  addRow();
+  column3.appendChild(document.createTextNode(status.stats.frequency.toFixed(1) + " Hz"));
+  
+  statusTable = document.getElementById("inputStatusTable");
+  statusTable.innerHTML = "";
+  for(i in status.inputs){
+    addRow();
+    // column2.appendChild(document.createTextNode("(" + status.inputs[i].channel + ")"));
+    
+    for(j in config.inputs){
+      if(config.inputs[j] !== null && config.inputs[j].channel == status.inputs[i].channel){
+        if(config.inputs[j].name !== undefined) column1.innerHTML += "<strong>" + config.inputs[j].name + ":</strong>";
+        break;
+      }
+    }
+    
+    
+    if(status.inputs[i].Watts !== undefined){
+      var wattNode = document.createElement("font");
+      wattNode.innerHTML = status.inputs[i].Watts + " watts";
+      column3.appendChild(wattNode);
+      
+      if(status.inputs[i].reversed == "true"){
+        wattNode.setAttribute("color","DarkRed");
+      } 
+      if(status.inputs[i].Watts < 0){
+          wattNode.setAttribute("color","DarkGreen");
+      }
+      if(status.inputs[i].Watts >= 60){
+        var pf = status.inputs[i].Pf;
+        column3.appendChild(document.createTextNode(", pf: " + pf.toFixed(2)));
+      }
+      
+    }
+    else if(status.inputs[i].Vrms !== undefined){
+      column3.appendChild(document.createTextNode(status.inputs[i].Vrms.toFixed(1) + " volts"));
+      //column3.appendChild(document.createTextNode(", <small>" + status.inputs[i].Hz.toFixed(1) + " Hz</small>"));
+    }
+  }
+  
+  statusTable = document.getElementById("outputStatusTable");
+  statusTable.innerHTML = "";
+  for(i in status.outputs){
+    addRow();
+    column1.innerHTML += "<strong>" + config.outputs[i].name + ":</strong>";
+    var wattNode = document.createElement("font");
+    wattNode.innerHTML = status.outputs[i].value.toFixed(0) + " " + status.outputs[i].units;
+    column3.appendChild(wattNode);
+  }
+    
+  setTimeout(function(){if(getStatus)statusGet();},1500);
+  
+  function addRow(){
+    newRow = document.createElement("tr");
+    statusTable.appendChild(newRow);
+    column1 = document.createElement("td");
+    column1.setAttribute("align","right");
+    newRow.appendChild(column1);
+    column2 = document.createElement("td");
+    newRow.appendChild(column2);
+    column3 = document.createElement("td");
+    newRow.appendChild(column3);
+  }
+}
+
+function formatRunTime(time){
+  var days = Math.floor(time / 86400);
+  time -= days * 86400;
+  var hours = Math.floor(time / 3600);
+  time -= hours * 3600;
+  var minutes = Math.floor(time / 60);
+  time -= minutes * 60;
+  var seconds = parseInt(time % 60, 10);
+  return (days > 0 ? days + "d  " : "") +  hours + "h " + minutes + "m " + seconds + "s";
+}
+
+function checkConfig(){
+  if(config.device.channels === undefined){
+    config.device.channels = 15;
+  }
+  if(config.inputs === undefined){
+    config.inputs = [{channel:0, type:"VT", model:"generic", cal:10, phase:0}];
+  }
+  for(var i=0; i<config.inputs.length; i++){
+    if(config.inputs[i] === undefined ||
+    (config.inputs[i] !== null && config.inputs[i].channel > i)){
+      config.inputs.splice(i,0,null);
+    }
+  }
+ for(var i=config.inputs.length; i<config.device.channels; i++){
+    config.inputs.push(null);
+  }
+  config.inputs.splice(config.device.channels,config.inputs.length-config.device.channels);
+  
+  if(config.device.burden === undefined){
+    config.device.burden = [0];
+  } 
+  for(var i=config.device.burden.length; i<config.device.channels; i++){
+    config.device.burden.push(24);
+  }
+  
+  if(config.format == 1){
+    for(i in config.outputs) {
+      config.outputs[i].script = old2newScript(config.outputs[i].script);
+    }
+    config.format == 2;
+  }
+}
+
+function old2newScript(oldScript){
+  var newScript = "";
+  for(i in oldScript){
+    if(oldScript[i].oper == "const"){
+      newScript += "#" + oldScript[i].value;
+    }
+    else if(oldScript[i].oper == "input"){
+      newScript += "@" + oldScript[i].value;
+    }
+    else if(oldScript[i].oper == "binop"){
+      newScript += oldScript[i].value; 
+    } 
+    else if(oldScript[i].oper == "push"){
+      newScript += "(";
+    }
+    else if(oldScript[i].oper == "pop"){
+      newScript += ")";
+    }
+    else if(oldScript[i].oper == "abs"){
+      newScript += "|";
+    }   
+  }
+  return newScript;
+}
+
+function demoStatus(){
+  var status = {};
+  status.stats = {cyclerate:635, chanrate:38.4, runseconds:3046, stack:17632, frequency:60.0, version:"2:02:09"};
+  status.inputs = [];
+  status.outputs = [];
+  for(i in config.inputs){
+    if(config.inputs[i] != null){
+      if(config.inputs[i].type == "VT"){
+       status.inputs.push({channel:i,Vrms:120.4});
+      }
+      else {
+       status.inputs.push({channel:i,Watts:0});
+      }
+    }
+  }
+  for(i in config.outputs){
+    status.outputs.push({name:config.outputs[i].name, Watts:0});
+  }
+  return JSON.stringify(status);
+}
+  
+/********************************************************************************************
+ *                       Main menu navigation.
+ * *****************************************************************************************/
+function menuButton(obj, handler){
+  if( ! editing){
+    resetDisplay();
+    obj.className = "mainMenuButton buttonDown";
+    handler();
+  }
+} 
+ 
+function resetDisplay(){
+  getStatus = false;
+  document.getElementById("divDevice").style.display = "none";
+  document.getElementById("BIBdevice").className = "mainMenuButton";
+  document.getElementById("divInputs").style.display = "none";
+  document.getElementById("BIBinputs").className = "mainMenuButton";
+  document.getElementById("divOutputs").style.display = "none";
+  document.getElementById("BIBoutputs").className = "mainMenuButton";
+  document.getElementById("divWebServer").style.display = "none";
+  document.getElementById("BIBserver").className = "mainMenuButton";
+  document.getElementById("divStatus").style.display = "none";
+  document.getElementById("BIBstatus").className = "mainMenuButton";
+  document.getElementById("BIBmsgs").className = "mainMenuButton";
+  document.getElementById("BIBgraph").className = "mainMenuButton";
+  document.getElementById("BIBedit").className = "mainMenuButton";
+}
+
+function loadGraph(){
+  var myWindow = window.open(graphURL, "_self");
+  resetDisplay();
+}
+function loadEdit(){
+  var myWindow = window.open(editURL, "_self");
+  resetDisplay();
+}
+function showMsgs(){
+  var myWindow = window.open(msgsFileURL, "_self");
+  resetDisplay();
+}
+
+/**********************************************************************************************
+ *              File I/O and management
+ * *******************************************************************************************/
+
+function getConfig(callback){
+  if(demo && demoConfig != null){
+    config = JSON.parse(demoConfig);
+    checkConfig();
+    if(callback !== undefined) callback();
+    return;
+  }
+  readFile(configFileURL, function(response){
+    config = JSON.parse(response);
+    checkConfig();
+    if(callback !== undefined) callback();
+    });
+    document.getElementById("bigIdeas").style.display = "table";
+}
+
+function getTables(){
+  readFile(configTablesURL, function(response){tables = JSON.parse(response);});
+}
+
+function readFile(path, responseHandler){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      responseHandler(xmlHttp.responseText);
+    }
+  };
+  xmlHttp.open("GET", path, true);
+  xmlHttp.send();
+}
+
+function uploadConfig(callback, action="reload"){
+  writeFile(JSON.stringify(config, null, "\t"), configNewURL, function(){
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        if(callback !== undefined) callback(); 
+      }
+    }
+    xmlHttp.open("GET","/config?update=" + action, true);
+    xmlHttp.send(null);
+  });
+}
+
+function writeFile(fileString, url, responseHandler){
+  if(demo){
+    demoConfig = fileString;
+    responseHandler();
+    return;
+  }
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      responseHandler();
+    }
+  };
+  var formData = new FormData();
+  var blob = new Blob([fileString], {type: 'plain/text'},  url);
+  formData.append("file", blob, url);
+  xmlHttp.open("POST", "/edit");
+  xmlHttp.send(formData);
+}
+
+
+function setup(){
+  getConfig();
+  getTables();
+  if(document.domain == "iotawatt.com"){
+    demo = true;
+    document.getElementById("heading").innerHTML += " Demo Mode";
+  } 
+  resetDisplay();
+}
+
+</script>
+</body>
+</html>

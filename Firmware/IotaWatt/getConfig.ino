@@ -285,7 +285,6 @@ String old2newScript(JsonArray& script){
       newScript += "|";
     }   
   }
-  newScript += "=";
   return newScript;
 }
 
