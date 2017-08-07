@@ -23,7 +23,7 @@
       SOFTWARE.
       ***********************************************************************************/
 
-#define IOTAWATT_VERSION "2.02.09"
+#define IOTAWATT_VERSION "2.02.10"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -206,6 +206,7 @@ uint8_t ledCount;                             // Current index into cycle
 bool eMonStarted = false;                    // set true when Service started
 bool eMonStop = false;                       // set true to stop the Service                                         
 String  eMonURL;                             // These are set from the config file 
+String  eMonPiUri = "";
 String apiKey;
 String node = "IotaWatt";
 boolean eMonSecure = false;

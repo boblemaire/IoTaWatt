@@ -1,4 +1,4 @@
-   /*******************************************************************************************************
+    /*******************************************************************************************************
  * eMonService - This SERVICE posts entries from the IotaLog to eMonCMS.  Details of the eMonCMS
  * account are provided in the configuration file at startup and this SERVICE is scheduled.  It runs
  * more or less independent of everything else, just reading the log records as they become available
@@ -148,7 +148,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
           // If new request, format preamble, otherwise, just tack it on with a comma.
       
       if(req.length() == 0){
-        req = "/input/bulk.json?time=" + String(UnixNextPost) + "&apikey=" + apiKey + "&data=[";
+        req = eMonPiUri + "/input/bulk.json?time=" + String(UnixNextPost) + "&apikey=" + apiKey + "&data=[";
         currentReqUnixtime = UnixNextPost;
       }
       else {
