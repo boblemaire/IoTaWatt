@@ -1,4 +1,4 @@
-
+ 
       /***********************************************************************************
       MIT License
       
@@ -33,7 +33,6 @@
 
 #include <SPI.h>
 #include <ESP8266WiFi.h>
-#include <WiFiClientSecure.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
@@ -51,16 +50,21 @@
 #include <Wire.h>
 #include <RTClib.h>
 #include <Ticker.h>
+#include <Crypto.h>
+#include <AES.h>
+#include <CBC.h>
+#include <SHA256.h>
 
       // Declare instances of various classes above
 
-WiFiClientSecure WifiClientSecure;
 WiFiClient WifiClient;
 WiFiManager wifiManager;
 DNSServer dnsServer;    
 IotaLog iotaLog;                            // instance of IotaLog class
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
+CBC<AES128> cypher;
+SHA256 sha256;
 
 const int HttpsPort = 443;
 const double MS_PER_HOUR = 3600000UL;       // useful constant
@@ -203,15 +207,21 @@ uint8_t ledCount;                             // Current index into cycle
       // *********************** eMonCMS configuration stuff *************************
       // Note: nee dto move out to a class and change for dynamic configuration
       // Start stop is a kludge for now.
+      
 bool eMonStarted = false;                    // set true when Service started
 bool eMonStop = false;                       // set true to stop the Service                                         
 String  eMonURL;                             // These are set from the config file 
 String  eMonPiUri = "";
 String apiKey;
+uint8_t cryptoKey[16];
 String node = "IotaWatt";
 boolean eMonSecure = false;
+String EmonUsername = "overeasy";
 int16_t eMonBulkSend = 1;
-const char* eMonSHA1 = "A2 FB AA 81 59 E2 B5 12 10 5D 38 22 23 A7 4E 74 B0 11 7D AA";
+enum EmonSendMode {
+  EmonSendGET,
+  EmonSendPOST
+} EmonSend = EmonSendGET;
 
       // ************************ ADC sample pairs ************************************
  
