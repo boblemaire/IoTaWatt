@@ -140,7 +140,12 @@ boolean getConfig(void)
     if(eMonURL.startsWith("http://")) eMonURL = eMonURL.substring(7);
     else if(eMonURL.startsWith("https://")){
       eMonURL = eMonURL.substring(8);
-      eMonSecure = true;
+    }
+    eMonPiUri = "";
+    if(eMonURL.indexOf("/") > 0){
+      eMonPiUri = eMonURL.substring(eMonURL.indexOf("/"));
+      eMonURL.remove(eMonURL.indexOf("/"));
+      msg += "(Emonpi)";
     }
     msg += ", url: " + eMonURL;
     apiKey = Config["server"]["apikey"].asString();
