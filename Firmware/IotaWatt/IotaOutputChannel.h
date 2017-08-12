@@ -4,14 +4,15 @@ class IotaScript {
 	
 	public:
 		IotaScript (){
-			
+			_tokens = nullptr;
+      _constants = nullptr;
 		}
 		~IotaScript(){
 			delete[] _tokens;
 			if(_constants) delete[] _constants;
 		}
 		
-		bool encodeScript(JsonArray& script);
+		bool encodeScript(String script);
 		double runScript(double function(int));
 		void printScript();
 	
@@ -19,7 +20,7 @@ class IotaScript {
 		const byte getInputOp = 32;
 		const byte getConstOp = 64;
 		enum  opCodes	   {
-							opEq	= 0,
+							opEq	  = 0,
 							opAdd 	= 1,
 							opSub 	= 2,
 							opMult 	= 3,
@@ -27,7 +28,10 @@ class IotaScript {
 							opAbs 	= 5,
 							opPush 	= 6,
 							opPop 	= 7};
-		char opChars[8] = {'=','+','-','*','/','|','(',')'};
+		
+    // opcode         01234567
+    String opChars = "=+-*/|()";
+    
 		IStoken *_tokens = NULL;						// The script operators
 		float *_constants = NULL;				// Numeric constants
 		
@@ -40,7 +44,7 @@ class IotaOutputChannel {
 	
 	
 	public:
-		IotaOutputChannel(const char* name, const char* units, JsonArray& script){
+		IotaOutputChannel(const char* name, const char* units, String script){
 			_name = new char[sizeof(name)+1];
 			strcpy(_name, name);
 			IS.encodeScript(script);
@@ -52,12 +56,12 @@ class IotaOutputChannel {
 			delete[] _units;
 		}
 		
-		char*     	_name;                  // External name
-		char*		_units;					// Watts or Volts
-		uint8_t     _channel;               // Internal identifying number
-		IotaScript	IS;						// Incidence of script interpreter
+		char*     	_name;          // External name
+		char*		    _units;					// Watts or Volts
+		uint8_t     _channel;       // Internal identifying number
+		IotaScript	IS;					  	// Incidence of script interpreter
 			
-		bool setScript(JsonArray&);
+		bool setScript(String);
 		double runScript(double function(int));
 		void printScript();
 			
@@ -66,7 +70,7 @@ class IotaOutputChannel {
 		
 };
 
-bool IotaOutputChannel::setScript(JsonArray& script){
+bool IotaOutputChannel::setScript(String script){
 		IS.encodeScript(script);
 		//IS.printScript();
 }
@@ -75,61 +79,36 @@ double IotaOutputChannel::runScript(double inputCallback(int)){
 		return IS.runScript(inputCallback);
 }
 
-bool IotaScript::encodeScript(JsonArray& script){
-		IStoken *newTokens = new IStoken[script.size()+1];
-		size_t newTokenCount = 0;
-		float newConstants[30];
-		size_t newConstantCount = 0;
-				
-		for(int i=0; i<script.size(); i++){
-			
-			if(script[i]["oper"] == "const"){
-				newTokens[newTokenCount++] = getConstOp + newConstantCount;
-			 	newConstants[newConstantCount++] = script[i]["value"].as<float>();
-				continue;
-			}
-			
-			else if(script[i]["oper"] == "binop"){
-				char opCode = script[i]["value"].as<char *>()[0];
-				for(int i=0; i<sizeof(opChars); i++){
-					if(opCode == opChars[i]){
-						newTokens[newTokenCount++] = i;
-						break;
-					}
-				}
-			}
-			
-			else if(script[i]["oper"] == "push"){
-				newTokens[newTokenCount++] = opPush;
-			}
-			
-			else if(script[i]["oper"] == "pop"){
-				newTokens[newTokenCount++] = opPop;
-			}
-			
-			else if(script[i]["oper"] == "abs"){
-				newTokens[newTokenCount++] = opAbs;
-			}
-			
-			else if(script[i]["oper"] == "input"){
-				newTokens[newTokenCount++] = getInputOp + script[i]["value"].as<unsigned int>();
-			}
+bool IotaScript::encodeScript(String script){
+    int tokenCount = 0;
+    int constCount = 0;
+    delete[] _tokens;
+    delete[] _constants;
+    for(int i=0; i<script.length(); i++){
+      if(script[i] == '#')constCount++;
+      if((!isDigit(script[i])) && (script[i] != '.')) tokenCount++;
+    }
+    _tokens = new IStoken[tokenCount + 1];
+    _constants = new float[constCount];
+
+    int j = 0;      
+		for(int i=0; i<tokenCount; i++){
+      if(script[j] == '@'){
+        int s = ++j;
+        while(isDigit(script[++j])); 
+        _tokens[i] = getInputOp + script.substring(s,j).toInt();
+      } 
+      else if (script[j] == '#'){
+        _tokens[i] = getConstOp + --constCount;
+        int s = ++j;
+        while(isDigit(script[++j]) || script[j] == '.');
+        _constants[constCount] = script.substring(s,j).toFloat();
+      }
+      else {
+        _tokens[i] = opChars.indexOf(script[j++]);
+      }      
 		}
-		
-		newTokens[newTokenCount] = 0;
-		if(_tokens) delete[] _tokens;
-		_tokens = newTokens;
-		
-		if(_constants){
-			delete[] _constants;
-			_constants = NULL;
-		} 
-		if(newConstantCount){
-			_constants = new float[newConstantCount];
-			for(int i=0; i<newConstantCount; i++){
-				_constants[i] = newConstants[i];
-			}
-		}
+    _tokens[tokenCount] = 0;
 }
 
 double IotaScript::runScript(double inputCallback(int)){
@@ -175,8 +154,7 @@ double IotaScript::recursiveRunScript(IStoken** tokens, double inputCallback(int
 			if(*token & getConstOp){
 				operand = _constants[*token % 32];
 			}
-		}while(*token++);
-	return result;
+		} while(token++);
 }
 
 double IotaScript::evaluate(double result, IStoken token, double operand){
