@@ -104,9 +104,9 @@ void setup()
     if(millis() > autoConnectTimeout){
       setLedCycle("R.G.G...");
       wifiManager.setDebugOutput(false);
-      wifiManager.setConfigPortalTimeout(120);
+      wifiManager.setConfigPortalTimeout(180);
       String ssid = "iota" + String(ESP.getChipId());
-      String pwd = "iotawatt";
+      String pwd = deviceName;
       msgLog("Connecting with WiFiManager.");
       wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
       endLedCycle();
