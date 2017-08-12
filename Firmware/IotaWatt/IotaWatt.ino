@@ -23,7 +23,7 @@
       SOFTWARE.
       ***********************************************************************************/
 
-#define IOTAWATT_VERSION "2.02.10"
+#define IOTAWATT_VERSION "2.02.11"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -203,6 +203,7 @@ uint8_t ledCount;                             // Current index into cycle
       // *********************** eMonCMS configuration stuff *************************
       // Note: nee dto move out to a class and change for dynamic configuration
       // Start stop is a kludge for now.
+      
 bool eMonStarted = false;                    // set true when Service started
 bool eMonStop = false;                       // set true to stop the Service                                         
 String  eMonURL;                             // These are set from the config file 

@@ -191,9 +191,15 @@ void configOutputs(JsonArray& JsonOutputs){
     if(outputObject.containsKey("name") &&
        outputObject.containsKey("units") &&
        outputObject.containsKey("script")) {
-           IotaOutputChannel* output = new IotaOutputChannel(outputObject["name"], outputObject["units"], outputObject["script"]);
-           output->_channel = i+100;
-           outputList.insertTail(output, output->_name);
+        String script;
+          if(outputObject["script"].is<JsonArray>()){            
+            script = old2newScript(outputObject["script"]);     // old verbose script is depricated but convert it for now
+          } else {
+            script = outputObject["script"].as<String>();       // New lean and mean script
+          }
+          IotaOutputChannel* output = new IotaOutputChannel(outputObject["name"], outputObject["units"], script);
+          output->_channel = i+100;
+          outputList.insertTail(output, output->_name);
        }
   }
   IotaOutputChannel* outputChannel = (IotaOutputChannel*)outputList.findFirst();
@@ -260,5 +266,30 @@ void condenseJson(char* ConfigBuffer, File JsonFile){
     }
     if(Json == '"') inQuote = !inQuote;
   }
+}
+
+String old2newScript(JsonArray& script){
+  String newScript = "";
+  for(int i=0; i<script.size(); i++){
+    if(script[i]["oper"] == "const"){
+      newScript += "#" + script[i]["value"].as<String>();
+    }
+    else if(script[i]["oper"] == "input"){
+      newScript += "@" + script[i]["value"].as<String>();
+    }
+    else if(script[i]["oper"] == "binop"){
+      newScript += script[i]["value"].as<String>(); 
+    } 
+    else if(script[i]["oper"] == "push"){
+      newScript += "(";
+    }
+    else if(script[i]["oper"] == "pop"){
+      newScript += ")";
+    }
+    else if(script[i]["oper"] == "abs"){
+      newScript += "|";
+    }   
+  }
+  return newScript;
 }
 

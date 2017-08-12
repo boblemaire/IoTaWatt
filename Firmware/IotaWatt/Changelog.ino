@@ -30,5 +30,6 @@
  *   07/23/17 2.02.08 Add LED problem indicators during startup
  *   07/23/17 2.02.09 Add LED indication of connection and timer status
  *   08/07/17 2.02.10 Add Emonpi URL support
+ *   08/11/17 2.02.11 Upgrade to new script format (requires new index.htm)
  *   
  *****************************************************************************************************/
