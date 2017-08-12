@@ -243,7 +243,8 @@ void samplePower(int channel, int overSample){
               
           *VsamplePtr = rawV;
           lastV = rawV;
-          *IsamplePtr = (rawI + lastI) >> 1;
+          *IsamplePtr = (rawI + lastI) / 2;
+          if(*IsamplePtr >= -1 && *IsamplePtr <= 1) *IsamplePtr = 0;
           lastI = rawI;
                  
           // if((*IsamplePtr > -3) && (*IsamplePtr < 3)) *IsamplePtr = 0;       // Filter noise from previous reading while SPI reads ADC  
