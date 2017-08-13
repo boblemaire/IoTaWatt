@@ -762,7 +762,7 @@ function calVTsave(obj){
   }
   
   function keyDigit(digit){
-    if(RegExp("^#0").test(tokens[tokens.length-1])){
+    if(RegExp("^#0$").test(tokens[tokens.length-1])){
       tokens[tokens.length-1] = "#" + digit;
     }
     else if(RegExp("^#").test(tokens[tokens.length-1])){
@@ -1000,7 +1000,7 @@ function buildWebServer(){
   if(config.server === undefined){
     serverSelect.selectedIndex = 0;
   }
-  else if (config.server.type == "Emoncms"){
+  else if (config.server.type.toLowerCase() == "emoncms"){
     serverSelect.selectedIndex = 1;
     buildEmonCMS();
   }
