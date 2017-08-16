@@ -1,21 +1,21 @@
    /*******************************************************************************************************
- * eMonService - This SERVICE posts entries from the IotaLog to eMonCMS.  Details of the eMonCMS
+ * EmonService - This SERVICE posts entries from the IotaLog to EmonCMS.  Details of the EmonCMS
  * account are provided in the configuration file at startup and this SERVICE is scheduled.  It runs
  * more or less independent of everything else, just reading the log records as they become available
  * and sending the data out.
- * The advantage of doing it this way is that there is really no eMonCMS specific code anywhere else
+ * The advantage of doing it this way is that there is really no EmonCMS specific code anywhere else
  * except a speciific section in getConfig.  Other web data logging services could be handled
  * the same way.
  * It's possible that multiple web services could be updated independently, each having their own 
  * SERVER.  The only issue right now would be the WiFi resource.  A future move to the 
  * asynchWifiClient would solve that.
  ******************************************************************************************************/
-uint32_t eMonService(struct serviceBlock* _serviceBlock){
-  // trace T_EMON
+uint32_t EmonService(struct serviceBlock* _serviceBlock){
+  // trace T_Emon
   enum   states {initialize, post, resend};
   static states state = initialize;
   static IotaLogRecord* logRecord = new IotaLogRecord;
-  static File eMonPostLog;
+  static File EmonPostLog;
   static double accum1Then [MAXINPUTS];
   static uint32_t UnixLastPost = UNIXtime();
   static uint32_t UnixNextPost = UNIXtime();
@@ -26,22 +26,26 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   static uint32_t postTime = millis();
   struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
   static SDbuffer* buf = new SDbuffer;
-  String eMonPostLogFile = "/iotawatt/emonlog.log";
+  String EmonPostLogFile = "/iotawatt/Emonlog.log";
         
-  trace(T_EMON,0);
+  trace(T_Emon,0);
 
             // If stop signaled, do so.  
 
-  if(eMonStop) {
+  if(EmonStop) {
     msgLog("EmonService: stopped.");
-    eMonStarted = false;
-    trace(T_EMON,4);
-    eMonPostLog.close();
-    trace(T_EMON,5);
-    SD.remove((char *)eMonPostLogFile.c_str());
-    trace(T_EMON,6);
+    EmonStarted = false;
+    trace(T_Emon,4);
+    EmonPostLog.close();
+    trace(T_Emon,5);
+    SD.remove((char *)EmonPostLogFile.c_str());
+    trace(T_Emon,6);
     state = initialize;
     return 0;
+  }
+  if(EmonInitialize){
+    state = initialize;
+    EmonInitialize = false;
   }
       
   switch(state){
@@ -54,21 +58,24 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       if(!iotaLog.isOpen()){
         return UNIXtime() + 5;
       }
-      msgLog("EmonService: started.");
+      msgLog("EmonService: started.", 
+       "url: " + EmonURL + EmonURI + ", node: " + String(node) + ", post interval: " + String(EmonCMSInterval) +
+       (EmonSend == EmonSendGET ? ", unsecure GET" : ", encrypted POST")); 
+
      
-      if(!eMonPostLog){
-        eMonPostLog = SD.open(eMonPostLogFile,FILE_WRITE);
+      if(!EmonPostLog){
+        EmonPostLog = SD.open(EmonPostLogFile,FILE_WRITE);
       }
             
-      if(eMonPostLog){
-        if(eMonPostLog.size() == 0){
+      if(EmonPostLog){
+        if(EmonPostLog.size() == 0){
           buf->data = iotaLog.lastKey();
-          eMonPostLog.write((byte*)buf,4);
-          eMonPostLog.flush();
+          EmonPostLog.write((byte*)buf,4);
+          EmonPostLog.flush();
           msgLog("EmonService: Emonlog file created.");
         }
-        eMonPostLog.seek(eMonPostLog.size()-4);
-        eMonPostLog.read((byte*)buf,4);
+        EmonPostLog.seek(EmonPostLog.size()-4);
+        EmonPostLog.read((byte*)buf,4);
         logRecord->UNIXtime = buf->data;
         msgLog("EmonService: Start posting from ", String(logRecord->UNIXtime));
       }
@@ -95,7 +102,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
           // Plan to start posting one interval later
       
       UnixLastPost = logRecord->UNIXtime;
-      UnixNextPost = UnixLastPost + eMonCMSInterval - (UnixLastPost % eMonCMSInterval);
+      UnixNextPost = UnixLastPost + EmonCMSInterval - (UnixLastPost % EmonCMSInterval);
       
           // Advance state.
           // Set task priority low so that datalog will run before this.
@@ -120,12 +127,12 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
           // Anticipate next posting at next regular interval and break to reschedule.
  
       if(iotaLog.lastKey() < UnixNextPost){ 
-        UnixNextPost = UNIXtime() + eMonCMSInterval - (UNIXtime() % eMonCMSInterval);
+        UnixNextPost = UNIXtime() + EmonCMSInterval - (UNIXtime() % EmonCMSInterval);
         return UnixNextPost;
       } 
       
           // Not current.  Read sequentially to get the entry >= scheduled post time
-      trace(T_EMON,1);    
+      trace(T_Emon,1);    
       while(logRecord->UNIXtime < UnixNextPost){
         if(logRecord->UNIXtime >= iotaLog.lastKey()){
           msgLog("runaway seq read.", logRecord->UNIXtime);
@@ -136,14 +143,14 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
 
           // Adjust the posting time to match the log entry time.
             
-      UnixNextPost = logRecord->UNIXtime - logRecord->UNIXtime % eMonCMSInterval;
+      UnixNextPost = logRecord->UNIXtime - logRecord->UNIXtime % EmonCMSInterval;
 
           // Compute the time difference between log entries.
           // If zero, don't bother.
           
       double elapsedHours = logRecord->logHours - _logHours;
       if(elapsedHours == 0){
-        UnixNextPost += eMonCMSInterval;
+        UnixNextPost += EmonCMSInterval;
         return UnixNextPost;  
       }
       
@@ -161,7 +168,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
           // values for each channel are (delta value hrs)/(delta log hours) = period value.
           // Update the previous (Then) buckets to the most recent values.
      
-      trace(T_EMON,2);
+      trace(T_Emon,2);
 
       if(EmonSend == EmonSendPOSTsecure){
         reqData += '[' + String(UnixNextPost);
@@ -191,13 +198,13 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
           reqData += String(long(value1+0.5)) + ',';
         }
       }
-      trace(T_EMON,3);    
+      trace(T_Emon,3);    
       reqData.setCharAt(reqData.length()-1,']');
       reqEntries++;
       UnixLastPost = UnixNextPost;
-      UnixNextPost +=  eMonCMSInterval - (UnixNextPost % eMonCMSInterval);
+      UnixNextPost +=  EmonCMSInterval - (UnixNextPost % EmonCMSInterval);
       
-      if ((reqEntries < eMonBulkSend) ||
+      if ((reqEntries < EmonBulkSend) ||
          ((iotaLog.lastKey() > UnixNextPost) &&
          (reqData.length() < 1000))) {
         return UnixNextPost;
@@ -206,13 +213,13 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
           // Send the post       
 
       reqData += ']';
-      if(!eMonSend(reqUnixtime, reqData)){
+      if(!EmonSendData(reqUnixtime, reqData)){
         state = resend;
         return UNIXtime() + 30;
       }
       buf->data = UnixLastPost;
-      eMonPostLog.write((byte*)buf,4);
-      eMonPostLog.flush();
+      EmonPostLog.write((byte*)buf,4);
+      EmonPostLog.flush();
       reqData = "";
       reqEntries = 0;    
       state = post;
@@ -221,14 +228,14 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   
 
     case resend: {
-      msgLog("Resending eMonCMS data.");
-      if(!eMonSend(reqUnixtime,reqData)){ 
+      msgLog("Resending EmonCMS data.");
+      if(!EmonSendData(reqUnixtime,reqData)){ 
         return UNIXtime() + 60;
       }
       else {
         buf->data = UnixLastPost;
-        eMonPostLog.write((byte*)buf,4);
-        eMonPostLog.flush();
+        EmonPostLog.write((byte*)buf,4);
+        EmonPostLog.flush();
         reqData = "";
         reqEntries = 0;  
         state = post;
@@ -241,13 +248,13 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
 }
 
 /************************************************************************************************
- *  eMonSend - send data to the eMonCMS server. 
+ *  EmonSend - send data to the EmonCMS server. 
  *  if secure transmission is configured, pas sthe request to a 
  *  similar WiFiClientSecure function.
  *  Secure takes about twice as long and can block sampling for more than a second.
  ***********************************************************************************************/
-boolean eMonSend(uint32_t reqUnixtime, String reqData){ 
-  trace(T_EMON,7);
+boolean EmonSendData(uint32_t reqUnixtime, String reqData){ 
+  trace(T_Emon,7);
   uint32_t startTime = millis();
   
   if(EmonSend == EmonSendGET){

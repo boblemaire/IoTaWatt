@@ -206,7 +206,7 @@ void printDirectory() {
 
 void handleNotFound(){
   String serverURI = server.uri();
-  if(serverURI.startsWith("//")) serverURI.remove(0,1);   // fix eMonCMS graph bug
+  if(serverURI.startsWith("//")) serverURI.remove(0,1);   // fix EmonCMS graph bug
   if(serverURI.startsWith("/feed/list")){
     handleGetFeedList();
     return;
@@ -402,7 +402,7 @@ void handleGetFeedList(){
   server.send(200, "application/json", response);
 }
 
-void handleGraphGetall(){                   // Stub to appease eMonCMS graph app
+void handleGraphGetall(){                   // Stub to appease EmonCMS graph app
   return;
   server.send(200, "ok", "{}");
 }
