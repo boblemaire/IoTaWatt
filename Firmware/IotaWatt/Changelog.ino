@@ -7,8 +7,7 @@
  *   03/12/17 2.00.04 Insist on WiFi connect at startup.
  *   03/12/17 2.00.05 Update frequency, samples/cycle in voltage only sample.
  *   03/17/17 2.00.06 Use ArduinoJson to generate server responses
- *                    Increase emoncms retry interval to 30 seconds
- *   03/17/17 2.00.07 Add partial read of message log. Dress up msgLog startup.
+ *                    Increase emoncms retry interval to 30 seconds 
  *   03/18/17 2.00.08 Fix rounding in API Json output
  *   03/18/17 2.00.09 Fix typo in json rework
  *   03/18/17 2.00.10 Change wifi retry interval
@@ -32,5 +31,6 @@
  *   08/07/17 2.02.10 Add Emonpi URL support
  *   08/11/17 2.02.11 Upgrade to new script format (requires new index.htm)
  *   08/12/17 2.02.12 Change WiFi pwd to device name. Filter ADC lsb noise.
+ *   08/15/17 2.02.13 Add secure encrypted posting to Emoncms
  *   
  *****************************************************************************************************/

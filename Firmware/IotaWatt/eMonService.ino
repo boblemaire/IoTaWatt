@@ -278,9 +278,6 @@ boolean eMonSend(uint32_t reqUnixtime, String reqData){
       postData += "&apikey=" + apiKey;
     }
     postData += "&data=" + encryptData(reqData, cryptoKey);
-    Serial.println(EmonURL);
-    Serial.println(EmonURI);
-    Serial.println(postData);
     sha256.reset();
     sha256.update(reqData.c_str(), reqData.length());
     uint8_t value[32];
