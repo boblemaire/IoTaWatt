@@ -7,7 +7,7 @@
  *   03/12/17 2.00.04 Insist on WiFi connect at startup.
  *   03/12/17 2.00.05 Update frequency, samples/cycle in voltage only sample.
  *   03/17/17 2.00.06 Use ArduinoJson to generate server responses
- *                    Increase emoncms retry interval to 30 seconds 
+ *                    Increase Emoncms retry interval to 30 seconds 
  *   03/18/17 2.00.08 Fix rounding in API Json output
  *   03/18/17 2.00.09 Fix typo in json rework
  *   03/18/17 2.00.10 Change wifi retry interval
@@ -24,7 +24,7 @@
  *   07/17/17 2.02.03 Fix problems with sample power & multiple V channels
  *   07/19/17 2.02.04 Changes to Emoncms support 
  *   07/19/17 2.02.05 Bump version
- *   07/19/17 2.02.06 Accept emoncms or Emoncms (compatibility)
+ *   07/19/17 2.02.06 Accept Emoncms or Emoncms (compatibility)
  *   07/23/17 2.02.07 Overhaul RTC initialization and power fail logging
  *   07/23/17 2.02.08 Add LED problem indicators during startup
  *   07/23/17 2.02.09 Add LED indication of connection and timer status
@@ -32,5 +32,6 @@
  *   08/11/17 2.02.11 Upgrade to new script format (requires new index.htm)
  *   08/12/17 2.02.12 Change WiFi pwd to device name. Filter ADC lsb noise.
  *   08/15/17 2.02.13 Add secure encrypted posting to Emoncms
+ *   08/16/17 2.02.14 Fix problem changing Emoncms method on the fly
  *   
  *****************************************************************************************************/
