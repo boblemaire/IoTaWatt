@@ -762,7 +762,7 @@ function calVTsave(obj){
   }
   
   function keyDigit(digit){
-    if(RegExp("^#0$").test(tokens[tokens.length-1])){
+    if(RegExp("^#0").test(tokens[tokens.length-1])){
       tokens[tokens.length-1] = "#" + digit;
     }
     else if(RegExp("^#").test(tokens[tokens.length-1])){
@@ -996,14 +996,18 @@ function buildWebServer(){
   var optioneMonCMS = document.createElement("option");
   optioneMonCMS.text = "Emoncms";
   serverSelect.add(optioneMonCMS);
+  var optioneMonsecure = document.createElement("option");
+  optioneMonsecure.text = "Emonsecure";
+  serverSelect.add(optioneMonsecure);
   
   if(config.server === undefined){
     serverSelect.selectedIndex = 0;
   }
-  else if (config.server.type.toLowerCase() == "emoncms"){
+  else if (config.server.type == "Emoncms"){
     serverSelect.selectedIndex = 1;
     buildEmonCMS();
   }
+  
 }
 
 function newServer(obj){
@@ -1013,11 +1017,20 @@ function newServer(obj){
   }
   else if(obj.value == "Emoncms"){
     config.server =  {type:"Emoncms",
-                         node:config.device.name,
-                         postInterval:10,
-                         bulksend:1,
-                         url:"http://emoncms.org",
-                         apikey:""};
+                      node:config.device.name,
+                      postInterval:10,
+                      bulksend:1,
+                      url:"http://emoncms.org",
+                      apikey:""};
+  }
+  else if(obj.value == "Emonsecure"){
+    config.server =  {type:"Emonsecure",
+                      node:config.device.name,
+                      postInterval:10,
+                      bulksend:1,
+                      url:"http://localhost/emoncms/encrypted.json",
+                      username:"",
+                      apikey:""};
   }
   buildWebServer();
 }
@@ -1070,13 +1083,43 @@ function buildEmonCMS(){
   urlInput.setAttribute("onchange","config.server.url = this.value; checkEmonCMS();");
   urlInput.setAttribute("type","url");
   
-  
   var keyInput = addTableRow(serverTable, "api key:", "serverKey", "input", 32);
   keyInput.value = config.server.apikey;
   keyInput.setAttribute("oninput","config.server.apikey = this.value; checkEmonCMS();");
   keyInput.setAttribute("size","32");
   keyInput.pattern = "[0-9a-f]{32}";
+  
+  var keyInput = addTableRow(serverTable, "Emoncms username", "serverUser", "input", 10);
+  keyInput.value = config.server.username;
+  keyInput.setAttribute("onchange","checkEmonUsername(this)");
+  keyInput.setAttribute("size","16");
+  keyInput.pattern = "[0-9a-zA-Z]*";
+  
   checkEmonCMS();
+}
+
+function checkEmonUsername(obj){
+  config.server.username = obj.value;
+  buildEmonsecure();
+}
+
+function checkEmonPassword(obj){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.open("POST", "https://emoncms.org/user/auth.json", true); 
+  xmlHttp.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status === 200) {
+      var response = JSON.parse(this.responseText);
+      if(response.success == "true"){
+        config.server.apikey = response.apikey_write;
+        checkEmonCMS();
+      }
+      else {
+        
+      }
+    }
+  };
+  xmlHttp.send("username=" + config.server.username + "&password=" + obj.value);
 }
 
 function checkEmonCMS(){
@@ -1086,6 +1129,7 @@ function checkEmonCMS(){
   if( ! validateInput("serverBulk")) complete = false;
   if( ! validateInput("serverURL")) complete = false;
   if( ! validateInput("serverKey")) complete = false;
+  if( ! validateInput("serverUser")) complete = false;
   if(config.server.apikey == "") complete = false;
   document.getElementById("serverSave").style.display = complete ? "inline" : "none";
 }
@@ -1244,7 +1288,7 @@ function checkConfig(){
     for(i in config.outputs) {
       config.outputs[i].script = old2newScript(config.outputs[i].script);
     }
-    config.format = 2;
+    config.format == 2;
   }
 }
 

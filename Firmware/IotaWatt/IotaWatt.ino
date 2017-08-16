@@ -1,4 +1,4 @@
-
+  
       /***********************************************************************************
       MIT License
       
@@ -23,7 +23,7 @@
       SOFTWARE.
       ***********************************************************************************/
 
-#define IOTAWATT_VERSION "2.02.12"
+#define IOTAWATT_VERSION "2.02.13"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -33,34 +33,40 @@
 
 #include <SPI.h>
 #include <ESP8266WiFi.h>
-#include <WiFiClientSecure.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <WiFiManager.h>
+#include <ESP8266HTTPClient.h>
 #include <DNSServer.h>
 #include <ESP8266httpUpdate.h>
 #include <SD.h>
 #include <WiFiUDP.h>
 #include <ArduinoJson.h>
-#include "IotaLog.h"
-#include "IotaInputChannel.h"
-#include "IotaOutputChannel.h"
-#include "IotaList.h"
 #include <math.h>
 #include <Wire.h>
 #include <RTClib.h>
 #include <Ticker.h>
+#include <Crypto.h>
+#include <AES.h>
+#include <CBC.h>
+#include <SHA256.h>
+#include "IotaLog.h"
+#include "IotaInputChannel.h"
+#include "IotaOutputChannel.h"
+#include "IotaList.h"
 
       // Declare instances of various classes above
 
-WiFiClientSecure WifiClientSecure;
 WiFiClient WifiClient;
 WiFiManager wifiManager;
 DNSServer dnsServer;    
 IotaLog iotaLog;                            // instance of IotaLog class
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
+CBC<AES128> cypher;
+SHA256 sha256;
+HTTPClient http;
 
 const int HttpsPort = 443;
 const double MS_PER_HOUR = 3600000UL;       // useful constant
@@ -206,13 +212,18 @@ uint8_t ledCount;                             // Current index into cycle
       
 bool eMonStarted = false;                    // set true when Service started
 bool eMonStop = false;                       // set true to stop the Service                                         
-String  eMonURL;                             // These are set from the config file 
-String  eMonPiUri = "";
+String  EmonURL;                             // These are set from the config file 
+String  EmonURI = "";
 String apiKey;
+uint8_t cryptoKey[16];
 String node = "IotaWatt";
 boolean eMonSecure = false;
+String EmonUsername;
 int16_t eMonBulkSend = 1;
-const char* eMonSHA1 = "A2 FB AA 81 59 E2 B5 12 10 5D 38 22 23 A7 4E 74 B0 11 7D AA";
+enum EmonSendMode {
+  EmonSendGET = 1,
+  EmonSendPOSTsecure = 2
+} EmonSend = EmonSendPOSTsecure;
 
       // ************************ ADC sample pairs ************************************
  

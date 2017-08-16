@@ -1,4 +1,4 @@
-    /*******************************************************************************************************
+   /*******************************************************************************************************
  * eMonService - This SERVICE posts entries from the IotaLog to eMonCMS.  Details of the eMonCMS
  * account are provided in the configuration file at startup and this SERVICE is scheduled.  It runs
  * more or less independent of everything else, just reading the log records as they become available
@@ -20,14 +20,14 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   static uint32_t UnixLastPost = UNIXtime();
   static uint32_t UnixNextPost = UNIXtime();
   static double _logHours;
-  static String req = "";
-  static uint32_t currentReqUnixtime = 0;
-  static int  currentReqEntries = 0; 
+  static String reqData = "";
+  static uint32_t reqUnixtime = 0;
+  static int  reqEntries = 0; 
   static uint32_t postTime = millis();
   struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
   static SDbuffer* buf = new SDbuffer;
   String eMonPostLogFile = "/iotawatt/emonlog.log";
-    
+        
   trace(T_EMON,0);
 
             // If stop signaled, do so.  
@@ -35,11 +35,12 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   if(eMonStop) {
     msgLog("EmonService: stopped.");
     eMonStarted = false;
-     trace(T_EMON,4);
+    trace(T_EMON,4);
     eMonPostLog.close();
-     trace(T_EMON,5);
-     SD.remove((char *)eMonPostLogFile.c_str());
-     trace(T_EMON,6);
+    trace(T_EMON,5);
+    SD.remove((char *)eMonPostLogFile.c_str());
+    trace(T_EMON,6);
+    state = initialize;
     return 0;
   }
       
@@ -95,16 +96,17 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       
       UnixLastPost = logRecord->UNIXtime;
       UnixNextPost = UnixLastPost + eMonCMSInterval - (UnixLastPost % eMonCMSInterval);
-
+      
           // Advance state.
           // Set task priority low so that datalog will run before this.
-      
+
+      reqData = "";
+      reqEntries = 0;
       state = post;
       _serviceBlock->priority = priorityLow;
       return UnixNextPost;
     }
-
-        
+    
     case post: {
 
           // If WiFi is not connected,
@@ -147,12 +149,12 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       
           // If new request, format preamble, otherwise, just tack it on with a comma.
       
-      if(req.length() == 0){
-        req = eMonPiUri + "/input/bulk.json?time=" + String(UnixNextPost) + "&apikey=" + apiKey + "&data=[";
-        currentReqUnixtime = UnixNextPost;
+      if(reqData.length() == 0){
+        reqData = "[";
+        reqUnixtime = UnixNextPost;
       }
       else {
-        req += ',';
+        reqData += ',';
       }
 
           // Build the request string.
@@ -161,7 +163,14 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
      
       trace(T_EMON,2);
 
-      req += '[' + String(UnixNextPost - currentReqUnixtime) + ",\"" + String(node) + "\",";
+      if(EmonSend == EmonSendPOSTsecure){
+        reqData += '[' + String(UnixNextPost);
+      }
+      else {
+        reqData += '[' + String(UnixNextPost - reqUnixtime);
+      }
+      reqData +=  ",\"" + String(node) + "\",";
+      
       double value1;
       
       _logHours = logRecord->logHours;   
@@ -170,64 +179,58 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
         value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
         accum1Then[i] = logRecord->channel[i].accum1;
         if( ! _input){
-          req += "null,";
+          reqData += "null,";
         }
         else if(_input->_type == channelTypeVoltage){
-          req += String(value1,1) + ',';
+          reqData += String(value1,1) + ',';
         }
         else if(_input->_type == channelTypePower){
-          req += String(long(value1+0.5)) + ',';
+          reqData += String(long(value1+0.5)) + ',';
         }
         else{
-          req += String(long(value1+0.5)) + ',';
+          reqData += String(long(value1+0.5)) + ',';
         }
       }
       trace(T_EMON,3);    
-      req.setCharAt(req.length()-1,']');
-      currentReqEntries++;
+      reqData.setCharAt(reqData.length()-1,']');
+      reqEntries++;
       UnixLastPost = UnixNextPost;
       UnixNextPost +=  eMonCMSInterval - (UnixNextPost % eMonCMSInterval);
       
-      if ((currentReqEntries < eMonBulkSend) ||
+      if ((reqEntries < eMonBulkSend) ||
          ((iotaLog.lastKey() > UnixNextPost) &&
-         (req.length() < 1000))) {
+         (reqData.length() < 1000))) {
         return UnixNextPost;
       }
 
           // Send the post       
 
-      req += ']';
-      uint32_t sendTime = millis();
-      Serial.print(formatHMS(NTPtime() + (localTimeDiff * 3600)));
-      Serial.print(" ");
-      Serial.print(millis()-sendTime);
-      Serial.print(" ");
-      Serial.println(req);
-      if(!eMonSend(req)){
+      reqData += ']';
+      if(!eMonSend(reqUnixtime, reqData)){
         state = resend;
         return UNIXtime() + 30;
       }
       buf->data = UnixLastPost;
       eMonPostLog.write((byte*)buf,4);
       eMonPostLog.flush();
-      req = "";
-      currentReqEntries = 0;    
+      reqData = "";
+      reqEntries = 0;    
       state = post;
       return UnixNextPost;
     }
-
+  
 
     case resend: {
       msgLog("Resending eMonCMS data.");
-      if(!eMonSend(req)){ 
+      if(!eMonSend(reqUnixtime,reqData)){ 
         return UNIXtime() + 60;
       }
       else {
         buf->data = UnixLastPost;
         eMonPostLog.write((byte*)buf,4);
         eMonPostLog.flush();
-        req = "";
-        currentReqEntries = 0;  
+        reqData = "";
+        reqEntries = 0;  
         state = post;
         return 1;
       }
@@ -243,101 +246,115 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
  *  similar WiFiClientSecure function.
  *  Secure takes about twice as long and can block sampling for more than a second.
  ***********************************************************************************************/
-boolean eMonSend(String req){
-  
-  if(eMonSecure) return eMonSendSecure(req);
+boolean eMonSend(uint32_t reqUnixtime, String reqData){ 
   trace(T_EMON,7);
-  
   uint32_t startTime = millis();
-  if(!WifiClient.connect(eMonURL.c_str(), 80)) {
-        msgLog("failed to connect to:", eMonURL);
-        WifiClient.stop();
-        return false;
-  } 
-  yield();  
-  WifiClient.println(String("GET ") + req);
-  uint32_t _time = millis();
-  while(WifiClient.available() < 2){
-    yield();
-    if((uint32_t)millis()-_time >= 200){
-      msgLog("eMonCMS timeout.");
-      WifiClient.stop();
+  
+  if(EmonSend == EmonSendGET){
+    String URL = EmonURI + "/input/bulk.json?time=" + String(reqUnixtime) + "&apikey=" + apiKey + "&data=" + reqData;
+    Serial.println(URL);
+    http.begin(EmonURL, 80, URL);
+    http.setTimeout(100);
+    int httpCode = http.GET();
+    if(httpCode != HTTP_CODE_OK){
+      msgLog("EmonService: GET failed. HTTP code: ", String(httpCode));
+      http.end();
       return false;
     }
-  }
-  yield();
-  String reply = "";
-  int maxlen = 40;
-  while(WifiClient.available()){
-    reply += (char)WifiClient.read();
-    if(!maxlen--){
-      break;
+    String response = http.getString();
+    http.end();
+    if(response.startsWith("ok")){
+      return true;        
     }
-  }
-  if(reply.substring(0,2) != "ok"){
-    msgLog("eMonCMS reply: ", reply);
-    WifiClient.stop();
+    Serial.println("response not ok.");
+    Serial.println(response);
     return false;
   }
-  WifiClient.stop();
-//  Serial.print("Open Send ms: ");
-//  Serial.println(millis()-startTime);
-  return true;
-}
 
-boolean eMonSendSecure(String req){
-  trace(T_EMON,8);
-  ESP.wdtFeed();
-
-      // Should always be disconnected, but test can't hurt.
-    
-  uint32_t startTime = millis();
-  if(!WifiClientSecure.connected()){
-    if(!WifiClientSecure.connect(eMonURL.c_str(), HttpsPort)) {
-          msgLog("failed to connect to:",  eMonURL);
-          WifiClientSecure.stop();
-          return false;
+  if(EmonSend == EmonSendPOSTsecure){
+    String postData = "username=" + EmonUsername;               
+                      
+    if(EmonURL.equals("iotawatt.com")){
+      postData += "&apikey=" + apiKey;
     }
-    if(!WifiClientSecure.verify(eMonSHA1,  eMonURL.c_str())){
-      msgLog("eMonCMS could not validate certificate.");
-      WifiClientSecure.stop();
+    postData += "&data=" + encryptData(reqData, cryptoKey);
+    sha256.reset();
+    sha256.update(reqData.c_str(), reqData.length());
+    uint8_t value[32];
+    sha256.finalize(value, 32);
+    String base64Sha = base64encode(value, 32);
+    http.begin(EmonURL, 80, EmonURI);
+    http.addHeader("Host",EmonURL);
+    http.addHeader("Content-Type","application/x-www-form-urlencoded");
+    http.setTimeout(400);
+    int httpCode = http.POST(postData);
+    String response = http.getString();
+    http.end();
+    if(httpCode != HTTP_CODE_OK){
+      msgLog("EmonService: POST failed. HTTP code: ", String(httpCode));
+      Serial.println(response);
       return false;
     }
-  }
-  yield();
-  
-      // Send the packet
-   
-  WifiClientSecure.print(String("GET ") + req + " HTTP/1.1\r\n" +
-               "Host: " + eMonURL + "\r\n" +
-               "User-Agent: IotaWatt\r\n" +
-               "Connection: close\r\n\r\n"); 
- 
-      // Read through response header until blank line (\r\n)
-
-  yield();    
-  while (WifiClientSecure.connected()) {
-    String line = WifiClientSecure.readStringUntil('\n');
-    if (line == "\r") {
-      break;
+    if(response.startsWith(base64Sha)){
+      Serial.println("EmonService: Response SHA valid.");
+      return true;        
     }
-  }
-
-  yield(); 
-  String line;
-  while(WifiClientSecure.available()){
-    line += char(WifiClientSecure.read());
-  }
-  if (!line.startsWith("ok")) {
-    msgLog ("eMonCMS reply: ", line);
-    WifiClientSecure.stop();
+    msgLog("EmonService: Invalid response: ", response.substring(0,40));
     return false;
-  }              
+  }
   
-//  Serial.print("Secure Send ms: ");
-//  Serial.println(millis()-startTime);
-  return true;
+  msgLog("EmonService: Unsupported protocol - ", EmonSend);
+  return false;
 }
 
+String encryptData(String in, uint8_t* key) {
+  uint8_t iv[16];
+  os_get_random((unsigned char*)iv,16);
+  uint8_t padLen = 16 - (in.length() % 16);
+  int encryptLen = in.length() + padLen;
+  uint8_t* ivBuf = new uint8_t[encryptLen + 16];
+  uint8_t* encryptBuf = ivBuf + 16;
+  for(int i=0; i<16; i++){
+    ivBuf[i] = iv[i];
+  }  
+  for(int i=0; i<encryptLen; i++){
+    encryptBuf[i] = (i<in.length()) ? in[i] : padLen;
+  }
+  cypher.setIV(iv, 16);
+  cypher.setKey(cryptoKey, 16); 
+  cypher.encrypt(encryptBuf, encryptBuf, encryptLen);
+  String result = base64encode(ivBuf, encryptLen+16);
+  delete[] ivBuf;
+  return result;
+}
 
+String base64encode(const uint8_t* in, size_t len){
+  static const char* base64codes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  int base64Len = int((len+2)/3) * 4;
+  int wholeSextets = int((len*8)/6);
+  String out = "";
+  int sextetSeq = 0;
+  uint8_t sextet;
+  for(int i=0; i<wholeSextets; i++){
+    if(sextetSeq == 0) sextet = *in >> 2;
+    else if(sextetSeq == 1) sextet = (*in++ << 4) | (*in >> 4);
+    else if(sextetSeq == 2) sextet = (*in++ << 2) | (*in >> 6);
+    else sextet = *in++;
+    out += base64codes[sextet & 0x3f];
+    sextetSeq = ++sextetSeq % 4;
+  }
+  if(sextetSeq == 1){
+    out += base64codes[(*in << 4) & 0x3f];
+    out += '=';
+    out += '=';
+  }
+  else if(sextetSeq == 2){
+    out += base64codes[(*in << 2) & 0x3f];
+    out += '=';
+  }
+  else if(sextetSeq == 3){
+    out += base64codes[*in & 0x3f];
+  }
+  return out;
+}
 
