@@ -23,7 +23,7 @@
       SOFTWARE.
       ***********************************************************************************/
 
-#define IOTAWATT_VERSION "2.02.13"
+#define IOTAWATT_VERSION "2.02.14"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -76,7 +76,7 @@ const double MS_PER_HOUR = 3600000UL;       // useful constant
 String deviceName = "IotaWatt";             // can be specified in config.device.name
 String IotaLogFile = "/IotaWatt/IotaLog";
 String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
-String eMonPostLogFile = "/iotawatt/emonlog.log";
+String EmonPostLogFile = "/iotawatt/Emonlog.log";
 uint16_t deviceVersion = 0;
 
         // Define the hardware pins
@@ -110,7 +110,7 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 #define T_SETUP 60          // Setup
 #define T_LOOP 10           // Loop
 #define T_LOG 20            // dataLog
-#define T_EMON 30           // eMonService
+#define T_Emon 30           // EmonService
 #define T_GFD 40            // GetFeedData
 #define T_SAMP 100          // samplePower
 #define T_UPDATE 50         // updater
@@ -196,7 +196,7 @@ uint32_t timeRefNTP = SEVENTY_YEAR_SECONDS;  // Last time from NTP server (NTPti
 uint32_t timeRefMs = 0;                      // Internal MS clock corresponding to timeRefNTP
 uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forward and try to refresh
 uint32_t dataLogInterval = 5;                // Interval (sec) to invoke dataLog
-uint32_t eMonCMSInterval = 10;               // Interval (sec) to invoke eMonCMS 
+uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS 
 uint32_t statServiceInterval = 1;            // Interval (sec) to invoke statService
 uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for software updates 
 
@@ -206,20 +206,21 @@ boolean  RTCrunning = false;
 char    ledColor[12];                         // Pattern to display led, each char is 500ms color - R, G, Blank
 uint8_t ledCount;                             // Current index into cycle
 
-      // *********************** eMonCMS configuration stuff *************************
+      // *********************** EmonCMS configuration stuff *************************
       // Note: nee dto move out to a class and change for dynamic configuration
       // Start stop is a kludge for now.
       
-bool eMonStarted = false;                    // set true when Service started
-bool eMonStop = false;                       // set true to stop the Service                                         
+bool EmonStarted = false;                    // set true when Service started
+bool EmonStop = false;                       // set true to stop the Service
+bool EmonInitialize = true;                  // Initialize or reinitialize EmonService                                         
 String  EmonURL;                             // These are set from the config file 
 String  EmonURI = "";
 String apiKey;
 uint8_t cryptoKey[16];
 String node = "IotaWatt";
-boolean eMonSecure = false;
+boolean EmonSecure = false;
 String EmonUsername;
-int16_t eMonBulkSend = 1;
+int16_t EmonBulkSend = 1;
 enum EmonSendMode {
   EmonSendGET = 1,
   EmonSendPOSTsecure = 2

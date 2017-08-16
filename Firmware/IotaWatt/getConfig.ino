@@ -132,10 +132,9 @@ boolean getConfig(void)
   String serverType = Config["server"]["type"].as<String>();
   serverType.toLowerCase();
   
-      // ************************************** configure eMonCMS **********************************
+      // ************************************** configure EmonCMS **********************************
 
   if(serverType.equals("emoncms")) {
-    String msg = "server is: Emoncms";
     EmonURL = Config["server"]["url"].asString();
     if(EmonURL.startsWith("http://")) EmonURL = EmonURL.substring(7);
     else if(EmonURL.startsWith("https://")){
@@ -145,42 +144,31 @@ boolean getConfig(void)
     if(EmonURL.indexOf("/") > 0){
       EmonURI = EmonURL.substring(EmonURL.indexOf("/"));
       EmonURL.remove(EmonURL.indexOf("/"));
-      msg += "(Emonpi)";
     }
-    msg += ", url: " + EmonURL;
     apiKey = Config["server"]["apikey"].asString();
     node = Config["server"]["node"].as<String>();
-    msg += ", node: " + String(node);
-    eMonCMSInterval = Config["server"]["postInterval"].as<int>();
-    msg += ", post interval: " + String(eMonCMSInterval);
-    eMonBulkSend = Config["server"]["bulksend"].as<int>();
-    if(eMonBulkSend > 10) eMonBulkSend = 10;
-    if(eMonBulkSend <1) eMonBulkSend = 1;
+    EmonCMSInterval = Config["server"]["postInterval"].as<int>();
+    EmonBulkSend = Config["server"]["bulksend"].as<int>();
+    if(EmonBulkSend > 10) EmonBulkSend = 10;
+    if(EmonBulkSend <1) EmonBulkSend = 1;
     EmonUsername = Config["server"]["username"].as<String>();
-    if(EmonUsername != ""){
-      EmonSend = EmonSendPOSTsecure;
-      msg += ", secure POST";    
+    EmonSendMode EmonPrevSend = EmonSend;
+    EmonSend = EmonSendGET;
+    if(EmonUsername != "")EmonSend = EmonSendPOSTsecure;
+    if(EmonPrevSend != EmonSend) EmonInitialize = true;  
+    if( ! EmonStarted) {
+      NewService(EmonService);
+      EmonStarted = true;
+      EmonStop = false;
     }
-    else {
-      EmonSend = EmonSendGET;
-      msg += ", unsecure GET";
-    } 
-          
     #define hex2bin(x) (x<='9' ? (x - '0') : (x - 'a') + 10)
     apiKey.toLowerCase();
     for(int i=0; i<16; i++){
       cryptoKey[i] = hex2bin(apiKey[i*2]) * 16 + hex2bin(apiKey[i*2+1]); 
     }
-    
-    if( ! eMonStarted) {
-      msgLog(msg);
-      NewService(eMonService);
-      eMonStarted = true;
-      eMonStop = false;
-    }
   }
   else {
-    eMonStop = true;
+    EmonStop = true;
     if(!serverType.equals("none")){
       msgLog("server type is not supported: ", serverType);
     }

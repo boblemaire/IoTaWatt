@@ -996,9 +996,6 @@ function buildWebServer(){
   var optioneMonCMS = document.createElement("option");
   optioneMonCMS.text = "Emoncms";
   serverSelect.add(optioneMonCMS);
-  var optioneMonsecure = document.createElement("option");
-  optioneMonsecure.text = "Emonsecure";
-  serverSelect.add(optioneMonsecure);
   
   if(config.server === undefined){
     serverSelect.selectedIndex = 0;
