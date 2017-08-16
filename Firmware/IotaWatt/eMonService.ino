@@ -27,7 +27,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
   struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
   static SDbuffer* buf = new SDbuffer;
   String eMonPostLogFile = "/iotawatt/emonlog.log";
-      
+        
   trace(T_EMON,0);
 
             // If stop signaled, do so.  
@@ -96,17 +96,6 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       
       UnixLastPost = logRecord->UNIXtime;
       UnixNextPost = UnixLastPost + eMonCMSInterval - (UnixLastPost % eMonCMSInterval);
-
-          // convert apiKey from char to binary for crypto use.
-      
-      #define hex2bin(x) (x<='9' ? (x - '0') : (x - 'A') + 10)
-      if(EmonSend == EmonSendPOST){
-        apiKey.toUpperCase();
-        for(int i=0; i<16; i++){
-          cryptoKey[i] = hex2bin(apiKey[i*2]) * 16 + hex2bin(apiKey[i*2+1]); 
-        }
-        cypher.setKey(cryptoKey, 16); 
-      }
       
           // Advance state.
           // Set task priority low so that datalog will run before this.
@@ -117,8 +106,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
       _serviceBlock->priority = priorityLow;
       return UnixNextPost;
     }
-
-        
+    
     case post: {
 
           // If WiFi is not connected,
@@ -175,7 +163,7 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
      
       trace(T_EMON,2);
 
-      if(EmonSend == EmonSendPOST){
+      if(EmonSend == EmonSendPOSTsecure){
         reqData += '[' + String(UnixNextPost);
       }
       else {
@@ -218,11 +206,6 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
           // Send the post       
 
       reqData += ']';
-//      Serial.print(formatHMS(NTPtime() + (localTimeDiff * 3600)));
-//      Serial.print(" ");
-//      Serial.print(String(reqUnixtime));
-//      Serial.print(" ");
-//      Serial.println(reqData);
       if(!eMonSend(reqUnixtime, reqData)){
         state = resend;
         return UNIXtime() + 30;
@@ -266,107 +249,70 @@ uint32_t eMonService(struct serviceBlock* _serviceBlock){
 boolean eMonSend(uint32_t reqUnixtime, String reqData){ 
   trace(T_EMON,7);
   uint32_t startTime = millis();
-  uint8_t iv[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-  os_get_random((unsigned char*)iv,16);
-  String ivHex = "";
-  String hexChars = "0123456789ABCDEF";
-  uint8_t* encryptBuffer;
-  String base64Sha;
   
-  for(int j=0; j<16; j++){
-    ivHex += hexChars[iv[j] / 16];
-    ivHex += hexChars[iv[j] % 16];
-  }
-
   if(EmonSend == EmonSendGET){
-    String URL = eMonPiUri + "/input/bulk.json?time=" + String(reqUnixtime) + "&apikey=" + apiKey + "&data=";
+    String URL = EmonURI + "/input/bulk.json?time=" + String(reqUnixtime) + "&apikey=" + apiKey + "&data=" + reqData;
     Serial.println(URL);
-    if(!WifiClient.connect(eMonURL.c_str(), 80)) {
-      msgLog("failed to connect to:", eMonURL);
-      WifiClient.stop();
+    http.begin(EmonURL, 80, URL);
+    http.setTimeout(100);
+    int httpCode = http.GET();
+    if(httpCode != HTTP_CODE_OK){
+      msgLog("EmonService: GET failed. HTTP code: ", String(httpCode));
+      http.end();
       return false;
     }
-    WifiClient.print(String("GET ") + URL);
-    WifiClient.println(reqData);
+    String response = http.getString();
+    http.end();
+    if(response.startsWith("ok")){
+      return true;        
+    }
+    Serial.println("response not ok.");
+    Serial.println(response);
+    return false;
   }
 
-  if(EmonSend == EmonSendPOST){
-    String encryptedData = encryptData(reqData, cryptoKey, iv);
-        
-    if(!WifiClient.connect("iotawatt.com", 80)) {
-      msgLog("failed to connect to: iotawatt");
-      WifiClient.stop();
-      return false;
+  if(EmonSend == EmonSendPOSTsecure){
+    String postData = "username=" + EmonUsername;               
+                      
+    if(EmonURL.equals("iotawatt.com")){
+      postData += "&apikey=" + apiKey;
     }
-    String postData = eMonPiUri +
-                      "username=" + EmonUsername + 
-                      "&apikey=" + apiKey +
-                      "&data=";
-    WifiClient.println("POST /php/postecho.php HTTP/1.1");
-    WifiClient.println("Host: iotawatt.com");
-    
-    WifiClient.println("Content-Type: application/x-www-form-urlencoded");
-    WifiClient.print("Content-Length: ");
-    WifiClient.println(postData.length() + encryptedData.length());
-    WifiClient.println();
-    WifiClient.print(postData);
-    WifiClient.print(encryptedData);
-    
-    Serial.println("POST /php/postecho.php HTTP/1.1");
-    Serial.println("Host: iotawatt.com");
-    Serial.println("Content-Type: application/x-www-form-urlencoded");
-    Serial.print("Content-Length: ");
-    Serial.println(postData.length() + encryptedData.length());
-    Serial.println( );
-    Serial.print(postData);
-    Serial.println(encryptedData);
-
+    postData += "&data=" + encryptData(reqData, cryptoKey);
+    Serial.println(EmonURL);
+    Serial.println(EmonURI);
+    Serial.println(postData);
     sha256.reset();
     sha256.update(reqData.c_str(), reqData.length());
     uint8_t value[32];
     sha256.finalize(value, 32);
-    base64Sha = base64encode(value, 32);
-    Serial.print("base64 SHA:");
-    Serial.println(base64Sha);
-  }
-
-  uint32_t sentTime = millis();
-  while(WifiClient.available() < 2){
-    yield();
-    if((uint32_t)millis() - sentTime >= 400){
-      msgLog("eMonCMS timeout.");
-      WifiClient.stop();
+    String base64Sha = base64encode(value, 32);
+    http.begin(EmonURL, 80, EmonURI);
+    http.addHeader("Host",EmonURL);
+    http.addHeader("Content-Type","application/x-www-form-urlencoded");
+    http.setTimeout(400);
+    int httpCode = http.POST(postData);
+    String response = http.getString();
+    http.end();
+    if(httpCode != HTTP_CODE_OK){
+      msgLog("EmonService: POST failed. HTTP code: ", String(httpCode));
+      Serial.println(response);
       return false;
     }
+    if(response.startsWith(base64Sha)){
+      Serial.println("EmonService: Response SHA valid.");
+      return true;        
+    }
+    msgLog("EmonService: Invalid response: ", response.substring(0,40));
+    return false;
   }
-  Serial.println("******************************************");
-  while(WifiClient.available()){
-    Serial.print(char(WifiClient.read()));
-  }
-  Serial.println();
-  Serial.println("******************************************");
   
-//  char* ok = "  ";
-//  WifiClient.peekBytes(ok,2);
-//  Serial.print(ok);
-//  Serial.print(" ");
-//  if(!strcmp(ok,"ok")){
-//    char* msg = new char[41];
-//    msg[WifiClient.peekBytes(msg,40)] = 0;
-//    msgLog("Emoncms reply: ", msg);
-//    delete[] msg;
-//    WifiClient.stop();
-//    return false;
-//  }
-
-  WifiClient.stop();
-//  Serial.print("Open Send ms: ");
-//  Serial.println(millis()-startTime);
-  return true;
+  msgLog("EmonService: Unsupported protocol - ", EmonSend);
+  return false;
 }
 
-String encryptData(String in, uint8_t* key, uint8_t* iv) {
-  static const char* base64codes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+String encryptData(String in, uint8_t* key) {
+  uint8_t iv[16];
+  os_get_random((unsigned char*)iv,16);
   uint8_t padLen = 16 - (in.length() % 16);
   int encryptLen = in.length() + padLen;
   uint8_t* ivBuf = new uint8_t[encryptLen + 16];
@@ -378,13 +324,14 @@ String encryptData(String in, uint8_t* key, uint8_t* iv) {
     encryptBuf[i] = (i<in.length()) ? in[i] : padLen;
   }
   cypher.setIV(iv, 16);
+  cypher.setKey(cryptoKey, 16); 
   cypher.encrypt(encryptBuf, encryptBuf, encryptLen);
   String result = base64encode(ivBuf, encryptLen+16);
   delete[] ivBuf;
   return result;
 }
 
-String base64encode(uint8_t* in, size_t len){
+String base64encode(const uint8_t* in, size_t len){
   static const char* base64codes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
   int base64Len = int((len+2)/3) * 4;
   int wholeSextets = int((len*8)/6);

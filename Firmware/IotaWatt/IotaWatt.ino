@@ -1,4 +1,4 @@
- 
+  
       /***********************************************************************************
       MIT License
       
@@ -37,6 +37,7 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <WiFiManager.h>
+#include <ESP8266HTTPClient.h>
 #include <DNSServer.h>
 #include <ESP8266httpUpdate.h>
 #include <SD.h>
@@ -65,6 +66,7 @@ RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
 CBC<AES128> cypher;
 SHA256 sha256;
+HTTPClient http;
 
 const int HttpsPort = 443;
 const double MS_PER_HOUR = 3600000UL;       // useful constant
@@ -210,18 +212,18 @@ uint8_t ledCount;                             // Current index into cycle
       
 bool eMonStarted = false;                    // set true when Service started
 bool eMonStop = false;                       // set true to stop the Service                                         
-String  eMonURL;                             // These are set from the config file 
-String  eMonPiUri = "";
+String  EmonURL;                             // These are set from the config file 
+String  EmonURI = "";
 String apiKey;
 uint8_t cryptoKey[16];
 String node = "IotaWatt";
 boolean eMonSecure = false;
-String EmonUsername = "overeasy";
+String EmonUsername;
 int16_t eMonBulkSend = 1;
 enum EmonSendMode {
-  EmonSendGET,
-  EmonSendPOST
-} EmonSend = EmonSendGET;
+  EmonSendGET = 1,
+  EmonSendPOSTsecure = 2
+} EmonSend = EmonSendPOSTsecure;
 
       // ************************ ADC sample pairs ************************************
  
