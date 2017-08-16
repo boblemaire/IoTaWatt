@@ -1087,6 +1087,7 @@ function buildEmonCMS(){
   keyInput.pattern = "[0-9a-f]{32}";
   
   var keyInput = addTableRow(serverTable, "Emoncms username", "serverUser", "input", 10);
+  if(config.server.username === undefined) config.server.username = "";
   keyInput.value = config.server.username;
   keyInput.setAttribute("onchange","checkEmonUsername(this)");
   keyInput.setAttribute("size","16");
