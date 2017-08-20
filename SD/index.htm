@@ -524,6 +524,16 @@ function addTableRow(table, text, id, elementType, size) {
   return newInput;
 }
 
+function addTableText(table,col1Text,col2Text){
+  var newRow = table.insertRow(-1);
+  var col1 = newRow.insertCell(-1);
+  col1.innerHTML = col1Text;
+  col1.setAttribute("align","right");
+  col2 = newRow.insertCell(-1);
+  col2.innerHTML = col2Text;
+  return col2;
+}
+
 /**********************************************************************************************************************************
  * 
  *  Voltage calibration
@@ -1086,6 +1096,7 @@ function buildEmonCMS(){
   keyInput.setAttribute("size","32");
   keyInput.pattern = "[0-9a-f]{32}";
   
+  addTableText(serverTable,"","Specifying username triggers secure encrypted protocol.")
   var keyInput = addTableRow(serverTable, "Emoncms username", "serverUser", "input", 10);
   if(config.server.username === undefined) config.server.username = "";
   keyInput.value = config.server.username;

@@ -83,7 +83,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         logRecord->UNIXtime = iotaLog.lastKey();
       }
       
-
           // Get the last record in the log.
           // Posting will begin with the next log entry after this one,
             
@@ -132,6 +131,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       } 
       
           // Not current.  Read sequentially to get the entry >= scheduled post time
+          
       trace(T_Emon,1);    
       while(logRecord->UNIXtime < UnixNextPost){
         if(logRecord->UNIXtime >= iotaLog.lastKey()){
@@ -229,7 +229,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
 
     case resend: {
       msgLog("Resending EmonCMS data.");
-      if(!EmonSendData(reqUnixtime,reqData)){ 
+      if(!EmonSendData(reqUnixtime, reqData)){ 
         return UNIXtime() + 60;
       }
       else {
@@ -264,7 +264,7 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
     http.setTimeout(100);
     int httpCode = http.GET();
     if(httpCode != HTTP_CODE_OK){
-      msgLog("EmonService: GET failed. HTTP code: ", String(httpCode));
+      msgLog("EmonService: GET failed. HTTP code: ", http.errorToString(httpCode));
       http.end();
       return false;
     }
@@ -279,35 +279,36 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
   }
 
   if(EmonSend == EmonSendPOSTsecure){
-    String postData = "username=" + EmonUsername;               
-                      
-    if(EmonURL.equals("iotawatt.com")){
-      postData += "&apikey=" + apiKey;
-    }
-    postData += "&data=" + encryptData(reqData, cryptoKey);
+    String postData = "username=" + EmonUsername +            
+                      "&data=" + encryptData(reqData, cryptoKey);
     sha256.reset();
     sha256.update(reqData.c_str(), reqData.length());
     uint8_t value[32];
     sha256.finalize(value, 32);
     String base64Sha = base64encode(value, 32);
-    http.begin(EmonURL, 80, EmonURI);
+    http.begin(EmonURL, 80, EmonURI + "/input/encrypted");
     http.addHeader("Host",EmonURL);
     http.addHeader("Content-Type","application/x-www-form-urlencoded");
-    http.setTimeout(400);
+    http.setTimeout(100);
     int httpCode = http.POST(postData);
     String response = http.getString();
     http.end();
     if(httpCode != HTTP_CODE_OK){
-      msgLog("EmonService: POST failed. HTTP code: ", String(httpCode));
+      String code = String(httpCode);
+      if(httpCode < 0){
+        code = http.errorToString(httpCode);
+      }
+      msgLog("EmonService: POST failed. HTTP code: ", code);
       Serial.println(response);
       return false;
     }
     if(response.startsWith(base64Sha)){
-      Serial.println("EmonService: Response SHA valid.");
       return true;        
     }
-    msgLog("EmonService: Invalid response: ", response.substring(0,40));
-    return false;
+    msgLog(reqData);
+    msgLog("EmonService: Invalid response: ", response.substring(0,44));
+    msgLog("EmonService: Expectd response: ", base64Sha);
+    return true;
   }
   
   msgLog("EmonService: Unsupported protocol - ", EmonSend);
@@ -324,8 +325,11 @@ String encryptData(String in, uint8_t* key) {
   for(int i=0; i<16; i++){
     ivBuf[i] = iv[i];
   }  
-  for(int i=0; i<encryptLen; i++){
-    encryptBuf[i] = (i<in.length()) ? in[i] : padLen;
+  for(int i=0; i<in.length(); i++){
+    encryptBuf[i] = in[i];
+  }
+  for(int i=0; i<padLen; i++){
+    encryptBuf[in.length()+i] = padLen;
   }
   cypher.setIV(iv, 16);
   cypher.setKey(cryptoKey, 16); 

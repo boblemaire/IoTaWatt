@@ -33,5 +33,6 @@
  *   08/12/17 2.02.12 Change WiFi pwd to device name. Filter ADC lsb noise.
  *   08/15/17 2.02.13 Add secure encrypted posting to Emoncms
  *   08/16/17 2.02.14 Fix problem changing Emoncms method on the fly
+ *   08/18/17 2.02.15 Finalize encrypted Emoncms post
  *   
  *****************************************************************************************************/
