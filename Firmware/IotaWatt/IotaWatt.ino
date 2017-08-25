@@ -22,7 +22,6 @@
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
       ***********************************************************************************/
-
 #define IOTAWATT_VERSION "2.02.15"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
