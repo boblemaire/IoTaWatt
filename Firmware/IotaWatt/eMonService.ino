@@ -289,6 +289,7 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
     
     http.addHeader("Content-Type","aes128cbc");
     http.addHeader("X-Authorization", auth.c_str());
+    http.addHeader("AUTHORIZATION", auth.c_str());
     http.setTimeout(100);
     int httpCode = http.POST(encryptData(reqData, cryptoKey));
     String response = http.getString();
