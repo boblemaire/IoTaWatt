@@ -50,6 +50,7 @@
 #include <AES.h>
 #include <CBC.h>
 #include <SHA256.h>
+#include <Ed25519.h>
 #include "IotaLog.h"
 #include "IotaInputChannel.h"
 #include "IotaOutputChannel.h"
@@ -66,6 +67,7 @@ Ticker ticker;
 CBC<AES128> cypher;
 SHA256 sha256;
 HTTPClient http;
+MD5Builder md5;
 
 const int HttpsPort = 443;
 const double MS_PER_HOUR = 3600000UL;       // useful constant
@@ -204,6 +206,15 @@ boolean  RTCrunning = false;
 
 char    ledColor[12];                         // Pattern to display led, each char is 500ms color - R, G, Blank
 uint8_t ledCount;                             // Current index into cycle
+
+      // ****************************** Firmware update ****************************
+char* updateURL = "iotawatt.com";
+char* updateURI = "/firmware/update2.php";
+String updateClass = "TEST";              // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
+uint8_t publicKey[32] = {0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
+                         0xcc, 0x2c, 0xea, 0x2e, 0x88, 0x9c, 0xe0, 0xea,
+                         0x3f, 0x20, 0x5a, 0x78, 0x22, 0x0c, 0xbc, 0x78,
+                         0x2b, 0xe6, 0x28, 0x5a, 0x21, 0x9c, 0xb7, 0xf3}; 
 
       // *********************** EmonCMS configuration stuff *************************
       // Note: nee dto move out to a class and change for dynamic configuration

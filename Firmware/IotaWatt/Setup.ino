@@ -79,8 +79,8 @@ void setup()
 
   msgLog("Version: ", IOTAWATT_VERSION);
 
-  updateFromSD("iotawatt.bin");
-  msgLog("return from update.");
+//  updateFromSD("iotawatt.bin");
+//  msgLog("return from update.");
 
   //**************************************** Display the trace ****************************************
 
