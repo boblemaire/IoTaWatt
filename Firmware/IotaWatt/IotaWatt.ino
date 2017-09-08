@@ -1,19 +1,19 @@
-  
+
       /***********************************************************************************
       MIT License
-      
+
       Copyright (c) [2016] [Bob Lemaire]
-      
+
       Permission is hereby granted, free of charge, to any person obtaining a copy
       of this software and associated documentation files (the "Software"), to deal
       in the Software without restriction, including without limitation the rights
       to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
       copies of the Software, and to permit persons to whom the Software is
       furnished to do so, subject to the following conditions:
-      
+
       The above copyright notice and this permission notice shall be included in all
       copies or substantial portions of the Software.
-      
+
       THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
       IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
       FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -41,7 +41,7 @@
 #include <DNSServer.h>
 #include <ESP8266httpUpdate.h>
 #include <SD.h>
-#include <WiFiUDP.h>
+#include <ESP8266WiFi.h>
 #include <ArduinoJson.h>
 #include <math.h>
 #include <Wire.h>
@@ -60,7 +60,7 @@
 
 WiFiClient WifiClient;
 WiFiManager wifiManager;
-DNSServer dnsServer;    
+DNSServer dnsServer;
 IotaLog iotaLog;                            // instance of IotaLog class
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
@@ -88,16 +88,16 @@ uint16_t deviceVersion = 0;
 
 #define pin_I2C_SDA 4                       // I2C for rtc.  Wish it were SPI.
 #define pin_I2C_SCL 5
-                    
+
 #define redLed 16                           // IoTaWatt overusage of pins
 #define greenLed 0
 
 
 const int chipSelect = pin_CS_SDcard;       // for the benefit of SD.h
-                            
+
 uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC select pins
                             pin_CS_ADC1,
-                            pin_CS_ADC2};  
+                            pin_CS_ADC2};
 
       // Identifiers used to construct id numbers for graph API
 
@@ -119,23 +119,23 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
       // ADC descriptors
 
 #define ADC_BITS 12
-#define ADC_RANGE 4096      // 1 << ADC_BITS      
+#define ADC_RANGE 4096      // 1 << ADC_BITS
 
       /**************************************************************************************************
        * Core dispatching parameters - There's a lot going on, but the steady rhythm is sampling the
        * power channels, and that has to be done on their schedule - the AC frequency.  During sampling,
        * the time (in ms) of the last zero crossing is saved here.  Upon return to "Loop", the estimated
        * time just before the next crossing is computed.  That's when samplePower will be called again.
-       * We try to run everything else during the half-wave intervals between power sampling.  The next 
-       * channel to be sampled is also kept here to complete the picture.  
+       * We try to run everything else during the half-wave intervals between power sampling.  The next
+       * channel to be sampled is also kept here to complete the picture.
        **************************************************************************************************/
-       
+
 uint32_t lastCrossMs = 0;             // Timestamp at last zero crossing (ms) (set in samplePower)
 uint32_t nextCrossMs = 0;             // Time just before next zero crossing (ms) (computed in Loop)
 uint32_t nextChannel = 0;             // Next channel to sample (maintained in Loop)
 
 enum priorities: byte {priorityLow=3, priorityMed=2, priorityHigh=1};
- 
+
 struct serviceBlock {                  // Scheduler/Dispatcher list item (see comments in Loop)
   serviceBlock* next;                  // Next serviceBlock in list
   uint32_t callTime;                   // Time (in NTP seconds) to dispatch
@@ -143,15 +143,15 @@ struct serviceBlock {                  // Scheduler/Dispatcher list item (see co
   uint32_t (*service)(serviceBlock*);  // the SERVICE
   serviceBlock(){next=NULL; callTime=0; priority=priorityMed; service=NULL;}
 };
-  
+
 serviceBlock* serviceQueue = NULL;     // Head of ordered list of services
 
-      // Define maximum number of input channels. 
+      // Define maximum number of input channels.
       // Create pointer for array of pointers to incidences of input channels
       // Initial values here are defaults for IotaWatt 2.1.
       // VrefVolts is the declared value of the voltage reference shunt,
       // Can be specified in config.device.aref
-      // Voltage adjustments are the values for AC reference attenuation in IotaWatt 2.1.    
+      // Voltage adjustments are the values for AC reference attenuation in IotaWatt 2.1.
 
 #define MAXINPUTS 32                          // Arbitrary compile time limit for input channels
 IotaInputChannel* *inputChannel;              // -->s to incidences of input channels (maxInputs entries)
@@ -159,12 +159,12 @@ uint8_t maxInputs = 0;                        // channel limit based on configur
 float VrefVolts = 1.0;                        // Voltage reference shunt value used to calibrate
                                               // the ADCs. (can be specified in config.device.refvolts)
 #define Vadj_1 38.532                         // IotaWatt 2.1 attenuation at 1.2v Aref (VT input/ADC input)
-#define Vadj_3 13                             // IotaWatt 2.1 attenuation at 3.2v Aref            
- 
+#define Vadj_3 13                             // IotaWatt 2.1 attenuation at 3.2v Aref
+
       // ****************************************************************************
       // statService maintains current averages of the channel values
       // so that current values can be displayed by web clients
-      // statService runs at low frequency but is reved up by the web server 
+      // statService runs at low frequency but is reved up by the web server
       // handlers if the statistics are used.
 
 float frequency = 55;                             // Split the difference to start
@@ -175,7 +175,7 @@ dataBuckets statBucket[MAXINPUTS];
 
       // ****************************** list of output channels **********************
 
-IotaList outputList; 
+IotaList outputList;
 
       // ****************************** SDWebServer stuff ****************************
 
@@ -196,9 +196,9 @@ uint32_t timeRefNTP = SEVENTY_YEAR_SECONDS;  // Last time from NTP server (NTPti
 uint32_t timeRefMs = 0;                      // Internal MS clock corresponding to timeRefNTP
 uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forward and try to refresh
 uint32_t dataLogInterval = 5;                // Interval (sec) to invoke dataLog
-uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS 
+uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS
 uint32_t statServiceInterval = 1;            // Interval (sec) to invoke statService
-uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for software updates 
+uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for software updates
 
 boolean  hasRTC = false;
 boolean  RTCrunning = false;
@@ -209,11 +209,11 @@ uint8_t ledCount;                             // Current index into cycle
       // *********************** EmonCMS configuration stuff *************************
       // Note: nee dto move out to a class and change for dynamic configuration
       // Start stop is a kludge for now.
-      
+
 bool EmonStarted = false;                    // set true when Service started
 bool EmonStop = false;                       // set true to stop the Service
-bool EmonInitialize = true;                  // Initialize or reinitialize EmonService                                         
-String  EmonURL;                             // These are set from the config file 
+bool EmonInitialize = true;                  // Initialize or reinitialize EmonService
+String  EmonURL;                             // These are set from the config file
 String  EmonURI = "";
 String apiKey;
 uint8_t cryptoKey[16];
@@ -227,7 +227,7 @@ enum EmonSendMode {
 } EmonSend = EmonSendPOSTsecure;
 
       // ************************ ADC sample pairs ************************************
- 
+
 int16_t samples = 0;                              // Number of samples taken in last sampling
 #define MAX_SAMPLES 1000
 int16_t Vsample [MAX_SAMPLES];                    // voltage/current pairs during sampling
@@ -235,6 +235,4 @@ int16_t Isample [MAX_SAMPLES];
 
       // I can't remove this unused function because the compiler goes berzerk.
 
-void wtf(){} 
-
-
+void wtf(){}
