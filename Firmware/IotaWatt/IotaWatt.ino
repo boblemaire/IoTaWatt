@@ -23,14 +23,6 @@
       SOFTWARE.
       ***********************************************************************************/
 
-#define IOTAWATT_VERSION "2.02.15"
-
-#define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
-#define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
-#define MIN(a,b) ((a<b)?a:b)
-#define MAX(a,b) ((a>b)?a:b)
-
-
 #include <SPI.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
@@ -51,6 +43,7 @@
 #include <AES.h>
 #include <CBC.h>
 #include <SHA256.h>
+#include "IotaWatt.h"
 #include "IotaLog.h"
 #include "IotaInputChannel.h"
 #include "IotaOutputChannel.h"
@@ -79,20 +72,6 @@ String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
 String EmonPostLogFile = "/iotawatt/Emonlog.log";
 uint16_t deviceVersion = 0;
 
-        // Define the hardware pins
-
-#define pin_CS_ADC0 0                       // Define the hardware SPI chip select pins
-#define pin_CS_ADC1 16
-#define pin_CS_ADC2 2
-#define pin_CS_SDcard 15
-
-#define pin_I2C_SDA 4                       // I2C for rtc.  Wish it were SPI.
-#define pin_I2C_SCL 5
-
-#define redLed 16                           // IoTaWatt overusage of pins
-#define greenLed 0
-
-
 const int chipSelect = pin_CS_SDcard;       // for the benefit of SD.h
 
 uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC select pins
@@ -104,17 +83,6 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 #define QUERY_VOLTAGE  1
 #define QUERY_POWER  2
 #define QUERY_ENERGY 3
-
-     // RTC trace trace module values by module. (See trace routines in Loop tab)
-
-#define T_SETUP 60          // Setup
-#define T_LOOP 10           // Loop
-#define T_LOG 20            // dataLog
-#define T_Emon 30           // EmonService
-#define T_GFD 40            // GetFeedData
-#define T_SAMP 100          // samplePower
-#define T_UPDATE 50         // updater
-#define T_TEMP 120
 
       // ADC descriptors
 
@@ -134,16 +102,6 @@ uint32_t lastCrossMs = 0;             // Timestamp at last zero crossing (ms) (s
 uint32_t nextCrossMs = 0;             // Time just before next zero crossing (ms) (computed in Loop)
 uint32_t nextChannel = 0;             // Next channel to sample (maintained in Loop)
 
-enum priorities: byte {priorityLow=3, priorityMed=2, priorityHigh=1};
-
-struct serviceBlock {                  // Scheduler/Dispatcher list item (see comments in Loop)
-  serviceBlock* next;                  // Next serviceBlock in list
-  uint32_t callTime;                   // Time (in NTP seconds) to dispatch
-  priorities priority;                 // All things equal tie breaker
-  uint32_t (*service)(serviceBlock*);  // the SERVICE
-  serviceBlock(){next=NULL; callTime=0; priority=priorityMed; service=NULL;}
-};
-
 serviceBlock* serviceQueue = NULL;     // Head of ordered list of services
 
       // Define maximum number of input channels.
@@ -153,7 +111,6 @@ serviceBlock* serviceQueue = NULL;     // Head of ordered list of services
       // Can be specified in config.device.aref
       // Voltage adjustments are the values for AC reference attenuation in IotaWatt 2.1.
 
-#define MAXINPUTS 32                          // Arbitrary compile time limit for input channels
 IotaInputChannel* *inputChannel;              // -->s to incidences of input channels (maxInputs entries)
 uint8_t maxInputs = 0;                        // channel limit based on configured hardware (set in Config)
 float VrefVolts = 1.0;                        // Voltage reference shunt value used to calibrate
@@ -180,9 +137,9 @@ IotaList outputList;
       // ****************************** SDWebServer stuff ****************************
 
 #define DBG_OUTPUT_PORT Serial
-char* host = "IotaWatt";
+char host[10] = "IotaWatt";
 ESP8266WebServer server(80);
-static bool hasSD = false;
+bool hasSD = false;
 File uploadFile;
 void handleNotFound();
 boolean serverAvailable = true;   // Set false when asynchronous handler active to avoid new requests
@@ -221,10 +178,7 @@ String node = "IotaWatt";
 boolean EmonSecure = false;
 String EmonUsername;
 int16_t EmonBulkSend = 1;
-enum EmonSendMode {
-  EmonSendGET = 1,
-  EmonSendPOSTsecure = 2
-} EmonSend = EmonSendPOSTsecure;
+enum EmonSendMode EmonSend = EmonSendPOSTsecure;
 
       // ************************ ADC sample pairs ************************************
 

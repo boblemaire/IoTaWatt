@@ -1,3 +1,19 @@
+#include <Arduino.h>
+#include <RTClib.h>
+#include <SD.h>
+#include <SPI.h>
+#include <Wire.h>
+
+#include "IotaWatt.h"
+#include "timeServices.h"
+
+String formatHex(uint32_t data);
+void dropDead(void);
+void dropDead(char* pattern);
+void setLedCycle(char* pattern);
+void endLedCycle();
+void ledBlink();
+
 void setup()
 {
   //*************************************** Start Serial connection (if any)***************************

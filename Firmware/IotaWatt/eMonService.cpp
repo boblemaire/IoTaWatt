@@ -1,4 +1,4 @@
-   /*******************************************************************************************************
+/*******************************************************************************************************
  * EmonService - This SERVICE posts entries from the IotaLog to EmonCMS.  Details of the EmonCMS
  * account are provided in the configuration file at startup and this SERVICE is scheduled.  It runs
  * more or less independent of everything else, just reading the log records as they become available
@@ -10,6 +10,18 @@
  * SERVER.  The only issue right now would be the WiFi resource.  A future move to the 
  * asynchWifiClient would solve that.
  ******************************************************************************************************/
+
+#include <Arduino.h>
+#include <ESP8266HTTPClient.h>
+#include <SD.h>
+
+#include "IotaWatt.h"
+#include "msgLog.h"
+
+boolean EmonSendData(uint32_t reqUnixtime, String reqData);   
+String base64encode(const uint8_t* in, size_t len);
+String encryptData(String in, uint8_t* key);
+  
 uint32_t EmonService(struct serviceBlock* _serviceBlock){
   // trace T_Emon
   enum   states {initialize, post, resend};

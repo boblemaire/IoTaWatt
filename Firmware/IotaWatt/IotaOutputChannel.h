@@ -1,3 +1,8 @@
+#ifndef IotaOutputChannel_h
+#define IotaOutputChannel_h
+
+#include <Arduino.h>
+
 class IotaScript {
 	typedef uint8_t IStoken;
 	
@@ -197,4 +202,4 @@ void IotaScript::printScript(){
 		Serial.println(msg);
 }
 
-			
+#endif // IotaOutputChannel_h			

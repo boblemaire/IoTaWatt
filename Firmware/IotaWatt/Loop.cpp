@@ -1,4 +1,13 @@
- void loop()
+#include <Arduino.h>
+
+#include "IotaWatt.h"
+
+void AddService(struct serviceBlock* newBlock);
+uint32_t statService(struct serviceBlock* _serviceBlock);
+void logTrace(void);
+uint32_t updater(struct serviceBlock* _serviceBlock);
+  
+void loop()
 {
 /******************************************************************************
  * The main loop is very simple:

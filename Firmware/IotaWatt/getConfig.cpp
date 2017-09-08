@@ -1,3 +1,18 @@
+#include <Arduino.h>
+#include <SD.h>
+#include <ArduinoJson.h>
+
+#include "IotaWatt.h"
+#include "IotaInputChannel.h"
+#include "IotaOutputChannel.h"
+#include "msgLog.h"
+
+String old2newScript(JsonArray& script);  
+void configInputs(JsonArray& JsonInputs);
+void configOutputs(JsonArray& JsonOutputs);
+void condenseJson(char* ConfigBuffer, File JsonFile);
+uint32_t condensedJsonSize(File JsonFile);
+  
 boolean getConfig(void)
 {
   DynamicJsonBuffer Json;              
