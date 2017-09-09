@@ -49,6 +49,16 @@
 
 */
 
+#include <Arduino.h>
+#include <ArduinoJson.h>
+
+#include "IotaWatt.h"
+#include "IotaOutputChannel.h"
+#include "msgLog.h"
+#include "timeServices.h"
+
+void sendMsgFile(File &dataFile, int32_t relPos);
+  
 void returnOK() {
   server.send(200, "text/plain", "");
 }

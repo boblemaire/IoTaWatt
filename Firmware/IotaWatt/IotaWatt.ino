@@ -43,11 +43,13 @@
 #include <AES.h>
 #include <CBC.h>
 #include <SHA256.h>
+
 #include "IotaWatt.h"
 #include "IotaLog.h"
 #include "IotaInputChannel.h"
 #include "IotaOutputChannel.h"
 #include "IotaList.h"
+#include "webServer.h"
 
       // Declare instances of various classes above
 
@@ -78,17 +80,6 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
                             pin_CS_ADC1,
                             pin_CS_ADC2};
 
-      // Identifiers used to construct id numbers for graph API
-
-#define QUERY_VOLTAGE  1
-#define QUERY_POWER  2
-#define QUERY_ENERGY 3
-
-      // ADC descriptors
-
-#define ADC_BITS 12
-#define ADC_RANGE 4096      // 1 << ADC_BITS
-
       /**************************************************************************************************
        * Core dispatching parameters - There's a lot going on, but the steady rhythm is sampling the
        * power channels, and that has to be done on their schedule - the AC frequency.  During sampling,
@@ -115,8 +106,6 @@ IotaInputChannel* *inputChannel;              // -->s to incidences of input cha
 uint8_t maxInputs = 0;                        // channel limit based on configured hardware (set in Config)
 float VrefVolts = 1.0;                        // Voltage reference shunt value used to calibrate
                                               // the ADCs. (can be specified in config.device.refvolts)
-#define Vadj_1 38.532                         // IotaWatt 2.1 attenuation at 1.2v Aref (VT input/ADC input)
-#define Vadj_3 13                             // IotaWatt 2.1 attenuation at 3.2v Aref
 
       // ****************************************************************************
       // statService maintains current averages of the channel values
@@ -136,17 +125,15 @@ IotaList outputList;
 
       // ****************************** SDWebServer stuff ****************************
 
-#define DBG_OUTPUT_PORT Serial
 char host[10] = "IotaWatt";
 ESP8266WebServer server(80);
 bool hasSD = false;
 File uploadFile;
-void handleNotFound();
+
 boolean serverAvailable = true;   // Set false when asynchronous handler active to avoid new requests
 boolean wifiConnected = false;
 
       // ****************************** Timing and time data *************************
-#define  SEVENTY_YEAR_SECONDS 2208988800UL
 int      localTimeDiff = 0;
 uint32_t programStartTime = 0;               // Time program started (UnixTime)
 uint32_t timeRefNTP = SEVENTY_YEAR_SECONDS;  // Last time from NTP server (NTPtime)
@@ -183,7 +170,6 @@ enum EmonSendMode EmonSend = EmonSendPOSTsecure;
       // ************************ ADC sample pairs ************************************
 
 int16_t samples = 0;                              // Number of samples taken in last sampling
-#define MAX_SAMPLES 1000
 int16_t Vsample [MAX_SAMPLES];                    // voltage/current pairs during sampling
 int16_t Isample [MAX_SAMPLES];
 

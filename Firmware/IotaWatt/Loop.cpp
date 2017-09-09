@@ -1,11 +1,11 @@
 #include <Arduino.h>
+#include <ESP8266httpUpdate.h>
 
 #include "IotaWatt.h"
+#include "msgLog.h"
+#include "timeServices.h"
 
 void AddService(struct serviceBlock* newBlock);
-uint32_t statService(struct serviceBlock* _serviceBlock);
-void logTrace(void);
-uint32_t updater(struct serviceBlock* _serviceBlock);
   
 void loop()
 {

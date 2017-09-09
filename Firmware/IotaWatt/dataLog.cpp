@@ -23,7 +23,9 @@
  #include <Arduino.h>
 
  #include "IotaWatt.h"
+ #include "IotaLog.h"
  #include "msgLog.h"
+ #include "timeServices.h"
  
  uint32_t dataLog(struct serviceBlock* _serviceBlock){
   // trace 2x

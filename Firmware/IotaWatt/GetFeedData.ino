@@ -14,6 +14,7 @@
 
 #include "IotaWatt.h"
 #include "IotaLog.h"
+#include "IotaOutputChannel.h"
 
 uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   // trace T_GFD

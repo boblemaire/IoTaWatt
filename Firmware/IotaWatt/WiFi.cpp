@@ -1,6 +1,11 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 
+#include "IotaWatt.h"
+#include "msgLog.h"
+#include "timeServices.h"
+#include "webServer.h"
+
 uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
   const byte DNS_PORT = 53;
   IPAddress apIP(192, 168, 4, 1);

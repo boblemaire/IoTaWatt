@@ -17,6 +17,8 @@
 
 #include "IotaWatt.h"
 #include "msgLog.h"
+#include "IotaLog.h"
+#include "timeServices.h"
 
 boolean EmonSendData(uint32_t reqUnixtime, String reqData);   
 String base64encode(const uint8_t* in, size_t len);

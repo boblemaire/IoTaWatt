@@ -13,6 +13,7 @@
 
 #include "IotaWatt.h"
 #include "timeServices.h"
+#include "msgLog.h"
 
 String timeString(int value);
 String formatIP(uint32_t IP);

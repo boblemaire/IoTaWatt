@@ -6,10 +6,15 @@
 #include <ESP8266HTTPClient.h>
 #include <AES.h>
 #include <CBC.h>
+#include <RTClib.h>
 #include <SHA256.h>
+#include <Ticker.h>
+#include <WiFiManager.h>
+#include <IotaLog.h>
 
 #include "IotaInputChannel.h"
 #include "IotaList.h"
+#include "webServer.h"
 
 #define IOTAWATT_VERSION "2.02.15"
 
@@ -27,7 +32,15 @@
 #define T_UPDATE 50         // updater
 #define T_TEMP 120
 
+// Identifiers used to construct id numbers for graph API
+
+#define QUERY_VOLTAGE  1
+#define QUERY_POWER  2
+#define QUERY_ENERGY 3
+      
 #define MAXINPUTS 32                          // Arbitrary compile time limit for input channels
+#define  SEVENTY_YEAR_SECONDS 2208988800UL
+extern const double MS_PER_HOUR;       // useful constant
 
 #define MIN(a,b) ((a<b)?a:b)
 #define MAX(a,b) ((a>b)?a:b)
@@ -45,6 +58,16 @@
 #define redLed 16                           // IoTaWatt overusage of pins
 #define greenLed 0
 
+#define Vadj_1 38.532                         // IotaWatt 2.1 attenuation at 1.2v Aref (VT input/ADC input)
+#define Vadj_3 13                             // IotaWatt 2.1 attenuation at 3.2v Aref
+
+// ADC descriptors
+
+#define ADC_BITS 12
+#define ADC_RANGE 4096      // 1 << ADC_BITS
+
+#define DBG_OUTPUT_PORT Serial
+
 enum priorities: byte {priorityLow=3, priorityMed=2, priorityHigh=1};
 
 struct serviceBlock;
@@ -59,6 +82,8 @@ struct serviceBlock {                  // Scheduler/Dispatcher list item (see co
 extern uint32_t lastCrossMs;              // Timestamp at last zero crossing (ms) (set in samplePower)
 extern uint32_t nextCrossMs;              // Time just before next zero crossing (ms) (computed in Loop)
 extern uint32_t nextChannel;              // Next channel to sample (maintained in Loop)
+
+extern serviceBlock* serviceQueue;     // Head of ordered list of services
 
 extern IotaInputChannel* *inputChannel;              // -->s to incidences of input channels (maxInputs entries)
 extern uint8_t maxInputs;                 // channel limit based on configured hardware (set in Config)
@@ -89,37 +114,78 @@ extern boolean EmonSecure;
 extern String EmonUsername;
 extern int16_t EmonBulkSend;
 extern enum EmonSendMode EmonSend;
-extern uint32_t EmonCMSInterval;               // Interval (sec) to invoke EmonCMS
+
+extern uint32_t timeSynchInterval;              // Interval (sec) to roll NTP forward and try to refresh
+extern uint32_t dataLogInterval;                // Interval (sec) to invoke dataLog
+extern uint32_t EmonCMSInterval;                // Interval (sec) to invoke EmonCMS
+extern uint32_t statServiceInterval;            // Interval (sec) to invoke statService
+extern uint32_t updaterServiceInterval;         // Interval (sec) to check for software updates
 
 extern IotaList outputList;
 
+extern WiFiManager wifiManager;
 extern ESP8266WebServer server;
 extern CBC<AES128> cypher;
 extern SHA256 sha256;
 extern HTTPClient http;
+extern RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
+extern Ticker ticker;
+extern IotaLog iotaLog;                            // instance of IotaLog class
 
 extern boolean  hasRTC;
 extern boolean  RTCrunning;
 extern bool hasSD;
+extern File uploadFile;
 
 extern char    ledColor[12];                        // Pattern to display led, each char is 500ms color - R, G, Blank
 extern uint8_t ledCount;                            // Current index into cycle
 
 extern String deviceName;                           // can be specified in config.device.name
 extern uint16_t deviceVersion;
-extern String IotaMsgLog;
 
+extern String IotaMsgLog;
+extern String IotaLogFile;
+
+extern uint32_t programStartTime;               // Time program started (UnixTime)
 extern uint32_t timeRefNTP;
+extern uint32_t timeRefMs;                      // Internal MS clock corresponding to timeRefNTP
 
 extern int      localTimeDiff;
 extern char     host[];
 
+extern boolean wifiConnected;
+
+extern float frequency;                             // Split the difference to start
+extern float samplesPerCycle;                      // Here as well
+extern float cycleSampleRate;
+extern int16_t cycleSamples;
+extern dataBuckets statBucket[MAXINPUTS];
+
+// ************************ ADC sample pairs ************************************
+#define MAX_SAMPLES 1000
+extern int16_t samples;                              // Number of samples taken in last sampling
+extern int16_t Vsample [MAX_SAMPLES];                    // voltage/current pairs during sampling
+extern int16_t Isample [MAX_SAMPLES];
+
+void logTrace(void);
 void trace(uint32_t module, int seq); 
 
+// Services
 void NewService(uint32_t (*serviceFunction)(struct serviceBlock*));
-
 uint32_t EmonService(struct serviceBlock* _serviceBlock);
-  
+uint32_t dataLog(struct serviceBlock* _serviceBlock);
+uint32_t statService(struct serviceBlock* _serviceBlock);
+uint32_t WiFiService(struct serviceBlock* _serviceBlock);
+uint32_t updater(struct serviceBlock* _serviceBlock);
+uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock);
+
+void dropDead(void);
 void setLedState();
 
+boolean getConfig(void);
+
+float sampleVoltage(uint8_t Vchan, float Vcal);  
+void samplePower(int channel, int overSample);
+float samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift);
+  
 #endif // !IotaWatt_h
