@@ -78,10 +78,9 @@ void setup()
   //**************************************** Display software version *********************************
 
   msgLog("Version: ", IOTAWATT_VERSION);
-
-//  updateFromSD("iotawatt.bin");
-//  msgLog("return from update.");
-
+  
+  copyUpdate(String(IOTAWATT_VERSION));
+  
   //**************************************** Display the trace ****************************************
 
   msgLog("Reset reason: ",(char*)ESP.getResetReason().c_str());
