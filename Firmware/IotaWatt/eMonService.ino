@@ -261,7 +261,7 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
     String URL = EmonURI + "/input/bulk.json?time=" + String(reqUnixtime) + "&apikey=" + apiKey + "&data=" + reqData;
     Serial.println(URL);
     http.begin(EmonURL, 80, URL);
-    http.setTimeout(100);
+    http.setTimeout(500);
     int httpCode = http.GET();
     if(httpCode != HTTP_CODE_OK){
       msgLog("EmonService: GET failed. HTTP code: ", http.errorToString(httpCode));
