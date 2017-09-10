@@ -1,4 +1,13 @@
- void loop()
+#include <Arduino.h>
+#include <ESP8266httpUpdate.h>
+
+#include "IotaWatt.h"
+#include "msgLog.h"
+#include "timeServices.h"
+
+void AddService(struct serviceBlock* newBlock);
+  
+void loop()
 {
 /******************************************************************************
  * The main loop is very simple:

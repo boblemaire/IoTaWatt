@@ -1,7 +1,18 @@
-  /***************************************************************************************************
-  *  samplePower()  Sample a channel.
-  *  
-  ****************************************************************************************************/
+/***************************************************************************************************
+ *  samplePower()  Sample a channel.
+ *  
+ ****************************************************************************************************/
+
+#include <Arduino.h>
+
+#include "IotaWatt.h"
+#include "IotaInputChannel.h"
+
+int readADC(uint8_t channel);
+float getAref(int channel);
+float sampleVoltage(uint8_t Vchan, float Vcal);
+boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles, int overSamples);
+  
 void samplePower(int channel, int overSample){
   uint32_t timeNow = millis();
   

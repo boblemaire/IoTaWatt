@@ -19,6 +19,14 @@
  * As with all of the SERVICES, it has a  single function call and is implimented as state machine.
  * Services should try not to execute for more than a few milliseconds at a time.
  **********************************************************************************************/
+ 
+ #include <Arduino.h>
+
+ #include "IotaWatt.h"
+ #include "IotaLog.h"
+ #include "msgLog.h"
+ #include "timeServices.h"
+ 
  uint32_t dataLog(struct serviceBlock* _serviceBlock){
   // trace 2x
   enum states {initialize, checkClock, logData};

@@ -7,12 +7,23 @@
  * There's a better way to accomodate the various types, but this works for now.
  ****************************************************************************************/
 
-void msgLog(String message){msgLog((char*)message.c_str(), "", "");}
-void msgLog(char* segment1, String segment2){msgLog(segment1,(char*)segment2.c_str());}
-void msgLog(char* segment1, uint32_t segment2){msgLog(segment1, String(segment2));}
-void msgLog(char* segment1){msgLog(segment1, "", "");}
-void msgLog(char* segment1, char* segment2){msgLog(segment1, segment2, "");}
-void msgLog(char* segment1, char* segment2, char* segment3){
+#include <Arduino.h>
+#include <SD.h>
+#include <RTClib.h>
+
+#include "IotaWatt.h"
+#include "timeServices.h"
+#include "msgLog.h"
+
+String timeString(int value);
+String formatIP(uint32_t IP);
+  
+void msgLog(String message){msgLog(message.c_str(), "", "");}
+void msgLog(const char* segment1, String segment2){msgLog(segment1,segment2.c_str());}
+void msgLog(const char* segment1, uint32_t segment2){msgLog(segment1, String(segment2));}
+void msgLog(const char* segment1){msgLog(segment1, "", "");}
+void msgLog(const char* segment1, const char* segment2){msgLog(segment1, segment2, "");}
+void msgLog(const char* segment1, const char* segment2, const char* segment3){
   static File msgFile;
   static boolean restart = true;
   String msg = "";

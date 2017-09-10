@@ -1,18 +1,26 @@
-  /***************************************************************************************************
-   * setNTPtime() - returns uint32_t bimary count of seconds since 1/1/1900 - UTC aka GMT.
-   * This is the fundamental time standard used by the program. The value is obtained from one of
-   * many synchronized time servers using the basic UDP internet protocol.  This function is a
-   * bastard son of several similar routines that I came across while putting this together. Here,
-   * the emphasis was on just making it a straightforward utility resource.  It's not well documented,
-   * but any similar routine that returns the NTP value could be used.
-   * 
-   * The program stores the returned value along with the simultaneous value of the internal 
-   * millisecond clock.  With those two values and the current millisecond clock value, an updated 
-   * NTP time can be computed.  The program checks back in with NTP from time to time for a 
-   * reality check.
-   * 
-   * Unix time is NTP time minus 70 years worth of seconds (seconds since 1/1/70 when the world began). 
-   **************************************************************************************************/ 
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+
+#include "IotaWatt.h"
+#include "msgLog.h"
+#include "timeServices.h"
+
+/***************************************************************************************************
+ * setNTPtime() - returns uint32_t bimary count of seconds since 1/1/1900 - UTC aka GMT.
+ * This is the fundamental time standard used by the program. The value is obtained from one of
+ * many synchronized time servers using the basic UDP internet protocol.  This function is a
+ * bastard son of several similar routines that I came across while putting this together. Here,
+ * the emphasis was on just making it a straightforward utility resource.  It's not well documented,
+ * but any similar routine that returns the NTP value could be used.
+ * 
+ * The program stores the returned value along with the simultaneous value of the internal 
+ * millisecond clock.  With those two values and the current millisecond clock value, an updated 
+ * NTP time can be computed.  The program checks back in with NTP from time to time for a 
+ * reality check.
+ * 
+ * Unix time is NTP time minus 70 years worth of seconds (seconds since 1/1/70 when the world began). 
+ **************************************************************************************************/ 
   uint32_t getNTPtime() {
     if(WiFi.isConnected()) {
       WiFiUDP udp;

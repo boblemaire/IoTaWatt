@@ -1,3 +1,21 @@
+#include <Arduino.h>
+#include <ESP8266mDNS.h>
+#include <RTClib.h>
+#include <SD.h>
+#include <SPI.h>
+#include <Wire.h>
+
+#include "IotaWatt.h"
+#include "msgLog.h"
+#include "timeServices.h"
+#include "webServer.h"
+
+String formatHex(uint32_t data);
+void dropDead(const char* pattern);
+void setLedCycle(const char* pattern);
+void endLedCycle();
+void ledBlink();
+
 void setup()
 {
   //*************************************** Start Serial connection (if any)***************************
@@ -176,7 +194,7 @@ String formatHex(uint32_t data){
 }
 
 void dropDead(void){dropDead("R.R.R...");}
-void dropDead(char* pattern){
+void dropDead(const char* pattern){
   msgLog("Program halted.");
   setLedCycle(pattern);
   while(1){
@@ -184,7 +202,7 @@ void dropDead(char* pattern){
   }  
 }
 
-void setLedCycle(char* pattern){
+void setLedCycle(const char* pattern){
   ledCount = 0;
   for(int i=0; i<13; i++){
     ledColor[i] = pattern[i];
