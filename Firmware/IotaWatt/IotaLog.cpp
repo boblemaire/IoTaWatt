@@ -1,8 +1,8 @@
 /*
   IotaLog - Library for IoTaLog energy monitor
-  Created by Bob Lemaire 
+  Created by Bob Lemaire
 */
-#include "Iotalog.h"
+#include "IotaLog.h"
 	#define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
 	int IotaLog::begin (char* path){
@@ -83,17 +83,17 @@
 	int IotaLog::write (IotaLogRecord* newRecord){
 		if(!IotaFile){
 			return 2;
-		} 
+		}
 		if(newRecord->UNIXtime <= _lastKey) {
 			return 1;
-		}			
+		}
 		newRecord->serial = _entries++;
 		IotaFile.seek(_fileSize);
 		IotaFile.write((char*)newRecord, sizeof(IotaLogRecord));
 		if(_firstKey == 0){
 			_firstKey = newRecord->UNIXtime;
 		}
-		_fileSize += sizeof(IotaLogRecord);	
+		_fileSize += sizeof(IotaLogRecord);
 		IotaFile.flush();
 		if(newRecord->UNIXtime - _lastKey > _interval){
 			IotaIndex.close();
@@ -132,7 +132,7 @@
 			int32_t _L1cluster = _L2entries - 1;
 			while(key < _L2index[_L1cluster--]);
 			uint32_t L1Position = ++_L1cluster * _L1clusterEntries * 8;
-			readL1index(L1Position);					
+			readL1index(L1Position);
 			do{
 				_seriesKey = _L1indexEntry->UNIXtime;
 				_seriesSerial = _L1indexEntry->serial;
@@ -146,7 +146,7 @@
 		uint32_t _seriesOffset = (key - _seriesKey) / _interval;
 		if(_seriesOffset >= _seriesEntries){
 			_seriesOffset = _seriesEntries - 1;
-		}		
+		}
 		IotaFile.seek((_seriesSerial + _seriesOffset) * sizeof(IotaLogRecord));
 		IotaFile.read(_callerRecord, sizeof(IotaLogRecord));
 		_callerRecord->UNIXtime = key;
@@ -194,12 +194,12 @@
 		logPath = "";
 		indexPath = "";
 		delete[] _L2index;
-		delete[] _L1indexBuffer; 
+		delete[] _L1indexBuffer;
 		_firstKey = 0;
 		_lastKey = 0;
 		_fileSize = 0;
 		IotaFile.close();
-		IotaIndex.close();		
+		IotaIndex.close();
 		return 0;
 	}
 	
