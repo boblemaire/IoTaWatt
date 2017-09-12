@@ -123,10 +123,12 @@ boolean getConfig(void)
      
         // ************************************ configure output channels *************************
 
-  if(Config.containsKey("outputs")){
-    configOutputs(Config["outputs"]);
+  delete outputs;
+  JsonVariant var = Config["outputs"];
+  if(var.success()){
+    outputs = new ScriptSet(var.as<JsonArray>()); 
   }
-  
+      
         // Get server type
                                                   
   String serverType = Config["server"]["type"].as<String>();
@@ -176,34 +178,6 @@ boolean getConfig(void)
 
   delete[] ConfigBuffer;
   return true;
-}
-
-void configOutputs(JsonArray& JsonOutputs){
-  while(outputList.size()){
-    IotaOutputChannel* output = (IotaOutputChannel*) outputList.findFirst();
-    outputList.remove(output);
-    delete output;
-  }
-  for(int i=0; i<JsonOutputs.size(); i++){
-    JsonObject& outputObject = JsonOutputs[i].as<JsonObject&>();
-    if(outputObject.containsKey("name") &&
-       outputObject.containsKey("units") &&
-       outputObject.containsKey("script")) {
-        String script;
-          if(outputObject["script"].is<JsonArray>()){            
-            script = old2newScript(outputObject["script"]);     // old verbose script is depricated but convert it for now
-          } else {
-            script = outputObject["script"].as<String>();       // New lean and mean script
-          }
-          IotaOutputChannel* output = new IotaOutputChannel(outputObject["name"], outputObject["units"], script);
-          output->_channel = i+100;
-          outputList.insertTail(output, output->_name);
-       }
-  }
-  IotaOutputChannel* outputChannel = (IotaOutputChannel*)outputList.findFirst();
-  while(outputChannel != NULL){
-    outputChannel = (IotaOutputChannel*)outputList.findNext(outputChannel);
-  }
 }
 
 void configInputs(JsonArray& JsonInputs){

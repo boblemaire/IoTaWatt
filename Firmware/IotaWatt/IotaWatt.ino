@@ -53,7 +53,7 @@
 #include <SHA256.h>
 #include "IotaLog.h"
 #include "IotaInputChannel.h"
-#include "IotaOutputChannel.h"
+#include "IotaScript.h"
 #include "IotaList.h"
 
       // Declare instances of various classes above
@@ -175,6 +175,7 @@ dataBuckets statBucket[MAXINPUTS];
 
       // ****************************** list of output channels **********************
 
+ScriptSet* outputs;
 IotaList outputList; 
 
       // ****************************** SDWebServer stuff ****************************
