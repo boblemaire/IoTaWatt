@@ -202,34 +202,5 @@ void logTrace(void){
   msgLog(line);
 }
 
-/*************************************************************************************************
- * 
- *          updater - Service to check and update firmware
- * 
- *************************************************************************************************/
-uint32_t updater(struct serviceBlock* _serviceBlock) { 
-  static bool upToDateMsg = false;
-  ESPhttpUpdate.rebootOnUpdate(false);
-  trace(T_UPDATE,0);
-  t_httpUpdate_return ret = ESPhttpUpdate.update("iotawatt.com", 80, "/firmware/update.php", IOTAWATT_VERSION);
-  trace(T_UPDATE,1);
-  switch(ret) {
-    case HTTP_UPDATE_FAILED:
-        msgLog("update: Update failed.", ESPhttpUpdate.getLastErrorString());
-        return ((uint32_t)UNIXtime() + 5*60);
-    case HTTP_UPDATE_NO_UPDATES:
-        if( ! upToDateMsg){
-          msgLog("update: Firmware is up to date.");
-          upToDateMsg = true;
-        }
-        break;
-    case HTTP_UPDATE_OK:
-        msgLog("update: Firmware updated.");
-        delay(500);
-        ESP.restart();
-        break;
-  }  
-  return ((uint32_t)UNIXtime() + updaterServiceInterval);
-}
 
-
+ 

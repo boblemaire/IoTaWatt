@@ -64,6 +64,7 @@ void setup()
       Wire.write((byte)0);
       Wire.endTransmission();
     }
+    SdFile::dateTimeCallback(dateTime);
   }
   else {
     msgLog("Real Time Clock not initialized.");
@@ -78,23 +79,14 @@ void setup()
   //**************************************** Display software version *********************************
 
   msgLog("Version: ", IOTAWATT_VERSION);
-
+  
   //**************************************** Display the trace ****************************************
 
   msgLog("Reset reason: ",(char*)ESP.getResetReason().c_str());
   logTrace();
   msgLog("ESP8266 ChipID:",ESP.getChipId());
 
-  //************************************* Process Config file *****************************************
-  
-  if(!getConfig()) {
-    msgLog("Configuration failed");
-    dropDead();
-  }
-  String msg = "device name: " + deviceName + ", version: " + String(deviceVersion); 
-  msgLog(msg);
-  msgLog("Local time zone: ",String(localTimeDiff));
-  
+
 //*************************************** Start the WiFi  connection *****************************
   
   WiFi.begin();
@@ -124,15 +116,33 @@ void setup()
   if(WiFi.status() != WL_CONNECTED){
     msgLog("No WiFi connection.");
   }
+
+  //**************************************** Check for pending update ********************************
+
+  if(checkUpdate()){
+    msgLog("Firmware updated, restarting");
+    delay(500);
+    ESP.restart();
+  }  
   
- //*************************************** Start the local DNS service ****************************
+ //************************************* Process Config file *****************************************
+  
+  if(!getConfig()) {
+    msgLog("Configuration failed");
+    dropDead();
+  }
+  String msg = "device name: " + deviceName + ", version: " + String(deviceVersion); 
+  msgLog(msg);
+  msgLog("Local time zone: ",String(localTimeDiff));
+  
+  //*************************************** Start the local DNS service ****************************
 
   if (MDNS.begin(host)) {
       MDNS.addService("http", "tcp", 80);
       msgLog("MDNS responder started");
       msgLog("You can now connect to http://", host, ".local");
   }
-  
+   
  //*************************************** Start the web server ****************************
 
   server.on("/status",HTTP_GET, handleStatus);
