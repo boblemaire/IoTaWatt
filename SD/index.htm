@@ -356,7 +356,7 @@ function refreshInputEdit(){
       }
     }
   }
-  inputModel.setAttribute("oninput","inputEditNewModel(this)");
+  inputModel.setAttribute("onchange","inputEditNewModel(this)");
   
   if(inputEditObject.model == "generic" && 
     (inputEditObject.type == "VT" ||
@@ -428,6 +428,9 @@ function refreshInputEdit(){
     inputNeg = addTableRow(table, "", "inputNeg", "input");
     inputNeg.parentNode.appendChild(document.createTextNode("Allow negative power value"));
     inputNeg.setAttribute("type","checkbox");
+    inputNeg.setAttribute("onchange","inputEditObject.signed=this.checked; refreshInputEdit();");
+    if(inputEditObject.signed)inputNeg.checked = true;
+    else inputEditObject.signed = undefined;
     document.getElementById("inputEditDelete").style.display = (config.inputs[inputEditChannel] == null) ? "none" : "inline";
   }
 
@@ -448,7 +451,7 @@ function refreshInputEdit(){
 function inputEditNewModel(obj){
   inputEditObject.model = obj.value;
   if(inputEditObject.model == "generic"){
-    inputEditNewType(inputEditObj.type);
+    inputEditNewType(inputEditObject.type);
   }
   else if(inputEditObject.type == "VT"){
     for(i in tables.VT){
@@ -474,10 +477,11 @@ function inputEditNewModel(obj){
       }
     }
   }
+  refreshInputEdit();
 }
 
 function inputEditNewType(type){
-   inputEditObject = {channel:inputEditChannel, name:inputEditObject.name, type:type, model:"generic", phase:0,};
+   inputEditObject = {channel:inputEditChannel, name:inputEditObject.name, type:type, model:"generic", phase:0, signed:inputEditObject.signed};
   if(type == "CT"){
      if(config.device.burden[inputEditChannel] == 0){
        inputEditObject.cal = 0;

@@ -38,7 +38,7 @@ void msgLog(char* segment1, char* segment2, char* segment3){
     }
     msg += "\r\n";
     msgFile.write((char*)msg.c_str(), msg.length());
-    msgFile.flush(); 
+    msgFile.close(); 
   }
 }
 
