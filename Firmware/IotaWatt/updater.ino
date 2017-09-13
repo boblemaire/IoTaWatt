@@ -4,40 +4,50 @@
  * 
  *************************************************************************************************/
 uint32_t updater(struct serviceBlock* _serviceBlock) {
-  static bool upToDateMsg = false;
-  String updateVersion;
+  if(checkUpdate()){
+    msgLog ("Firmware updated, restarting.");
+    delay(500);
+    ESP.restart();
+  }  
+  return UNIXtime() + updaterServiceInterval;
+}
+
+/*************************************************************************************************
+ *  bool checkUpdate()
+ *  
+ *  Check to see if there is an update available.
+ *  If so, download, install, return true;.
+ *  If not, return false;
+  ************************************************************************************************/
+bool checkUpdate(){
   http.begin(updateURL, 80, updateURI);
   http.addHeader(F("Host"),updateURL);
   http.setUserAgent(F("IotaWatt"));
   http.addHeader(F("X_STA_MAC"), WiFi.macAddress());
   http.addHeader(F("X-UPDATE-CLASS"), updateClass);
   http.addHeader(F("X_CURRENT_VERSION"), IOTAWATT_VERSION);
-  http.setTimeout(1000);
+  http.setTimeout(500);
   int httpCode = http.GET();
   uint32_t len = http.getSize();
   if(httpCode != HTTP_CODE_OK  || len != 8){
-    msgLog("Updater: Invalid response from server.");
+    msgLog("checkUpdate: Invalid response from server.");
     http.writeToStream(&Serial);
     Serial.println();
     http.end();
-    return UNIXtime() + updaterServiceInterval;
+    return false;
   }
-  updateVersion = http.getString();
+  String updateVersion = http.getString();
   http.end();
-  if(strcmp(updateVersion.c_str(),IOTAWATT_VERSION) != 0){
-    if( ! upToDateMsg) {
-      upToDateMsg = true;
-      msgLog("Updater: Firmware is up to date.");
-    }
-    return UNIXtime() + 10; // updaterServiceInterval);
+  if(strcmp(updateVersion.c_str(),IOTAWATT_VERSION) == 0){
+    return false;
   }
   String msg = "Update from " + String(IOTAWATT_VERSION) + " to " + updateVersion;
   msgLog("Updater: ", msg);
   if(downloadUpdate(updateVersion)) {
-     installUpdate(updateVersion);
+     return installUpdate(updateVersion);
   }
   deleteRecursive(updateVersion);
-  return UNIXtime() + updaterServiceInterval;
+  return false; 
 }
 
 /**************************************************************************************************
@@ -118,7 +128,8 @@ bool downloadUpdate(String version){
       http.end();
       return false;
     }
-    bool iotawattBin = strcmp(headers.fileHeader.name, "IOTAWATT.BIN") == 0;
+    String filename = String(headers.fileHeader.name);
+    bool iotawattBin = filename.equalsIgnoreCase("iotawatt.bin");
     if(iotawattBin){
       binaryFound = true;
       md5.begin();
@@ -225,9 +236,7 @@ bool installUpdate(String version){
   }
   SD.remove((char*)inPath.c_str());
   msgLog("Updater: firmware upgraded to version ", version);
-  msgLog("Updater: Restarting IotaWatt.");
-  delay(500);
-  ESP.restart();
+  return true;
 }
 
 /************************************************************************************************************

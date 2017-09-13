@@ -22,7 +22,7 @@
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
       ***********************************************************************************/
-#define IOTAWATT_VERSION "02_02_15"
+#define IOTAWATT_VERSION "02_02_16"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -209,8 +209,8 @@ uint8_t ledCount;                             // Current index into cycle
 
       // ****************************** Firmware update ****************************
 char* updateURL = "iotawatt.com";
-char* updateURI = "/firmware/update2.php";
-String updateClass = "TEST";              // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
+char* updateURI = "/firmware/iotaupdt.php";
+String updateClass = "MINOR";              // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
 uint8_t publicKey[32] = {0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
                          0xcc, 0x2c, 0xea, 0x2e, 0x88, 0x9c, 0xe0, 0xea,
                          0x3f, 0x20, 0x5a, 0x78, 0x22, 0x0c, 0xbc, 0x78,
