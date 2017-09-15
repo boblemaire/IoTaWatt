@@ -131,7 +131,7 @@ boolean getConfig(void)
     configOutputs(Config["outputs"]);
   }
   
-        // ************************************ Configure any servers. ***************************
+        // Get server type
                                                   
   String serverType = Config["server"]["type"].as<String>();
   serverType.toLowerCase();
