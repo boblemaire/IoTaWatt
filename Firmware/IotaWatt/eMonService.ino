@@ -157,8 +157,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // If new request, format preamble, otherwise, just tack it on with a comma.
       
       if(reqData.length() == 0){
-        reqData = "time=" + String(reqUnixtime) +  "&data=[";
         reqUnixtime = UnixNextPost;
+        reqData = "time=" + String(reqUnixtime) +  "&data=[";
       }
       else {
         reqData += ',';
@@ -255,7 +255,7 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
     String URL = EmonURI + "/input/bulk.json?" + reqData + "&apikey=" + apiKey;
     Serial.println(URL);
     http.begin(EmonURL, 80, URL);
-    http.setTimeout(100);
+    http.setTimeout(500);
     int httpCode = http.GET();
     if(httpCode != HTTP_CODE_OK){
       msgLog("EmonService: GET failed. HTTP code: ", http.errorToString(httpCode));
@@ -273,7 +273,7 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
   }
 
   if(EmonSend == EmonSendPOSTsecure){
-                     
+    String URI = EmonURI + "/input/bulk";               
     sha256.reset();
     sha256.update(reqData.c_str(), reqData.length());
     uint8_t value[32];
@@ -284,13 +284,12 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
     sha256.finalizeHMAC(cryptoKey, 16, value, 32);
     String hmac = bin2hex(value, 32);
     String auth = EmonUsername + ':' + hmac;
-    http.begin(EmonURL, 80, EmonURI);
+    http.begin(EmonURL, 80, URI);
     http.addHeader("Host",EmonURL);
     
     http.addHeader("Content-Type","aes128cbc");
-    http.addHeader("X-Authorization", auth.c_str());
-    http.addHeader("AUTHORIZATION", auth.c_str());
-    http.setTimeout(100);
+    http.addHeader("Authorization", auth.c_str());
+    http.setTimeout(500);
     int httpCode = http.POST(encryptData(reqData, cryptoKey));
     String response = http.getString();
     http.end();
@@ -304,7 +303,6 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
       return false;
     }
     if(response.startsWith(base64Sha)){
-      Serial.println("Valid SHA256 response.");
       return true;        
     }
     msgLog(reqData);
