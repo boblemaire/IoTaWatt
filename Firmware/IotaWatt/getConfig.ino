@@ -40,6 +40,10 @@ boolean getConfig(void)
     localTimeDiff = Config["timezone"].as<signed int>(); 
   }
 
+  if(Config.containsKey("update")){
+    updateClass = Config["update"].as<String>();
+  }
+
   int channels = 21;
   if(device.containsKey("version")){
     deviceVersion = device["version"].as<unsigned int>();
