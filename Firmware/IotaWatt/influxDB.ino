@@ -8,6 +8,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static uint32_t UnixLastPost = UNIXtime();
   static uint32_t UnixNextPost = UNIXtime();
   static double _logHours;
+  static double elapsedHours;
   static String reqData = "";
   static uint32_t reqUnixtime = 0;
   static int  reqEntries = 0; 
@@ -45,7 +46,8 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(!iotaLog.isOpen()){
         return UNIXtime() + 5;
       }
-      msgLog("influxDB: started.", "url: " + influxURL + ",db=" + influxDataBase + ", post interval: " + String(influxDBInterval));
+      msgLog("influxDB: started.", "url: " + influxURL + ",port=" + String(influxPort) + ",db=" + influxDataBase + 
+      ",post interval: " + String(influxDBInterval));
     
       if(!influxPostLog){
         influxPostLog = SD.open(influxPostLogFile,FILE_WRITE);
@@ -132,7 +134,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           // Compute the time difference between log entries.
           // If zero, don't bother.
           
-      double elapsedHours = logRecord->logHours - _logHours;
+      elapsedHours = logRecord->logHours - _logHours;
       if(elapsedHours == 0){
         UnixNextPost += influxDBInterval;
         return UnixNextPost;  
@@ -149,17 +151,19 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           // Update the previous (Then) buckets to the most recent values.
      
       trace(T_influx,2);
-      
-      double value1;   
+      Script* script = influxOutputs->first();
+      while(script){
+        reqData += script->name();
+        double value = script->run([](int i)->double {return (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;});
+        reqData += " value=" + String(value,1) + ' ' + String(UnixNextPost) + "\n";
+        script = script->next();
+      }
+
       _logHours = logRecord->logHours;
-      for (int i = 0; i < maxInputs; i++) {
-        IotaInputChannel *_input = inputChannel[i];
-        if(_input && _input->isActive()){
-          value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
-          reqData += _input->_name + " value=" + String(value1,1) + ' ' + String(UnixNextPost) + "\n";
-        }
+      for(int i=0; i<MAXINPUTS; ++i){
         accum1Then[i] = logRecord->channel[i].accum1;
       }
+      
       trace(T_influx,3);  
       reqEntries++;
       UnixLastPost = UnixNextPost;
