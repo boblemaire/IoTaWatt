@@ -107,13 +107,15 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 
      // RTC trace trace module values by module. (See trace routines in Loop tab)
 
-#define T_SETUP 60          // Setup
+
 #define T_LOOP 10           // Loop
 #define T_LOG 20            // dataLog
 #define T_Emon 30           // EmonService
 #define T_GFD 40            // GetFeedData
-#define T_SAMP 100          // samplePower
 #define T_UPDATE 50         // updater
+#define T_SETUP 60          // Setup
+#define T_influx 70         // influxDB
+#define T_SAMP 100          // samplePower
 #define T_TEMP 120
 
       // ADC descriptors
@@ -196,7 +198,8 @@ uint32_t timeRefNTP = SEVENTY_YEAR_SECONDS;  // Last time from NTP server (NTPti
 uint32_t timeRefMs = 0;                      // Internal MS clock corresponding to timeRefNTP
 uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forward and try to refresh
 uint32_t dataLogInterval = 5;                // Interval (sec) to invoke dataLog
-uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS 
+uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS
+uint32_t influxDBInterval = 10;              // Interval (sec) to invoke inflexDB 
 uint32_t statServiceInterval = 1;            // Interval (sec) to invoke statService
 uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for software updates 
 
@@ -234,6 +237,19 @@ enum EmonSendMode {
   EmonSendGET = 1,
   EmonSendPOSTsecure = 2
 } EmonSend = EmonSendPOSTsecure;
+
+      //********************** influxDB configuration stuff *****************************//
+      // again, need to move this stuff to a class.
+
+bool influxStarted = false;                    // set true when Service started
+bool influxStop = false;                       // set true to stop the Service
+bool influxInitialize = true;                  // Initialize or reinitialize 
+String influxURL = "167.114.114.94";
+uint16_t influxPort = 8086;
+String influxDataBase = "test";
+int16_t influxBulkSend = 1;
+IotaList influxMeas;
+      
 
       // ************************ ADC sample pairs ************************************
  

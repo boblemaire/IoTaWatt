@@ -141,6 +141,7 @@ boolean getConfig(void)
       // ************************************** configure EmonCMS **********************************
 
   if(serverType.equals("emoncms")) {
+    if(influxStarted) influxStop = true;
     EmonURL = Config["server"]["url"].asString();
     if(EmonURL.startsWith("http://")) EmonURL = EmonURL.substring(7);
     else if(EmonURL.startsWith("https://")){
@@ -173,8 +174,43 @@ boolean getConfig(void)
       cryptoKey[i] = hex2bin(apiKey[i*2]) * 16 + hex2bin(apiKey[i*2+1]); 
     }
   }
+  
+        // ************************************** configure influxDB **********************************
+
+  if(serverType.equals("influxdb")) {
+    if(EmonStarted) EmonStop = true;
+    influxURL = Config["server"]["url"].asString();
+    if(influxURL.startsWith("http://")) influxURL = influxURL.substring(7);
+    else if(influxURL.startsWith("https://")){
+      influxURL = influxURL.substring(8);
+    }
+    if(influxURL.indexOf(":") > 0){
+      influxPort = influxURL.substring(influxURL.indexOf(":")).toInt();
+      influxURL.remove(influxURL.indexOf(":"));
+    }
+    influxDataBase = Config["server"]["database"].as<String>();
+    influxDBInterval = Config["server"]["postInterval"].as<int>();
+    influxBulkSend = Config["server"]["bulksend"].as<int>();
+    if(influxBulkSend > 10) influxBulkSend = 10;
+    if(influxBulkSend <1) influxBulkSend = 1;
+    int count = Config["server"]["measurements"].size() / 2;
+    for(int i=0; i<count; i++){
+      IotaScript script;
+      script.encodeScript(Config["server"]["measurements"][i+1].as<String>());
+      char* measure = new char[strlen(Config["server"]["measurements"][i].as<char*>())+1];
+      strcpy(measure, Config["server"]["measurements"][i].as<char*>());
+      influxMeas.insertTail(&script, measure);
+    }
+    if( ! influxStarted) {
+      NewService(influxService);
+      influxStarted = true;
+      influxStop = false;
+    }
+  }
+  
   else {
     EmonStop = true;
+    influxStop = true;
     if(!serverType.equals("none")){
       msgLog("server type is not supported: ", serverType);
     }
