@@ -177,7 +177,7 @@ boolean getConfig(void)
   
         // ************************************** configure influxDB **********************************
 
-  if(serverType.equals("influxdb")) {
+  else if(serverType.equals("influxdb")) {
     if(EmonStarted) EmonStop = true;
     influxURL = Config["server"]["url"].asString();
     if(influxURL.startsWith("http://")) influxURL = influxURL.substring(7);
@@ -185,7 +185,7 @@ boolean getConfig(void)
       influxURL = influxURL.substring(8);
     }
     if(influxURL.indexOf(":") > 0){
-      influxPort = influxURL.substring(influxURL.indexOf(":")).toInt();
+      influxPort = influxURL.substring(influxURL.indexOf(":")+1).toInt();
       influxURL.remove(influxURL.indexOf(":"));
     }
     influxDataBase = Config["server"]["database"].as<String>();
@@ -193,13 +193,11 @@ boolean getConfig(void)
     influxBulkSend = Config["server"]["bulksend"].as<int>();
     if(influxBulkSend > 10) influxBulkSend = 10;
     if(influxBulkSend <1) influxBulkSend = 1;
-    int count = Config["server"]["measurements"].size() / 2;
-    for(int i=0; i<count; i++){
-      IotaScript script;
-      script.encodeScript(Config["server"]["measurements"][i+1].as<String>());
-      char* measure = new char[strlen(Config["server"]["measurements"][i].as<char*>())+1];
-      strcpy(measure, Config["server"]["measurements"][i].as<char*>());
-      influxMeas.insertTail(&script, measure);
+
+    delete influxOutputs;
+    JsonVariant var = Config["server"]["outputs"];
+    if(var.success()){
+      influxOutputs = new ScriptSet(var.as<JsonArray>()); 
     }
     if( ! influxStarted) {
       NewService(influxService);

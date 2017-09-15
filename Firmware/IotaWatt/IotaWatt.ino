@@ -248,7 +248,7 @@ String influxURL = "167.114.114.94";
 uint16_t influxPort = 8086;
 String influxDataBase = "test";
 int16_t influxBulkSend = 1;
-IotaList influxMeas;
+ScriptSet* influxOutputs;
       
 
       // ************************ ADC sample pairs ************************************
