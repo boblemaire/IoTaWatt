@@ -208,6 +208,7 @@ var parenLevel = 0;
 var inputEditChannel;
 var voltageChannels = [];
 var vchanUsed = [];
+var updateClasses = ["NONE", "MAJOR", "MINOR", "BETA", "ALPHA"];
 
 /***************************************************************************************************
  *                        Configure Inputs
@@ -873,15 +874,6 @@ function buildDevice(){
   deviceName.setAttribute("oninput","config.device.name = this.value.trim(); checkDevice();");
   deviceName.pattern = "[a-zA-Z]{1}[0-9a-zA-Z]{3,7}";
   
-  var deviceChannels = addTableRow(deviceTable, "Input channels:","deviceChannels", "input", 3);
-  deviceChannels.value = config.device.channels;
-  deviceChannels.setAttribute("onchange","config.device.channels = this.value; checkDevice();");
-  deviceChannels.setAttribute("style","width: 40px;");
-  deviceChannels.setAttribute("type","number");
-  deviceChannels.setAttribute("min","1");
-  deviceChannels.setAttribute("max","21");
-  deviceChannels.setAttribute("step","1");
-  
   var deviceTimezone = addTableRow(deviceTable, "Time Zone:","deviceTimezone", "input", 3);
   deviceTimezone.value = config.timezone;
   deviceTimezone.setAttribute("onchange","config.timezone = this.value; checkDevice();");
@@ -890,6 +882,15 @@ function buildDevice(){
   deviceTimezone.setAttribute("min","-12");
   deviceTimezone.setAttribute("max","12");
   deviceTimezone.setAttribute("step","1");
+  
+   var deviceUpdate = addTableRow(deviceTable, "Auto-update Class:","deviceUpdate", "select");
+  for(i in updateClasses){
+    var option = document.createElement("option");
+    option.text = updateClasses[i];
+    if(config.update == updateClasses[i]) option.selected = true;
+    deviceUpdate.add(option);
+  }
+  deviceUpdate.setAttribute("oninput","config.update = this.value; checkDevice();");
 }
 
 function checkDevice(){
@@ -920,7 +921,7 @@ function deviceCancel(){
 }
 
 function deviceSave(){
-  uploadConfig(inputEditCancel, (config.device.name != deviceName) ? "restart" : "reload");
+  uploadConfig(inputEditCancel, (config.device.name != originalName) ? "restart" : "reload");
   resetDisplay();
 }
 
