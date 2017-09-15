@@ -20,6 +20,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
  *  If not, return false;
   ************************************************************************************************/
 bool checkUpdate(){
+  if(updateClass == "NONE") return false;
   http.begin(updateURL, 80, updateURI);
   http.addHeader(F("Host"),updateURL);
   http.setUserAgent(F("IotaWatt"));

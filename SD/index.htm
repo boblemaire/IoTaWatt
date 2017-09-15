@@ -208,6 +208,7 @@ var parenLevel = 0;
 var inputEditChannel;
 var voltageChannels = [];
 var vchanUsed = [];
+var updateClasses = ["NONE", "MAJOR", "MINOR", "BETA", "ALPHA"];
 
 /***************************************************************************************************
  *                        Configure Inputs
@@ -356,7 +357,7 @@ function refreshInputEdit(){
       }
     }
   }
-  inputModel.setAttribute("onchange","inputEditNewModel(this)");
+  inputModel.setAttribute("oninput","inputEditNewModel(this)");
   
   if(inputEditObject.model == "generic" && 
     (inputEditObject.type == "VT" ||
@@ -428,9 +429,6 @@ function refreshInputEdit(){
     inputNeg = addTableRow(table, "", "inputNeg", "input");
     inputNeg.parentNode.appendChild(document.createTextNode("Allow negative power value"));
     inputNeg.setAttribute("type","checkbox");
-    inputNeg.setAttribute("onchange","inputEditObject.signed=this.checked; refreshInputEdit();");
-    if(inputEditObject.signed)inputNeg.checked = true;
-    else inputEditObject.signed = undefined;
     document.getElementById("inputEditDelete").style.display = (config.inputs[inputEditChannel] == null) ? "none" : "inline";
   }
 
@@ -451,7 +449,7 @@ function refreshInputEdit(){
 function inputEditNewModel(obj){
   inputEditObject.model = obj.value;
   if(inputEditObject.model == "generic"){
-    inputEditNewType(inputEditObject.type);
+    inputEditNewType(inputEditObj.type);
   }
   else if(inputEditObject.type == "VT"){
     for(i in tables.VT){
@@ -477,11 +475,10 @@ function inputEditNewModel(obj){
       }
     }
   }
-  refreshInputEdit();
 }
 
 function inputEditNewType(type){
-   inputEditObject = {channel:inputEditChannel, name:inputEditObject.name, type:type, model:"generic", phase:0, signed:inputEditObject.signed};
+   inputEditObject = {channel:inputEditChannel, name:inputEditObject.name, type:type, model:"generic", phase:0,};
   if(type == "CT"){
      if(config.device.burden[inputEditChannel] == 0){
        inputEditObject.cal = 0;
@@ -877,15 +874,6 @@ function buildDevice(){
   deviceName.setAttribute("oninput","config.device.name = this.value.trim(); checkDevice();");
   deviceName.pattern = "[a-zA-Z]{1}[0-9a-zA-Z]{3,7}";
   
-  var deviceChannels = addTableRow(deviceTable, "Input channels:","deviceChannels", "input", 3);
-  deviceChannels.value = config.device.channels;
-  deviceChannels.setAttribute("onchange","config.device.channels = this.value; checkDevice();");
-  deviceChannels.setAttribute("style","width: 40px;");
-  deviceChannels.setAttribute("type","number");
-  deviceChannels.setAttribute("min","1");
-  deviceChannels.setAttribute("max","21");
-  deviceChannels.setAttribute("step","1");
-  
   var deviceTimezone = addTableRow(deviceTable, "Time Zone:","deviceTimezone", "input", 3);
   deviceTimezone.value = config.timezone;
   deviceTimezone.setAttribute("onchange","config.timezone = this.value; checkDevice();");
@@ -894,6 +882,15 @@ function buildDevice(){
   deviceTimezone.setAttribute("min","-12");
   deviceTimezone.setAttribute("max","12");
   deviceTimezone.setAttribute("step","1");
+  
+   var deviceUpdate = addTableRow(deviceTable, "Auto-update Class:","deviceUpdate", "select");
+  for(i in updateClasses){
+    var option = document.createElement("option");
+    option.text = updateClasses[i];
+    if(config.update == updateClasses[i]) option.selected = true;
+    deviceUpdate.add(option);
+  }
+  deviceUpdate.setAttribute("oninput","config.update = this.value; checkDevice();");
 }
 
 function checkDevice(){
@@ -924,7 +921,7 @@ function deviceCancel(){
 }
 
 function deviceSave(){
-  uploadConfig(inputEditCancel, (config.device.name != deviceName) ? "restart" : "reload");
+  uploadConfig(inputEditCancel, (config.device.name != originalName) ? "restart" : "reload");
   resetDisplay();
 }
 
