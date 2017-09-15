@@ -38,7 +38,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
     req* next;
     int channel;
     int queryType;
-    IotaOutputChannel* output;
+    Script* output;
     req(){next=nullptr; channel=0; queryType=0; output=nullptr;};
     ~req(){delete next;};
   } static reqRoot;
@@ -72,14 +72,13 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
         reqPtr->channel = id / 10;
         reqPtr->queryType = id % 10;
         if(reqPtr->channel >= 100){
-          IotaOutputChannel* _output = (IotaOutputChannel*)outputList.findFirst();
-          while(_output){
-            if(_output->_channel == reqPtr->channel){
-              break;
-            }
-            _output = (IotaOutputChannel*)outputList.findNext(_output);
+          Script* script = outputs->first();
+          int index = reqPtr->channel - 100;
+          while(index){
+            if(script)script = script->next();
+            index--;
           }
-          reqPtr->output = _output;
+          reqPtr->output = script;
         }
       }
           
@@ -164,11 +163,11 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
               replyData += "null";
             }
             else if(reqPtr->queryType == QUERY_ENERGY){
-              replyData += String(reqPtr->output->runScript([](int i)->double {
+              replyData += String(reqPtr->output->run([](int i)->double {
                 return logRecord->channel[i].accum1 / 1000.0;}), 2);
             }
             else {
-              replyData += String(reqPtr->output->runScript([](int i)->double {
+              replyData += String(reqPtr->output->run([](int i)->double {
                 return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;}), 1);
             }
           }

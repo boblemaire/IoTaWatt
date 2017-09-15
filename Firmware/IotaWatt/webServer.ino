@@ -280,16 +280,16 @@ void handleStatus(){
 
   if(server.hasArg("outputs")){
     JsonArray& outputArray = jsonBuffer.createArray();
-    IotaOutputChannel* _output = (IotaOutputChannel*)outputList.findFirst();
-    while(_output){
+    Script* script = outputs->first();
+    while(script){
       JsonObject& channelObject = jsonBuffer.createObject();
-      channelObject.set("name",_output->_name);
-      channelObject.set("units",_output->_units);
-      double value = _output->runScript([](int i)->double {return statBucket[i].value1;});
+      channelObject.set("name",script->name());
+      channelObject.set("units",script->units());
+      double value = script->run([](int i)->double {return statBucket[i].value1;});
       channelObject.set("value",value);
       channelObject.set("Watts",value);  // depricated 3.04
       outputArray.add(channelObject);
-      _output = (IotaOutputChannel*)outputList.findNext(_output);
+      script = script->next();
     }
     root["outputs"] = outputArray;
   }
@@ -387,14 +387,22 @@ void handleGetFeedList(){
     }
   }
   
-  IotaOutputChannel* _output = (IotaOutputChannel*)outputList.findFirst();
-  while(_output){
+  Script* script = outputs->first();
+  int outndx = 100;
+  while(script){
     JsonObject& power = jsonBuffer.createObject();
-    power["id"] = String(_output->_channel*10+QUERY_POWER);
-    power["tag"] = "Power";
-    power["name"] = _output->_name;
+    power["id"] = String(outndx*10+QUERY_POWER);
+    String units = String(script->units());
+    if(units.equalsIgnoreCase("volts")){
+      power["tag"] = "Voltage";
+    }
+    else {
+      power["tag"] = "Power";
+    }
+    power["name"] = script->name();
     array.add(power);
-    _output = (IotaOutputChannel*)outputList.findNext(_output);
+    outndx++;
+    script = script->next();
   }
   
   String response = "";

@@ -53,8 +53,7 @@
 #include <Ed25519.h>
 #include "IotaLog.h"
 #include "IotaInputChannel.h"
-#include "IotaOutputChannel.h"
-#include "IotaList.h"
+#include "IotaScript.h"
 
       // Declare instances of various classes above
 
@@ -176,7 +175,7 @@ dataBuckets statBucket[MAXINPUTS];
 
       // ****************************** list of output channels **********************
 
-IotaList outputList; 
+ScriptSet* outputs;
 
       // ****************************** SDWebServer stuff ****************************
 
