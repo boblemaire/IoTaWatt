@@ -5734,8 +5734,8 @@ Epson Toyocom FCC-255</description>
 <plain>
 <text x="190.5" y="-101.6" size="5.08" layer="91">IotaWatt
 Electric Power Monitor
-Version 4.1
-July 6, 2017</text>
+Version 4.3
+August 14, 2017</text>
 <text x="190.5" y="76.2" size="1.778" layer="91">alternate location</text>
 <text x="164.338" y="-24.384" size="2.54" layer="91">LM358</text>
 </plain>
