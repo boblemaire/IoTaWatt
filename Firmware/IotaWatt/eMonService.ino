@@ -20,6 +20,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static uint32_t UnixLastPost = UNIXtime();
   static uint32_t UnixNextPost = UNIXtime();
   static double _logHours;
+  static double elapsedHours;
   static String reqData = "";
   static uint32_t reqUnixtime = 0;
   static int  reqEntries = 0; 
@@ -148,7 +149,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // Compute the time difference between log entries.
           // If zero, don't bother.
           
-      double elapsedHours = logRecord->logHours - _logHours;
+      elapsedHours = logRecord->logHours - _logHours;
       if(elapsedHours == 0){
         UnixNextPost += EmonCMSInterval;
         return UnixNextPost;  
@@ -174,23 +175,42 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       reqData += '[' + String(UnixNextPost - reqUnixtime) + ",\"" + String(node) + "\",";
             
       double value1;
-      _logHours = logRecord->logHours;   
-      for (int i = 0; i < maxInputs; i++) {
-        IotaInputChannel *_input = inputChannel[i];
-        value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
+      _logHours = logRecord->logHours;
+      if( ! emonOutputs){  
+        for (int i = 0; i < maxInputs; i++) {
+          IotaInputChannel *_input = inputChannel[i];
+          value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
+          if( ! _input){
+            reqData += "null,";
+          }
+          else if(_input->_type == channelTypeVoltage){
+            reqData += String(value1,1) + ',';
+          }
+          else if(_input->_type == channelTypePower){
+            reqData += String(long(value1+0.5)) + ',';
+          }
+          else{
+            reqData += String(long(value1+0.5)) + ',';
+          }
+        }
+      }
+      else {
+        Script* script = emonOutputs->first();
+        int index=0;
+        while(script){
+          while(index++ < String(script->name()).toInt()) reqData += ',';
+          value1 = script->run([](int i)->double {return (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;});
+          if(value1 > -1.0 && value1 < 1){
+            reqData += "0,";
+          }
+          else {
+            reqData += String(value1,1) + ',';
+          }
+          script = script->next();
+        }
+      }
+      for (int i = 0; i < maxInputs; i++) {  
         accum1Then[i] = logRecord->channel[i].accum1;
-        if( ! _input){
-          reqData += "null,";
-        }
-        else if(_input->_type == channelTypeVoltage){
-          reqData += String(value1,1) + ',';
-        }
-        else if(_input->_type == channelTypePower){
-          reqData += String(long(value1+0.5)) + ',';
-        }
-        else{
-          reqData += String(long(value1+0.5)) + ',';
-        }
       }
       trace(T_Emon,3);    
       reqData.setCharAt(reqData.length()-1,']');
