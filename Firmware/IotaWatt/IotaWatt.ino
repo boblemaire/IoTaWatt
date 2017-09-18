@@ -22,7 +22,7 @@
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
       ***********************************************************************************/
-#define IOTAWATT_VERSION "02_02_17"
+#define IOTAWATT_VERSION "02_02_18"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -237,6 +237,7 @@ enum EmonSendMode {
   EmonSendGET = 1,
   EmonSendPOSTsecure = 2
 } EmonSend = EmonSendPOSTsecure;
+ScriptSet* emonOutputs;
 
       //********************** influxDB configuration stuff *****************************//
       // again, need to move this stuff to a class.

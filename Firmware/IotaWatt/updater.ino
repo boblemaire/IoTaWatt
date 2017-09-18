@@ -106,9 +106,18 @@ bool downloadUpdate(String version){
 
   if(true){
     binarySize -= httpRead(headers.header,sizeof(headers.updtHeader));
+    if(memcmp(headers.updtHeader.IotaWatt, "IotaWatt", 8) != 0){
+      Serial.println("IotaWatt");
+    }
+    if(memcmp(headers.updtHeader.release, updtDirName, 8) != 0){
+      Serial.println("Dirname");
+    }
     if((memcmp(headers.updtHeader.IotaWatt, "IotaWatt", 8) != 0) ||
        (memcmp(headers.updtHeader.release, updtDirName, 8) != 0)) {
       msgLog("Update file header invalid.");
+      Serial.println(headers.updtHeader.IotaWatt);
+      Serial.println(headers.updtHeader.release);
+      Serial.println(updtDirName);
       http.end();
       return false;
     }

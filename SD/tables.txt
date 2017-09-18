@@ -14,6 +14,7 @@
 	{"model":"CR3110-3000","type":"C","turns":3000,"phase":1.5},
 	{"model":"SCT013-030","mfg":"YHDC","type":"V","cal":30,"phase":3.8},
 	{"model":"SCT013-050","mfg":"YHDC","type":"V","cal":49.8,"phase":3.0},
+	{"model":"SCT006","mfg":"YHDC","type":"C","turns":800,"phase":3.0},
 	{"model":"SCT013-000","mfg":"YHDC","type":"C","turns":2000,"phase":3.0},
 	{"model":"SCT019-000","mfg":"YHDC","type":"C","turns":6000,"phase":2.0},
 	{"model":"SCT027H","mfg":"YHDC","type":"C","turns":4000,"phase":2.0},
