@@ -107,7 +107,6 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 
      // RTC trace trace module values by module. (See trace routines in Loop tab)
 
-2 for watts
 #define T_LOOP 10           // Loop
 #define T_LOG 20            // dataLog
 #define T_Emon 30           // EmonService

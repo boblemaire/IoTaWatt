@@ -1082,7 +1082,7 @@ function newServer(obj){
                       outputs:[]
                       };
     for(var i=0; i<config.device.channels; i++){
-      config.server.outputs.push({name:i, script:"@"+i});
+      config.server.outputs.push({name:i+1, script:"@"+i});
     }
   }
   else if(obj.value.toLowerCase() == "influxdb"){
@@ -1140,11 +1140,12 @@ function buildEmoncms(){
   var bulksendInput = addTableRow(serverTable, "bulk send:", "serverBulk", "input", 3);
   bulksendInput.value = Number(config.server.bulksend);
   bulksendInput.setAttribute("onchange","config.server.bulksend = Number(this.value); checkEmoncms();");
-  bulksendInput.setAttribute("style","width: 40px;");
-  bulksendInput.setAttribute("type","number");
-  bulksendInput.setAttribute("min","1");
-  bulksendInput.setAttribute("max","10");
-  bulksendInput.setAttribute("step","1");
+  bulksendInput.style = "width: 40px;";
+  bulksendInput.type = "number";
+  bulksendInput.min = "1";
+  bulksendInput.max = "10";
+  bulksendInput.step = "1";
+  bulksendInput.title = "Send multiple entries in a single HTTP transaction";
   
   var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 32);
   urlInput.value = config.server.url
@@ -1156,6 +1157,7 @@ function buildEmoncms(){
   keyInput.setAttribute("oninput","config.server.apikey = this.value; checkEmoncms();");
   keyInput.setAttribute("size","32");
   keyInput.pattern = "[0-9a-f]{32}";
+  keyInput.title = "read/write key - 32 hexadecimal digits";
   
   addTableText(serverTable,"","Specifying userid triggers secure encrypted protocol.")
   var keyInput = addTableRow(serverTable, "Emoncms userid", "serverUser", "input", 10);
@@ -1164,6 +1166,7 @@ function buildEmoncms(){
   keyInput.setAttribute("onchange","config.server.userid = this.value; checkEmoncms()");
   keyInput.setAttribute("size","16");
   keyInput.pattern = "[0-9]*";
+  keyInput.title = "In upper-left corner of Emoncms My Account";
   
   document.getElementById("divServerOutputs").style.display = "inline";
   document.getElementById("serverOutputsHeader").innerHTML = "Emoncms inputs";

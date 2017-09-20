@@ -172,8 +172,21 @@ boolean getConfig(void)
     delete emonOutputs;
     JsonVariant var = Config["server"]["outputs"];
     if(var.success()){
-      emonOutputs = new ScriptSet(var.as<JsonArray>()); 
+      emonOutputs = new ScriptSet(var.as<JsonArray>());
+      Script* script = emonOutputs->first();
+      int index = 0;
+      while(script){
+        if(String(script->name()).toInt() <= index){
+          delete emonOutputs;
+          break;
+        }
+        else {
+          index = String(script->name()).toInt();
+        }
+        script = script->next();
+      }
     }
+    
     if( ! EmonStarted) {
       NewService(EmonService);
       EmonStarted = true;
