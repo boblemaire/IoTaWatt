@@ -101,13 +101,13 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 
       // Identifiers used to construct id numbers for graph API
 
-#define QUERY_VOLTAGE  1
+#define QUERY_VOLTAGE  13
 #define QUERY_POWER  2
 #define QUERY_ENERGY 3
 
      // RTC trace trace module values by module. (See trace routines in Loop tab)
 
-
+2 for watts
 #define T_LOOP 10           // Loop
 #define T_LOG 20            // dataLog
 #define T_Emon 30           // EmonService
@@ -115,8 +115,9 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 #define T_UPDATE 50         // updater
 #define T_SETUP 60          // Setup
 #define T_influx 70         // influxDB
-#define T_SAMP 100          // samplePower
-#define T_TEMP 120
+#define T_SAMP 80           // sampleCycle
+#define T_POWER 90          // Sample Power
+#define T_WEB 100           // (30)Web server handlers
 
       // ADC descriptors
 

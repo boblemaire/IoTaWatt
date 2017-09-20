@@ -14,17 +14,17 @@
   <div class="bigIdeasDiv color_menu" id="bigIdeas">
     <table id="bigIdeasTable">
       <tr>
-        <td width="50%"><button ID="BIBdevice", class="mainMenuButton", onclick="menuButton(this,configureDevice)">Configure Device</button></td>
-        <td width="50%"><button ID="BIBstatus", class="mainMenuButton", onclick="menuButton(this,statusBegin)">Input Channels Status</button></td>
+        <td width="50%"><button ID="BIBdevice" class="mainMenuButton" onclick="menuButton(this,configureDevice)">Configure Device</button></td>
+        <td width="50%"><button ID="BIBstatus" class="mainMenuButton" onclick="menuButton(this,statusBegin)">Input Channels Status</button></td>
       </tr><tr>
-        <td><button ID="BIBinputs", class="mainMenuButton", onclick="menuButton(this,buildInputsList)">Configure Inputs</button></td>
-        <td><button ID="BIBmsgs", class="mainMenuButton", onclick="menuButton(this,showMsgs)">Message Log</button><br></td>
+        <td><button ID="BIBinputs" class="mainMenuButton" onclick="menuButton(this,buildInputsList)">Configure Inputs</button></td>
+        <td><button ID="BIBmsgs" class="mainMenuButton" onclick="menuButton(this,showMsgs)">Message Log</button><br></td>
       </tr><tr>
-        <td><button ID="BIBoutputs", class="mainMenuButton", onclick="menuButton(this,buildOutputsList)">Configure Outputs</button></td>
-        <td><button ID="BIBgraph", class="mainMenuButton", onclick="menuButton(this,loadGraph)">Run Local Graph App</button><br></td>
+        <td><button ID="BIBoutputs" class="mainMenuButton" onclick="menuButton(this,buildOutputsList)">Configure Outputs</button></td>
+        <td><button ID="BIBgraph" class="mainMenuButton" onclick="menuButton(this,loadGraph)">Run Local Graph App</button><br></td>
       </tr><tr>
-        <td><button ID="BIBserver", class="mainMenuButton", onclick="menuButton(this,buildWebServer)">Setup Web Server</button><br></td>
-        <td><button ID="BIBedit", class="mainMenuButton", onclick="menuButton(this,loadEdit)">Run Edit and File Manager App</button></td>
+        <td><button ID="BIBserver" class="mainMenuButton" onclick="menuButton(this,buildWebServer)">Setup Web Server</button><br></td>
+        <td><button ID="BIBedit" class="mainMenuButton" onclick="menuButton(this,loadEdit)">Run Edit and File Manager App</button></td>
       </tr><tr>
         <td></td>
         <td></td>
@@ -35,7 +35,7 @@
   <!-- ****************************** divInputs **********************************--> 
   
     <div class="bodyDiv color_body" id="inputList">
-      <h3>Inputs</h4>
+      <h3>Inputs</h3>
       <table id="inputTable">
         <tbody id="inputTableBody"></tbody>
       </table>
@@ -56,7 +56,7 @@
       <h1 id="inputCalVolts"></h1>
       <p>
         <span>calibration factor: </span>
-        <input id="inputCalCal" type="number" onchange="inputCalCal(this)" min="5" max="300" step="0.01"> </input></p>
+        <input id="inputCalCal" type="number" onchange="inputCalCal(this)" min="5" max="300" step="0.01"></p>
       <p>
         <button class="actionCancel" onclick="calVTexit(this)">cancel</button>
         <button class="actionSave" onclick="calVTsave(this)">save</button>
@@ -69,14 +69,14 @@
     
      <!--****************************** divOutputs **********************************--> 
     
-    <div class="bodyDiv color_body", id="divOutputs">
+    <div class="bodyDiv color_body" id="divOutputs">
       <h3>Outputs</h3>
       <table id="outputTable"></table>
     </div>
     
     <!-- ****************************** divDevice **********************************--> 
     
-    <div class="bodyDiv color_body", id="divDevice">
+    <div class="bodyDiv color_body" id="divDevice">
       <h3>Configure IoTaWatt Device</h3>
       <table id="deviceTable"></table>
       <p><button class="actionBurden" id="actionBurden" onclick="configBurden()">Configure Burden Resistors</button></p>
@@ -88,7 +88,7 @@
     
     <!-- ****************************** divBurden **********************************--> 
     
-    <div class="bodyDiv color_body", id="divBurden">
+    <div class="bodyDiv color_body" id="divBurden">
       <h3>Specify on-board burden resistors</h3>
       
       <table id="burdenTable"></table>
@@ -100,7 +100,7 @@
    
    <!-- ****************************** divWebServer*********************************--> 
     
-    <div class="bodyDiv color_body", id="divWebServer">
+    <div class="bodyDiv color_body" id="divWebServer">
       <h3>Setup Web Server</h3>
       <form><table id="serverTable"></table></form>
       <div id="divServerOutputs">
@@ -115,7 +115,7 @@
     
     <!-- ****************************** divStatus **********************************--> 
     
-    <div class="bodyDiv color_body", id="divStatus">
+    <div class="bodyDiv color_body" id="divStatus">
       <table width="100%">
         <tr><th width="50%">Inputs</th><th width="50%">Outputs</th></tr>
         <tr valign="top">
@@ -137,41 +137,41 @@
     <!-- ******************************divCalc **********************************--> 
     
     <div class="bodyDiv color_body" id="divCalc">
-      <div class="inputContainer color_inputcontainer" id="calcBody">
+      <div class="inputContainer color_inputcontainer" id="calcBody"><form>
         <h3 style="text-align:center">Configure Output</h3>
-        <h3> Name: <input id="calcName" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="refreshCalcDisplay()"></input></h3>
-        <h3> Units: <input id="calcUnits" oninput="refreshCalcDisplay()"></input></h3>
+        <h3> Name: <input type="text" id="calcName" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="refreshCalcDisplay()" title="invalid name"></h3>
+        <h3> Units: <input id="calcUnits" oninput="refreshCalcDisplay()"></h3></form>
         <h3 class="calcDisplay" id="calcDisplay">0</h3>  
           <table class="calcTable"><tr><th></th><th></th><th></th><th></th></tr>
-          <tr><td><button class="calcButton calcClr" onclick="keyClearAll()" value="C">C</td>
-          <td><button class="calcButton calcBack" onclick="keyClearEntry()" value="CE">CE</td>
-          <td> <button class="calcButton calcBack" onclick="keyClearChar()" value="del">&#x21e6</td>
+          <tr><td><button class="calcButton calcClr" onclick="keyClearAll()" title="Clear all" value="C">C</button></td>
+          <td><button class="calcButton calcBack" onclick="keyClearEntry()" title="Clear last entry" value="CE">CE</button></td>
+          <td> <button class="calcButton calcBack" onclick="keyClearChar()" title = "Backspace" value="del">&#x21e6;</button></td>
           <td class="calcInputDropdown">
-            <button class="calcButton calcInput" value="@">input</button>
+            <button class="calcButton calcInput" title="Select Input" value="@">input</button>
             <span class="calcInputDropdown-content" id="calcInputDropdown-content" display="none">
               <p onclick="keyInput(this)">Input_1</p>
               <p onclick="keyInput(this)">Input_2</p>
             </span>
           </td></tr>
-          <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="1">1</td>
-          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="2">2</td>
-          <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="3">3</td>
-          <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="+">+</td></tr>
-          <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="4">4</td>
-          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="5">5</td>
-          <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="6">6</td>
-          <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="-">-</td></tr>
-          <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="7">7</td>
-          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="8">8</td>
-          <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="9">9</td>
-          <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="*">x</td></tr>
-          <tr><td><button class="calcButton calcNumeric" onclick="keyDecimal()" value=".">.</td>
-          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="0">0</td>
-          <td> <button class="calcButton calcNumeric" onclick="keyUniNeg()" value="+/-">+/-</td>
-          <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="/">&#247</td></tr>
-          <tr><td><button class="calcButton calcParen" onclick="keyPush()" value="(">(</td>
-          <td><button class="calcButton calcParen" onclick="keyPop()" value=")">)</td>
-          <td> <button class="calcButton calcAbs" onclick="keyUniPos()" value="abs">abs</td>
+          <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="1">1</button></td>
+          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="2">2</button></td>
+          <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="3">3</button></td>
+          <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="+">+</button></td></tr>
+          <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="4">4</button></td>
+          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="5">5</button></td>
+          <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="6">6</button></td>
+          <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="-">-</button></td></tr>
+          <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="7">7</button></td>
+          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="8">8</button></td>
+          <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="9">9</button></td>
+          <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="*">x</button></td></tr>
+          <tr><td><button class="calcButton calcNumeric" onclick="keyDecimal()" value=".">.</button></td>
+          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="0">0</button></td>
+          <td> <button class="calcButton calcNumeric" onclick="keyUniNeg()" value="+/-">+/-</button></td>
+          <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="/">&#247;</button></td></tr>
+          <tr><td><button class="calcButton calcParen" onclick="keyPush()" value="(">(</button></td>
+          <td><button class="calcButton calcParen" onclick="keyPop()" value=")">)</button></td>
+          <td> <button class="calcButton calcAbs" onclick="keyUniPos()" value="abs" title="make previous result positive">abs</button></td>
           <td></td></tr>
         </table>
         <p>
@@ -603,6 +603,7 @@ function calVTsave(obj){
  * ****************************************************************************************/
  function buildOutputsList(){
     currentBodyPush("divOutputs");
+    document.getElementById("calcName").title="Name must be alphanumeric and start with a letter";
     document.getElementById("calcName").pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*";
     scriptEditSave = function(){
       config.outputs = scriptEditSet
@@ -744,7 +745,7 @@ function calVTsave(obj){
        RegExp("^[-+*\/]").test(tokens[tokens.length-1])){
       document.getElementById("calcSave").style.display = "none";
     }
-    else{
+    else if(document.getElementById("calcName").validity.valid){
       document.getElementById("calcSave").style.display = "inline";
     }
   }
@@ -1167,7 +1168,8 @@ function buildEmoncms(){
   document.getElementById("divServerOutputs").style.display = "inline";
   document.getElementById("serverOutputsHeader").innerHTML = "Emoncms inputs";
   
-  document.getElementById("calcName").pattern="[0-9]{1,2}";
+  document.getElementById("calcName").pattern="[1-9]{1}[0-9]?";
+  document.getElementById("calcName").title="Name is Emoncms Input Key 1-99";
   scriptEditSave = function(){
     scriptEditSet.sort(function(a, b){return a.name - b.name});
     config.server.outputs = scriptEditSet;
@@ -1240,7 +1242,8 @@ function buildInfluxdb(){
   
   document.getElementById("divServerOutputs").style.display = "inline";
   document.getElementById("serverOutputsHeader").innerHTML = "influxDB fields";
-  
+
+  document.getElementById("calcName").title="Name must be valid influxDB field name";
   document.getElementById("calcName").pattern="^[0-9a-zA-Z_$-/\.\+]+$";
   scriptEditSave = function(){
     config.server.outputs = scriptEditSet;
