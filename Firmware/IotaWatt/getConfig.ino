@@ -5,21 +5,25 @@ boolean getConfig(void)
   String ConfigFileURL = "config.txt";
     
   //************************************** Load and parse Json Config file ************************
-  
+
+  trace(T_CONFIG,0);
   ConfigFile = SD.open(ConfigFileURL, FILE_READ);
   if(!ConfigFile) {
     msgLog("Config file open failed.");
     return false;
   }
   int filesize = ConfigFile.size();
+  trace(T_CONFIG,1);
   char* ConfigBuffer = new char[condensedJsonSize(ConfigFile)+1];
+  trace(T_CONFIG,2);
   ConfigFile.seek(0);
   condenseJson(ConfigBuffer, ConfigFile);
+  trace(T_CONFIG,3);
   ConfigFile.close();
-  ConfigFile = SD.open(ConfigFileURL, FILE_READ);
+  // ConfigFile = SD.open(ConfigFileURL, FILE_READ);
   JsonObject& Config = Json.parseObject(ConfigBuffer);  
-  ConfigFile.close();
-  
+  // ConfigFile.close();
+  trace(T_CONFIG,4);
   if (!Config.success()) {
     msgLog("Config file parse failed.");
     delete[] ConfigBuffer;
@@ -66,9 +70,10 @@ boolean getConfig(void)
   if(device.containsKey("refvolts")){
     VrefVolts = device["refvolts"].as<float>();
   }  
-
+  
           // Build or update the input channels
-   
+          
+  trace(T_CONFIG,5); 
   if(device.containsKey("channels")){
     channels = MIN(device["channels"].as<unsigned int>(),MAXINPUTS);
   }
@@ -121,12 +126,15 @@ boolean getConfig(void)
   }
     
         //************************************ Configure input channels ***************************
+
+  trace(T_CONFIG,6);      
   if(Config.containsKey("inputs")){
     configInputs(Config["inputs"]);
   }   
      
         // ************************************ configure output channels *************************
 
+  trace(T_CONFIG,7);
   delete outputs;
   JsonVariant var = Config["outputs"];
   if(var.success()){
@@ -140,6 +148,7 @@ boolean getConfig(void)
   
       // ************************************** configure EmonCMS **********************************
 
+  trace(T_CONFIG,8);
   if(serverType.equals("emoncms")) {
     if(influxStarted) influxStop = true;
     EmonURL = Config["server"]["url"].asString();
@@ -236,6 +245,7 @@ boolean getConfig(void)
     }
   }
 
+  trace(T_CONFIG,9);
   delete[] ConfigBuffer;
   return true;
 }

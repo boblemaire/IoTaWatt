@@ -117,6 +117,7 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 #define T_SAMP 80           // sampleCycle
 #define T_POWER 90          // Sample Power
 #define T_WEB 100           // (30)Web server handlers
+#define T_CONFIG 130        //  Get Config
 
       // ADC descriptors
 
@@ -185,10 +186,11 @@ ScriptSet* outputs;
 char* host = "IotaWatt";
 ESP8266WebServer server(80);
 static bool hasSD = false;
-File uploadFile;
+static File uploadFile;
 void handleNotFound();
 boolean serverAvailable = true;   // Set false when asynchronous handler active to avoid new requests
 boolean wifiConnected = false;
+String lastConfigWrite = "";   // Reject writes of config.txt w/o this value
 
       // ****************************** Timing and time data *************************
 #define  SEVENTY_YEAR_SECONDS 2208988800UL
