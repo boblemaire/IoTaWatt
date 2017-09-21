@@ -153,7 +153,7 @@ void setup()
   server.on("/config",HTTP_GET, handleGetConfig);
   server.on("/edit", HTTP_DELETE, handleDelete);
   server.on("/edit", HTTP_PUT, handleCreate);
-  server.on("/edit", HTTP_POST, [](){returnOK(); }, handleFileUpload);
+  server.on("/edit", HTTP_POST, returnOK, handleFileUpload);
   server.on("/disconnect",HTTP_GET, handleDisconnect);
   server.onNotFound(handleNotFound);
 

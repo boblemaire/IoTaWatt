@@ -190,7 +190,7 @@ static File uploadFile;
 void handleNotFound();
 boolean serverAvailable = true;   // Set false when asynchronous handler active to avoid new requests
 boolean wifiConnected = false;
-String lastConfigWrite = "";   // Reject writes of config.txt w/o this value
+uint8_t configSHA256[32];         // Hash of config file
 
       // ****************************** Timing and time data *************************
 #define  SEVENTY_YEAR_SECONDS 2208988800UL

@@ -12,6 +12,7 @@ boolean getConfig(void)
     msgLog("Config file open failed.");
     return false;
   }
+  hashFile(configSHA256, ConfigFile);
   int filesize = ConfigFile.size();
   trace(T_CONFIG,1);
   char* ConfigBuffer = new char[condensedJsonSize(ConfigFile)+1];
@@ -281,6 +282,19 @@ void configInputs(JsonArray& JsonInputs){
       inputChannel[i]->reset();
     }
   }
+}
+
+void hashFile(uint8_t* sha, File file){
+  int buffSize = 256;
+  uint8_t* buff = new uint8_t[buffSize];
+  file.seek(0);
+  sha256.reset();
+  while(file.available()){
+    int bytesRead = file.read(buff,MIN(file.available(),buffSize));
+    sha256.update(buff, bytesRead); 
+  }
+  sha256.finalize(sha,32);
+  file.seek(0);
 }
 
 uint32_t condensedJsonSize(File JsonFile){

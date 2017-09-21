@@ -54,11 +54,13 @@ void returnOK() {
 }
 
 void returnFail(String msg) {
+  Serial.println("Fail routine.");
   server.send(500, "text/plain", msg + "\r\n");
 }
 
 bool loadFromSdCard(String path){
   trace(T_WEB,13);
+  if( ! path.startsWith("/")) path = '/' + path;
   String dataType = "text/plain";
   if(path.endsWith("/")) path += "index.htm";
   if(path == "/edit" ||
@@ -96,6 +98,9 @@ bool loadFromSdCard(String path){
   }
 
   else {
+    if(path.equalsIgnoreCase("/config.txt")){
+      server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
+    }
     if (server.streamFile(dataFile, dataType) != dataFile.size()) {
       msgLog("Server: Sent less data than expected!");
     }
@@ -105,19 +110,43 @@ bool loadFromSdCard(String path){
 }
 
 void handleFileUpload(){
-  trace(T_WEB,11); 
-  // if(server.uri() != "/edit") return;
+  trace(T_WEB,11);
+  static bool hashFile = false; 
+  if(server.uri() != "/edit") return;
   HTTPUpload& upload = server.upload();
   if(upload.status == UPLOAD_FILE_START){
+    hashFile = false;
+    if(upload.filename.equalsIgnoreCase("config.txt") ||
+        upload.filename.equalsIgnoreCase("/config.txt")){ 
+      if(server.hasArg("configSHA256")){
+        if(server.arg("configSHA256") != base64encode(configSHA256, 32)){
+          server.send(409, "text/plain", "Config not current");
+          return;
+        }
+      }
+      hashFile = true;
+      sha256.reset();  
+    }
     if(SD.exists((char *)upload.filename.c_str())) SD.remove((char *)upload.filename.c_str());
-    uploadFile = SD.open(upload.filename.c_str(), FILE_WRITE);
-    DBG_OUTPUT_PORT.print("Upload: START, filename: "); DBG_OUTPUT_PORT.println(upload.filename);
+    if(uploadFile = SD.open(upload.filename.c_str(), FILE_WRITE)){
+      DBG_OUTPUT_PORT.print("Upload: START, filename: "); DBG_OUTPUT_PORT.println(upload.filename);
+    }
   } else if(upload.status == UPLOAD_FILE_WRITE){
-    if(uploadFile) uploadFile.write(upload.buf, upload.currentSize);
-    DBG_OUTPUT_PORT.print("Upload: WRITE, Bytes: "); DBG_OUTPUT_PORT.println(upload.currentSize);
+    if(uploadFile) {
+      uploadFile.write(upload.buf, upload.currentSize);
+      sha256.update(upload.buf, upload.currentSize);
+      DBG_OUTPUT_PORT.print("Upload: WRITE, Bytes: "); DBG_OUTPUT_PORT.println(upload.currentSize);
+    }
+    
   } else if(upload.status == UPLOAD_FILE_END){
-    if(uploadFile) uploadFile.close();
-    DBG_OUTPUT_PORT.print("Upload: END, Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
+    if(uploadFile){
+      uploadFile.close();
+      DBG_OUTPUT_PORT.print("Upload: END, Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
+      if(hashFile){
+        sha256.finalize(configSHA256, 32);
+        server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
+      }
+    }
   }
 }
 
