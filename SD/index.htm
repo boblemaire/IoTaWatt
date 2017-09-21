@@ -195,6 +195,7 @@ var msgsFileURL = "/iotawatt/iotamsgs.txt?textpos=-10000";
 var demo = false;
 var demoConfig = null;
 var currentBody = [];
+var configSHA256;
 
 var config;                         // configuration as Js Object
 var tables;                         // tables as Js Object
@@ -1500,6 +1501,7 @@ function resetDisplay(){
   document.getElementById("BIBmsgs").className = "mainMenuButton";
   document.getElementById("BIBgraph").className = "mainMenuButton";
   document.getElementById("BIBedit").className = "mainMenuButton";
+  while(currentBody.length > 0) currentBodyPop();
 }
 
 function loadGraph(){
@@ -1542,7 +1544,10 @@ function readFile(path, responseHandler){
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      responseHandler(xmlHttp.responseText);
+      if(this.getResponseHeader("X-configSHA256") !== null){
+        configSHA256 = this.getResponseHeader("X-configSHA256");
+      }
+      responseHandler(this.responseText);
     }
   };
   xmlHttp.open("GET", path, true);
@@ -1570,14 +1575,30 @@ function writeFile(fileString, url, responseHandler){
   }
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      responseHandler();
+    if (this.readyState == 4) {
+      if(this.status == 200) {
+        if(this.getResponseHeader("X-configSHA256") !== null){
+          configSHA256 = this.getResponseHeader("X-configSHA256");
+        }
+        responseHandler();
+      }
+      else if(this.status == 409) {
+        alert("config file not current, operation aborted,\nconfig file not updated, restarting app.");
+        setup();
+      }
     }
   };
+  
   var formData = new FormData();
   var blob = new Blob([fileString], {type: 'plain/text'},  url);
   formData.append("file", blob, url);
-  xmlHttp.open("POST", "/edit");
+  var URI = "";
+  if(url == configFileURL){
+    URI += "?configSHA256=" + configSHA256;
+  }
+  URI = "/edit" + URI;
+  xmlHttp.open("POST", URI);
+  
   xmlHttp.send(formData);
 }
 
