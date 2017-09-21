@@ -54,10 +54,13 @@ void returnOK() {
 }
 
 void returnFail(String msg) {
+  Serial.println("Fail routine.");
   server.send(500, "text/plain", msg + "\r\n");
 }
 
 bool loadFromSdCard(String path){
+  trace(T_WEB,13);
+  if( ! path.startsWith("/")) path = '/' + path;
   String dataType = "text/plain";
   if(path.endsWith("/")) path += "index.htm";
   if(path == "/edit" ||
@@ -95,6 +98,9 @@ bool loadFromSdCard(String path){
   }
 
   else {
+    if(path.equalsIgnoreCase("/config.txt")){
+      server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
+    }
     if (server.streamFile(dataFile, dataType) != dataFile.size()) {
       msgLog("Server: Sent less data than expected!");
     }
@@ -104,18 +110,43 @@ bool loadFromSdCard(String path){
 }
 
 void handleFileUpload(){
-  // if(server.uri() != "/edit") return;
+  trace(T_WEB,11);
+  static bool hashFile = false; 
+  if(server.uri() != "/edit") return;
   HTTPUpload& upload = server.upload();
   if(upload.status == UPLOAD_FILE_START){
+    hashFile = false;
+    if(upload.filename.equalsIgnoreCase("config.txt") ||
+        upload.filename.equalsIgnoreCase("/config.txt")){ 
+      if(server.hasArg("configSHA256")){
+        if(server.arg("configSHA256") != base64encode(configSHA256, 32)){
+          server.send(409, "text/plain", "Config not current");
+          return;
+        }
+      }
+      hashFile = true;
+      sha256.reset();  
+    }
     if(SD.exists((char *)upload.filename.c_str())) SD.remove((char *)upload.filename.c_str());
-    uploadFile = SD.open(upload.filename.c_str(), FILE_WRITE);
-    DBG_OUTPUT_PORT.print("Upload: START, filename: "); DBG_OUTPUT_PORT.println(upload.filename);
+    if(uploadFile = SD.open(upload.filename.c_str(), FILE_WRITE)){
+      DBG_OUTPUT_PORT.print("Upload: START, filename: "); DBG_OUTPUT_PORT.println(upload.filename);
+    }
   } else if(upload.status == UPLOAD_FILE_WRITE){
-    if(uploadFile) uploadFile.write(upload.buf, upload.currentSize);
-    DBG_OUTPUT_PORT.print("Upload: WRITE, Bytes: "); DBG_OUTPUT_PORT.println(upload.currentSize);
+    if(uploadFile) {
+      uploadFile.write(upload.buf, upload.currentSize);
+      sha256.update(upload.buf, upload.currentSize);
+      DBG_OUTPUT_PORT.print("Upload: WRITE, Bytes: "); DBG_OUTPUT_PORT.println(upload.currentSize);
+    }
+    
   } else if(upload.status == UPLOAD_FILE_END){
-    if(uploadFile) uploadFile.close();
-    DBG_OUTPUT_PORT.print("Upload: END, Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
+    if(uploadFile){
+      uploadFile.close();
+      DBG_OUTPUT_PORT.print("Upload: END, Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
+      if(hashFile){
+        sha256.finalize(configSHA256, 32);
+        server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
+      }
+    }
   }
 }
 
@@ -147,6 +178,7 @@ void deleteRecursive(String path){
 }
 
 void handleDelete(){
+  trace(T_WEB,9); 
   if(server.args() == 0) return returnFail("BAD ARGS");
   String path = server.arg(0);
   if(path == "/" || !SD.exists((char *)path.c_str())) {
@@ -158,6 +190,7 @@ void handleDelete(){
 }
 
 void handleCreate(){
+  trace(T_WEB,10); 
   if(server.args() == 0) return returnFail("BAD ARGS");
   String path = server.arg(0);
   if(path == "/" || SD.exists((char *)path.c_str())) {
@@ -178,6 +211,7 @@ void handleCreate(){
 }
 
 void printDirectory() {
+  trace(T_WEB,7); 
   if(!server.hasArg("dir")) return returnFail("BAD ARGS");
   String path = server.arg("dir");
   if(path != "/" && !SD.exists((char *)path.c_str())) return returnFail("BAD PATH");
@@ -205,6 +239,7 @@ void printDirectory() {
 }
 
 void handleNotFound(){
+  trace(T_WEB,12); 
   String serverURI = server.uri();
   if(serverURI.startsWith("//")) serverURI.remove(0,1);   // fix EmonCMS graph bug
   if(serverURI.startsWith("/feed/list")){
@@ -236,11 +271,13 @@ void handleNotFound(){
  * 
  **********************************************************************************************/
 
-void handleStatus(){ 
+void handleStatus(){
+  trace(T_WEB,0); 
   DynamicJsonBuffer jsonBuffer;
   JsonObject& root = jsonBuffer.createObject(); 
   
   if(server.hasArg("stats")){
+    trace(T_WEB,14);
     JsonObject& stats = jsonBuffer.createObject();
     stats.set("cyclerate", samplesPerCycle,0);
     stats.set("chanrate",cycleSampleRate,1);
@@ -252,6 +289,7 @@ void handleStatus(){
   }
   
   if(server.hasArg("inputs")){
+    trace(T_WEB,15);
     JsonArray& channelArray = jsonBuffer.createArray();
     for(int i=0; i<maxInputs; i++){
       if(inputChannel[i]->isActive()){
@@ -279,6 +317,7 @@ void handleStatus(){
   }
 
   if(server.hasArg("outputs")){
+    trace(T_WEB,16);
     JsonArray& outputArray = jsonBuffer.createArray();
     Script* script = outputs->first();
     while(script){
@@ -295,6 +334,7 @@ void handleStatus(){
   }
 
   if(server.hasArg("voltage")){
+    trace(T_WEB,17);
     int Vchan = server.arg("channel").toInt();
     root.set("voltage", statBucket[Vchan].volts,1);
   }
@@ -304,6 +344,7 @@ void handleStatus(){
 }
 
 void handleVcal(){
+  trace(T_WEB,1); 
   if( ! (server.hasArg("channel") && server.hasArg("cal"))){
     server.send(400, "text/json", "Missing parameters");
     return;
@@ -319,14 +360,16 @@ void handleVcal(){
 }
 
 void handleCommand(){
-
+  trace(T_WEB,2); 
   if(server.hasArg("restart")) {
+    trace(T_WEB,3); 
     server.send(200, "text/plain", "ok");
     msgLog("Restart command received.");
     delay(500);
     ESP.restart();
   }
   if(server.hasArg("vtphase")){
+    trace(T_WEB,4); 
     uint16_t chan = server.arg("vtphase").toInt();
     int refChan = 0;
     if(server.hasArg("refchan")){
@@ -341,6 +384,7 @@ void handleCommand(){
     return; 
   }
   if(server.hasArg("sample")){
+    trace(T_WEB,5); 
     uint16_t chan = server.arg("sample").toInt();
     samplePower(chan,0);
     String response = String(samples) + "\n\r";
@@ -351,6 +395,7 @@ void handleCommand(){
     return; 
   }
   if(server.hasArg("disconnect")) {
+    trace(T_WEB,6); 
     server.send(200, "text/plain", "ok");
     msgLog("Disconnect command received.");
     WiFi.disconnect(false);
@@ -360,6 +405,7 @@ void handleCommand(){
 }
 
 void handleGetFeedList(){ 
+  trace(T_WEB,18);
   DynamicJsonBuffer jsonBuffer;
   JsonArray& array = jsonBuffer.createArray();
   for(int i=0; i<maxInputs; i++){
@@ -386,7 +432,7 @@ void handleGetFeedList(){
       }
     }
   }
-  
+  trace(T_WEB,19);
   Script* script = outputs->first();
   int outndx = 100;
   while(script){
@@ -421,6 +467,7 @@ void handleGraphGetall(){                   // Stub to appease EmonCMS graph app
 // ESP8266WiFiClient, so probably change at some point. (Remove buffer size parameter).
 
 void sendMsgFile(File &dataFile, int32_t relPos){
+    trace(T_WEB,20);
     int32_t absPos = relPos;
     if(relPos < 0) absPos = dataFile.size() + relPos;
     dataFile.seek(absPos);
@@ -435,6 +482,7 @@ void sendMsgFile(File &dataFile, int32_t relPos){
 }
 
 void handleGetConfig(){
+  trace(T_WEB,8); 
   if(server.hasArg("update")){
     if(server.arg("update") == "restart"){
       server.send(200, "text/plain", "OK");

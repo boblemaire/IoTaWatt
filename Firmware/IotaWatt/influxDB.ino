@@ -226,7 +226,7 @@ boolean influxSendData(uint32_t reqUnixtime, String reqData){
   http.begin(influxURL, influxPort, URI);
   http.addHeader("Host",influxURL);
   http.addHeader("Content-Type","application/x-www-form-urlencoded");
-  http.setTimeout(100);
+  http.setTimeout(500);
   Serial.print(reqData);
   int httpCode = http.POST(reqData);
   String response = http.getString();
@@ -236,7 +236,7 @@ boolean influxSendData(uint32_t reqUnixtime, String reqData){
     if(httpCode < 0){
       code = http.errorToString(httpCode);
     }
-    msgLog("EmonService: POST failed. HTTP code: ", code);
+    msgLog("influxDB: POST failed. HTTP code: ", code);
     Serial.println(response);
     return false;
   } 

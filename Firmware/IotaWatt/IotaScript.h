@@ -67,13 +67,16 @@ class ScriptSet {
   public:
     ScriptSet (JsonArray& JsonScriptSet) {
       _count = JsonScriptSet.size();
-      JsonObject& obj = JsonScriptSet.get<JsonObject>(0);
-      _listHead = new Script(obj);
-      Script* script = _listHead;
-      for(int i=1; i<_count; ++i){
-        JsonObject& obj = JsonScriptSet.get<JsonObject>(i);
-        script->_next = new Script(obj);
-        script = script->_next;
+      _listHead = nullptr;
+      if(_count){
+        JsonObject& obj = JsonScriptSet.get<JsonObject>(0);
+        _listHead = new Script(obj);
+        Script* script = _listHead;
+        for(int i=1; i<_count; ++i){
+          JsonObject& obj = JsonScriptSet.get<JsonObject>(i);
+          script->_next = new Script(obj);
+          script = script->_next;
+        }
       }
     }
     

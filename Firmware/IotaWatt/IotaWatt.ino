@@ -101,12 +101,11 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 
       // Identifiers used to construct id numbers for graph API
 
-#define QUERY_VOLTAGE  1
+#define QUERY_VOLTAGE  13
 #define QUERY_POWER  2
 #define QUERY_ENERGY 3
 
      // RTC trace trace module values by module. (See trace routines in Loop tab)
-
 
 #define T_LOOP 10           // Loop
 #define T_LOG 20            // dataLog
@@ -115,8 +114,10 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 #define T_UPDATE 50         // updater
 #define T_SETUP 60          // Setup
 #define T_influx 70         // influxDB
-#define T_SAMP 100          // samplePower
-#define T_TEMP 120
+#define T_SAMP 80           // sampleCycle
+#define T_POWER 90          // Sample Power
+#define T_WEB 100           // (30)Web server handlers
+#define T_CONFIG 130        //  Get Config
 
       // ADC descriptors
 
@@ -185,10 +186,11 @@ ScriptSet* outputs;
 char* host = "IotaWatt";
 ESP8266WebServer server(80);
 static bool hasSD = false;
-File uploadFile;
+static File uploadFile;
 void handleNotFound();
 boolean serverAvailable = true;   // Set false when asynchronous handler active to avoid new requests
 boolean wifiConnected = false;
+uint8_t configSHA256[32];         // Hash of config file
 
       // ****************************** Timing and time data *************************
 #define  SEVENTY_YEAR_SECONDS 2208988800UL

@@ -7,6 +7,7 @@ void samplePower(int channel, int overSample){
   
       // If it's a voltage channel, use voltage only sample, update and return.
 
+  trace(T_POWER,0);
   if(inputChannel[channel]->_type == channelTypeVoltage){
     inputChannel[channel]->setVoltage(sampleVoltage(channel, inputChannel[channel]->_calibration));                                                                        
     return;
@@ -18,6 +19,7 @@ void samplePower(int channel, int overSample){
 
          // From here on, dealing with a power channel and associated voltage channel.
 
+  trace(T_POWER,1);
   IotaInputChannel* Ichannel = inputChannel[channel];
   IotaInputChannel* Vchannel = inputChannel[Ichannel->_vchannel]; 
           
@@ -35,6 +37,7 @@ void samplePower(int channel, int overSample){
         // If it fails, set power to zero and return.
 
   if( ! sampleCycle(Vchannel, Ichannel, 1, 0)) {
+    trace(T_POWER,2);
     Ichannel->setPower(0.0, 0.0);
     return;
   }          
@@ -62,7 +65,7 @@ void samplePower(int channel, int overSample){
     stepFraction += 1.0;                                                                     // and forward 1-fraction
   }
 
-  trace(T_TEMP,3);
+  trace(T_POWER,3);
         // get sums, squares, and all that stuff.
   Isample[samples] = Isample[0];      
   int Iindex = (samples + stepCorrection) % samples;
@@ -83,7 +86,8 @@ void samplePower(int channel, int overSample){
  
   const uint16_t minOffset = ADC_RANGE / 2 - ADC_RANGE / 200;    // Allow +/- .5% variation
   const uint16_t maxOffset = ADC_RANGE / 2 + ADC_RANGE / 200;
-  
+
+  trace(T_POWER,4);
   if(sumV >= 0) sumV += samples / 2;
   else sumV -= samples / 2;
   int16_t offsetV = Vchannel->_offset + sumV / samples;
@@ -130,9 +134,10 @@ void samplePower(int channel, int overSample){
 
       // Update with the new power and voltage values.
 
+  trace(T_POWER,5);
   Ichannel->setPower(_watts, _Irms);
   Vchannel->setVoltage(_Vrms);
-  trace(T_TEMP,9);                                                                               
+  trace(T_POWER,9);                                                                               
   return;
 }
 

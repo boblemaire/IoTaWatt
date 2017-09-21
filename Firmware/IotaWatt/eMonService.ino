@@ -196,7 +196,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       else {
         Script* script = emonOutputs->first();
-        int index=0;
+        int index=1;
         while(script){
           while(index++ < String(script->name()).toInt()) reqData += ',';
           value1 = script->run([](int i)->double {return (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;});
