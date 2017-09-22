@@ -951,7 +951,6 @@ function checkDevice(){
       obj.parentNode.appendChild(document.createTextNode("Then restart app at " + config.device.name + ".local"));
     }
   }
-  if( ! validateInput("deviceChannels")) complete = false;
   if( ! validateInput("deviceTimezone")) complete = false;
   document.getElementById("actionBurden").style.display = (complete && (!nameChange)) ? "inline" : "none";
   document.getElementById("deviceSave").style.display = complete ? "inline" : "none";
