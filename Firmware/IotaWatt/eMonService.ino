@@ -27,8 +27,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static uint32_t postTime = millis();
   struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
   static SDbuffer* buf = new SDbuffer;
-  String EmonPostLogFile = "/iotawatt/Emonlog.log";
-        
+          
   trace(T_Emon,0);
 
             // If stop signaled, do so.  
@@ -270,10 +269,10 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
 boolean EmonSendData(uint32_t reqUnixtime, String reqData){ 
   trace(T_Emon,7);
   uint32_t startTime = millis();
+  Serial.println(reqData);
   
   if(EmonSend == EmonSendGET){
     String URL = EmonURI + "/input/bulk.json?" + reqData + "&apikey=" + apiKey;
-    Serial.println(URL);
     http.begin(EmonURL, 80, URL);
     http.setTimeout(500);
     int httpCode = http.GET();

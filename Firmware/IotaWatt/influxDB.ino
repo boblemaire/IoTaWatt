@@ -15,8 +15,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static uint32_t postTime = millis();
   struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
   static SDbuffer* buf = new SDbuffer;
-  String influxPostLogFile = "/iotawatt/influxdb.log";
-        
+          
   trace(T_influx,0);
 
             // If stop signaled, do so.  

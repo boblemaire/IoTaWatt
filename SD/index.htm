@@ -1079,12 +1079,8 @@ function newServer(obj){
                       bulksend:1,
                       url:"http://emoncms.org",
                       apikey:"",
-                      userid:"",
-                      outputs:[]
+                      userid:""
                       };
-    for(var i=0; i<config.device.channels; i++){
-      config.server.outputs.push({name:i+1, script:"@"+i});
-    }
   }
   else if(obj.value.toLowerCase() == "influxdb"){
     config.server =  {type:"influxdb",
@@ -1118,6 +1114,12 @@ function buildEmoncms(){
   if(config.server.username !== undefined){
     config.server.userid = config.server.username;
     config.server.username = undefined;
+  }
+  if(config.server.outputs === undefined){
+    config.server.outputs = [];
+    for(var i=0; i<config.device.channels; i++){
+      config.server.outputs.push({name:i+1, script:"@"+i});
+    }
   }
   
   var nodeInput = addTableRow(serverTable, "Node:", "serverNode", "input", 8);

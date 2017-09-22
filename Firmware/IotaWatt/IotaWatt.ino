@@ -77,6 +77,7 @@ String deviceName = "IotaWatt";             // can be specified in config.device
 String IotaLogFile = "/IotaWatt/IotaLog";
 String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
 String EmonPostLogFile = "/iotawatt/Emonlog.log";
+String influxPostLogFile = "/iotawatt/influxdb.log";
 uint16_t deviceVersion = 0;
 
         // Define the hardware pins
@@ -251,8 +252,7 @@ String influxURL = "167.114.114.94";
 uint16_t influxPort = 8086;
 String influxDataBase = "test";
 int16_t influxBulkSend = 1;
-ScriptSet* influxOutputs;
-      
+ScriptSet* influxOutputs;      
 
       // ************************ ADC sample pairs ************************************
  

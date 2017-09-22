@@ -152,6 +152,7 @@ boolean getConfig(void)
   trace(T_CONFIG,8);
   if(serverType.equals("emoncms")) {
     if(influxStarted) influxStop = true;
+    SD.remove((char *)influxPostLogFile.c_str());
     EmonURL = Config["server"]["url"].asString();
     if(EmonURL.startsWith("http://")) EmonURL = EmonURL.substring(7);
     else if(EmonURL.startsWith("https://")){
@@ -208,6 +209,7 @@ boolean getConfig(void)
 
   else if(serverType.equals("influxdb")) {
     if(EmonStarted) EmonStop = true;
+    SD.remove((char *)EmonPostLogFile.c_str());
     influxURL = Config["server"]["url"].asString();
     if(influxURL.startsWith("http")){
       influxURL.remove(0,4);
@@ -236,6 +238,13 @@ boolean getConfig(void)
       influxStarted = true;
       influxStop = false;
     }
+  }
+
+  else if(serverType.equals("none")){
+    EmonStop = true;
+    influxStop = true;
+    SD.remove((char *)influxPostLogFile.c_str());
+    SD.remove((char *)EmonPostLogFile.c_str());
   }
   
   else {
