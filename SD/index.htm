@@ -967,8 +967,7 @@ function deviceCancel(){
 
 function deviceSave(){
   currentBodyPop();
-  uploadConfig(inputEditCancel, (config.device.name != originalName) ? "restart" : "reload");
-  resetDisplay();
+  uploadConfig(resetDisplay, (config.device.name != originalName) ? "restart" : "reload");
 }
 
 /********************************************************************************************
