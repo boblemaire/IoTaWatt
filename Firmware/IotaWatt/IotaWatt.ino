@@ -22,7 +22,7 @@
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
       ***********************************************************************************/
-#define IOTAWATT_VERSION "02_02_19"
+#define IOTAWATT_VERSION "02_02_20"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -102,7 +102,7 @@ uint8_t ADC_selectPin[3] = {pin_CS_ADC0,    // indexable reference for ADC selec
 
       // Identifiers used to construct id numbers for graph API
 
-#define QUERY_VOLTAGE  13
+#define QUERY_VOLTAGE  1
 #define QUERY_POWER  2
 #define QUERY_ENERGY 3
 

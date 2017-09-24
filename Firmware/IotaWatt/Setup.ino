@@ -100,8 +100,9 @@ void setup()
 
 //*************************************** Start the WiFi  connection *****************************
   
-  WiFi.begin();
   WiFi.setAutoConnect(true);
+  WiFi.hostname(host);
+  WiFi.begin();
   uint32_t autoConnectTimeout = millis() + 3000UL;
   while(WiFi.status() != WL_CONNECTED){
     if(millis() > autoConnectTimeout){

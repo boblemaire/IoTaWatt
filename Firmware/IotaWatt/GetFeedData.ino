@@ -23,8 +23,6 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   static char* bufr = nullptr;
   static uint32_t bufrSize = 0;
   static uint32_t bufrPos = 0;
-  static double accum1Then = 0;
-  static double logHoursThen = 0;
   static double elapsedHours = 0;
   static uint32_t startUnixTime;
   static uint32_t endUnixTime;
@@ -52,6 +50,22 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
     case Setup: {
       trace(T_GFD,0);
 
+        // Validate the request parameters
+      
+      startUnixTime = server.arg("start").substring(0,10).toInt();
+      endUnixTime = server.arg("end").substring(0,10).toInt();
+      intervalSeconds = server.arg("interval").toInt();
+      if((startUnixTime % 5) ||
+         (endUnixTime % 5) ||
+         (intervalSeconds % 5) ||
+         (intervalSeconds <= 0) ||
+         (endUnixTime < startUnixTime)){
+        server.send(400, "text/plain", "Invalid request");
+        state = Setup;
+        serverAvailable = true;
+        return 0;    
+      }
+      
           // Parse the ID parm into a list.
       
       String idParm = server.arg("id");
@@ -82,12 +96,8 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
         }
       }
           
-      startUnixTime = server.arg("start").substring(0,10).toInt();
-      endUnixTime = server.arg("end").substring(0,10).toInt();
-      intervalSeconds = server.arg("interval").toInt();
-      accum1Then = 0;
-      logHoursThen = 0;
-
+      
+     
       if(startUnixTime >= iotaLog.firstKey()){   
         lastRecord->UNIXtime = startUnixTime - intervalSeconds;
       } else {

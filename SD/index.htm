@@ -407,10 +407,6 @@ function refreshInputEdit(){
     }
     else {
       inputPhase.value = Number(inputPhase.value).toFixed(1);
-      if(inputPhase.value > 5) {
-        inputEditMsg(inputPhase, "Must be less than 5 degrees.");
-        complete = false;
-      }
     }
   }
   
