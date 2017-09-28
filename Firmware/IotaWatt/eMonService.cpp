@@ -34,14 +34,14 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static uint32_t UnixLastPost = UNIXtime();
   static uint32_t UnixNextPost = UNIXtime();
   static double _logHours;
+  static double elapsedHours;
   static String reqData = "";
   static uint32_t reqUnixtime = 0;
   static int  reqEntries = 0; 
   static uint32_t postTime = millis();
   struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
   static SDbuffer* buf = new SDbuffer;
-  String EmonPostLogFile = "/iotawatt/Emonlog.log";
-        
+          
   trace(T_Emon,0);
 
             // If stop signaled, do so.  
@@ -162,7 +162,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // Compute the time difference between log entries.
           // If zero, don't bother.
           
-      double elapsedHours = logRecord->logHours - _logHours;
+      elapsedHours = logRecord->logHours - _logHours;
       if(elapsedHours == 0){
         UnixNextPost += EmonCMSInterval;
         return UnixNextPost;  
@@ -171,8 +171,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // If new request, format preamble, otherwise, just tack it on with a comma.
       
       if(reqData.length() == 0){
-        reqData = "[";
         reqUnixtime = UnixNextPost;
+        reqData = "time=" + String(reqUnixtime) +  "&data=[";
       }
       else {
         reqData += ',';
@@ -184,33 +184,46 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
      
       trace(T_Emon,2);
 
-      if(EmonSend == EmonSendPOSTsecure){
-        reqData += '[' + String(UnixNextPost);
+      
+      reqData += '[' + String(UnixNextPost - reqUnixtime) + ",\"" + String(node) + "\",";
+            
+      double value1;
+      _logHours = logRecord->logHours;
+      if( ! emonOutputs){  
+        for (int i = 0; i < maxInputs; i++) {
+          IotaInputChannel *_input = inputChannel[i];
+          value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
+          if( ! _input){
+            reqData += "null,";
+          }
+          else if(_input->_type == channelTypeVoltage){
+            reqData += String(value1,1) + ',';
+          }
+          else if(_input->_type == channelTypePower){
+            reqData += String(long(value1+0.5)) + ',';
+          }
+          else{
+            reqData += String(long(value1+0.5)) + ',';
+          }
+        }
       }
       else {
-        reqData += '[' + String(UnixNextPost - reqUnixtime);
+        Script* script = emonOutputs->first();
+        int index=1;
+        while(script){
+          while(index++ < String(script->name()).toInt()) reqData += ',';
+          value1 = script->run([](int i)->double {return (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;});
+          if(value1 > -1.0 && value1 < 1){
+            reqData += "0,";
+          }
+          else {
+            reqData += String(value1,1) + ',';
+          }
+          script = script->next();
+        }
       }
-      reqData +=  ",\"" + String(node) + "\",";
-      
-      double value1;
-      
-      _logHours = logRecord->logHours;   
-      for (int i = 0; i < maxInputs; i++) {
-        IotaInputChannel *_input = inputChannel[i];
-        value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
+      for (int i = 0; i < maxInputs; i++) {  
         accum1Then[i] = logRecord->channel[i].accum1;
-        if( ! _input){
-          reqData += "null,";
-        }
-        else if(_input->_type == channelTypeVoltage){
-          reqData += String(value1,1) + ',';
-        }
-        else if(_input->_type == channelTypePower){
-          reqData += String(long(value1+0.5)) + ',';
-        }
-        else{
-          reqData += String(long(value1+0.5)) + ',';
-        }
       }
       trace(T_Emon,3);    
       reqData.setCharAt(reqData.length()-1,']');
@@ -270,12 +283,12 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
 boolean EmonSendData(uint32_t reqUnixtime, String reqData){ 
   trace(T_Emon,7);
   uint32_t startTime = millis();
+  Serial.println(reqData);
   
   if(EmonSend == EmonSendGET){
-    String URL = EmonURI + "/input/bulk.json?time=" + String(reqUnixtime) + "&apikey=" + apiKey + "&data=" + reqData;
-    Serial.println(URL);
+    String URL = EmonURI + "/input/bulk.json?" + reqData + "&apikey=" + apiKey;
     http.begin(EmonURL, 80, URL);
-    http.setTimeout(100);
+    http.setTimeout(500);
     int httpCode = http.GET();
     if(httpCode != HTTP_CODE_OK){
       msgLog("EmonService: GET failed. HTTP code: ", http.errorToString(httpCode));
@@ -293,18 +306,24 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
   }
 
   if(EmonSend == EmonSendPOSTsecure){
-    String postData = "username=" + EmonUsername +            
-                      "&data=" + encryptData(reqData, cryptoKey);
+    String URI = EmonURI + "/input/bulk";               
     sha256.reset();
     sha256.update(reqData.c_str(), reqData.length());
     uint8_t value[32];
     sha256.finalize(value, 32);
     String base64Sha = base64encode(value, 32);
-    http.begin(EmonURL, 80, EmonURI + "/input/encrypted");
+    sha256.resetHMAC(cryptoKey,16);
+    sha256.update(reqData.c_str(), reqData.length());
+    sha256.finalizeHMAC(cryptoKey, 16, value, 32);
+    String hmac = bin2hex(value, 32);
+    String auth = EmonUsername + ':' + hmac;
+    http.begin(EmonURL, 80, URI);
     http.addHeader("Host",EmonURL);
-    http.addHeader("Content-Type","application/x-www-form-urlencoded");
-    http.setTimeout(100);
-    int httpCode = http.POST(postData);
+    
+    http.addHeader("Content-Type","aes128cbc");
+    http.addHeader("Authorization", auth.c_str());
+    http.setTimeout(500);
+    int httpCode = http.POST(encryptData(reqData, cryptoKey));
     String response = http.getString();
     http.end();
     if(httpCode != HTTP_CODE_OK){
@@ -322,6 +341,7 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
     msgLog(reqData);
     msgLog("EmonService: Invalid response: ", response.substring(0,44));
     msgLog("EmonService: Expectd response: ", base64Sha);
+    
     return true;
   }
   
@@ -329,7 +349,7 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
   return false;
 }
 
-String encryptData(String in, uint8_t* key) {
+String encryptData(String in, const uint8_t* key) {
   uint8_t iv[16];
   os_get_random((unsigned char*)iv,16);
   uint8_t padLen = 16 - (in.length() % 16);
@@ -379,6 +399,16 @@ String base64encode(const uint8_t* in, size_t len){
   }
   else if(sextetSeq == 3){
     out += base64codes[*in & 0x3f];
+  }
+  return out;
+}
+
+String bin2hex(const uint8_t* in, size_t len){
+  static const char* hexcodes = "0123456789abcdef";
+  String out = "";
+  for(int i=0; i<len; i++){
+    out += hexcodes[*in >> 4];
+    out += hexcodes[*in++ & 0x0f];
   }
   return out;
 }

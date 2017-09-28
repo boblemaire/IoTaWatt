@@ -23,6 +23,7 @@
       SOFTWARE.
       ***********************************************************************************/
 
+
 #include <SPI.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
@@ -43,12 +44,12 @@
 #include <AES.h>
 #include <CBC.h>
 #include <SHA256.h>
+#include <Ed25519.h>
 
 #include "IotaWatt.h"
 #include "IotaLog.h"
 #include "IotaInputChannel.h"
-#include "IotaOutputChannel.h"
-#include "IotaList.h"
+#include "IotaScript.h"
 #include "webServer.h"
 
       // Declare instances of various classes above
@@ -62,6 +63,7 @@ Ticker ticker;
 CBC<AES128> cypher;
 SHA256 sha256;
 HTTPClient http;
+MD5Builder md5;
 
 const int HttpsPort = 443;
 const double MS_PER_HOUR = 3600000UL;       // useful constant
@@ -72,6 +74,7 @@ String deviceName = "IotaWatt";             // can be specified in config.device
 String IotaLogFile = "/IotaWatt/IotaLog";
 String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
 String EmonPostLogFile = "/iotawatt/Emonlog.log";
+String influxPostLogFile = "/iotawatt/influxdb.log";
 uint16_t deviceVersion = 0;
 
 const int chipSelect = pin_CS_SDcard;       // for the benefit of SD.h
@@ -121,17 +124,18 @@ dataBuckets statBucket[MAXINPUTS];
 
       // ****************************** list of output channels **********************
 
-IotaList outputList;
+ScriptSet* outputs;
 
       // ****************************** SDWebServer stuff ****************************
 
-char host[10] = "IotaWatt";
+char *host = "IotaWatt";
 ESP8266WebServer server(80);
 bool hasSD = false;
 File uploadFile;
 
 boolean serverAvailable = true;   // Set false when asynchronous handler active to avoid new requests
 boolean wifiConnected = false;
+uint8_t configSHA256[32];         // Hash of config file
 
       // ****************************** Timing and time data *************************
 int      localTimeDiff = 0;
@@ -141,6 +145,7 @@ uint32_t timeRefMs = 0;                      // Internal MS clock corresponding 
 uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forward and try to refresh
 uint32_t dataLogInterval = 5;                // Interval (sec) to invoke dataLog
 uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS
+uint32_t influxDBInterval = 10;              // Interval (sec) to invoke inflexDB 
 uint32_t statServiceInterval = 1;            // Interval (sec) to invoke statService
 uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for software updates
 
@@ -149,6 +154,16 @@ boolean  RTCrunning = false;
 
 char    ledColor[12];                         // Pattern to display led, each char is 500ms color - R, G, Blank
 uint8_t ledCount;                             // Current index into cycle
+
+      // ****************************** Firmware update ****************************
+
+const char* updateURL = "iotawatt.com";
+const char* updateURI = "/firmware/iotaupdt.php";
+String updateClass = "NONE";              // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
+uint8_t publicKey[32] = {0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
+                         0xcc, 0x2c, 0xea, 0x2e, 0x88, 0x9c, 0xe0, 0xea,
+                         0x3f, 0x20, 0x5a, 0x78, 0x22, 0x0c, 0xbc, 0x78,
+                         0x2b, 0xe6, 0x28, 0x5a, 0x21, 0x9c, 0xb7, 0xf3}; 
 
       // *********************** EmonCMS configuration stuff *************************
       // Note: nee dto move out to a class and change for dynamic configuration
@@ -166,6 +181,19 @@ boolean EmonSecure = false;
 String EmonUsername;
 int16_t EmonBulkSend = 1;
 enum EmonSendMode EmonSend = EmonSendPOSTsecure;
+ScriptSet* emonOutputs;
+
+      //********************** influxDB configuration stuff *****************************//
+      // again, need to move this stuff to a class.
+
+bool influxStarted = false;                    // set true when Service started
+bool influxStop = false;                       // set true to stop the Service
+bool influxInitialize = true;                  // Initialize or reinitialize 
+String influxURL = "167.114.114.94";
+uint16_t influxPort = 8086;
+String influxDataBase = "test";
+int16_t influxBulkSend = 1;
+ScriptSet* influxOutputs;      
 
       // ************************ ADC sample pairs ************************************
 
