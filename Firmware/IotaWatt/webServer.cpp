@@ -53,7 +53,6 @@
 #include <ArduinoJson.h>
 
 #include "IotaWatt.h"
-#include "IotaOutputChannel.h"
 #include "msgLog.h"
 #include "timeServices.h"
 
