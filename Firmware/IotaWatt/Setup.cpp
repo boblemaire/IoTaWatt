@@ -9,6 +9,7 @@
 #include "msgLog.h"
 #include "timeServices.h"
 #include "webServer.h"
+#include "updater.h"
 
 String formatHex(uint32_t data);
 void dropDead(const char* pattern);
@@ -82,6 +83,7 @@ void setup()
       Wire.write((byte)0);
       Wire.endTransmission();
     }
+    SdFile::dateTimeCallback(dateTime);
   }
   else {
     msgLog("Real Time Clock not initialized.");
@@ -97,13 +99,15 @@ void setup()
 
   msgLog("Version: ", IOTAWATT_VERSION);
 
+  copyUpdate(String(IOTAWATT_VERSION));
+  
   //**************************************** Display the trace ****************************************
 
   msgLog("Reset reason: ",(char*)ESP.getResetReason().c_str());
   logTrace();
   msgLog("ESP8266 ChipID:",ESP.getChipId());
 
-  //************************************* Process Config file *****************************************
+//************************************* Process Config file *****************************************
   
   if(!getConfig()) {
     msgLog("Configuration failed");
@@ -112,11 +116,12 @@ void setup()
   String msg = "device name: " + deviceName + ", version: " + String(deviceVersion); 
   msgLog(msg);
   msgLog("Local time zone: ",String(localTimeDiff));
-  
+
 //*************************************** Start the WiFi  connection *****************************
   
-  WiFi.begin();
   WiFi.setAutoConnect(true);
+  WiFi.hostname(host);
+  WiFi.begin();
   uint32_t autoConnectTimeout = millis() + 3000UL;
   while(WiFi.status() != WL_CONNECTED){
     if(millis() > autoConnectTimeout){
@@ -142,15 +147,23 @@ void setup()
   if(WiFi.status() != WL_CONNECTED){
     msgLog("No WiFi connection.");
   }
-  
- //*************************************** Start the local DNS service ****************************
+
+  //**************************************** Check for pending update ********************************
+
+  if(checkUpdate()){
+    msgLog("Firmware updated, restarting");
+    delay(500);
+    ESP.restart();
+  }  
+    
+  //*************************************** Start the local DNS service ****************************
 
   if (MDNS.begin(host)) {
       MDNS.addService("http", "tcp", 80);
       msgLog("MDNS responder started");
       msgLog("You can now connect to http://", host, ".local");
   }
-  
+   
  //*************************************** Start the web server ****************************
 
   server.on("/status",HTTP_GET, handleStatus);
@@ -160,7 +173,7 @@ void setup()
   server.on("/config",HTTP_GET, handleGetConfig);
   server.on("/edit", HTTP_DELETE, handleDelete);
   server.on("/edit", HTTP_PUT, handleCreate);
-  server.on("/edit", HTTP_POST, [](){returnOK(); }, handleFileUpload);
+  server.on("/edit", HTTP_POST, returnOK, handleFileUpload);
   server.on("/disconnect",HTTP_GET, handleDisconnect);
   server.onNotFound(handleNotFound);
 
@@ -178,6 +191,7 @@ void setup()
   NewService(timeSync);
   NewService(WiFiService);
   NewService(updater);
+  
   
 }  // setup()
 /***************************************** End of Setup **********************************************/

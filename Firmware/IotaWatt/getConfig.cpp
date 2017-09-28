@@ -4,7 +4,6 @@
 
 #include "IotaWatt.h"
 #include "IotaInputChannel.h"
-#include "IotaOutputChannel.h"
 #include "msgLog.h"
 
 String old2newScript(JsonArray& script);  
@@ -12,6 +11,7 @@ void configInputs(JsonArray& JsonInputs);
 void configOutputs(JsonArray& JsonOutputs);
 void condenseJson(char* ConfigBuffer, File JsonFile);
 uint32_t condensedJsonSize(File JsonFile);
+void hashFile(uint8_t* sha, File file);
   
 boolean getConfig(void)
 {
@@ -20,21 +20,26 @@ boolean getConfig(void)
   String ConfigFileURL = "config.txt";
     
   //************************************** Load and parse Json Config file ************************
-  
+
+  trace(T_CONFIG,0);
   ConfigFile = SD.open(ConfigFileURL, FILE_READ);
   if(!ConfigFile) {
     msgLog("Config file open failed.");
     return false;
   }
+  hashFile(configSHA256, ConfigFile);
   int filesize = ConfigFile.size();
+  trace(T_CONFIG,1);
   char* ConfigBuffer = new char[condensedJsonSize(ConfigFile)+1];
+  trace(T_CONFIG,2);
   ConfigFile.seek(0);
   condenseJson(ConfigBuffer, ConfigFile);
+  trace(T_CONFIG,3);
   ConfigFile.close();
-  ConfigFile = SD.open(ConfigFileURL, FILE_READ);
+  // ConfigFile = SD.open(ConfigFileURL, FILE_READ);
   JsonObject& Config = Json.parseObject(ConfigBuffer);  
-  ConfigFile.close();
-  
+  // ConfigFile.close();
+  trace(T_CONFIG,4);
   if (!Config.success()) {
     msgLog("Config file parse failed.");
     delete[] ConfigBuffer;
@@ -48,11 +53,15 @@ boolean getConfig(void)
   if(device.containsKey("name")){
     deviceName = device["name"].asString();
   }
-  deviceName.toCharArray(host,9);
-  host[8] = 0;
+  host = new char[deviceName.length()+1];
+  strcpy(host, deviceName.c_str());
   
   if(Config.containsKey("timezone")){
     localTimeDiff = Config["timezone"].as<signed int>(); 
+  }
+
+  if(Config.containsKey("update")){
+    updateClass = Config["update"].as<String>();
   }
 
   int channels = 21;
@@ -77,9 +86,10 @@ boolean getConfig(void)
   if(device.containsKey("refvolts")){
     VrefVolts = device["refvolts"].as<float>();
   }  
-
+  
           // Build or update the input channels
-   
+          
+  trace(T_CONFIG,5); 
   if(device.containsKey("channels")){
     channels = MIN(device["channels"].as<unsigned int>(),MAXINPUTS);
   }
@@ -132,16 +142,21 @@ boolean getConfig(void)
   }
     
         //************************************ Configure input channels ***************************
+
+  trace(T_CONFIG,6);      
   if(Config.containsKey("inputs")){
     configInputs(Config["inputs"]);
   }   
      
         // ************************************ configure output channels *************************
 
-  if(Config.containsKey("outputs")){
-    configOutputs(Config["outputs"]);
+  trace(T_CONFIG,7);
+  delete outputs;
+  JsonVariant var = Config["outputs"];
+  if(var.success()){
+    outputs = new ScriptSet(var.as<JsonArray>()); 
   }
-  
+      
         // Get server type
                                                   
   String serverType = Config["server"]["type"].as<String>();
@@ -149,7 +164,10 @@ boolean getConfig(void)
   
       // ************************************** configure EmonCMS **********************************
 
+  trace(T_CONFIG,8);
   if(serverType.equals("emoncms")) {
+    if(influxStarted) influxStop = true;
+    SD.remove((char *)influxPostLogFile.c_str());
     EmonURL = Config["server"]["url"].asString();
     if(EmonURL.startsWith("http://")) EmonURL = EmonURL.substring(7);
     else if(EmonURL.startsWith("https://")){
@@ -166,59 +184,95 @@ boolean getConfig(void)
     EmonBulkSend = Config["server"]["bulksend"].as<int>();
     if(EmonBulkSend > 10) EmonBulkSend = 10;
     if(EmonBulkSend <1) EmonBulkSend = 1;
-    EmonUsername = Config["server"]["username"].as<String>();
+    EmonUsername = Config["server"]["userid"].as<String>();
     EmonSendMode EmonPrevSend = EmonSend;
     EmonSend = EmonSendGET;
     if(EmonUsername != "")EmonSend = EmonSendPOSTsecure;
     if(EmonPrevSend != EmonSend) EmonInitialize = true;  
-    if( ! EmonStarted) {
-      NewService(EmonService);
-      EmonStarted = true;
-      EmonStop = false;
-    }
+    
     #define hex2bin(x) (x<='9' ? (x - '0') : (x - 'a') + 10)
     apiKey.toLowerCase();
     for(int i=0; i<16; i++){
       cryptoKey[i] = hex2bin(apiKey[i*2]) * 16 + hex2bin(apiKey[i*2+1]); 
     }
+    delete emonOutputs;
+    JsonVariant var = Config["server"]["outputs"];
+    if(var.success()){
+      emonOutputs = new ScriptSet(var.as<JsonArray>());
+      Script* script = emonOutputs->first();
+      int index = 0;
+      while(script){
+        if(String(script->name()).toInt() <= index){
+          delete emonOutputs;
+          break;
+        }
+        else {
+          index = String(script->name()).toInt();
+        }
+        script = script->next();
+      }
+    }
+    
+    if( ! EmonStarted) {
+      NewService(EmonService);
+      EmonStarted = true;
+      EmonStop = false;
+    } 
   }
+  
+        // ************************************** configure influxDB **********************************
+
+  else if(serverType.equals("influxdb")) {
+    if(EmonStarted) EmonStop = true;
+    SD.remove((char *)EmonPostLogFile.c_str());
+    influxURL = Config["server"]["url"].asString();
+    if(influxURL.startsWith("http")){
+      influxURL.remove(0,4);
+      if(influxURL.startsWith("s"))influxURL.remove(0,1);
+      if(influxURL.startsWith(":"))influxURL.remove(0,1);
+      while(influxURL.startsWith("/")) influxURL.remove(0,1);
+    }
+   
+    if(influxURL.indexOf(":") > 0){
+      influxPort = influxURL.substring(influxURL.indexOf(":")+1).toInt();
+      influxURL.remove(influxURL.indexOf(":"));
+    }
+    influxDataBase = Config["server"]["database"].as<String>();
+    influxDBInterval = Config["server"]["postInterval"].as<int>();
+    influxBulkSend = Config["server"]["bulksend"].as<int>();
+    if(influxBulkSend > 10) influxBulkSend = 10;
+    if(influxBulkSend <1) influxBulkSend = 1;
+
+    delete influxOutputs;
+    JsonVariant var = Config["server"]["outputs"];
+    if(var.success()){
+      influxOutputs = new ScriptSet(var.as<JsonArray>()); 
+    }
+    if( ! influxStarted) {
+      NewService(influxService);
+      influxStarted = true;
+      influxStop = false;
+    }
+  }
+
+  else if(serverType.equals("none")){
+    EmonStop = true;
+    influxStop = true;
+    SD.remove((char *)influxPostLogFile.c_str());
+    SD.remove((char *)EmonPostLogFile.c_str());
+  }
+  
   else {
     EmonStop = true;
+    influxStop = true;
     if(!serverType.equals("none")){
       msgLog("server type is not supported: ", serverType);
     }
   }
 
+  trace(T_CONFIG,9);
   delete[] ConfigBuffer;
   return true;
-}
-
-void configOutputs(JsonArray& JsonOutputs){
-  while(outputList.size()){
-    IotaOutputChannel* output = (IotaOutputChannel*) outputList.findFirst();
-    outputList.remove(output);
-    delete output;
-  }
-  for(int i=0; i<JsonOutputs.size(); i++){
-    JsonObject& outputObject = JsonOutputs[i].as<JsonObject&>();
-    if(outputObject.containsKey("name") &&
-       outputObject.containsKey("units") &&
-       outputObject.containsKey("script")) {
-        String script;
-          if(outputObject["script"].is<JsonArray>()){            
-            script = old2newScript(outputObject["script"]);     // old verbose script is depricated but convert it for now
-          } else {
-            script = outputObject["script"].as<String>();       // New lean and mean script
-          }
-          IotaOutputChannel* output = new IotaOutputChannel(outputObject["name"], outputObject["units"], script);
-          output->_channel = i+100;
-          outputList.insertTail(output, output->_name);
-       }
-  }
-  IotaOutputChannel* outputChannel = (IotaOutputChannel*)outputList.findFirst();
-  while(outputChannel != NULL){
-    outputChannel = (IotaOutputChannel*)outputList.findNext(outputChannel);
-  }
 }
 
 void configInputs(JsonArray& JsonInputs){
@@ -252,6 +306,19 @@ void configInputs(JsonArray& JsonInputs){
       inputChannel[i]->reset();
     }
   }
+}
+
+void hashFile(uint8_t* sha, File file){
+  int buffSize = 256;
+  uint8_t* buff = new uint8_t[buffSize];
+  file.seek(0);
+  sha256.reset();
+  while(file.available()){
+    int bytesRead = file.read(buff,MIN(file.available(),buffSize));
+    sha256.update(buff, bytesRead); 
+  }
+  sha256.finalize(sha,32);
+  file.seek(0);
 }
 
 uint32_t condensedJsonSize(File JsonFile){

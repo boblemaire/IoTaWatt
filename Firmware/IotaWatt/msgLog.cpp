@@ -49,7 +49,7 @@ void msgLog(const char* segment1, const char* segment2, const char* segment3){
     }
     msg += "\r\n";
     msgFile.write((char*)msg.c_str(), msg.length());
-    msgFile.flush(); 
+    msgFile.close(); 
   }
 }
 
