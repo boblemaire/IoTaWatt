@@ -13,31 +13,34 @@
 #include <IotaLog.h>
 
 #include "IotaInputChannel.h"
-#include "IotaList.h"
+#include "IotaScript.h"
 #include "webServer.h"
 
-#define IOTAWATT_VERSION "2.02.15"
+#define IOTAWATT_VERSION "02_02_20"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
 
 // RTC trace trace module values by module. (See trace routines in Loop tab)
 
-#define T_SETUP 60          // Setup
 #define T_LOOP 10           // Loop
 #define T_LOG 20            // dataLog
 #define T_Emon 30           // EmonService
 #define T_GFD 40            // GetFeedData
-#define T_SAMP 100          // samplePower
 #define T_UPDATE 50         // updater
-#define T_TEMP 120
-
+#define T_SETUP 60          // Setup
+#define T_influx 70         // influxDB
+#define T_SAMP 80           // sampleCycle
+#define T_POWER 90          // Sample Power
+#define T_WEB 100           // (30)Web server handlers
+#define T_CONFIG 130        //  Get Config
+     
 // Identifiers used to construct id numbers for graph API
 
 #define QUERY_VOLTAGE  1
 #define QUERY_POWER  2
 #define QUERY_ENERGY 3
-      
+            
 #define MAXINPUTS 32                          // Arbitrary compile time limit for input channels
 #define  SEVENTY_YEAR_SECONDS 2208988800UL
 extern const double MS_PER_HOUR;       // useful constant
@@ -64,8 +67,8 @@ extern const double MS_PER_HOUR;       // useful constant
 // ADC descriptors
 
 #define ADC_BITS 12
-#define ADC_RANGE 4096      // 1 << ADC_BITS
-
+#define ADC_RANGE 4096      // 1 << ADC_BITS      
+      
 #define DBG_OUTPUT_PORT Serial
 
 enum priorities: byte {priorityLow=3, priorityMed=2, priorityHigh=1};
@@ -114,23 +117,36 @@ extern boolean EmonSecure;
 extern String EmonUsername;
 extern int16_t EmonBulkSend;
 extern enum EmonSendMode EmonSend;
+extern ScriptSet* emonOutputs;
 
+//********************** influxDB configuration stuff *****************************//
+// again, need to move this stuff to a class.
+
+extern bool influxStarted;
+extern bool influxStop;
+extern bool influxInitialize;
+extern String influxURL;
+extern uint16_t influxPort;
+extern String influxDataBase;
+extern int16_t influxBulkSend;
+extern ScriptSet* influxOutputs;      
+      
 extern uint32_t timeSynchInterval;              // Interval (sec) to roll NTP forward and try to refresh
 extern uint32_t dataLogInterval;                // Interval (sec) to invoke dataLog
 extern uint32_t EmonCMSInterval;                // Interval (sec) to invoke EmonCMS
+extern uint32_t influxDBInterval;               // Interval (sec) to invoke inflexDB 
 extern uint32_t statServiceInterval;            // Interval (sec) to invoke statService
 extern uint32_t updaterServiceInterval;         // Interval (sec) to check for software updates
 
-extern IotaList outputList;
-
 extern WiFiManager wifiManager;
 extern ESP8266WebServer server;
+extern IotaLog iotaLog;                            // instance of IotaLog class
+extern RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
+extern Ticker ticker;
 extern CBC<AES128> cypher;
 extern SHA256 sha256;
 extern HTTPClient http;
-extern RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
-extern Ticker ticker;
-extern IotaLog iotaLog;                            // instance of IotaLog class
+extern MD5Builder md5;
 
 extern boolean  hasRTC;
 extern boolean  RTCrunning;
@@ -140,20 +156,30 @@ extern File uploadFile;
 extern char    ledColor[12];                        // Pattern to display led, each char is 500ms color - R, G, Blank
 extern uint8_t ledCount;                            // Current index into cycle
 
+// ****************************** Firmware update ****************************
+
+extern const char* updateURL;
+extern const char* updateURI;
+extern String updateClass;              // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
+extern uint8_t publicKey[];
+      
 extern String deviceName;                           // can be specified in config.device.name
 extern uint16_t deviceVersion;
 
 extern String IotaMsgLog;
 extern String IotaLogFile;
+extern String EmonPostLogFile;
+extern String influxPostLogFile;
 
 extern uint32_t programStartTime;               // Time program started (UnixTime)
 extern uint32_t timeRefNTP;
 extern uint32_t timeRefMs;                      // Internal MS clock corresponding to timeRefNTP
 
 extern int      localTimeDiff;
-extern char     host[];
+extern char     *host;
 
 extern boolean wifiConnected;
+extern uint8_t configSHA256[];
 
 extern float frequency;                             // Split the difference to start
 extern float samplesPerCycle;                      // Here as well
@@ -161,6 +187,10 @@ extern float cycleSampleRate;
 extern int16_t cycleSamples;
 extern dataBuckets statBucket[MAXINPUTS];
 
+// ****************************** list of output channels **********************
+
+extern ScriptSet* outputs;
+      
 // ************************ ADC sample pairs ************************************
 #define MAX_SAMPLES 1000
 extern int16_t samples;                              // Number of samples taken in last sampling
@@ -178,7 +208,8 @@ uint32_t statService(struct serviceBlock* _serviceBlock);
 uint32_t WiFiService(struct serviceBlock* _serviceBlock);
 uint32_t updater(struct serviceBlock* _serviceBlock);
 uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock);
-
+uint32_t influxService(struct serviceBlock* _serviceBlock);
+  
 void dropDead(void);
 void setLedState();
 
@@ -187,5 +218,7 @@ boolean getConfig(void);
 float sampleVoltage(uint8_t Vchan, float Vcal);  
 void samplePower(int channel, int overSample);
 float samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift);
-  
+
+String base64encode(const uint8_t* in, size_t len);
+
 #endif // !IotaWatt_h

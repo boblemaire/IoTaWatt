@@ -9,6 +9,7 @@
 #include "msgLog.h"
 #include "timeServices.h"
 #include "webServer.h"
+#include "updater.h"
 
 String formatHex(uint32_t data);
 void dropDead(const char* pattern);

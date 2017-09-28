@@ -1,3 +1,8 @@
+#include <Arduino.h>
+
+#include "msgLog.h"
+#include "timeServices.h"
+
 uint32_t influxService(struct serviceBlock* _serviceBlock){
   // trace T_influx
   enum   states {initialize, post, resend};

@@ -18,11 +18,12 @@
 #include "IotaWatt.h"
 #include "msgLog.h"
 #include "IotaLog.h"
+#include "IotaScript.h"
 #include "timeServices.h"
 
 boolean EmonSendData(uint32_t reqUnixtime, String reqData);   
-String base64encode(const uint8_t* in, size_t len);
-String encryptData(String in, uint8_t* key);
+String encryptData(String in, const uint8_t* key);
+String bin2hex(const uint8_t* in, size_t len);
   
 uint32_t EmonService(struct serviceBlock* _serviceBlock){
   // trace T_Emon

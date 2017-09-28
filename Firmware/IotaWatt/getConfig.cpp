@@ -4,7 +4,6 @@
 
 #include "IotaWatt.h"
 #include "IotaInputChannel.h"
-#include "IotaOutputChannel.h"
 #include "msgLog.h"
 
 String old2newScript(JsonArray& script);  
@@ -12,6 +11,7 @@ void configInputs(JsonArray& JsonInputs);
 void configOutputs(JsonArray& JsonOutputs);
 void condenseJson(char* ConfigBuffer, File JsonFile);
 uint32_t condensedJsonSize(File JsonFile);
+void hashFile(uint8_t* sha, File file);
   
 boolean getConfig(void)
 {
@@ -54,7 +54,7 @@ boolean getConfig(void)
     deviceName = device["name"].asString();
   }
   host = new char[deviceName.length()+1];
-  strcpy(host,deviceName.c_str());
+  strcpy(host, deviceName.c_str());
   
   if(Config.containsKey("timezone")){
     localTimeDiff = Config["timezone"].as<signed int>(); 
