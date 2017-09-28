@@ -2,7 +2,7 @@
   IotaLog - Library for IoTaLog energy monitor
   Created by Bob Lemaire 
 */
-#include "Iotalog.h"
+#include "IotaLog.h"
 	#define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
 	int IotaLog::begin (char* path){
