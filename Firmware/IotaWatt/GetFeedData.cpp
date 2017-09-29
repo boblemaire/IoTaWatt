@@ -1,3 +1,5 @@
+#include "IotaWatt.h"
+
 /***************************************************************************************************
  *  GetFeedData SERVICE.
  *  
@@ -11,9 +13,6 @@
  *  request comes in, the web server handler will reshedule this SERVICE with NewService.
  * 
  **************************************************************************************************/
-
-#include "IotaWatt.h"
-#include "IotaLog.h"
 
 uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   // trace T_GFD
@@ -232,7 +231,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   }
 }
 
-void sendChunk(char* bufr, const uint32_t bufrPos){
+void sendChunk(char* bufr, uint32_t bufrPos){
   trace(T_GFD,9);
   const char* hexDigit = "0123456789ABCDEF";
   int _len = bufrPos - 5;

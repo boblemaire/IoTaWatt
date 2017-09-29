@@ -1,14 +1,5 @@
-#include <Arduino.h>
-
 #include "IotaWatt.h"
-#include "updater.h"
-#include "msgLog.h"
-#include "timeServices.h"
-#include "Ed25519.h"
 
-bool downloadUpdate(String version);
-bool installUpdate(String version);
-void deleteRecursive(String path);
 size_t httpRead(uint8_t* buff, size_t len);
 
 /*************************************************************************************************
@@ -21,7 +12,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     msgLog ("Firmware updated, restarting.");
     delay(500);
     ESP.restart();
-  }
+  }  
   return UNIXtime() + updaterServiceInterval;
 }
 

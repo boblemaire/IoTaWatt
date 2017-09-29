@@ -1,7 +1,6 @@
-#include <Arduino.h>
+#include "IotaWatt.h"
 
-#include "msgLog.h"
-#include "timeServices.h"
+boolean influxSendData(uint32_t reqUnixtime, String reqData);
 
 uint32_t influxService(struct serviceBlock* _serviceBlock){
   // trace T_influx

@@ -1,21 +1,13 @@
-#include <Arduino.h>
-#include <ESP8266mDNS.h>
-#include <RTClib.h>
-#include <SD.h>
-#include <SPI.h>
-#include <Wire.h>
-
 #include "IotaWatt.h"
-#include "msgLog.h"
-#include "timeServices.h"
-#include "webServer.h"
-#include "updater.h"
+
 
 String formatHex(uint32_t data);
-void dropDead(const char* pattern);
+void dropDead(void);
+void dropDead(const char*);
 void setLedCycle(const char* pattern);
 void endLedCycle();
 void ledBlink();
+void setLedState();
 
 void setup()
 {
@@ -32,8 +24,6 @@ void setup()
   digitalWrite(pin_CS_ADC0,HIGH);
   pinMode(pin_CS_ADC1,OUTPUT);
   digitalWrite(pin_CS_ADC1,HIGH);
-  pinMode(pin_CS_ADC2,OUTPUT);
-  digitalWrite(pin_CS_ADC2,HIGH);
   pinMode(pin_CS_SDcard,OUTPUT);
   digitalWrite(pin_CS_SDcard,HIGH);
   
@@ -62,7 +52,7 @@ void setup()
 
   //*************************************** Check RTC   *****************************
 
-  Wire.pins(pin_I2C_SDA, pin_I2C_SCL);
+  Wire.begin(pin_I2C_SDA, pin_I2C_SCL);
   rtc.begin();
     
   Wire.beginTransmission(PCF8523_ADDRESS);            // Read Control_3
@@ -103,7 +93,7 @@ void setup()
   
   //**************************************** Display the trace ****************************************
 
-  msgLog("Reset reason: ",(char*)ESP.getResetReason().c_str());
+  msgLog("Reset reason: ",(const char*)ESP.getResetReason().c_str());
   logTrace();
   msgLog("ESP8266 ChipID:",ESP.getChipId());
 
@@ -131,6 +121,7 @@ void setup()
       String ssid = "iota" + String(ESP.getChipId());
       String pwd = deviceName;
       msgLog("Connecting with WiFiManager.");
+
       wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
       endLedCycle();
       while(WiFi.status() != WL_CONNECTED && RTCrunning == false){
@@ -158,10 +149,10 @@ void setup()
     
   //*************************************** Start the local DNS service ****************************
 
-  if (MDNS.begin(host)) {
+  if (MDNS.begin(host.c_str())) {
       MDNS.addService("http", "tcp", 80);
       msgLog("MDNS responder started");
-      msgLog("You can now connect to http://", host, ".local");
+      msgLog(String("You can now connect to http://" + String(host) + ".local"));
   }
    
  //*************************************** Start the web server ****************************
@@ -174,7 +165,6 @@ void setup()
   server.on("/edit", HTTP_DELETE, handleDelete);
   server.on("/edit", HTTP_PUT, handleCreate);
   server.on("/edit", HTTP_POST, returnOK, handleFileUpload);
-  server.on("/disconnect",HTTP_GET, handleDisconnect);
   server.onNotFound(handleNotFound);
 
   SdFile::dateTimeCallback(dateTime);
@@ -195,6 +185,7 @@ void setup()
   
 }  // setup()
 /***************************************** End of Setup **********************************************/
+
 
 String formatHex(uint32_t data){
   const char* hexDigits = "0123456789ABCDEF";

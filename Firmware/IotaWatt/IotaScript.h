@@ -1,7 +1,4 @@
-#ifndef IotaScript_h
-#define IotaScript_h
-
-#include <Arduino.h>
+#include <arduino.h>
 #include <ArduinoJson.h>
 
 class Script {
@@ -104,4 +101,4 @@ class ScriptSet {
   
 };
 
-#endif // IotaScript_h
+

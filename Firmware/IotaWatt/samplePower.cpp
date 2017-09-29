@@ -1,18 +1,17 @@
-/***************************************************************************************************
- *  samplePower()  Sample a channel.
- *  
- ****************************************************************************************************/
-
-#include <Arduino.h>
-
+#include <arduino.h>
 #include "IotaWatt.h"
-#include "IotaInputChannel.h"
 
-int readADC(uint8_t channel);
-float getAref(int channel);
-float sampleVoltage(uint8_t Vchan, float Vcal);
-boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles, int overSamples);
+ bool sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles, int overSamples);
+ float getAref(int channel);
+ int readADC(uint8_t channel);
+ float sampleVoltage(uint8_t Vchan, float Vcal);
+ float samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift);
+ void printSamples();
   
+  /***************************************************************************************************
+  *  samplePower()  Sample a channel.
+  *  
+  ****************************************************************************************************/
 void samplePower(int channel, int overSample){
   uint32_t timeNow = millis();
   
@@ -183,7 +182,7 @@ void samplePower(int channel, int overSample){
   * 
   ****************************************************************************************************/
   
-  boolean sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles, int overSamples){
+  bool sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles, int overSamples){
 
   int Vchan = Vchannel->_channel;
   int Ichan = Ichannel->_channel;
@@ -456,7 +455,6 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
   samplesPerCycle = samplesPerCycle * .9 + samples * .1;
   cycleSamples++;
   double Vratio = Vcal * Vadj_3 * getAref(Vchan) / double(ADC_RANGE);
-  if(getAref(Vchan) < 1.5) Vratio *= (double)Vadj_1 / Vadj_3;
   return  Vratio * sqrt((double)(sumVsq / samples));
 }
 //**********************************************************************************************
@@ -488,7 +486,6 @@ float getAref(int channel) {
 //**********************************************************************************************
 //
 //        printSamples()  -  print the current samples.
-//        fileSamples() - write the current samples to an SD file ("samples.txt").
 //        These are diagnostic tools, not currently used.
 //
 //**********************************************************************************************
@@ -504,22 +501,6 @@ void printSamples() {
     Serial.print(Isample[i]);
     Serial.println();
   }
-  return;
-}
-
-void fileSamples() {
-  File sampleFile;
-  SD.remove("samples.txt");
-  sampleFile = SD.open("samples.txt",FILE_WRITE);
-  sampleFile.println(samples);
-  for(int i=0; i<(samples + 50); i++)
-  {
-    sampleFile.print(Vsample[i]);
-    sampleFile.print(", ");
-    sampleFile.print(Isample[i]);
-    sampleFile.println();
-  }
-  sampleFile.close();
   return;
 }
 
