@@ -1,3 +1,5 @@
+#include "IotaWatt.h"
+  
   /***************************************************************************************************
    * setNTPtime() - returns uint32_t bimary count of seconds since 1/1/1900 - UTC aka GMT.
    * This is the fundamental time standard used by the program. The value is obtained from one of

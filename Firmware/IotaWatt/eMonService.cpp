@@ -1,3 +1,10 @@
+#include "IotaWatt.h"
+
+boolean EmonSendData(uint32_t reqUnixtime, String reqData);
+String bin2hex(const uint8_t* in, size_t len);
+String encryptData(String in, const uint8_t* key);
+boolean EmonSendData(uint32_t reqUnixtime, String reqData);
+   
    /*******************************************************************************************************
  * EmonService - This SERVICE posts entries from the IotaLog to EmonCMS.  Details of the EmonCMS
  * account are provided in the configuration file at startup and this SERVICE is scheduled.  It runs

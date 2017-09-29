@@ -1,3 +1,11 @@
+#include "IotaWatt.h"
+
+void configInputs(JsonArray& JsonInputs);
+void hashFile(uint8_t* sha, File file);
+uint32_t condensedJsonSize(File JsonFile);
+void condenseJson(char* ConfigBuffer, File JsonFile);
+String old2newScript(JsonArray& script);
+
 boolean getConfig(void)
 {
   DynamicJsonBuffer Json;              
@@ -36,10 +44,9 @@ boolean getConfig(void)
   JsonObject& device = Config["device"].as<JsonObject&>();
 
   if(device.containsKey("name")){
-    deviceName = device["name"].asString();
+    deviceName = device["name"].as<String>();
+    host = deviceName;
   }
-  host = new char[deviceName.length()+1];
-  strcpy(host,deviceName.c_str());
   
   if(Config.containsKey("timezone")){
     localTimeDiff = Config["timezone"].as<signed int>(); 
@@ -52,22 +59,17 @@ boolean getConfig(void)
   int channels = 21;
   if(device.containsKey("version")){
     deviceVersion = device["version"].as<unsigned int>();
-    if(deviceVersion == 2){
-      hasRTC = true;
-      VrefVolts = 1.0;
-      ADC_selectPin[0] = 0;
-      ADC_selectPin[1] = 16;
-      ADC_selectPin[2] = 2;
+    if(deviceVersion < 3){
+      msgLog("Device version no longer supported.");
+      dropDead();
     }
-    else if(deviceVersion == 3){
-      hasRTC = true;
-      VrefVolts = 2.5;
-      ADC_selectPin[0] = 0;
-      ADC_selectPin[1] = 2;
-      channels = 15;
-    }
-  }
-  
+  } 
+  hasRTC = true;
+  VrefVolts = 2.5;
+  ADC_selectPin[0] = pin_CS_ADC0;
+  ADC_selectPin[1] = pin_CS_ADC1;
+  channels = 15;
+      
   if(device.containsKey("refvolts")){
     VrefVolts = device["refvolts"].as<float>();
   }  
@@ -153,7 +155,7 @@ boolean getConfig(void)
   if(serverType.equals("emoncms")) {
     if(influxStarted) influxStop = true;
     SD.remove((char *)influxPostLogFile.c_str());
-    EmonURL = Config["server"]["url"].asString();
+    EmonURL = Config["server"]["url"].as<String>();
     if(EmonURL.startsWith("http://")) EmonURL = EmonURL.substring(7);
     else if(EmonURL.startsWith("https://")){
       EmonURL = EmonURL.substring(8);
@@ -163,7 +165,7 @@ boolean getConfig(void)
       EmonURI = EmonURL.substring(EmonURL.indexOf("/"));
       EmonURL.remove(EmonURL.indexOf("/"));
     }
-    apiKey = Config["server"]["apikey"].asString();
+    apiKey = Config["server"]["apikey"].as<String>();
     node = Config["server"]["node"].as<String>();
     EmonCMSInterval = Config["server"]["postInterval"].as<int>();
     EmonBulkSend = Config["server"]["bulksend"].as<int>();
@@ -210,7 +212,7 @@ boolean getConfig(void)
   else if(serverType.equals("influxdb")) {
     if(EmonStarted) EmonStop = true;
     SD.remove((char *)EmonPostLogFile.c_str());
-    influxURL = Config["server"]["url"].asString();
+    influxURL = Config["server"]["url"].as<String>();
     if(influxURL.startsWith("http")){
       influxURL.remove(0,4);
       if(influxURL.startsWith("s"))influxURL.remove(0,1);

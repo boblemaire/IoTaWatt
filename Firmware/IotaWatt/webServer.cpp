@@ -1,3 +1,5 @@
+#include "IotaWatt.h"
+
 /*
   This WebServer code is incorporated with very little modification.
   Very simple yet powerful.
@@ -46,8 +48,25 @@
   upload the contents of SdRoot to the root of the SDcard and access the editor by going to http://esp8266sd.local/edit
 
   ----------------------------------------------------------------------------------------------------------------
-
 */
+
+void returnOK();
+void returnFail(String msg);
+bool loadFromSdCard(String path);
+void handleFileUpload();
+void deleteRecursive(String path);
+void handleDelete();
+void handleCreate();
+void printDirectory();
+void handleNotFound();
+void handleStatus();
+void handleVcal();
+void handleCommand();
+void handleGetFeedList();
+void handleGraphGetall();
+void sendMsgFile(File &dataFile, int32_t relPos);
+void handleGetConfig();
+
 
 void returnOK() {
   server.send(200, "text/plain", "");
@@ -278,8 +297,8 @@ void handleStatus(){
   if(server.hasArg("stats")){
     trace(T_WEB,14);
     JsonObject& stats = jsonBuffer.createObject();
-    stats.set("cyclerate", samplesPerCycle,0);
-    stats.set("chanrate",cycleSampleRate,1);
+    stats.set("cyclerate", samplesPerCycle);
+    stats.set("chanrate",cycleSampleRate);
     stats.set("runseconds", UNIXtime()-programStartTime);
     stats.set("stack",ESP.getFreeHeap());
     stats.set("version",IOTAWATT_VERSION);
@@ -295,15 +314,15 @@ void handleStatus(){
         JsonObject& channelObject = jsonBuffer.createObject();
         channelObject.set("channel",inputChannel[i]->_channel);
         if(inputChannel[i]->_type == channelTypeVoltage){
-          channelObject.set("Vrms",statBucket[i].volts,1);
-          channelObject.set("Hz",statBucket[i].Hz,1);
+          channelObject.set("Vrms",statBucket[i].volts);
+          channelObject.set("Hz",statBucket[i].Hz);
         }
         else if(inputChannel[i]->_type == channelTypePower){
           if(statBucket[i].watts < 0 && statBucket[i].watts > -.5) statBucket[i].watts = 0;
           channelObject.set("Watts",String(statBucket[i].watts,0));
           channelObject.set("Irms",String(statBucket[i].amps,3));
           if(statBucket[i].watts > 10){
-            channelObject.set("Pf",statBucket[i].watts/(statBucket[i].amps*statBucket[inputChannel[i]->_vchannel].volts),4);
+            channelObject.set("Pf",statBucket[i].watts/(statBucket[i].amps*statBucket[inputChannel[i]->_vchannel].volts));
           } 
           if(inputChannel[i]->_reversed){
             channelObject.set("reversed","true");
@@ -335,7 +354,7 @@ void handleStatus(){
   if(server.hasArg("voltage")){
     trace(T_WEB,17);
     int Vchan = server.arg("channel").toInt();
-    root.set("voltage", statBucket[Vchan].volts,1);
+    root.set("voltage", statBucket[Vchan].volts);
   }
   String response = "";
   root.printTo(response);
@@ -352,7 +371,7 @@ void handleVcal(){
   JsonObject& root = jsonBuffer.createObject();
   int channel = server.arg("channel").toInt();
   float Vrms = sampleVoltage(channel, server.arg("cal").toFloat());
-  root.set("vrms",Vrms,1);
+  root.set("vrms",Vrms);
   String response = "";
   root.printTo(response);
   server.send(200, "text/json", response);  

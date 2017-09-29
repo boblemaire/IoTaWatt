@@ -1,3 +1,6 @@
+#ifndef IotaInputChannel_h
+#define IotaInputChannel_h
+
 enum channelTypes:byte {channelTypeUndefined=0,
                         channelTypeVoltage=1,
                         channelTypePower=2};
@@ -65,7 +68,7 @@ class IotaInputChannel {
 	~IotaInputChannel(){
 		
 	}
-	
+
 	void reset(){
 	  _name = "";
 	  _model = "";
@@ -117,3 +120,4 @@ class IotaInputChannel {
 	
   private:
 };
+#endif

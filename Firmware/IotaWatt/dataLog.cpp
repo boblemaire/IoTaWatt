@@ -19,11 +19,12 @@
  * As with all of the SERVICES, it has a  single function call and is implimented as state machine.
  * Services should try not to execute for more than a few milliseconds at a time.
  **********************************************************************************************/
+ #include "IotaWatt.h"
+ #define GapFill 600           // Fill in gaps of less than this seconds 
+       
  uint32_t dataLog(struct serviceBlock* _serviceBlock){
-  // trace 2x
   enum states {initialize, checkClock, logData};
-  static states state = initialize;
-  #define GapFill 600                                  // Fill in gaps of up to these seconds                             
+  static states state = initialize;                                                       
   static IotaLogRecord* logRecord = new IotaLogRecord;
   static double accum1Then [MAXINPUTS];
   static uint32_t timeThen = 0;

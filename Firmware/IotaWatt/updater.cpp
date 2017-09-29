@@ -1,3 +1,7 @@
+#include "IotaWatt.h"
+
+size_t httpRead(uint8_t* buff, size_t len);
+
 /*************************************************************************************************
  * 
  *          updater - Service to check and update firmware

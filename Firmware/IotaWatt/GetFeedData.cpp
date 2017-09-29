@@ -1,3 +1,5 @@
+#include "IotaWatt.h"
+
 /***************************************************************************************************
  *  GetFeedData SERVICE.
  *  
@@ -229,7 +231,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   }
 }
 
-void sendChunk(char* bufr, const uint32_t bufrPos){
+void sendChunk(char* bufr, uint32_t bufrPos){
   trace(T_GFD,9);
   const char* hexDigit = "0123456789ABCDEF";
   int _len = bufrPos - 5;

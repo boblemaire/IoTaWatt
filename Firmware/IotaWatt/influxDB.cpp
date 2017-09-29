@@ -1,3 +1,7 @@
+#include "IotaWatt.h"
+
+boolean influxSendData(uint32_t reqUnixtime, String reqData);
+
 uint32_t influxService(struct serviceBlock* _serviceBlock){
   // trace T_influx
   enum   states {initialize, post, resend};
