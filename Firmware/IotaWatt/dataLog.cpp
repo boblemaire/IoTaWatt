@@ -34,7 +34,7 @@
 
     case initialize: {
 
-      msgLog("dataLog: service started.");
+      msgLog(F("dataLog: service started."));
 
       // Initialize the IotaLog class
       
@@ -48,6 +48,7 @@
       if(iotaLog.firstKey() != 0){
         logRecord->UNIXtime = iotaLog.lastKey();
         iotaLog.readKey(logRecord);
+        
         msgLog("dataLog: Last log entry:", iotaLog.lastKey());
       }
 
