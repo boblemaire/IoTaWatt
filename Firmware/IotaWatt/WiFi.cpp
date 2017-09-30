@@ -13,7 +13,7 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
   else {
     if(wifiConnected){
       wifiConnected = false;
-      msgLog("WiFi disconnected.");
+      msgLog(F("WiFi disconnected."));
     }
   }
   return UNIXtime() + 1;  

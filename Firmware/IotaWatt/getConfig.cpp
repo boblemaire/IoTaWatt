@@ -17,7 +17,7 @@ boolean getConfig(void)
   trace(T_CONFIG,0);
   ConfigFile = SD.open(ConfigFileURL, FILE_READ);
   if(!ConfigFile) {
-    msgLog("Config file open failed.");
+    msgLog(F("Config file open failed."));
     return false;
   }
   hashFile(configSHA256, ConfigFile);
@@ -34,7 +34,7 @@ boolean getConfig(void)
   // ConfigFile.close();
   trace(T_CONFIG,4);
   if (!Config.success()) {
-    msgLog("Config file parse failed.");
+    msgLog(F("Config file parse failed."));
     delete[] ConfigBuffer;
     return false;
   }
@@ -60,7 +60,7 @@ boolean getConfig(void)
   if(device.containsKey("version")){
     deviceVersion = device["version"].as<unsigned int>();
     if(deviceVersion < 3){
-      msgLog("Device version no longer supported.");
+      msgLog(F("Device version no longer supported."));
       dropDead();
     }
   } 

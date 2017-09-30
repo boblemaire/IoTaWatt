@@ -85,7 +85,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock){
   switch(state){
 
     case start: { 
-      msgLog("timeSync: service started.");    
+      msgLog(F("timeSync: service started."));    
       state = setRtc;     
       return 1;
     }
@@ -118,7 +118,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock){
         if(retryCount++ < 5){
           return UNIXtime() + 60;
         }
-        msgLog("timeSync: Failed to get NTPtime.");
+        msgLog(F("timeSync: Failed to get NTPtime."));
       }
       else {
         timeRefNTP = _NTPtime;                 

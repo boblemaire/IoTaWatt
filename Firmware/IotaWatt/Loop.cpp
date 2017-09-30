@@ -148,7 +148,7 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   uint32_t timeNow = millis();
 
   if(!started){
-    msgLog("statService: started.");
+    msgLog(F("statService: started."));
     started = true;
     for(int i=0; i<maxInputs; i++){
       statBucket[i].accum1 = inputChannel[i]->dataBucket.accum1;

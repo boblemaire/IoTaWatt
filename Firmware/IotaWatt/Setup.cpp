@@ -15,8 +15,8 @@ void setup()
    
   Serial.begin(115200);
   delay(250);
-  Serial.println("\r\n\n\n** Restart **\r\n\n");
-  Serial.println("Serial Initialized");
+  Serial.println(F("\r\n\n\n** Restart **\r\n\n"));
+  Serial.println(F("Serial Initialized"));
   
   //*************************************** Start SPI *************************************************
     
@@ -34,12 +34,12 @@ void setup()
   
   SPI.begin();
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
-  msgLog("SPI started.");
+  msgLog(F("SPI started."));
    
   //*************************************** Initialize the SD card ************************************
 
   if(!SD.begin(pin_CS_SDcard)) {
-    msgLog("SD initiatization failed. Retrying.");
+    msgLog(F("SD initiatization failed. Retrying."));
     setLedCycle("G.R.R...");
     while(!SD.begin(pin_CS_SDcard, SPI_FULL_SPEED)){ 
       yield();
@@ -47,14 +47,17 @@ void setup()
     endLedCycle();
     digitalWrite(greenLed,HIGH); 
   }
-  msgLog("SD initialized.");
+  msgLog(F("SD initialized."));
   hasSD = true;
 
   //*************************************** Check RTC   *****************************
 
   Wire.begin(pin_I2C_SDA, pin_I2C_SCL);
   rtc.begin();
-    
+
+
+
+
   Wire.beginTransmission(PCF8523_ADDRESS);            // Read Control_3
   Wire.write((byte)2);
   Wire.endTransmission();
@@ -67,7 +70,7 @@ void setup()
     RTCrunning = true;
     msgLog("Real Time Clock is running. Unix time: ", UNIXtime());
     if((Control_3 & 0x08) != 0){
-      msgLog("Power failure detected.");
+      msgLog(F("Power failure detected."));
       Wire.beginTransmission(PCF8523_ADDRESS);            
       Wire.write((byte)PCF8523_CONTROL_3);
       Wire.write((byte)0);
@@ -76,7 +79,7 @@ void setup()
     SdFile::dateTimeCallback(dateTime);
   }
   else {
-    msgLog("Real Time Clock not initialized.");
+    msgLog(F("Real Time Clock not initialized."));
   }
   programStartTime = UNIXtime();
   
@@ -100,7 +103,7 @@ void setup()
 //************************************* Process Config file *****************************************
   
   if(!getConfig()) {
-    msgLog("Configuration failed");
+    msgLog(F("Configuration failed"));
     dropDead();
   }
   String msg = "device name: " + deviceName + ", version: " + String(deviceVersion); 
@@ -120,12 +123,12 @@ void setup()
       wifiManager.setConfigPortalTimeout(180);
       String ssid = "iota" + String(ESP.getChipId());
       String pwd = deviceName;
-      msgLog("Connecting with WiFiManager.");
+      msgLog(F("Connecting with WiFiManager."));
 
       wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
       endLedCycle();
       while(WiFi.status() != WL_CONNECTED && RTCrunning == false){
-        msgLog("RTC not running, waiting for WiFi.");
+        msgLog(F("RTC not running, waiting for WiFi."));
         setLedCycle("R.R.G...");
         wifiManager.setConfigPortalTimeout(3600);
         wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
@@ -136,13 +139,13 @@ void setup()
     yield();
   }
   if(WiFi.status() != WL_CONNECTED){
-    msgLog("No WiFi connection.");
+    msgLog(F("No WiFi connection."));
   }
 
   //**************************************** Check for pending update ********************************
 
   if(checkUpdate()){
-    msgLog("Firmware updated, restarting");
+    msgLog(F("Firmware updated, restarting"));
     delay(500);
     ESP.restart();
   }  
@@ -151,7 +154,7 @@ void setup()
 
   if (MDNS.begin(host.c_str())) {
       MDNS.addService("http", "tcp", 80);
-      msgLog("MDNS responder started");
+      msgLog(F("MDNS responder started"));
       msgLog(String("You can now connect to http://" + String(host) + ".local"));
   }
    
@@ -170,7 +173,7 @@ void setup()
   SdFile::dateTimeCallback(dateTime);
 
   server.begin();
-  msgLog("HTTP server started");
+  msgLog(F("HTTP server started"));
   WiFi.mode(WIFI_STA);
   
 
@@ -200,7 +203,7 @@ String formatHex(uint32_t data){
 
 void dropDead(void){dropDead("R.R.R...");}
 void dropDead(const char* pattern){
-  msgLog("Program halted.");
+  msgLog(F("Program halted."));
   setLedCycle(pattern);
   while(1){
     delay(1000);   

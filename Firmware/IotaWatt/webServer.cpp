@@ -121,7 +121,7 @@ bool loadFromSdCard(String path){
       server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
     }
     if (server.streamFile(dataFile, dataType) != dataFile.size()) {
-      msgLog("Server: Sent less data than expected!");
+      msgLog(F("Server: Sent less data than expected!"));
     }
   }
   dataFile.close();
@@ -382,7 +382,7 @@ void handleCommand(){
   if(server.hasArg("restart")) {
     trace(T_WEB,3); 
     server.send(200, "text/plain", "ok");
-    msgLog("Restart command received.");
+    msgLog(F("Restart command received."));
     delay(500);
     ESP.restart();
   }
@@ -415,7 +415,7 @@ void handleCommand(){
   if(server.hasArg("disconnect")) {
     trace(T_WEB,6); 
     server.send(200, "text/plain", "ok");
-    msgLog("Disconnect command received.");
+    msgLog(F("Disconnect command received."));
     WiFi.disconnect(false);
     return;
   }
@@ -504,7 +504,7 @@ void handleGetConfig(){
   if(server.hasArg("update")){
     if(server.arg("update") == "restart"){
       server.send(200, "text/plain", "OK");
-      msgLog("Restart command received.");
+      msgLog(F("Restart command received."));
       delay(500);
       ESP.restart();
     }

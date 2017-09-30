@@ -24,7 +24,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
             // If stop signaled, do so.  
     if(influxStop) {
-    msgLog("influxDB: stopped.");
+    msgLog(F("influxDB: stopped."));
     influxStarted = false;
     trace(T_influx,4);
     influxPostLog.close();
@@ -61,7 +61,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           buf->data = iotaLog.lastKey();
           influxPostLog.write((byte*)buf,4);
           influxPostLog.flush();
-          msgLog("influxService: influxlog file created.");
+          msgLog(F("influxService: influxlog file created."));
         }
         influxPostLog.seek(influxPostLog.size()-4);
         influxPostLog.read((byte*)buf,4);
@@ -195,7 +195,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   
 
     case resend: {
-      msgLog("Resending influx data.");
+      msgLog(F("Resending influx data."));
       if(!influxSendData(reqUnixtime, reqData)){ 
         return UNIXtime() + 60;
       }
