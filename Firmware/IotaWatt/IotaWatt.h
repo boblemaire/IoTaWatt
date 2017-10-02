@@ -3,19 +3,19 @@
 
    /***********************************************************************************
       MIT License
-      
+
       Copyright (c) [2016] [Bob Lemaire]
-      
+
       Permission is hereby granted, free of charge, to any person obtaining a copy
       of this software and associated documentation files (the "Software"), to deal
       in the Software without restriction, including without limitation the rights
       to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
       copies of the Software, and to permit persons to whom the Software is
       furnished to do so, subject to the following conditions:
-      
+
       The above copyright notice and this permission notice shall be included in all
       copies or substantial portions of the Software.
-      
+
       THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
       IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
       FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -31,13 +31,11 @@
 #define MIN(a,b) ((a<b)?a:b)
 #define MAX(a,b) ((a>b)?a:b)
 
-#include <arduino.h>
-
+#include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <WiFiManager.h>
 #include <ESP8266mDNS.h>
 #include <DNSServer.h>
-#include <WiFiUDP.h>
 #include <WiFiClient.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
@@ -71,9 +69,9 @@
 extern WiFiClient WifiClient;
 extern WiFiManager wifiManager;
 extern ESP8266WebServer server;
-extern DNSServer dnsServer;    
-extern IotaLog iotaLog;                            
-extern RTC_PCF8523 rtc;                            
+extern DNSServer dnsServer;
+extern IotaLog iotaLog;
+extern RTC_PCF8523 rtc;
 extern Ticker ticker;
 extern CBC<AES128> cypher;
 extern SHA256 sha256;
@@ -87,7 +85,7 @@ extern MD5Builder md5;
 
 extern String deviceName;
 extern String IotaLogFile;
-extern String IotaMsgLog; 
+extern String IotaMsgLog;
 extern String EmonPostLogFile;
 extern String influxPostLogFile;
 extern uint16_t deviceVersion;
@@ -100,12 +98,12 @@ extern uint16_t deviceVersion;
 
 #define pin_I2C_SDA 4                       // I2C for rtc.  Wish it were SPI.
 #define pin_I2C_SCL 5
-                    
+
 #define redLed 16                           // IoTaWatt overusage of pins
 #define greenLed 0
-          
+
 extern uint8_t ADC_selectPin[2];            // indexable reference for ADC select pins
-                           
+
       // Identifiers used to construct id numbers for graph API
 
 #define QUERY_VOLTAGE  1
@@ -129,14 +127,14 @@ extern uint8_t ADC_selectPin[2];            // indexable reference for ADC selec
       // ADC descriptors
 
 #define ADC_BITS 12
-#define ADC_RANGE 4096      // 2^12      
-       
+#define ADC_RANGE 4096      // 2^12
+
 extern uint32_t lastCrossMs;           // Timestamp at last zero crossing (ms) (set in samplePower)
 extern uint32_t nextCrossMs;           // Time just before next zero crossing (ms) (computed in Loop)
 extern uint32_t nextChannel;           // Next channel to sample (maintained in Loop)
 
 enum priorities: byte {priorityLow=3, priorityMed=2, priorityHigh=1};
- 
+
 struct serviceBlock {                  // Scheduler/Dispatcher list item (see comments in Loop)
   serviceBlock* next;                  // Next serviceBlock in list
   uint32_t callTime;                   // Time (in NTP seconds) to dispatch
@@ -144,27 +142,27 @@ struct serviceBlock {                  // Scheduler/Dispatcher list item (see co
   uint32_t (*service)(serviceBlock*);  // the SERVICE
   serviceBlock(){next=NULL; callTime=0; priority=priorityMed; service=NULL;}
 };
-  
+
 extern serviceBlock* serviceQueue;     // Head of ordered list of services
 
-      // Define maximum number of input channels. 
+      // Define maximum number of input channels.
       // Create pointer for array of pointers to incidences of input channels
       // Initial values here are defaults for IotaWatt 2.1.
       // VrefVolts is the declared value of the voltage reference shunt,
       // Can be specified in config.device.aref
-      // Voltage adjustments are the values for AC reference attenuation in IotaWatt 2.1.    
+      // Voltage adjustments are the values for AC reference attenuation in IotaWatt 2.1.
 
 #define MAXINPUTS 15                          // Arbitrary compile time limit for input channels
 extern IotaInputChannel* *inputChannel;       // -->s to incidences of input channels (maxInputs entries)
 extern uint8_t  maxInputs;                    // channel limit based on configured hardware (set in Config)
 extern float    VrefVolts;                    // Voltage reference shunt value used to calibrate
                                               // the ADCs. (can be specified in config.device.refvolts)
-#define Vadj_3 13                             // Voltage channel attenuation ratio            
- 
+#define Vadj_3 13                             // Voltage channel attenuation ratio
+
       // ****************************************************************************
       // statService maintains current averages of the channel values
       // so that current values can be displayed by web clients
-      // statService runs at low frequency but is reved up by the web server 
+      // statService runs at low frequency but is reved up by the web server
       // handlers if the statistics are used.
 
 extern float   frequency;                             // Split the difference to start
@@ -196,9 +194,9 @@ extern uint32_t timeRefMs;                     // Internal MS clock correspondin
 extern uint32_t timeSynchInterval;           // Interval (sec) to roll NTP forward and try to refresh
 extern uint32_t dataLogInterval;               // Interval (sec) to invoke dataLog
 extern uint32_t EmonCMSInterval;               // Interval (sec) to invoke EmonCMS
-extern uint32_t influxDBInterval;              // Interval (sec) to invoke inflexDB 
+extern uint32_t influxDBInterval;              // Interval (sec) to invoke inflexDB
 extern uint32_t statServiceInterval;           // Interval (sec) to invoke statService
-extern uint32_t updaterServiceInterval;     // Interval (sec) to check for software updates 
+extern uint32_t updaterServiceInterval;     // Interval (sec) to check for software updates
 
 extern bool     hasRTC;
 extern bool     RTCrunning;
@@ -209,17 +207,17 @@ extern uint8_t  ledCount;                             // Current index into cycl
       // ****************************** Firmware update ****************************
 extern String   updateURL;
 extern String   updateURI;
-extern String   updateClass;            // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
+extern String   updateClass;            // NONE, MAJOR, MINOR, BETA, ALPHA, TEST
 extern uint8_t  publicKey[32];
 
       // *********************** EmonCMS configuration stuff *************************
       // Note: nee dto move out to a class and change for dynamic configuration
       // Start stop is a kludge for now.
-      
+
 extern bool     EmonStarted;                      // set true when Service started
 extern bool     EmonStop;                         // set true to stop the Service
-extern bool     EmonInitialize;                   // Initialize or reinitialize EmonService                                         
-extern String   EmonURL;                          // These are set from the config file 
+extern bool     EmonInitialize;                   // Initialize or reinitialize EmonService
+extern String   EmonURL;                          // These are set from the config file
 extern String   EmonURI;
 extern String   apiKey;
 extern uint8_t  cryptoKey[16];
@@ -239,16 +237,16 @@ extern ScriptSet* emonOutputs;
 
 extern bool     influxStarted;                    // set true when Service started
 extern bool     influxStop;                       // set true to stop the Service
-extern bool     influxInitialize;                 // Initialize or reinitialize 
+extern bool     influxInitialize;                 // Initialize or reinitialize
 extern String   influxURL;
 extern uint16_t influxPort;
 extern String   influxDataBase;
 extern int16_t  influxBulkSend;
-extern ScriptSet* influxOutputs;      
+extern ScriptSet* influxOutputs;
 
       // ************************ ADC sample pairs ************************************
-      
-#define MAX_SAMPLES 1000 
+
+#define MAX_SAMPLES 1000
 extern int16_t samples;                           // Number of samples taken in last sampling
 extern int16_t Vsample [MAX_SAMPLES];             // voltage/current pairs during sampling
 extern int16_t Isample [MAX_SAMPLES];
@@ -257,8 +255,8 @@ extern int16_t Isample [MAX_SAMPLES];
 void      setup();
 void      loop();
 void      trace(uint32_t, int);
-void      logTrace(void); 
-     
+void      logTrace(void);
+
 void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*));
 void      AddService(struct serviceBlock*);
 uint32_t  dataLog(struct serviceBlock*);
@@ -279,7 +277,7 @@ void      dropDead(void);
 void      dropDead(const char*);
 
 uint32_t  NTPtime();
-uint32_t  UNIXtime(); 
+uint32_t  UNIXtime();
 uint32_t  MillisAtUNIXtime(uint32_t);
 void      dateTime(uint16_t* date, uint16_t* time);
 
