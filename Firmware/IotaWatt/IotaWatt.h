@@ -61,6 +61,8 @@
 #include <SHA256.h>
 #include <Ed25519.h>
 
+#include "msgLog.h"
+
       // Declare instances of major classes
 
 extern WiFiClient WifiClient;
@@ -302,14 +304,6 @@ void      handleCreate();
 void      returnOK();
 void      handleFileUpload();
 void      handleDisconnect();
-
-
-void      msgLog(String);
-void      msgLog(const char*, String);
-void      msgLog(const char*, uint32_t);
-void      msgLog(const char*);
-void      msgLog(const char*, const char*);
-void      msgLog(const char*, const char*, const char*);
 
 void      sendChunk(char* bufr, uint32_t bufrPos);
 String    base64encode(const uint8_t* in, size_t len);
