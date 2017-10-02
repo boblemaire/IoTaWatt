@@ -1,8 +1,8 @@
 /*
   IotaLog - Library for IoTaLog energy monitor
-  Created by Bob Lemaire 
+  Created by Bob Lemaire
 */
-#include "Iotalog.h"
+#include "IotaLog.h"
 	#define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
 	int IotaLog::begin (char* path){
@@ -24,9 +24,9 @@
 		if(!IotaFile){
 			return 2;
 		}
-		
+
 		_fileSize = IotaFile.size();
-				
+
 		if(_fileSize % sizeof(IotaLogRecord)){
 			Serial.println(_fileSize);
 			Serial.println(sizeof(IotaLogRecord));
@@ -48,13 +48,13 @@
 			_lastKey = record->UNIXtime;
 			_entries = _fileSize / sizeof(IotaLogRecord);
 		}
-		
+
 		_L1indexBuffer = new IotaL1indexEntry [64];
 		_L1indexBufferPos = 0xffffffff;
-		
+
 		return buildIndex();
 	}
-	
+
 	int IotaLog::buildIndex(void){
 		IotaIndex = SD.open((char*)indexPath.c_str(), FILE_READ);
 		if(!IotaIndex){
@@ -79,21 +79,21 @@
 		_L1indexBufferPos = 0xffffffff;
 		return 0;
 	}
-	
+
 	int IotaLog::write (IotaLogRecord* newRecord){
 		if(!IotaFile){
 			return 2;
-		} 
+		}
 		if(newRecord->UNIXtime <= _lastKey) {
 			return 1;
-		}			
+		}
 		newRecord->serial = _entries++;
 		IotaFile.seek(_fileSize);
 		IotaFile.write((char*)newRecord, sizeof(IotaLogRecord));
 		if(_firstKey == 0){
 			_firstKey = newRecord->UNIXtime;
 		}
-		_fileSize += sizeof(IotaLogRecord);	
+		_fileSize += sizeof(IotaLogRecord);
 		IotaFile.flush();
 		if(newRecord->UNIXtime - _lastKey > _interval){
 			IotaIndex.close();
@@ -110,7 +110,7 @@
 		_lastKey = newRecord->UNIXtime;
 		return 0;
 	}
-	
+
 	int IotaLog::readKey (IotaLogRecord* callerRecord){
 		if(!IotaFile){
 			return 2;
@@ -120,19 +120,19 @@
 		}
 		_callerRecord = callerRecord;
 		uint32_t key = _callerRecord->UNIXtime - (_callerRecord->UNIXtime % _interval);
-		
+
 		if(key < _firstKey || key > _lastKey){
 			return 1;
 		}
-			
+
 				// Search L2 index for L1 block containing key.
 
-			
+
 		if(key < _seriesKey || key >= _seriesNextKey) {
 			int32_t _L1cluster = _L2entries - 1;
 			while(key < _L2index[_L1cluster--]);
 			uint32_t L1Position = ++_L1cluster * _L1clusterEntries * 8;
-			readL1index(L1Position);					
+			readL1index(L1Position);
 			do{
 				_seriesKey = _L1indexEntry->UNIXtime;
 				_seriesSerial = _L1indexEntry->serial;
@@ -142,11 +142,11 @@
 			_seriesEntries = _L1indexEntry->serial - _seriesSerial;
 			_seriesNextKey = _L1indexEntry->UNIXtime;
 		}
-		
+
 		uint32_t _seriesOffset = (key - _seriesKey) / _interval;
 		if(_seriesOffset >= _seriesEntries){
 			_seriesOffset = _seriesEntries - 1;
-		}		
+		}
 		IotaFile.seek((_seriesSerial + _seriesOffset) * sizeof(IotaLogRecord));
 		IotaFile.read(_callerRecord, sizeof(IotaLogRecord));
 		_callerRecord->UNIXtime = key;
@@ -159,7 +159,7 @@
 			// The SD routines don't buffer, so otherwise these requests
 			// would each be generating 512 byte reads to service an 8 byte request.
 			// The performance improvement is huge.
-	
+
 	void IotaLog::readL1index(uint32_t pos){
 		if(pos >= _L1indexSize){
 			_L1indexEntry->UNIXtime = 0xffffffff;
@@ -177,7 +177,7 @@
 		_L1indexEntry->UNIXtime = _L1indexBuffer[bufferIndex].UNIXtime;
 		_L1indexEntry->serial = _L1indexBuffer[bufferIndex].serial;
 	}
-	
+
 	int IotaLog::readNext (IotaLogRecord* callerRecord){
 		if(!IotaFile){
 			return 2;
@@ -189,31 +189,25 @@
 		IotaFile.read(callerRecord, sizeof(IotaLogRecord));
 		return 0;
 	}
-			
+
 	int IotaLog::end(){
 		logPath = "";
 		indexPath = "";
 		delete[] _L2index;
-		delete[] _L1indexBuffer; 
+		delete[] _L1indexBuffer;
 		_firstKey = 0;
 		_lastKey = 0;
 		_fileSize = 0;
 		IotaFile.close();
-		IotaIndex.close();		
+		IotaIndex.close();
 		return 0;
 	}
-	
+
 	boolean IotaLog::isOpen(){
 		if(IotaFile) return true;
 		return false;
 	}
-	
+
 	uint32_t IotaLog::firstKey(){return _firstKey;}
 	uint32_t IotaLog::lastKey(){return _lastKey;}
 	uint32_t IotaLog::fileSize(){return _fileSize;}
-
- 
-
-
-
-
