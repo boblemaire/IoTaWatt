@@ -62,6 +62,9 @@
 #include <Ed25519.h>
 
 #include "msgLog.h"
+#include "webServer.h"
+#include "updater.h"
+#include "samplePower.h"
 
       // Declare instances of major classes
 
@@ -272,12 +275,6 @@ void      endLedCycle();
 void      ledBlink();
 void      setLedState();
 
-void      samplePower(int channel, int overSample);
-int       readADC(uint8_t channel);
-float     sampleVoltage(uint8_t Vchan, float Vcal);
-float     getAref(int channel);
-float     samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift);
-
 void      dropDead(void);
 void      dropDead(const char*);
 
@@ -286,28 +283,10 @@ uint32_t  UNIXtime();
 uint32_t  MillisAtUNIXtime(uint32_t);
 void      dateTime(uint16_t* date, uint16_t* time);
 
-bool      checkUpdate();
-bool      downloadUpdate(String version);
-bool      installUpdate(String version);
-bool      copyUpdate(String version);
-
 boolean   getConfig(void);
-
-void      handleNotFound();
-void      handleStatus();
-void      handleVcal();
-void      handleCommand();
-void      printDirectory();
-void      handleGetConfig();
-void      handleDelete();
-void      handleCreate();
-void      returnOK();
-void      handleFileUpload();
-void      handleDisconnect();
 
 void      sendChunk(char* bufr, uint32_t bufrPos);
 String    base64encode(const uint8_t* in, size_t len);
-void      deleteRecursive(String path);
 
 String    formatHex(uint32_t);
 #endif
