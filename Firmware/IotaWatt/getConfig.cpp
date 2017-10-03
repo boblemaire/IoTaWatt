@@ -304,6 +304,7 @@ void hashFile(uint8_t* sha, File file){
     int bytesRead = file.read(buff,MIN(file.available(),buffSize));
     sha256.update(buff, bytesRead); 
   }
+  delete[] buff;
   sha256.finalize(sha,32);
   file.seek(0);
 }
