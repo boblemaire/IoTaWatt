@@ -9,6 +9,14 @@
 		logPath = String(path) + ".log";
 		indexPath = String(path) + ".ndx";
 		if(!SD.exists((char*)logPath.c_str())){
+			if(logPath.lastIndexOf('/') > 0){
+				String  dir = logPath.substring(0,logPath.lastIndexOf('/'));
+				if( ! SD.mkdir((char*)dir.c_str())){
+					Serial.print("mkdir failed: ");
+					Serial.println(dir);
+					return 2;
+				}
+			}
 			IotaFile = SD.open((char*)logPath.c_str(), FILE_WRITE);
 			if(!IotaFile){
 				Serial.println("open failed");
