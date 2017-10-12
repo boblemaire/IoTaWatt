@@ -7,7 +7,8 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
   if(WiFi.status() == WL_CONNECTED){
     if(!wifiConnected){
       wifiConnected = true;
-      msgLog("WiFi connected, SSID: ", WiFi.SSID());
+      String msg = "WiFi connected. SSID: " + WiFi.SSID() + ", IP: " + WiFi.localIP().toString();
+      msgLog(msg);
     }
   }
   else {
