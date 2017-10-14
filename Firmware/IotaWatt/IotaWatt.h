@@ -24,7 +24,7 @@
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
       ***********************************************************************************/
-#define IOTAWATT_VERSION "02_02_20"
+#define IOTAWATT_VERSION "02_02_21"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);

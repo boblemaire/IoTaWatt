@@ -41,6 +41,7 @@
  *   09/17/17 02_02_18 Encrypted Emoncms, new Script, influxDB, Emoncms outputs
  *   09/21/17 02_02_19 Bug fixes, add config context check to app
  *   09/24/17 02_02_20 Fix get feed data and initialize WiFi hostname
+ *   10/13/17 02_02_21 New release for production 
  *   
  *****************************************************************************************************/
 
