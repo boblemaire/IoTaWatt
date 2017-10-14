@@ -37,9 +37,9 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   struct req {
     req* next;
     int channel;
-    int queryType;
+    char queryType;
     Script* output;
-    req(){next=nullptr; channel=0; queryType=0; output=nullptr;};
+    req(){next=nullptr; channel=0; queryType=' '; output=nullptr;};
     ~req(){delete next;};
   } static reqRoot;
      
@@ -83,18 +83,31 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       while(i < idParm.length()){
         reqPtr->next = new req;
         reqPtr = reqPtr->next;
-        int id = idParm.substring(i,idParm.indexOf(',',i)).toInt();
+        String id = idParm.substring(i,idParm.indexOf(',',i));
+        String name = id.substring(2);
         i = idParm.indexOf(',',i) + 1;
-        reqPtr->channel = id / 10;
-        reqPtr->queryType = id % 10;
-        if(reqPtr->channel >= 100){
-          Script* script = outputs->first();
-          int index = reqPtr->channel - 100;
-          while(index){
-            if(script)script = script->next();
-            index--;
+        if(id.charAt(0) == 'I'){
+          for(int j=0; j<maxInputs; j++){
+            if(inputChannel[j]->isActive() &&
+               name.equals(inputChannel[j]->_name)){
+               reqPtr->channel = inputChannel[j]->_channel;
+               reqPtr->output = nullptr;
+               reqPtr->queryType = id.charAt(1);
+               break;
+            }
           }
-          reqPtr->output = script;
+        }
+        else if(id.charAt(0) == 'O'){
+          Script* script = outputs->first();
+          while(script){
+            if(name.equals(script->name())){
+              reqPtr->channel = -1;
+              reqPtr->output = script;
+              reqPtr->queryType = id.charAt(1);
+              break;
+            } 
+            script = script->next(); 
+          }  
         }
       }
           
@@ -105,6 +118,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       } else {
         lastRecord->UNIXtime = iotaLog.firstKey();
       }
+      iotaLog.readKey(lastRecord);
 
           // Using String for a large buffer abuses the heap
           // and takes up a lot of time. We will build 
@@ -149,22 +163,25 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
         while((reqPtr = reqPtr->next) != nullptr){
           int channel = reqPtr->channel;
           if(rtc || logRecord->logHours == lastRecord->logHours){
-             replyData +=  "null";
+            replyData +=  "null";
           }
   
             // input channel
 
-          else if(channel < 100){
+          else if(channel >= 0){
             trace(T_GFD,3);       
-            if(reqPtr->queryType == QUERY_VOLTAGE) {
+            if(reqPtr->queryType == 'V') {
               replyData += String((logRecord->channel[channel].accum1 - lastRecord->channel[channel].accum1) / elapsedHours,1);
             } 
-            else if(reqPtr->queryType == QUERY_POWER) {
+            else if(reqPtr->queryType == 'P') {
               replyData += String((logRecord->channel[channel].accum1 - lastRecord->channel[channel].accum1) / elapsedHours,1);
             }
-            else if(reqPtr->queryType == QUERY_ENERGY) {
+            else if(reqPtr->queryType == 'E') {
               replyData += String((logRecord->channel[channel].accum1 / 1000.0),2);
-            }  
+            } 
+            else {
+              replyData += "null";
+            } 
           }
   
            // output channel
@@ -174,13 +191,20 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
             if(reqPtr->output == nullptr){
               replyData += "null";
             }
-            else if(reqPtr->queryType == QUERY_ENERGY){
+            else if(reqPtr->queryType == 'V'){
+              replyData += String(reqPtr->output->run([](int i)->double {
+                return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;}), 1);
+            }
+            else if(reqPtr->queryType == 'P'){
+              replyData += String(reqPtr->output->run([](int i)->double {
+                return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;}), 1);
+            }
+            else if(reqPtr->queryType == 'E'){
               replyData += String(reqPtr->output->run([](int i)->double {
                 return logRecord->channel[i].accum1 / 1000.0;}), 2);
             }
             else {
-              replyData += String(reqPtr->output->run([](int i)->double {
-                return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;}), 1);
+              replyData += "null";
             }
           }
           replyData += ',';

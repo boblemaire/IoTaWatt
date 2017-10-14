@@ -431,7 +431,7 @@ function graph_reload() {
     var method = "data";
     var backup_param = "";
     if (getbackup) backup_param = "&backup=true";
-    var request = path+"feed/"+method+".json?id="+reloadId+"&start="+view.start+"&end="+view.end + mode + backup_param;
+    var request = path+"feed/"+method+".json?id=["+reloadId+"]&start="+view.start+"&end="+view.end + mode + backup_param;
     
     
     $.ajax({                                      
