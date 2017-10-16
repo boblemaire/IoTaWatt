@@ -1,0 +1,55 @@
+{
+	"format": 2,
+	"timezone": 0,
+	"device": {
+		"name": "IotaWatt",
+		"version": 3,
+		"channels": "15",
+		"burden": [
+			0,
+			24,
+			24,
+			24,
+			24,
+			24,
+			24,
+			24,
+			24,
+			24,
+			24,
+			24,
+			24,
+			24,
+			24
+		]
+	},
+	"inputs": [
+		{
+			"channel": 0,
+			"name": "Voltage",
+			"type": "VT",
+			"model": "generic240V",
+			"phase": 2,
+			"cal": 23
+		},
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null
+	],
+	"outputs": [],
+	"server": {
+		"type": "none"
+	},
+	"update": "MAJOR"
+}
