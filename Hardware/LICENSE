@@ -1,5 +1,5 @@
 This declaration applies to the hardware design
-documents found in this hardware directory and
+documents found in this hardware directory
 including both the .sch (schematic) and .brd (pcb)
 files, as well as any custom parts libraries that 
 may be present or added.
