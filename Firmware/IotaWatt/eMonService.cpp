@@ -42,11 +42,11 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   if(EmonStop) {
     msgLog("EmonService: stopped.");
     EmonStarted = false;
-    trace(T_Emon,4);
+    trace(T_Emon,1);
     EmonPostLog.close();
-    trace(T_Emon,5);
+    trace(T_Emon,2);
     SD.remove((char *)EmonPostLogFile.c_str());
-    trace(T_Emon,6);
+    trace(T_Emon,3);
     state = initialize;
     return 0;
   }
@@ -121,6 +121,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     }
     
     case post: {
+      trace(T_Emon,4);
 
           // If WiFi is not connected,
           // just return without attempting to log and try again in a few seconds.
@@ -175,7 +176,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // values for each channel are (delta value hrs)/(delta log hours) = period value.
           // Update the previous (Then) buckets to the most recent values.
      
-      trace(T_Emon,2);
+      trace(T_Emon,5);
 
       
       reqData += '[' + String(UnixNextPost - reqUnixtime) + ",\"" + String(node) + "\",";
@@ -218,7 +219,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       for (int i = 0; i < maxInputs; i++) {  
         accum1Then[i] = logRecord->channel[i].accum1;
       }
-      trace(T_Emon,3);    
+      trace(T_Emon,6);    
       reqData.setCharAt(reqData.length()-1,']');
       reqEntries++;
       UnixLastPost = UnixNextPost;
@@ -248,6 +249,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   
 
     case resend: {
+      trace(T_Emon,7);
       msgLog("Resending EmonCMS data.");
       if(!EmonSendData(reqUnixtime, reqData)){ 
         return UNIXtime() + 60;
@@ -274,7 +276,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
  *  Secure takes about twice as long and can block sampling for more than a second.
  ***********************************************************************************************/
 boolean EmonSendData(uint32_t reqUnixtime, String reqData){ 
-  trace(T_Emon,7);
+  trace(T_Emon,8);
   uint32_t startTime = millis();
   Serial.println(reqData);
   
@@ -317,7 +319,16 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
     http.addHeader("Authorization", auth.c_str());
     http.setTimeout(500);
     int httpCode = http.POST(encryptData(reqData, cryptoKey));
-    String response = http.getString();
+    trace(T_Emon,9);
+    size_t responseLength = http.getSize();
+    String response;
+    if(responseLength <= 60){
+      response = http.getString();
+    }	
+    else{
+      response = "Excessive length response: ";
+      response += String(responseLength);
+    }
     http.end();
     if(httpCode != HTTP_CODE_OK){
       String code = String(httpCode);
@@ -331,11 +342,11 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
     if(response.startsWith(base64Sha)){
       return true;        
     }
-    msgLog(reqData);
-    msgLog("EmonService: Invalid response: ", response.substring(0,44));
+    msgLog(reqData.substring(0,60));
+    msgLog("EmonService: Invalid response: ", response);
     msgLog("EmonService: Expectd response: ", base64Sha);
     
-    return true;
+    return false;
   }
   
   msgLog("EmonService: Unsupported protocol - ", EmonSend);
