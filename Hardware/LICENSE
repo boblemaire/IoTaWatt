@@ -1,0 +1,26 @@
+This declaration applies to the hardware design
+documents found in this hardware directory
+including both the .sch (schematic) and .brd (pcb)
+files, as well as any parts libraries that 
+may be present or added.
+
+(c) copyright 2017, Bob Lemaire
+IoTaWatt is a trademark of IoTaWatt, Inc.
+
+This work is licensed under the Creative Commons 4.0
+International Public License.
+https://creativecommons.org/licenses/by/4.0/legalcode
+
+Reference designs are provided "as is" with "all faults". 
+IoTaWatt, Inc. disclaims all other warranties regarding 
+this product including, but not limited to, any implied 
+warranties of merchantability or fitness for a particular 
+purpose. IoTaWatt, Inc. reserves the right to make 
+changes to specifications and product descriptions, 
+at any time, without notice. IoTaWatt. Inc. shall have 
+no responsibilities whatsoever for conflicts or 
+incompatabilities that arise from future changes.
+
+Use of the IoTaWatt trademark name without the 
+express written permission of IoTaWatt, Inc. is
+prohibited.
