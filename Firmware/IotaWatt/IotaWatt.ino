@@ -59,6 +59,7 @@
  *   09/21/17 02_02_19 Bug fixes, add config context check to app
  *   09/24/17 02_02_20 Fix get feed data and initialize WiFi hostname
  *   10/13/17 02_02_21 New release for production 
+ *   10/18/17 02_02_22 Recompile with staged core to fix Krack vulnerability
  *   
  *****************************************************************************************************/
 
