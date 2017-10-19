@@ -24,10 +24,10 @@
 
 </head>
 <body onload="setup()">
-  
+
 <div class="outerContainer color_outer">
   <h3 id="heading">IoTaWatt Power Monitor</h3>
-  
+
   <div class="bigIdeasDiv color_menu" id="bigIdeas">
     <table id="bigIdeasTable">
       <tr>
@@ -49,15 +49,15 @@
     </table>
   </div>
   <div id="divBody" display="inline">
-  <!-- ****************************** divInputs **********************************--> 
-  
+  <!-- ****************************** divInputs **********************************-->
+
     <div class="bodyDiv color_body" id="inputList">
       <h3>Inputs</h3>
       <table id="inputTable">
         <tbody id="inputTableBody"></tbody>
       </table>
     </div>
-    
+
     <div class="bodyDiv color_body" id="inputEdit">
       <h3 id="inputChannel"></h3>
       <table id="inputEditTable"></table>
@@ -67,7 +67,7 @@
         <button class="actionSave" id="inputEditSave" onclick="inputEditSave()">save</button>
       </p>
     </div>
-    
+
     <div class="bodyDiv color_body" id="inputCalVT">
       <h3 id="inputCalChannel"></h3>
       <h1 id="inputCalVolts"></h1>
@@ -82,17 +82,17 @@
       voltage reasonably matches the voltmeter reading.  Click save to update the channel
       with the new calibration factor.</p>
     </div>
-    
-    
-     <!--****************************** divOutputs **********************************--> 
-    
+
+
+     <!--****************************** divOutputs **********************************-->
+
     <div class="bodyDiv color_body" id="divOutputs">
       <h3>Outputs</h3>
       <table id="outputTable"></table>
     </div>
-    
-    <!-- ****************************** divDevice **********************************--> 
-    
+
+    <!-- ****************************** divDevice **********************************-->
+
     <div class="bodyDiv color_body" id="divDevice">
       <h3>Configure IoTaWatt Device</h3>
       <table id="deviceTable"></table>
@@ -102,21 +102,21 @@
         <button class="actionSave" id="deviceSave" onclick="deviceSave()">save</button>
       </p>
     </div>
-    
-    <!-- ****************************** divBurden **********************************--> 
-    
+
+    <!-- ****************************** divBurden **********************************-->
+
     <div class="bodyDiv color_body" id="divBurden">
       <h3>Specify on-board burden resistors</h3>
-      
+
       <table id="burdenTable"></table>
       <p>
         <button class="actionCancel" id="burdenCancel" onclick="burdenCancel()">cancel</button>
         <button class="actionSave" id="burdenSave" onclick="burdenSave()">save</button>
       </p>
     </div>
-   
-   <!-- ****************************** divWebServer*********************************--> 
-    
+
+   <!-- ****************************** divWebServer*********************************-->
+
     <div class="bodyDiv color_body" id="divWebServer">
       <h3>Setup Web Server</h3>
       <form><table id="serverTable"></table></form>
@@ -129,9 +129,9 @@
         <button class="actionSave" id="serverSave" onclick="serverSave()">save</button>
       </p>
     </div>
-    
-    <!-- ****************************** divStatus **********************************--> 
-    
+
+    <!-- ****************************** divStatus **********************************-->
+
     <div class="bodyDiv color_body" id="divStatus">
       <table width="100%">
         <tr><th width="50%">Inputs</th><th width="50%">Outputs</th></tr>
@@ -150,15 +150,15 @@
       </table>
       <table id="statusTable"></table>
     </div> <!-- divStatus -->
-  
-    <!-- ******************************divCalc **********************************--> 
-    
+
+    <!-- ******************************divCalc **********************************-->
+
     <div class="bodyDiv color_body" id="divCalc">
       <div class="inputContainer color_inputcontainer" id="calcBody"><form>
         <h3 style="text-align:center">Configure Output</h3>
         <h3> Name: <input type="text" id="calcName" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="refreshCalcDisplay()" title="invalid name"></h3>
         <h3> Units: <input id="calcUnits" oninput="refreshCalcDisplay()"></h3></form>
-        <h3 class="calcDisplay" id="calcDisplay">0</h3>  
+        <h3 class="calcDisplay" id="calcDisplay">0</h3>
           <table class="calcTable"><tr><th></th><th></th><th></th><th></th></tr>
           <tr><td><button class="calcButton calcClr" onclick="keyClearAll()" title="Clear all" value="C">C</button></td>
           <td><button class="calcButton calcBack" onclick="keyClearEntry()" title="Clear last entry" value="CE">CE</button></td>
@@ -195,11 +195,11 @@
           <button class="actionDelete" id="calcDelete" onclick="calcDelete()">delete</button>
           <button class="actionCancel" id="calcCancel" onclick="calcCancel();">cancel</button>
           <button class="actionSave" id="calcSave" onclick="calcSave()">save</button>
-        </p> 
+        </p>
       </div>
     </div>
-  </div> <!-- divBody -->  
-</div> 
+  </div> <!-- divBody -->
+</div>
 
 <script>
 // configuration files
@@ -239,7 +239,7 @@ var scriptEditReturn;
 /***************************************************************************************************
  *                        Configure Inputs
  * ************************************************************************************************/
- 
+
 function buildInputsList(){
   currentBodyPush("inputList");
   var inputsTable = document.getElementById("inputTableBody");
@@ -300,17 +300,17 @@ function refreshInputEdit(){
   var table = document.getElementById("inputEditTable");
   table.innerHTML = "";
   document.getElementById("inputChannel").innerHTML = "Configure Input " + inputEditChannel;
-  
+
   var newInput = addTableRow(table, "Burden:", "inputBurden", "span");
   if(config.device.burden[inputEditChannel] == 0) inputBurden.innerHTML = "none configured.";
   else if(Number.isInteger(config.device.burden[inputEditChannel])) inputBurden.innerHTML = config.device.burden[inputEditChannel].toFixed(0) + " ohms";
   else inputBurden.innerHTML = config.device.burden[inputEditChannel].toFixed(1) + " ohms";
-  
+
   var inputName = addTableRow(table, "Name: ", "inputName", "input", 12);
   inputName.setAttribute("onblur","inputEditObject.name=this.value.trim(); refreshInputEdit();");
   inputName.value = inputEditObject.name;
   inputName.pattern = "[A-Za-z]{1}[a-zA-Z0-9_]*";
-  
+
   if(inputName.value == ""){
     inputEditMsg(inputName, "Please specify a name");
     complete = false;
@@ -327,21 +327,21 @@ function refreshInputEdit(){
       complete = false;
     }
   }
-  
+
   newInput = addTableRow(table, "Type: ", "inputType", "select");
   newInput.setAttribute("oninput","inputEditNewType(this.value); refreshInputEdit();");
   var option = document.createElement("option");
   option.text = inputEditObject.type;
   option.selected = true;
-  newInput.add(option); 
+  newInput.add(option);
   option = document.createElement("option");
   option.text = (inputEditObject.type == "CT") ? "VT" : "CT";
   newInput.add(option);
-  
+
   inputModel = addTableRow(table, "Model: ", "inputModel", "select");
   var option = document.createElement("option");
   option.text = "generic";
-  inputModel.add(option); 
+  inputModel.add(option);
   if(inputEditObject.type == "VT"){
     for(i in tables.VT){
       option = document.createElement("option");
@@ -349,7 +349,7 @@ function refreshInputEdit(){
       inputModel.add(option);
       if(inputEditObject.model == option.text){
         option.selected = true;
-      } 
+      }
     }
   }
   else {
@@ -373,13 +373,13 @@ function refreshInputEdit(){
           option.selected = true;
           inputEditObject.cal = tables.CT[i].cal;
           inputEditObject.phase = tables.CT[i].phase;
-        } 
+        }
       }
     }
   }
   inputModel.setAttribute("oninput","inputEditNewModel(this)");
-  
-  if(inputEditObject.model == "generic" && 
+
+  if(inputEditObject.model == "generic" &&
     (inputEditObject.type == "VT" ||
     (inputEditObject.type == "CT" && config.device.burden[inputEditChannel] == 0))){
     inputCal = addTableRow(table, "Cal: ", "inputCal", "input", 5);
@@ -393,7 +393,7 @@ function refreshInputEdit(){
       inputCal.value = parseFloat(inputCal.value).toPrecision(4);
     }
   }
-  
+
   if(inputEditObject.model == "generic" && inputEditObject.type == "CT" && config.device.burden[inputEditChannel] > 0){
     inputTurns = addTableRow(table, "Turns: ", "inputTurns", "input", 5);
     inputTurns.setAttribute("onblur","inputEditObject.turns = this.value.trim(); refreshInputEdit();");
@@ -413,7 +413,7 @@ function refreshInputEdit(){
       }
     }
   }
- 
+
   if(inputEditObject.model == "generic"){
     inputPhase = addTableRow(table, "Phase: ", "inputPhase", "input", 4);
     inputPhase.setAttribute("onblur","inputEditObject.phase = this.value.trim(); refreshInputEdit();");
@@ -426,7 +426,7 @@ function refreshInputEdit(){
       inputPhase.value = Number(inputPhase.value).toFixed(1);
     }
   }
-  
+
    if(inputEditObject.type == "CT" && voltageChannels.length > 1){
     inputVchan = addTableRow(table, "VRef", "inputVchan", "select");
     inputVchan.setAttribute("oninput","inputEditObject.vchan = Number(this.value); refreshInputEdit();");
@@ -437,10 +437,10 @@ function refreshInputEdit(){
       inputVchan.add(option);
       if(inputEditObject.vchan !== undefined && inputEditObject.vchan == voltageChannels[i]){
         option.selected = true;
-      } 
+      }
     }
   }
-  
+
   if(inputEditObject.type == "CT"){
     inputNeg = addTableRow(table, "", "inputNeg", "input");
     inputNeg.parentNode.appendChild(document.createTextNode("Allow negative power value"));
@@ -456,7 +456,7 @@ function refreshInputEdit(){
   }
 
   if(inputEditObject.type == "VT"){
-    document.getElementById("inputEditDelete").style.display = 
+    document.getElementById("inputEditDelete").style.display =
       (config.inputs[inputEditChannel] == null || vchanUsed[inputEditChannel]) ? "none" : "inline";
     if(complete){
       inputCal = addTableRow(table, "", "inputCal", "button");
@@ -559,9 +559,9 @@ function addTableText(table,col1Text,col2Text){
 }
 
 /**********************************************************************************************************************************
- * 
+ *
  *  Voltage calibration
- * 
+ *
  * *******************************************************************************************************************************/
 
 function calVTvoltage(obj){
@@ -569,7 +569,7 @@ function calVTvoltage(obj){
   document.getElementById("inputCalChannel").innerHTML = "Calibrate Voltage Channel " + inputEditChannel;
   document.getElementById("inputCalVolts").innerHTML = "120.1";
   document.getElementById("inputCalCal").value = inputEditObject.cal;
-  
+
   calRefreshVoltage = true;
   calVTvolts = 0;
   calUpdateVoltage();
@@ -633,19 +633,19 @@ function calVTsave(obj){
     scriptEditSet = config.outputs;
     editScript();
   }
-  
+
   /**********************************************************************************************
    *                editScript() - Generic Output Script Editor with "calculator"
-   * 
+   *
    *                Caller must initialize these global variables.
-   * 
+   *
    *                scriptEditTable - the table element in which to build the list
    *                scriptEditSet - the array containing the individual Scripts
    *                scriptEditSave - function  to be used to save the edited scriptSet
    *                scriptEditReturn - function to be called upon completion of an edit.
-   *                
+   *
    * *******************************************************************************************/
-   
+
   function editScript(){
     scriptEditIndex = -1;
     table = scriptEditTable;
@@ -685,8 +685,8 @@ function calVTsave(obj){
     selColumn.appendChild(editButton);
     editing = false;
   }
-   
-  
+
+
   function calcBuildDropdown(){
     var inputDropdown = document.getElementById("calcInputDropdown-content");
     inputDropdown.innerHTML = "";
@@ -734,7 +734,7 @@ function calVTsave(obj){
     }
     scriptEditSet.push({name:document.getElementById("calcName").value.trim(),
                         units:document.getElementById("calcUnits").value.trim(),
-                        script:tokens.join("") 
+                        script:tokens.join("")
                       });
     scriptEditSet.sort(function(a, b){return a.name.toString().localeCompare(b.name.toString())});
     for(var i=0; i<scriptEditSet.length-1; i++){
@@ -744,7 +744,7 @@ function calVTsave(obj){
     currentBodyPop();
     scriptEditReturn();
   }
-  
+
   function calcDelete(){
     scriptEditSet.splice(scriptEditIndex,1);
     scriptEditSave();
@@ -755,7 +755,7 @@ function calVTsave(obj){
   function refreshCalcDisplay(){
     document.getElementById("calcDisplay").innerHTML = scriptDisplay(tokens);
     if(document.getElementById("calcName").value.trim() == "" ||
-       parenLevel > 0 || 
+       parenLevel > 0 ||
        RegExp("^[-+*\/]").test(tokens[tokens.length-1])){
       document.getElementById("calcSave").style.display = "none";
     }
@@ -798,7 +798,7 @@ function calVTsave(obj){
     }
     keyClearEntry();
   }
-  
+
   function keyClearEntry(){
     if(tokens[tokens.length-1] == ")"){
       parenLevel++;
@@ -814,7 +814,7 @@ function calVTsave(obj){
     }
     refreshCalcDisplay();
   }
-  
+
   function keyClearChar(){
     if(RegExp("^[-+*\/()|@]").test(tokens[tokens.length-1])){
       keyClearEntry();
@@ -827,7 +827,7 @@ function calVTsave(obj){
     }
     refreshCalcDisplay();
   }
-  
+
   function keyDigit(digit){
     if(RegExp("^#0").test(tokens[tokens.length-1])){
       tokens[tokens.length-1] = "#" + digit;
@@ -840,7 +840,7 @@ function calVTsave(obj){
     }
     refreshCalcDisplay();
   }
-  
+
   function keyDecimal(){
     if(RegExp("^#-?[0-9]*$").test(tokens[tokens.length-1])){
       tokens[tokens.length-1] += ".";
@@ -850,7 +850,7 @@ function calVTsave(obj){
     }
     refreshCalcDisplay();
   }
-  
+
   function keyUniNeg(){
     if(RegExp("^#[0-9]+\.?[0-9]*").test(tokens[tokens.length-1])){
       tokens[tokens.length-1] = tokens[tokens.length-1].charAt(0) + "-" + tokens[tokens.length-1].substr(1);
@@ -860,14 +860,14 @@ function calVTsave(obj){
     }
     refreshCalcDisplay();
   }
-  
+
   function keyUniPos(){
     if(RegExp("[@)]").test(tokens[tokens.length-1])){
        tokens.push("|");
      }
      refreshCalcDisplay();
   }
-  
+
   function keyBinFunc(op){
     if(RegExp("^[@#)\|]").test(tokens[tokens.length-1])){
       tokens.push(op);
@@ -877,7 +877,7 @@ function calVTsave(obj){
     }
     refreshCalcDisplay();
   }
-  
+
   function keyPush(){
     if(tokens.length == 1 && tokens[0] == "#0") {
         tokens[0] = "(";
@@ -889,7 +889,7 @@ function calVTsave(obj){
     }
     refreshCalcDisplay();
   }
-  
+
   function keyPop(){
     if(parenLevel > 0 && RegExp("^[@#|)]").test(tokens[tokens.length-1])){
       tokens.push(")");
@@ -897,7 +897,7 @@ function calVTsave(obj){
       refreshCalcDisplay();
     }
   }
-  
+
   function keyInput(obj){
     if(tokens.length == 1 && tokens[0] == "#0") {
       tokens[0] = "@" + obj.value;
@@ -907,7 +907,7 @@ function calVTsave(obj){
     }
     refreshCalcDisplay();
   }
- 
+
 /********************************************************************************************
  *                                    Configure Device
  * ******************************************************************************************/
@@ -925,12 +925,12 @@ function buildDevice(){
   deviceTable.innerHTML = "";
   editing = false;
   originalName = config.device.name;
-  
+
   var deviceName = addTableRow(deviceTable, "Device name:","deviceName", "input", 8);
   deviceName.value = config.device.name;
   deviceName.setAttribute("oninput","config.device.name = this.value.trim(); checkDevice();");
   deviceName.pattern = "[a-zA-Z]{1}[0-9a-zA-Z]{3,7}";
-  
+
   var deviceTimezone = addTableRow(deviceTable, "Time Zone:","deviceTimezone", "input", 3);
   deviceTimezone.value = config.timezone;
   deviceTimezone.setAttribute("onchange","config.timezone = this.value; checkDevice();");
@@ -939,7 +939,7 @@ function buildDevice(){
   deviceTimezone.setAttribute("min","-12");
   deviceTimezone.setAttribute("max","12");
   deviceTimezone.setAttribute("step","1");
-  
+
   var deviceUpdate = addTableRow(deviceTable, "Auto-update Class:","deviceUpdate", "select");
   for(i in updateClasses){
     var option = document.createElement("option");
@@ -1017,7 +1017,7 @@ function newBurden(obj, index){
   if (msg != null){
     faults--;
     obj.parentNode.removeChild(obj.nextSibling);
-  } 
+  }
   if(Number.isNaN(val)){
     obj.parentNode.appendChild(document.createTextNode(" Must be numeric."));
     faults++;
@@ -1039,15 +1039,15 @@ function newBurden(obj, index){
 function burdenCancel(){
   getConfig();
   currentBodyPop();
-}  
- 
+}
+
 function burdenSave(){
   currentBodyPop();
   uploadConfig(resetDisplay);
 }
 
 /********************************************************************************************
- *                                     Setup Web Server 
+ *                                     Setup Web Server
  * ******************************************************************************************/
 
 function buildWebServer(){
@@ -1060,7 +1060,7 @@ function buildWebServer(){
   document.getElementById("divServerOutputs").style.display = "none";
   var serverSelect = addTableRow(serverTable, "Web Service Type", "serverType", "select");
   serverSelect.setAttribute("oninput","newServer(this)");
-  
+
   for(i in servers){
     var option = document.createElement("option");
     option.text = servers[i];
@@ -1132,15 +1132,15 @@ function buildEmoncms(){
       config.server.outputs.push({name:i+1, script:"@"+i});
     }
   }
-  
-  var nodeInput = addTableRow(serverTable, "Node:", "serverNode", "input", 8);
+
+  var nodeInput = addTableRow(serverTable, "Node name:", "serverNode", "input", 8);
   nodeInput.value = config.server.node;
   nodeInput.setAttribute("onchange","config.server.node = this.value; checkEmoncms();");
   nodeInput.setAttribute("style","width: 80px;");
   nodeInput.setAttribute("min","0");
   nodeInput.setAttribute("max","99");
   nodeInput.setAttribute("step","1");
-  
+
   var postInput =   addTableRow(serverTable, "post interval(sec): ", "serverPost", "input", 3);
   postInput.value = Number(config.server.postInterval);
   postInput.setAttribute("onchange","config.server.postInterval = Number(this.value); checkEmoncms();");
@@ -1149,7 +1149,7 @@ function buildEmoncms(){
   postInput.setAttribute("min","0");
   postInput.setAttribute("max","3600");
   postInput.setAttribute("step","5");
-  
+
   if(isNaN(config.server.bulksend)) config.server.bulksend = 1;
   var bulksendInput = addTableRow(serverTable, "bulk send:", "serverBulk", "input", 3);
   bulksendInput.value = Number(config.server.bulksend);
@@ -1160,19 +1160,19 @@ function buildEmoncms(){
   bulksendInput.max = "10";
   bulksendInput.step = "1";
   bulksendInput.title = "Send multiple entries in a single HTTP transaction";
-  
+
   var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 32);
   urlInput.value = config.server.url
   urlInput.setAttribute("onchange","config.server.url = this.value; checkEmoncms();");
   urlInput.setAttribute("type","url");
-  
+
   var keyInput = addTableRow(serverTable, "api key:", "serverKey", "input", 32);
   keyInput.value = config.server.apikey;
   keyInput.setAttribute("oninput","config.server.apikey = this.value; checkEmoncms();");
   keyInput.setAttribute("size","32");
   keyInput.pattern = "[0-9a-f]{32}";
   keyInput.title = "read/write key - 32 hexadecimal digits";
-  
+
   addTableText(serverTable,"","Specifying userid triggers secure encrypted protocol.")
   var keyInput = addTableRow(serverTable, "Emoncms userid", "serverUser", "input", 10);
   if(config.server.userid === undefined) config.server.userid = "";
@@ -1181,10 +1181,10 @@ function buildEmoncms(){
   keyInput.setAttribute("size","16");
   keyInput.pattern = "[0-9]*";
   keyInput.title = "In upper-left corner of Emoncms My Account";
-  
+
   document.getElementById("divServerOutputs").style.display = "inline";
   document.getElementById("serverOutputsHeader").innerHTML = "Emoncms inputs";
-  
+
   document.getElementById("calcName").pattern="[1-9]{1}[0-9]?";
   document.getElementById("calcName").title="Name is Emoncms Input Key 1-99";
   scriptEditSave = function(){
@@ -1227,7 +1227,7 @@ function validateInput(id){
  * ********************************************************************************************/
 function buildInfluxdb(){
   var serverTable = document.getElementById("serverTable");
-  
+
   var postInput =   addTableRow(serverTable, "post interval(sec): ", "serverPost", "input", 3);
   postInput.value = Number(config.server.postInterval);
   postInput.setAttribute("onchange","config.server.postInterval = Number(this.value); checkInfluxdb();");
@@ -1236,7 +1236,7 @@ function buildInfluxdb(){
   postInput.setAttribute("min","0");
   postInput.setAttribute("max","3600");
   postInput.setAttribute("step","5");
-  
+
   if(isNaN(config.server.bulksend)) config.server.bulksend = 1;
   var bulksendInput = addTableRow(serverTable, "bulk send:", "serverBulk", "input", 3);
   bulksendInput.value = Number(config.server.bulksend);
@@ -1246,17 +1246,17 @@ function buildInfluxdb(){
   bulksendInput.setAttribute("min","1");
   bulksendInput.setAttribute("max","10");
   bulksendInput.setAttribute("step","1");
-  
+
   var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 32);
   urlInput.value = config.server.url
   urlInput.setAttribute("onchange","config.server.url = this.value; checkInfluxdb();");
   urlInput.setAttribute("type","url");
-  
+
   var dbInput = addTableRow(serverTable, "database:", "serverDb", "input", 16);
   dbInput.value = config.server.database;
   dbInput.setAttribute("oninput","config.server.database = this.value; checkInfluxdb();");
   dbInput.pattern = "^[0-9a-zA-Z_$-/\.\+]+$";
-  
+
   document.getElementById("divServerOutputs").style.display = "inline";
   document.getElementById("serverOutputsHeader").innerHTML = "influxDB fields";
 
@@ -1328,28 +1328,28 @@ function statusDisplay(statusMessage){
   column3.appendChild(document.createTextNode(status.stats.chanrate.toFixed(1) + " AC cycles sampled/second"));
   addRow();
   column3.appendChild(document.createTextNode(status.stats.frequency.toFixed(1) + " Hz"));
-  
+
   statusTable = document.getElementById("inputStatusTable");
   statusTable.innerHTML = "";
   for(i in status.inputs){
     addRow();
-    
+
     for(j in config.inputs){
       if(config.inputs[j] !== null && config.inputs[j].channel == status.inputs[i].channel){
         if(config.inputs[j].name !== undefined) column1.innerHTML += "<strong>" + config.inputs[j].name + ":</strong>";
         break;
       }
     }
-    
-    
+
+
     if(status.inputs[i].Watts !== undefined){
       var wattNode = document.createElement("font");
       wattNode.innerHTML = status.inputs[i].Watts + " watts";
       column3.appendChild(wattNode);
-      
+
       if(status.inputs[i].reversed == "true"){
         wattNode.setAttribute("color","DarkRed");
-      } 
+      }
       if(status.inputs[i].Watts < 0){
           wattNode.setAttribute("color","DarkGreen");
       }
@@ -1357,13 +1357,13 @@ function statusDisplay(statusMessage){
         var pf = status.inputs[i].Pf;
         column3.appendChild(document.createTextNode(", pf: " + pf.toFixed(2)));
       }
-      
+
     }
     else if(status.inputs[i].Vrms !== undefined){
       column3.appendChild(document.createTextNode(status.inputs[i].Vrms.toFixed(1) + " volts"));
     }
   }
-  
+
   statusTable = document.getElementById("outputStatusTable");
   statusTable.innerHTML = "";
   for(i in status.outputs){
@@ -1373,9 +1373,9 @@ function statusDisplay(statusMessage){
     wattNode.innerHTML = status.outputs[i].value.toFixed(0) + " " + status.outputs[i].units;
     column3.appendChild(wattNode);
   }
-    
+
   setTimeout(function(){if(getStatus)statusGet();},1500);
-  
+
   function addRow(){
     newRow = document.createElement("tr");
     statusTable.appendChild(newRow);
@@ -1417,14 +1417,14 @@ function checkConfig(){
     config.inputs.push(null);
   }
   config.inputs.splice(config.device.channels,config.inputs.length-config.device.channels);
-  
+
   if(config.device.burden === undefined){
     config.device.burden = [0];
-  } 
+  }
   for(var i=config.device.burden.length; i<config.device.channels; i++){
     config.device.burden.push(24);
   }
-  
+
   if(config.format == 1){
     for(i in config.outputs) {
       config.outputs[i].script = old2newScript(config.outputs[i].script);
@@ -1443,8 +1443,8 @@ function old2newScript(oldScript){
       newScript += "@" + oldScript[i].value;
     }
     else if(oldScript[i].oper == "binop"){
-      newScript += oldScript[i].value; 
-    } 
+      newScript += oldScript[i].value;
+    }
     else if(oldScript[i].oper == "push"){
       newScript += "(";
     }
@@ -1453,7 +1453,7 @@ function old2newScript(oldScript){
     }
     else if(oldScript[i].oper == "abs"){
       newScript += "|";
-    }   
+    }
   }
   return newScript;
 }
@@ -1478,7 +1478,7 @@ function demoStatus(){
   }
   return JSON.stringify(status);
 }
-  
+
 /********************************************************************************************
  *                       Main menu navigation.
  * *****************************************************************************************/
@@ -1489,7 +1489,7 @@ function menuButton(obj, handler){
     obj.className = "mainMenuButton buttonDown";
     handler();
   }
-} 
+}
 
 function currentBodyPop(){
   if(currentBody.length > 0) document.getElementById(currentBody.pop()).style.display = "none";
@@ -1499,11 +1499,11 @@ function currentBodyPush(newBody){
   if(currentBody.length > 0){
     if(currentBody[currentBody.length-1] == newBody) return;
     document.getElementById(currentBody[currentBody.length-1]).style.display = "none";
-  } 
+  }
   currentBody.push(newBody);
   document.getElementById(currentBody[currentBody.length-1]).style.display = "table";
 }
- 
+
 function resetDisplay(){
   getStatus = false;
   document.getElementById("BIBdevice").className = "mainMenuButton";
@@ -1572,7 +1572,7 @@ function uploadConfig(callback, action="reload"){
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() {
       if (this.readyState == 4 && this.status == 200) {
-        if(callback !== undefined) callback(); 
+        if(callback !== undefined) callback();
       }
     }
     xmlHttp.open("GET","/config?update=" + action, true);
@@ -1601,7 +1601,7 @@ function writeFile(fileString, url, responseHandler){
       }
     }
   };
-  
+
   var formData = new FormData();
   var blob = new Blob([fileString], {type: 'plain/text'},  url);
   formData.append("file", blob, url);
@@ -1611,7 +1611,7 @@ function writeFile(fileString, url, responseHandler){
   }
   URI = "/edit" + URI;
   xmlHttp.open("POST", URI);
-  
+
   xmlHttp.send(formData);
 }
 
@@ -1622,7 +1622,7 @@ function setup(){
   if(document.domain == "iotawatt.com"){
     demo = true;
     document.getElementById("heading").innerHTML += " Demo Mode";
-  } 
+  }
   resetDisplay();
 }
 
