@@ -2,8 +2,8 @@
 "VT":[
   {"model":"generic120V","type":"U","cal":11.50,"phase":2.0},
   {"model":"generic240V","type":"U","cal":23.00,"phase":2.0},
-  {"model":"Ideal 77DB-06-09(UK)","cal":20.54,"phase":2.0},
-  {"model":"Ideal 77DE-06-09(EU)","cal":20.54,"phase":2.0},
+  {"model":"Ideal 77DB-06-09(UK)","cal":20.69,"phase":2.0},
+  {"model":"Ideal 77DE-06-09(EU)","cal":19.26,"phase":2.0},
   {"model":"Ideal 77DA-10-09-MI(USA)","cal":11.06,"phase":1.55},
   {"model":"Jameco/100061","cal":11.68,"phase":4.8},
   {"model":"Jameco/102234","cal":11.43,"phase":3.5},
@@ -11,7 +11,7 @@
   {"model":"MGT1240","cal":9.37,"phase":1.75},
   {"model":"CUI","cal":10.10,"phase":1.9}
   ],
-  
+
 "CT":[
 	{"model":"generic","type":"U"},
 	{"model":"CR3110-3000","type":"C","turns":3000,"phase":1.5},
@@ -26,6 +26,6 @@
 	{"model":"ZDKCT10M","mfg":"China","type":"C","turns":2007,"phase":1.5},
 	{"model":"PZCT-02","mfg":"China","type":"C","turns":1000,"phase":2.0},
 	{"model":"SCT0750-000","mfg":"Magnalab","type":"C","turns":7550,"phase":2.55}
-	
+
 	]
 }
