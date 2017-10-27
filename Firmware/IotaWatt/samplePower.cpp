@@ -36,11 +36,13 @@ void samplePower(int channel, int overSample){
   int16_t* IsamplePtr = Isample;
    
         // Invoke high speed sample collection.
-        // If it fails, set power to zero and return.
-
-  if( ! sampleCycle(Vchannel, Ichannel, 1, 0)) {
+        // If it fails, return.
+ 
+  if(int rtc = sampleCycle(Vchannel, Ichannel, 1, 0)) {
     trace(T_POWER,2);
-    Ichannel->setPower(0.0, 0.0);
+    if(rtc == 2){
+      Ichannel->setPower(0.0, 0.0);
+    }
     return;
   }          
       
@@ -171,10 +173,15 @@ void samplePower(int channel, int overSample){
   *  I've tried to segregate the bit-banging and document it well.
   *  For anyone interested in the low level registers, you can find 
   *  them defined in esp8266_peri.h.
-  * 
+  *
+  *  Return codes are:
+  *   0 - success
+  *   1 - low quality sample (low sample rate, probably interrupted)
+  *   2 - failure (probably no voltage reference or voltage unplugged during sampling)
+  *   
   ****************************************************************************************************/
   
-  bool sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles, int overSamples){
+  int sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles, int overSamples){
 
   int Vchan = Vchannel->_channel;
   int Ichan = Ichannel->_channel;
@@ -221,7 +228,7 @@ void samplePower(int channel, int overSample){
   lastV = readADC(Vchan) - offsetV;
   do {
     if((millis() - startMs) > 2){
-      return false;
+      return 2;
     }
     rawV = readADC(Vchan) - offsetV;   
   } while(abs(rawV - lastV) < 20);
@@ -264,8 +271,8 @@ void samplePower(int channel, int overSample){
               if(samples >= MAX_SAMPLES){                   // If over the legal limit
                 trace(T_SAMP,0);                            // shut down and return
                 GPOS = ADC_IselectMask;                     // (Chip select high) 
-                PRINTL("Max samples exceeded.","")       
-                return false;
+                Serial.println("Max samples exceeded.");       
+                return 2;
               }
             }
           }
@@ -302,13 +309,14 @@ void samplePower(int channel, int overSample){
               // will happen if the adapter is unplugged.
               // So handling needs to be robust.
         
-          if((uint32_t)(millis()-startMs)>timeoutMs){                       // Something is wrong
-            trace(T_SAMP,2);                                                // Leave a meaningful trace
+          if((uint32_t)(millis()-startMs)>timeoutMs){                   // Something is wrong
+            trace(T_SAMP,2);                                            // Leave a meaningful trace
             trace(T_SAMP,Ichan);
             trace(T_SAMP,Vchan);
-            GPOS = ADC_VselectMask;                                         // ADC select pin high 
-            PRINTL("Timeout ", Ichan)                               
-            return false;                                                   // Return a failure
+            GPOS = ADC_VselectMask;                                     // ADC select pin high 
+            Serial.print("Sample timeout: ");                                         
+            Serial.println(Ichan);                               
+            return 2;                                                   // Return a failure
           }
                               
               // Now wait for SPI to complete
@@ -352,10 +360,18 @@ void samplePower(int channel, int overSample){
   *IsamplePtr = (rawI + lastI) >> 1;
    
   trace(T_SAMP,8);
+
+  if(samples < ((lastCrossUs - firstCrossUs) * 10 / 264)){
+    Serial.print("Low sample count ");
+    Serial.println(samples);
+    return 1;
+  }
   
           // Update damped frequency.
 
-  frequency = (0.9 * frequency) + (0.1 * (1000000.0 * cycles)  / float((uint32_t)(lastCrossUs - firstCrossUs)));
+  float Hz = 1000000.0  / float((uint32_t)(lastCrossUs - firstCrossUs));
+  Vchannel->setHz(Hz);
+  frequency = (0.9 * frequency) + (0.1 * Hz);
 
           // Note the sample rate.
           // This is just a snapshot from single cycle sampling.
@@ -365,7 +381,7 @@ void samplePower(int channel, int overSample){
   samplesPerCycle = samplesPerCycle * .9 + (samples / cycles) * .1;
   cycleSamples++;
   
-  return true;
+  return 0;
 }
 
 //**********************************************************************************************
@@ -390,64 +406,26 @@ int readADC(uint8_t channel){
 }
 
 /****************************************************************************************************
- * sampleVoltage() is used during calibration of a Voltage channel.
- * It samples one cycle and returns the voltage corresponding to the supplied calibration factor.
+ * sampleVoltage() is used to sample just voltage and is also used by the voltage calibration handler.
+ * It uses sampleCycle specifying the voltage channel for both channel parameters thus 
+ * doubling the number of voltage samples.
+ * It returns the voltage corresponding to the supplied calibration factor
  ****************************************************************************************************/
 float sampleVoltage(uint8_t Vchan, float Vcal){
-  IotaInputChannel* _input = inputChannel[Vchan];
+  IotaInputChannel* Vchannel = inputChannel[Vchan];
   uint32_t sumVsq = 0;
-  int16_t rawV = 0;
-  int16_t lastV = 0;
-  int16_t offsetV = _input->_offset;
-  int16_t* VsamplePtr = Vsample;
-  uint32_t startMs = millis();
-  uint32_t firstCrossUs;
-  uint32_t timeoutMs = 600 / frequency;
-  int16_t crossCount = 0;
-  int16_t crossLimit = 3;
-  int16_t crossGuard = 0;
-  samples = 0;
-
-  lastV = readADC(Vchan) - offsetV;
-  do {
-    if((millis() - startMs) > 2){
+  while(int rtc = sampleCycle(Vchannel, Vchannel, 1, 0)){
+    if(rtc == 2){
+      Serial.println("Zero sample voltage");
       return 0.0;
-    } 
-    rawV = readADC(Vchan) - offsetV;   
-  } while(abs(rawV - lastV) < 20);
-  
-  while(crossCount < crossLimit){
-    lastV = rawV;
-    rawV = readADC(Vchan) - offsetV;
-    *VsamplePtr = rawV;
-    
-    if(((rawV ^ lastV) & crossGuard) >> 15) {  
-      crossCount++;
-      crossGuard = 10;
-      startMs = millis();
-      if(crossCount == 1){
-        firstCrossUs = micros();     
-      }
     }
-    crossGuard--;
-    
-    if(crossCount){
-      VsamplePtr++;
-      sumVsq += rawV * rawV;
-      samples++;
-    }     
-    
-    if((uint32_t)(millis()-startMs) > timeoutMs){
-      return 0;
-    } 
   }
-  float Hz = 1000000.0  / float(micros() - firstCrossUs);
-  _input->setHz(Hz);
-  frequency = (0.8 * frequency) + (0.2 * Hz);
-  samplesPerCycle = samplesPerCycle * .9 + samples * .1;
-  cycleSamples++;
+  for(int i=0; i<samples; i++){  
+    sumVsq += Vsample[i] * Vsample[i];
+    sumVsq += Isample[i] * Isample[i];
+  }
   double Vratio = Vcal * Vadj_3 * getAref(Vchan) / double(ADC_RANGE);
-  return  Vratio * sqrt((double)(sumVsq / samples));
+  return  Vratio * sqrt((double)(sumVsq / (samples * 2)));
 }
 //**********************************************************************************************
 //
@@ -455,8 +433,7 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
 //
 //**********************************************************************************************
 
-float getAref(int channel) {
-   
+float getAref(int channel) { 
   uint32_t align = 0;               // SPI requires out and in to be word aligned                                                                 
   uint8_t ADC_out [4] = {0, 0, 0, 0};
   uint8_t ADC_in  [4] = {0, 0, 0, 0};  
