@@ -38,7 +38,7 @@
 
       // Initialize the IotaLog class
       
-      if(int rtc = iotaLog.begin((char*)IotaLogFile.c_str(),3 )){
+      if(int rtc = iotaLog.begin((char*)IotaLogFile.c_str())){
         msgLog("dataLog: Log file open failed. ", String(rtc));
         dropDead();
       }
@@ -54,7 +54,7 @@
 
       state = checkClock;
 
-      // Fall through to check Clock+
+      // Fall through to checkClock
 
     }
 
