@@ -35,6 +35,11 @@ void msgLog(const char* segment1,const  char* segment2,const  char* segment3){
 
   if(!msgFile){
     msgFile = SD.open(IotaMsgLog,FILE_WRITE);
+    if(restart && msgFile.size() > 1000000L){
+      msgFile.close();
+      SD.remove(IotaMsgLog);
+      msgFile = SD.open(IotaMsgLog,FILE_WRITE);
+    }
   }
   if(msgFile){
     if(restart){
