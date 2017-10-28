@@ -135,8 +135,9 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       bufr[4] = '\n'; 
       bufrPos = 5;
       server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-      server.sendHeader("Accept-Ranges","none");
-      server.sendHeader("Transfer-Encoding","chunked");
+      // chunked content implicit with CONTENT_LENGTH_UNKNOWN in new core webServer. (02_02_22)  
+      //server.sendHeader("Accept-Ranges","none");
+      //server.sendHeader("Transfer-Encoding","chunked");
       server.send(200,"application/json","");
 
       replyData = "[";
@@ -265,6 +266,12 @@ void sendChunk(char* bufr, uint32_t bufrPos){
   bufr[bufrPos] = '\r';
   bufr[bufrPos+1] = '\n';
   bufr[bufrPos+2] = 0;
-  server.sendContent(bufr);
+  //server.sendContent(bufr);                         pre 02_02_22 send command
+  //   New ESP8266/Arduino core does chunked under the hood.
+  //   Would need to strip out chunk header and footer and then sendContent would
+  //   convert bufr to a String and bracket with chunk header and footer writes.
+  //   Since already have the chunked headers and footers in the bufr, just write it
+  //   to the WiFiClient and avoid conversion to String and related heap requirements.
+  server.client().write(bufr, bufrPos+2);
 } 
    
