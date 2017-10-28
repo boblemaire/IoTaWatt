@@ -60,7 +60,8 @@
  *   09/24/17 02_02_20 Fix get feed data and initialize WiFi hostname
  *   10/13/17 02_02_21 New release for production 
  *   10/18/17 02_02_22 Recompile with staged core to fix Krack vulnerability
- *   
+ *   10/28/17 02_02_23 Fix several problems encountered using new arduino core 
+ * 
  *****************************************************************************************************/
 
       // Define instances of major classes to be used
