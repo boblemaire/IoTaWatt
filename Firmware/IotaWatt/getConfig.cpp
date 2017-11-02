@@ -165,6 +165,10 @@ boolean getConfig(void)
       EmonURI = EmonURL.substring(EmonURL.indexOf("/"));
       EmonURL.remove(EmonURL.indexOf("/"));
     }
+    if(EmonURL.indexOf(":") > 0){
+      EmonPort = EmonURL.substring(EmonURL.indexOf(":")+1).toInt();
+      EmonURL.remove(EmonURL.indexOf(":"));
+    }
     apiKey = Config["server"]["apikey"].as<String>();
     node = Config["server"]["node"].as<String>();
     EmonCMSInterval = Config["server"]["postInterval"].as<int>();
