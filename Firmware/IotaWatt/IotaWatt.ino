@@ -60,7 +60,8 @@
  *   09/24/17 02_02_20 Fix get feed data and initialize WiFi hostname
  *   10/13/17 02_02_21 New release for production 
  *   10/18/17 02_02_22 Recompile with staged core to fix Krack vulnerability
- *   
+ *   10/28/17 02_02_23 Fix several problems encountered using new arduino core 
+ * 
  *****************************************************************************************************/
 
       // Define instances of major classes to be used
@@ -172,6 +173,7 @@ bool      EmonStarted = false;                    // set true when Service start
 bool      EmonStop = false;                       // set true to stop the Service
 bool      EmonInitialize = true;                  // Initialize or reinitialize EmonService                                         
 String    EmonURL;                                // These are set from the config file 
+uint16_t  EmonPort = 80;
 String    EmonURI = "";
 String    apiKey;
 uint8_t   cryptoKey[16];
