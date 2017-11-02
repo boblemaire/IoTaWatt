@@ -173,6 +173,7 @@ bool      EmonStarted = false;                    // set true when Service start
 bool      EmonStop = false;                       // set true to stop the Service
 bool      EmonInitialize = true;                  // Initialize or reinitialize EmonService                                         
 String    EmonURL;                                // These are set from the config file 
+uint16_t  EmonPort = 80;
 String    EmonURI = "";
 String    apiKey;
 uint8_t   cryptoKey[16];
