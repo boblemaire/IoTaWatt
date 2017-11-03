@@ -44,7 +44,7 @@
  *   07/19/17 2.02.04 Changes to Emoncms support 
  *   07/19/17 2.02.05 Bump version
  *   07/19/17 2.02.06 Accept Emoncms or Emoncms (compatibility)
- *   07/23/17 2.02.07 Overhaul RTC initialization and power fail logging
+ *   07/23/17 2.02.07 Overhaul RTC initialization and power fail logging 
  *   07/23/17 2.02.08 Add LED problem indicators during startup
  *   07/23/17 2.02.09 Add LED indication of connection and timer status
  *   08/07/17 2.02.10 Add Emonpi URL support
@@ -61,6 +61,7 @@
  *   10/13/17 02_02_21 New release for production 
  *   10/18/17 02_02_22 Recompile with staged core to fix Krack vulnerability
  *   10/28/17 02_02_23 Fix several problems encountered using new arduino core 
+ *   11/03/17 02_02_24 Improve error handling Emoncms, change API to use I/O channel names 
  * 
  *****************************************************************************************************/
 
