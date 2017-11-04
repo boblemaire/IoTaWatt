@@ -19,7 +19,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.  
    
 ***********************************************************************************/
-#define IOTAWATT_VERSION "02_02_22"
+#define IOTAWATT_VERSION "02_02_24"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -118,6 +118,7 @@ extern uint8_t ADC_selectPin[2];            // indexable reference for ADC selec
 #define T_POWER 90          // Sample Power
 #define T_WEB 100           // (30)Web server handlers
 #define T_CONFIG 130        //  Get Config
+#define T_encryptEncode 140 //  base64encode and encryptData in EmonService      
 
       // ADC descriptors
 
@@ -213,6 +214,7 @@ extern bool     EmonStarted;                      // set true when Service start
 extern bool     EmonStop;                         // set true to stop the Service
 extern bool     EmonInitialize;                   // Initialize or reinitialize EmonService
 extern String   EmonURL;                          // These are set from the config file
+extern uint16_t  EmonPort;
 extern String   EmonURI;
 extern String   apiKey;
 extern uint8_t  cryptoKey[16];

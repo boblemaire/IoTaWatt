@@ -412,7 +412,7 @@ void handleGetFeedList(){
     if(inputChannel[i]->isActive()){
       if(inputChannel[i]->_type == channelTypeVoltage){
         JsonObject& voltage = jsonBuffer.createObject();
-        voltage["id"] = String(inputChannel[i]->_channel*10+QUERY_VOLTAGE);
+        voltage["id"] = String("IV") + String(inputChannel[i]->_name);
         voltage["tag"] = "Voltage";
         voltage["name"] = inputChannel[i]->_name;
         array.add(voltage);
@@ -420,12 +420,12 @@ void handleGetFeedList(){
       else
         if(inputChannel[i]->_type == channelTypePower){
         JsonObject& power = jsonBuffer.createObject();
-        power["id"] = String(inputChannel[i]->_channel*10+QUERY_POWER);
+        power["id"] = String("IP") + String(inputChannel[i]->_name);
         power["tag"] = "Power";
         power["name"] = inputChannel[i]->_name;
         array.add(power);
         JsonObject& energy = jsonBuffer.createObject();
-        energy["id"] = String(inputChannel[i]->_channel*10+QUERY_ENERGY);
+        energy["id"] = String("IE") + String(inputChannel[i]->_name);
         energy["tag"] = "Energy";
         energy["name"] = inputChannel[i]->_name;
         array.add(energy);
@@ -436,18 +436,26 @@ void handleGetFeedList(){
   Script* script = outputs->first();
   int outndx = 100;
   while(script){
-    JsonObject& power = jsonBuffer.createObject();
-    power["id"] = String(outndx*10+QUERY_POWER);
     String units = String(script->units());
     if(units.equalsIgnoreCase("volts")){
-      power["tag"] = "Voltage";
-    }
-    else {
+      JsonObject& voltage = jsonBuffer.createObject();
+      voltage["id"] = String("OV") + String(script->name());
+      voltage["tag"] = "Voltage";
+      voltage["name"] = script->name();
+      array.add(voltage);
+    } 
+    else if(units.equalsIgnoreCase("watts")) {
+      JsonObject& power = jsonBuffer.createObject();
+      power["id"] = String("OP") + String(script->name());
       power["tag"] = "Power";
+      power["name"] = script->name();
+      array.add(power);
+      JsonObject& energy = jsonBuffer.createObject();
+      energy["id"] = String("OE") + String(script->name());
+      energy["tag"] = "Energy";
+      energy["name"] = script->name();
+      array.add(energy);
     }
-    power["name"] = script->name();
-    array.add(power);
-    outndx++;
     script = script->next();
   }
   

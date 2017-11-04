@@ -3,7 +3,7 @@
 boolean EmonSendData(uint32_t reqUnixtime, String reqData);
 String bin2hex(const uint8_t* in, size_t len);
 String encryptData(String in, const uint8_t* key);
-boolean EmonSendData(uint32_t reqUnixtime, String reqData);
+boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool logError);
    
    /*******************************************************************************************************
  * EmonService - This SERVICE posts entries from the IotaLog to EmonCMS.  Details of the EmonCMS
@@ -28,6 +28,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static uint32_t UnixNextPost = UNIXtime();
   static double _logHours;
   static double elapsedHours;
+  static uint32_t resendCount;
   static String reqData = "";
   static uint32_t reqUnixtime = 0;
   static int  reqEntries = 0; 
@@ -66,8 +67,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 5;
       }
       msgLog("EmonService: started.", 
-       "url: " + EmonURL + EmonURI + ", node: " + String(node) + ", post interval: " + String(EmonCMSInterval) +
-       (EmonSend == EmonSendGET ? ", unsecure GET" : ", encrypted POST")); 
+       "url: " + EmonURL + ":" + String(EmonPort) + EmonURI + ", node: " + String(node) + ", post interval: " + 
+       String(EmonCMSInterval) + (EmonSend == EmonSendGET ? ", unsecure GET" : ", encrypted POST")); 
 
      
       if(!EmonPostLog){
@@ -234,9 +235,10 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // Send the post       
 
       reqData += ']';
-      if(!EmonSendData(reqUnixtime, reqData)){
+      if(!EmonSendData(reqUnixtime, reqData, 500, false)){
         state = resend;
-        return UNIXtime() + 30;
+        resendCount = 0;
+        return UNIXtime() + 5;
       }
       buf->data = UnixLastPost;
       EmonPostLog.write((byte*)buf,4);
@@ -250,11 +252,21 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
 
     case resend: {
       trace(T_Emon,7);
-      msgLog("Resending EmonCMS data.");
-      if(!EmonSendData(reqUnixtime, reqData)){ 
-        return UNIXtime() + 60;
+      resendCount++;
+      if(resendCount > 1){
+        msgLog("EmonService: Resending EmonCMS data:", resendCount);
+      }
+      if(!EmonSendData(reqUnixtime, reqData, 1000, resendCount == 1)){ 
+        if(resendCount < 10){
+          return UNIXtime() + 60 * resendCount;
+        }
+        msgLog(F("EmonService: Unable to post to Emoncms after 10 retries.  Restarting ESP."));
+        ESP.restart();
       }
       else {
+        if(resendCount > 1){
+          msgLog(F("EmonService: Retry successful."));
+        }
         buf->data = UnixLastPost;
         EmonPostLog.write((byte*)buf,4);
         EmonPostLog.flush();
@@ -275,18 +287,24 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
  *  similar WiFiClientSecure function.
  *  Secure takes about twice as long and can block sampling for more than a second.
  ***********************************************************************************************/
-boolean EmonSendData(uint32_t reqUnixtime, String reqData){ 
+boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool logError){ 
   trace(T_Emon,8);
   uint32_t startTime = millis();
-  Serial.println(reqData);
+  // Serial.println(reqData);
   
   if(EmonSend == EmonSendGET){
     String URL = EmonURI + "/input/bulk.json?" + reqData + "&apikey=" + apiKey;
-    http.begin(EmonURL, 80, URL);
-    http.setTimeout(500);
+    http.begin(EmonURL, EmonPort, URL);
+    http.setTimeout(timeout);
     int httpCode = http.GET();
     if(httpCode != HTTP_CODE_OK){
-      msgLog("EmonService: GET failed. HTTP code: ", http.errorToString(httpCode));
+      if(logError){
+        msgLog("EmonService: GET failed. HTTP code:", http.errorToString(httpCode) );
+      }
+      else {
+        Serial.print("EmonService: GET failed. HTTP code: ");
+        Serial.println(http.errorToString(httpCode));
+      }
       http.end();
       return false;
     }
@@ -310,40 +328,41 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
     sha256.resetHMAC(cryptoKey,16);
     sha256.update(reqData.c_str(), reqData.length());
     sha256.finalizeHMAC(cryptoKey, 16, value, 32);
-    String hmac = bin2hex(value, 32);
-    String auth = EmonUsername + ':' + hmac;
-    http.begin(EmonURL, 80, URI);
+    String auth = EmonUsername + ':' + bin2hex(value, 32);
+    http.begin(EmonURL, EmonPort, URI);
     http.addHeader("Host",EmonURL);
-    
     http.addHeader("Content-Type","aes128cbc");
     http.addHeader("Authorization", auth.c_str());
-    http.setTimeout(500);
+    http.setTimeout(timeout);
     int httpCode = http.POST(encryptData(reqData, cryptoKey));
     trace(T_Emon,9);
-    size_t responseLength = http.getSize();
-    String response;
-    if(responseLength <= 60){
+    int responseLength = http.getSize();
+    String response = "";
+    if(responseLength > 0 && responseLength <= 1000){
       response = http.getString();
     }	
-    else{
-      response = "Excessive length response: ";
-      response += String(responseLength);
-    }
     http.end();
     if(httpCode != HTTP_CODE_OK){
       String code = String(httpCode);
       if(httpCode < 0){
         code = http.errorToString(httpCode);
       }
-      msgLog("EmonService: POST failed. HTTP code: ", code);
-      Serial.println(response);
+      if(logError){
+        msgLog("EmonService: POST failed. HTTP code:", code);
+      }
+      else {
+        Serial.print("EmonService: POST failed. HTTP code: ");
+        Serial.println(code);
+        Serial.println(response);
+      }
       return false;
     }
+    
     if(response.startsWith(base64Sha)){
       return true;        
     }
     msgLog(reqData.substring(0,60));
-    msgLog("EmonService: Invalid response: ", response);
+    msgLog("EmonService: Invalid response: ", response.substring(0,60));
     msgLog("EmonService: Expectd response: ", base64Sha);
     
     return false;
@@ -354,12 +373,14 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData){
 }
 
 String encryptData(String in, const uint8_t* key) {
+  trace(T_encryptEncode, 0);
   uint8_t iv[16];
   os_get_random((unsigned char*)iv,16);
   uint8_t padLen = 16 - (in.length() % 16);
   int encryptLen = in.length() + padLen;
   uint8_t* ivBuf = new uint8_t[encryptLen + 16];
   uint8_t* encryptBuf = ivBuf + 16;
+  trace(T_encryptEncode, 2);
   for(int i=0; i<16; i++){
     ivBuf[i] = iv[i];
   }  
@@ -369,11 +390,16 @@ String encryptData(String in, const uint8_t* key) {
   for(int i=0; i<padLen; i++){
     encryptBuf[in.length()+i] = padLen;
   }
+  trace(T_encryptEncode, 3);
   cypher.setIV(iv, 16);
-  cypher.setKey(cryptoKey, 16); 
+  cypher.setKey(cryptoKey, 16);
+  trace(T_encryptEncode, 4); 
   cypher.encrypt(encryptBuf, encryptBuf, encryptLen);
+  trace(T_encryptEncode, 5);
   String result = base64encode(ivBuf, encryptLen+16);
+  trace(T_encryptEncode, 6);
   delete[] ivBuf;
+  trace(T_encryptEncode, 7);
   return result;
 }
 
@@ -381,29 +407,42 @@ String base64encode(const uint8_t* in, size_t len){
   static const char* base64codes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
   int base64Len = int((len+2)/3) * 4;
   int wholeSextets = int((len*8)/6);
-  String out = "";
+  char* base64 = new char[base64Len + 1];
+  char* base64out = base64;
   int sextetSeq = 0;
   uint8_t sextet;
+  trace(T_encryptEncode, 8);
   for(int i=0; i<wholeSextets; i++){
     if(sextetSeq == 0) sextet = *in >> 2;
     else if(sextetSeq == 1) sextet = (*in++ << 4) | (*in >> 4);
     else if(sextetSeq == 2) sextet = (*in++ << 2) | (*in >> 6);
     else sextet = *in++;
-    out += base64codes[sextet & 0x3f];
+    *(base64out++) = base64codes[sextet & 0x3f];
     sextetSeq = ++sextetSeq % 4;
   }
   if(sextetSeq == 1){
-    out += base64codes[(*in << 4) & 0x3f];
-    out += '=';
-    out += '=';
+    *(base64out++) = base64codes[(*in << 4) & 0x3f];
+    *(base64out++) = '=';
+    *(base64out++) = '=';
   }
   else if(sextetSeq == 2){
-    out += base64codes[(*in << 2) & 0x3f];
-    out += '=';
+    *(base64out++) = base64codes[(*in << 2) & 0x3f];
+    *(base64out++) = '=';
   }
   else if(sextetSeq == 3){
-    out += base64codes[*in & 0x3f];
+    *(base64out++) = base64codes[*in & 0x3f];
   }
+  *base64out = 0;
+  if((base64out - base64) != base64Len){
+    Serial.print("Base 64 output length error:");
+    Serial.print(base64out - base64);
+    Serial.print(" ");
+    Serial.println(base64Len);
+    dropDead();
+  }
+  trace(T_encryptEncode, 9);
+  String out = base64;
+  delete[] base64;
   return out;
 }
 
