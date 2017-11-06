@@ -57,6 +57,12 @@
     font-size: 100%;
   }
   
+  .statusMenuButton{
+    width: 100%;
+    height: 20px;
+    font-size: 80%;
+  }
+  
   input, select {
     height: 25px;
     min-width: 50px;
@@ -94,6 +100,12 @@
     width: 95%;
     margin: 1px auto 1px auto;
     border: 2px solid;
+    padding: 4px;
+  }
+  
+  .statusDiv{
+    width: 95%;
+    margin: 1px auto 1px auto;
     padding: 4px;
   }
   
@@ -210,4 +222,8 @@
   }
   .calcAbs {
     background-color: lightSteelBlue;
+  }
+  
+  .displayNone {
+    display: none;
   }
