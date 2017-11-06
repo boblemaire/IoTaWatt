@@ -84,7 +84,7 @@
       // If it's been a long time since last entry, skip ahead.
       
       if((UNIXtime() - logRecord->UNIXtime) > GapFill){
-        logRecord->UNIXtime = UNIXtime() - UNIXtime() % dataLogInterval;
+        logRecord->UNIXtime = UNIXtime() - UNIXtime() % iotaLog.interval();
       }
 
       // Initialize timeNext (will be incremented at exit below)
@@ -103,7 +103,7 @@
 
       // If log is up to date, update the entry with latest data.
           
-      if(timeNext == (UNIXtime() - UNIXtime() % dataLogInterval)){
+      if(timeNext == (UNIXtime() - UNIXtime() % iotaLog.interval())){
         double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
         for(int i=0; i<maxInputs; i++){
           IotaInputChannel* _input = inputChannel[i];
@@ -132,7 +132,7 @@
 
   // Advance the time and return.
   
-  timeNext += dataLogInterval;
+  timeNext += iotaLog.interval();
   return timeNext;
 }
 
