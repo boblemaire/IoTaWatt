@@ -1,6 +1,6 @@
  * {
    font-family: "arial", "sans-serif";
-   border-radius: 6px;
+   border-radius: 4px;
  }
  .color_outer {
    background-color: #c2eaba;
@@ -38,7 +38,7 @@
     height: 24px;
     min-width: 40px;
     border: 2px solid;
-    border-radius: 8px;
+    border-radius: 4px;
     text-align: center;
   }
   .actionDelete,
@@ -47,7 +47,7 @@
   .actionCal {
     border: 2px solid grey;
     height: 35px;
-    border-radius: 8px;
+    border-radius: 4px;
     font-size: 120%;
   }
   
