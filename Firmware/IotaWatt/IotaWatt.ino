@@ -70,7 +70,8 @@
 WiFiClient WifiClient;
 WiFiManager wifiManager;
 DNSServer dnsServer;    
-IotaLog iotaLog;                            // instance of IotaLog class
+IotaLog iotaLog(5,400);                     // data log
+IotaLog histLog(60,4000);                   // history log    
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
 CBC<AES128> cypher;
@@ -82,6 +83,7 @@ MD5Builder md5;
 
 String deviceName = "IotaWatt";             
 String IotaLogFile = "/IotaWatt/IotaLog";
+String historyLogFile = "/IotaWatt/histLog";
 String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
 String EmonPostLogFile = "/iotawatt/Emonlog.log";
 String influxPostLogFile = "/iotawatt/influxdb.log";

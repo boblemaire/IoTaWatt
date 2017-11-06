@@ -33,6 +33,10 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   static int voltageChannel = 0;
   static boolean Kwh = false;
   static String replyData = "";
+
+  static uint32_t iotaIO = 0;
+  static uint32_t histIO = 0;
+  static uint32_t dataIO = 0;
     
   struct req {
     req* next;
@@ -113,12 +117,19 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
           
       
      
-      if(startUnixTime >= iotaLog.firstKey()){   
+      if(startUnixTime >= histLog.firstKey()){   
         lastRecord->UNIXtime = startUnixTime - intervalSeconds;
       } else {
-        lastRecord->UNIXtime = iotaLog.firstKey();
+        lastRecord->UNIXtime = histLog.firstKey();
       }
-      iotaLog.readKey(lastRecord);
+      if(lastRecord->UNIXtime > histLog.lastKey() ||       // not in history file or
+        (lastRecord->UNIXtime % histLog.interval() &&      // not a multiple of history interval and
+         lastRecord->UNIXtime >= iotaLog.firstKey())) {    // in iotaLog
+          iotaLog.readKey(lastRecord);
+         }
+         else {
+           histLog.readKey(lastRecord);
+         }       
 
           // Using String for a large buffer abuses the heap
           // and takes up a lot of time. We will build 
@@ -140,6 +151,10 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       //server.sendHeader("Transfer-Encoding","chunked");
       server.send(200,"application/json","");
 
+      dataIO = 1;
+      iotaIO = iotaLog.readKeyIO();
+      histIO = histLog.readKeyIO();  
+
       replyData = "[";
       UnixTime = startUnixTime;
       state = process;
@@ -155,8 +170,18 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
           // Loop to generate entries
       
       while(UnixTime <= endUnixTime) {
+        int rtc;
         logRecord->UNIXtime = UnixTime;
-        int rtc = iotaLog.readKey(logRecord);
+        if(logRecord->UNIXtime > histLog.lastKey() ||       // not in history file or
+        (logRecord->UNIXtime % histLog.interval() &&        // not a multiple of history interval and
+         logRecord->UNIXtime >= iotaLog.firstKey())) {      // in iotaLog
+          rtc = iotaLog.readKey(lastRecord);
+        }
+        else {
+          rtc = histLog.readKey(lastRecord);
+        } 
+        dataIO++;
+
         trace(T_GFD,2);
         replyData += '[';  //  + String(UnixTime) + "000,";
         elapsedHours = logRecord->logHours - lastRecord->logHours;
@@ -251,6 +276,15 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       delete[] bufr;
       state = Setup;
       serverAvailable = true;
+
+      
+      Serial.print("iotaLog IO: ");
+      Serial.println(iotaLog.readKeyIO() - iotaIO);
+      Serial.print("histLog IO: ");
+      Serial.println(histLog.readKeyIO() - histIO);
+      Serial.print("IO requests: ");
+      Serial.println(dataIO);
+      
       return 0;                                       // Done for now, return without scheduling.
     }
   }
@@ -274,4 +308,3 @@ void sendChunk(char* bufr, uint32_t bufrPos){
   //   to the WiFiClient and avoid conversion to String and related heap requirements.
   server.client().write(bufr, bufrPos+2);
 } 
-   

@@ -45,10 +45,16 @@
 
       // If it's not a new log, get the last entry.
       
-      if(iotaLog.firstKey() != 0){
+      if(iotaLog.fileSize() == 0){
+        if(histLog.begin((char*)historyLogFile.c_str()) == 0 && histLog.fileSize() > 0){
+          logRecord->UNIXtime = histLog.lastKey();
+          histLog.readKey(logRecord);
+          msgLog("dataLog: Last history entry:", logRecord->UNIXtime);
+        }
+      }
+      else {
         logRecord->UNIXtime = iotaLog.lastKey();
         iotaLog.readKey(logRecord);
-        
         msgLog("dataLog: Last log entry:", iotaLog.lastKey());
       }
 
