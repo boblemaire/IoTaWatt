@@ -333,11 +333,20 @@ void handleStatus(){
     root["outputs"] = outputArray;
   }
 
-  if(server.hasArg("voltage")){
+  if(server.hasArg("datalogs")){
     trace(T_WEB,17);
-    int Vchan = server.arg("channel").toInt();
-    root.set("voltage", statBucket[Vchan].volts);
+    JsonObject& datalogs = jsonBuffer.createObject();
+    JsonObject& iotalog = jsonBuffer.createObject();
+    iotalog.set("firstkey",iotaLog.firstKey());
+    iotalog.set("lastkey",iotaLog.lastKey());
+    datalogs.set("iotalog",iotalog);
+    JsonObject& histlog = jsonBuffer.createObject();
+    histlog.set("firstkey",histLog.firstKey());
+    histlog.set("lastkey",histLog.lastKey());
+    datalogs.set("histlog",histlog);
+    root.set("datalogs",datalogs);
   }
+
   String response = "";
   root.printTo(response);
   server.send(200, "text/json", response);  
