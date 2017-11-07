@@ -85,7 +85,12 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
 
       logRecord = new IotaLogRecord;
       logRecord->UNIXtime = histLog.lastKey() + histLog.interval();
-      if(iotaLog.readKey(logRecord)){
+      if(logRecord->UNIXtime < iotaLog.firstKey()){
+        logRecord->UNIXtime = histLog.lastKey();
+        histLog.readKey(logRecord);
+        logRecord->UNIXtime += histLog.interval();
+      }
+      else if(iotaLog.readKey(logRecord)){
         msgLog(F("historyLog: primary log file read failure. Service suspended."));
         delete logRecord;
         return 0;

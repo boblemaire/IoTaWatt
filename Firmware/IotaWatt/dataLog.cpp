@@ -20,7 +20,7 @@
  * Services should try not to execute for more than a few milliseconds at a time.
  **********************************************************************************************/
  #include "IotaWatt.h"
- #define GapFill 600           // Fill in gaps of less than this seconds 
+ #define GapFill 30           // Fill in gaps of less than this seconds 
        
  uint32_t dataLog(struct serviceBlock* _serviceBlock){
   enum states {initialize, checkClock, logData};
@@ -103,7 +103,7 @@
 
       // If log is up to date, update the entry with latest data.
           
-      if(timeNext == (UNIXtime() - UNIXtime() % iotaLog.interval())){
+      if(timeNext >= (UNIXtime() - UNIXtime() % iotaLog.interval())){
         double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
         for(int i=0; i<maxInputs; i++){
           IotaInputChannel* _input = inputChannel[i];
@@ -136,3 +136,59 @@
   return timeNext;
 }
 
+/******************************************************************************
+ * logReadKey(iotaLogRecord) - read a keyed record from the combined log
+ * 
+ * This function brokers keyed log read requests, servicing them from the
+ * appropriate log:
+ * 
+ * iotaLOG:
+ * relatively recent data spanning the past 12-15 months.
+ * small interval (5 seconds).
+ * potentially slower access because it can have holes neccessitating searching.
+ * 
+ * histLog:
+ * contains all of the data since the beginning of time.
+ * large interval (60 seconds).
+ * Look ma - no holes!  direct access w/o searching.
+ * 
+ * This function will decide the most appropriate log to retrieve the requested 
+ * record from based on these principles.
+ * 
+ * If the key is a multiple of the history log interval, and is contained in
+ * the history log, use the history log.
+ * 
+ * If the key is not a multiple of the history log interval and contained in
+ * the iotaLog, use the iotaLog.
+ * 
+ * If the key is not a multiple of the history log, but not contained in the 
+ * iotaLog, use the history log.
+ * 
+ * if the key is between the end of the history log and the start of the iotaLog,
+ * return the last record in the history log with requested key.
+ * 
+ * ***************************************************************************/
+
+uint32_t logReadKey(IotaLogRecord* callerRecord) {
+  uint32_t key = callerRecord->UNIXtime;
+  if(key % histLog.interval()){               // not multiple of histLog interval
+    if(key >= iotaLog.firstKey()){            // in iotaLog
+      return iotaLog.readKey(callerRecord);
+    }
+    if(key <= histLog.lastKey()){             // in histLog
+      return histLog.readKey(callerRecord);
+    }
+  }
+  else {                                      // multiple of histLog interval
+    if(key <= histLog.lastKey()){             // in histLog
+      return histLog.readKey(callerRecord);
+    }
+    if(key >= iotaLog.firstKey()){            // in IotaLog
+      return iotaLog.readKey(callerRecord);
+    }
+  }
+  callerRecord->UNIXtime = histLog.lastKey(); // between the two logs (rare)
+  histLog.readKey(callerRecord);
+  callerRecord->UNIXtime = key;
+  return 0;
+}

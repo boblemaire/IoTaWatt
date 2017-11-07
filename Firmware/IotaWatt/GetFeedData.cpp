@@ -122,15 +122,8 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       } else {
         lastRecord->UNIXtime = histLog.firstKey();
       }
-      if(lastRecord->UNIXtime > histLog.lastKey() ||       // not in history file or
-        (lastRecord->UNIXtime % histLog.interval() &&      // not a multiple of history interval and
-         lastRecord->UNIXtime >= iotaLog.firstKey())) {    // in iotaLog
-          iotaLog.readKey(lastRecord);
-         }
-         else {
-           histLog.readKey(lastRecord);
-         }       
-
+      logReadKey(lastRecord);
+      
           // Using String for a large buffer abuses the heap
           // and takes up a lot of time. We will build 
           // relatively short response elements with String
@@ -172,14 +165,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       while(UnixTime <= endUnixTime) {
         int rtc;
         logRecord->UNIXtime = UnixTime;
-        if(logRecord->UNIXtime > histLog.lastKey() ||       // not in history file or
-        (logRecord->UNIXtime % histLog.interval() &&        // not a multiple of history interval and
-         logRecord->UNIXtime >= iotaLog.firstKey())) {      // in iotaLog
-          rtc = iotaLog.readKey(lastRecord);
-        }
-        else {
-          rtc = histLog.readKey(lastRecord);
-        } 
+        logReadKey(lastRecord);
         dataIO++;
 
         trace(T_GFD,2);

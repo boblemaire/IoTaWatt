@@ -268,6 +268,8 @@ uint32_t  updater(struct serviceBlock*);
 uint32_t  WiFiService(struct serviceBlock*);
 uint32_t  handleGetFeedData(struct serviceBlock*);
 
+uint32_t  logReadKey(IotaLogRecord* callerRecord);
+
 void      setLedCycle(const char*);
 void      endLedCycle();
 void      ledBlink();

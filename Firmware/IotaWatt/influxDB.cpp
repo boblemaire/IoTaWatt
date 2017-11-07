@@ -75,7 +75,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           // Get the last record in the log.
           // Posting will begin with the next log entry after this one,
             
-      iotaLog.readKey(logRecord);
+      logReadKey(logRecord);
 
           // Save the value*hrs to date, and logHours to date
       
@@ -119,21 +119,12 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         return UnixNextPost;
       } 
       
-          // Not current.  Read sequentially to get the entry >= scheduled post time
+          // Not current.  Read the next log record.
           
-      trace(T_influx,1);    
-      while(logRecord->UNIXtime < UnixNextPost){
-        if(logRecord->UNIXtime >= iotaLog.lastKey()){
-          msgLog("runaway seq read.", logRecord->UNIXtime);
-          ESP.reset();
-        }
-        iotaLog.readNext(logRecord);
-      }
-
-          // Adjust the posting time to match the log entry time.
-            
-      UnixNextPost = logRecord->UNIXtime - logRecord->UNIXtime % influxDBInterval;
-
+      trace(T_influx,1);
+      logRecord->UNIXtime = UnixNextPost;
+      logReadKey(logRecord);    
+      
           // Compute the time difference between log entries.
           // If zero, don't bother.
           
