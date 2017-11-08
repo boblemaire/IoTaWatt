@@ -20,7 +20,7 @@
  * Services should try not to execute for more than a few milliseconds at a time.
  **********************************************************************************************/
  #include "IotaWatt.h"
- #define GapFill 30           // Fill in gaps of less than this seconds 
+ #define GapFill 600           // Fill in gaps of less than this seconds 
        
  uint32_t dataLog(struct serviceBlock* _serviceBlock){
   enum states {initialize, checkClock, logData};
