@@ -96,12 +96,19 @@ uint32_t IotaLog::findWrap(uint32_t highPos, uint32_t highKey, uint32_t lowPos, 
 }
 
 int IotaLog::readKey (IotaLogRecord* callerRecord){
-  uint32_t key = callerRecord->UNIXtime - (callerRecord->UNIXtime % _interval);
-  
+	uint32_t key = callerRecord->UNIXtime - (callerRecord->UNIXtime % _interval);
   if(!IotaFile) return 2;
-  if(_entries == 0 || key < _firstKey || key > _lastKey){
-	return 1;
-  }
+  if(_entries == 0) return 1;
+	if(key < _firstKey){
+		readSerial(callerRecord, _firstSerial);
+		callerRecord->UNIXtime = key;
+		return 1;
+	}
+	if(key > _lastKey){
+		readSerial(callerRecord, _lastSerial);
+		callerRecord->UNIXtime = key;
+		return 1;
+	}
   if(key < _lastReadKey){
 	searchKey(callerRecord, key, _firstKey, _firstSerial, _lastReadKey, _lastReadSerial);
   }

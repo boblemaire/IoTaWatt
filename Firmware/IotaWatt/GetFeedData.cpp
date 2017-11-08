@@ -19,25 +19,18 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   enum   states {Initialize, Setup, process};
  
   static states state = Initialize;
-  static IotaLogRecord* logRecord = new IotaLogRecord;
-  static IotaLogRecord* lastRecord = new IotaLogRecord;
-  static IotaLogRecord* swapRecord;
-  static char* bufr = nullptr;
+  static IotaLogRecord* logRecord;
+  static IotaLogRecord* lastRecord;
+  static char*    bufr;
+  static double   elapsedHours;
   static uint32_t bufrSize = 0;
   static uint32_t bufrPos = 0;
-  static double elapsedHours = 0;
   static uint32_t startUnixTime;
   static uint32_t endUnixTime;
   static uint32_t intervalSeconds;
   static uint32_t UnixTime;
-  static int voltageChannel = 0;
-  static boolean Kwh = false;
-  static String replyData = "";
-
-  static uint32_t iotaIO = 0;
-  static uint32_t histIO = 0;
-  static uint32_t dataIO = 0;
-    
+  static String   replyData = "";
+  
   struct req {
     req* next;
     int channel;
@@ -115,7 +108,8 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
         }
       }
           
-      
+      logRecord = new IotaLogRecord;
+      lastRecord = new IotaLogRecord;
      
       if(startUnixTime >= histLog.firstKey()){   
         lastRecord->UNIXtime = startUnixTime - intervalSeconds;
@@ -143,11 +137,6 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       //server.sendHeader("Accept-Ranges","none");
       //server.sendHeader("Transfer-Encoding","chunked");
       server.send(200,"application/json","");
-
-      dataIO = 1;
-      iotaIO = iotaLog.readKeyIO();
-      histIO = histLog.readKeyIO();  
-
       replyData = "[";
       UnixTime = startUnixTime;
       state = process;
@@ -165,9 +154,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       while(UnixTime <= endUnixTime) {
         int rtc;
         logRecord->UNIXtime = UnixTime;
-        logReadKey(lastRecord);
-        dataIO++;
-
+        logReadKey(logRecord);
         trace(T_GFD,2);
         replyData += '[';  //  + String(UnixTime) + "000,";
         elapsedHours = logRecord->logHours - lastRecord->logHours;
@@ -223,7 +210,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
         } 
            
         replyData.setCharAt(replyData.length()-1,']');
-        swapRecord = lastRecord;
+        IotaLogRecord* swapRecord = lastRecord;
         lastRecord = logRecord;
         logRecord = swapRecord;
         UnixTime += intervalSeconds;
@@ -258,19 +245,13 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       
       sendChunk(bufr, 5); 
       trace(T_GFD,7);
+      replyData = "";
       delete reqRoot.next;
       delete[] bufr;
+      delete logRecord;
+      delete lastRecord;
       state = Setup;
       serverAvailable = true;
-
-      
-      Serial.print("iotaLog IO: ");
-      Serial.println(iotaLog.readKeyIO() - iotaIO);
-      Serial.print("histLog IO: ");
-      Serial.println(histLog.readKeyIO() - histIO);
-      Serial.print("IO requests: ");
-      Serial.println(dataIO);
-      
       return 0;                                       // Done for now, return without scheduling.
     }
   }
