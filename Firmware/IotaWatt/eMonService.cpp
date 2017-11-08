@@ -63,7 +63,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // We post the log to EmonCMS,
           // so wait until the log service is up and running.
       
-      if(!iotaLog.isOpen()){
+      if(!currLog.isOpen()){
         return UNIXtime() + 5;
       }
       msgLog("EmonService: started.", 
@@ -77,7 +77,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
             
       if(EmonPostLog){
         if(EmonPostLog.size() == 0){
-          buf->data = iotaLog.lastKey();
+          buf->data = currLog.lastKey();
           EmonPostLog.write((byte*)buf,4);
           EmonPostLog.flush();
           msgLog("EmonService: Emonlog file created.");
@@ -88,7 +88,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         msgLog("EmonService: Start posting from ", String(logRecord->UNIXtime));
       }
       else {
-        logRecord->UNIXtime = iotaLog.lastKey();
+        logRecord->UNIXtime = currLog.lastKey();
       }
       
           // Get the last record in the log.
@@ -134,7 +134,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // If we are current,
           // Anticipate next posting at next regular interval and break to reschedule.
  
-      if(iotaLog.lastKey() < UnixNextPost){ 
+      if(currLog.lastKey() < UnixNextPost){ 
         UnixNextPost = UNIXtime() + EmonCMSInterval - (UNIXtime() % EmonCMSInterval);
         return UnixNextPost;
       } 
@@ -218,7 +218,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       UnixNextPost +=  EmonCMSInterval - (UnixNextPost % EmonCMSInterval);
       
       if ((reqEntries < EmonBulkSend) ||
-         ((iotaLog.lastKey() > UnixNextPost) &&
+         ((currLog.lastKey() > UnixNextPost) &&
          (reqData.length() < 1000))) {
         return UnixNextPost;
       }

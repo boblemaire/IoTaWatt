@@ -16,7 +16,7 @@
  * even if the 5 minute log is lost, most queries will still be satisfied.
  * 
  * The records in this log are simply an identical subset of the one-minute entries,
- * real or virtual, that are (or were) in the iotaLog.
+ * real or virtual, that are (or were) in the currLog.
  * 
  **********************************************************************************************/
 #include "IotaWatt.h"
@@ -36,7 +36,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
 
         // If iotaLog not open or empty, check back later.
 
-      if( ! iotaLog.isOpen() || (iotaLog.firstKey() - iotaLog.lastKey()) < histLog.interval()){
+      if( ! currLog.isOpen() || (currLog.firstKey() - currLog.lastKey()) < histLog.interval()){
          return UNIXtime() + histLog.interval(); 
       }
         
@@ -57,18 +57,18 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
 
       else {
         logRecord = new IotaLogRecord;
-        logRecord->UNIXtime = iotaLog.firstKey();
+        logRecord->UNIXtime = currLog.firstKey();
         if(logRecord->UNIXtime % histLog.interval()){
             logRecord->UNIXtime += histLog.interval() - (logRecord->UNIXtime % histLog.interval());
         }
         msgLog("historyLog: first entry:", logRecord->UNIXtime);
-        iotaLog.readKey(logRecord);
+        currLog.readKey(logRecord);
         histLog.write(logRecord);
         delete logRecord;
       }
 
       //Serial.println("iotaLog");
-      //iotaLog.dumpFile();
+      //currLog.dumpFile();
       Serial.println("histLog");
       histLog.dumpFile();
 
@@ -79,18 +79,18 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
 
     case logData: {
 
-      if((histLog.lastKey() + histLog.interval()) > iotaLog.lastKey()){
+      if((histLog.lastKey() + histLog.interval()) > currLog.lastKey()){
         return UNIXtime() + 5;
       }
 
       logRecord = new IotaLogRecord;
       logRecord->UNIXtime = histLog.lastKey() + histLog.interval();
-      if(logRecord->UNIXtime < iotaLog.firstKey()){
+      if(logRecord->UNIXtime < currLog.firstKey()){
         logRecord->UNIXtime = histLog.lastKey();
         histLog.readKey(logRecord);
         logRecord->UNIXtime += histLog.interval();
       }
-      else if(iotaLog.readKey(logRecord)){
+      else if(currLog.readKey(logRecord)){
         msgLog(F("historyLog: primary log file read failure. Service suspended."));
         delete logRecord;
         return 0;

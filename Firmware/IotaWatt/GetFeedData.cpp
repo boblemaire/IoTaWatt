@@ -134,8 +134,8 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       bufrPos = 5;
       server.setContentLength(CONTENT_LENGTH_UNKNOWN);
       // chunked content implicit with CONTENT_LENGTH_UNKNOWN in new core webServer. (02_02_22)  
-      //server.sendHeader("Accept-Ranges","none");
-      //server.sendHeader("Transfer-Encoding","chunked");
+      // server.sendHeader("Accept-Ranges","none");
+      // server.sendHeader("Transfer-Encoding","chunked");
       server.send(200,"application/json","");
       replyData = "[";
       UnixTime = startUnixTime;

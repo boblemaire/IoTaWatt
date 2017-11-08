@@ -38,14 +38,14 @@
 
       // Initialize the IotaLog class
       
-      if(int rtc = iotaLog.begin((char*)IotaLogFile.c_str())){
+      if(int rtc = currLog.begin((char*)IotaLogFile.c_str())){
         msgLog("dataLog: Log file open failed. ", String(rtc));
         dropDead();
       }
 
       // If it's not a new log, get the last entry.
       
-      if(iotaLog.fileSize() == 0){
+      if(currLog.fileSize() == 0){
         if(histLog.begin((char*)historyLogFile.c_str()) == 0 && histLog.fileSize() > 0){
           logRecord->UNIXtime = histLog.lastKey();
           histLog.readKey(logRecord);
@@ -53,9 +53,9 @@
         }
       }
       else {
-        logRecord->UNIXtime = iotaLog.lastKey();
-        iotaLog.readKey(logRecord);
-        msgLog("dataLog: Last log entry:", iotaLog.lastKey());
+        logRecord->UNIXtime = currLog.lastKey();
+        currLog.readKey(logRecord);
+        msgLog("dataLog: Last log entry:", currLog.lastKey());
       }
 
       state = checkClock;
@@ -84,7 +84,7 @@
       // If it's been a long time since last entry, skip ahead.
       
       if((UNIXtime() - logRecord->UNIXtime) > GapFill){
-        logRecord->UNIXtime = UNIXtime() - UNIXtime() % iotaLog.interval();
+        logRecord->UNIXtime = UNIXtime() - UNIXtime() % currLog.interval();
       }
 
       // Initialize timeNext (will be incremented at exit below)
@@ -103,7 +103,7 @@
 
       // If log is up to date, update the entry with latest data.
           
-      if(timeNext >= (UNIXtime() - UNIXtime() % iotaLog.interval())){
+      if(timeNext >= (UNIXtime() - UNIXtime() % currLog.interval())){
         double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
         for(int i=0; i<maxInputs; i++){
           IotaInputChannel* _input = inputChannel[i];
@@ -125,14 +125,14 @@
       
       logRecord->UNIXtime = timeNext;
       logRecord->serial++;
-      iotaLog.write(logRecord);
+      currLog.write(logRecord);
       break;
     }
   }
 
   // Advance the time and return.
   
-  timeNext += iotaLog.interval();
+  timeNext += currLog.interval();
   return timeNext;
 }
 
@@ -142,7 +142,7 @@
  * This function brokers keyed log read requests, servicing them from the
  * appropriate log:
  * 
- * iotaLOG:
+ * currLog:
  * relatively recent data spanning the past 12-15 months.
  * small interval (5 seconds).
  * potentially slower access because it can have holes neccessitating searching.
@@ -159,12 +159,12 @@
  * the history log, use the history log.
  * 
  * If the key is not a multiple of the history log interval and contained in
- * the iotaLog, use the iotaLog.
+ * the currLog, use the currLog.
  * 
  * If the key is not a multiple of the history log, but not contained in the 
- * iotaLog, use the history log.
+ * currLog, use the history log.
  * 
- * if the key is between the end of the history log and the start of the iotaLog,
+ * if the key is between the end of the history log and the start of the currLog,
  * return the last record in the history log with requested key.
  * 
  * ***************************************************************************/
@@ -172,8 +172,8 @@
 uint32_t logReadKey(IotaLogRecord* callerRecord) {
   uint32_t key = callerRecord->UNIXtime;
   if(key % histLog.interval()){               // not multiple of histLog interval
-    if(key >= iotaLog.firstKey()){            // in iotaLog
-      return iotaLog.readKey(callerRecord);
+    if(key >= currLog.firstKey()){            // in iotaLog
+      return currLog.readKey(callerRecord);
     }
     if(key <= histLog.lastKey()){             // in histLog
       return histLog.readKey(callerRecord);
@@ -183,8 +183,8 @@ uint32_t logReadKey(IotaLogRecord* callerRecord) {
     if(key <= histLog.lastKey()){             // in histLog
       return histLog.readKey(callerRecord);
     }
-    if(key >= iotaLog.firstKey()){            // in IotaLog
-      return iotaLog.readKey(callerRecord);
+    if(key >= currLog.firstKey()){            // in IotaLog
+      return currLog.readKey(callerRecord);
     }
   }
   callerRecord->UNIXtime = histLog.lastKey(); // between the two logs (rare)

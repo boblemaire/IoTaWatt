@@ -336,10 +336,10 @@ void handleStatus(){
   if(server.hasArg("datalogs")){
     trace(T_WEB,17);
     JsonObject& datalogs = jsonBuffer.createObject();
-    JsonObject& iotalog = jsonBuffer.createObject();
-    iotalog.set("firstkey",iotaLog.firstKey());
-    iotalog.set("lastkey",iotaLog.lastKey());
-    datalogs.set("iotalog",iotalog);
+    JsonObject& currlog = jsonBuffer.createObject();
+    currlog.set("firstkey",currLog.firstKey());
+    currlog.set("lastkey",currLog.lastKey());
+    datalogs.set("currlog",currlog);
     JsonObject& histlog = jsonBuffer.createObject();
     histlog.set("firstkey",histLog.firstKey());
     histlog.set("lastkey",histLog.lastKey());

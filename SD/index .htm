@@ -1325,9 +1325,9 @@ function statusDisplay(statusMessage){
   if(status.datalogs !== undefined){
     var logs = document.getElementById("statusLogsDiv");
     logs.innerHTML = null;
-    logs.appendChild(document.createTextNode("iotaLog from: " + formatDateTime(status.datalogs.iotalog.firstkey) + " to: " + formatDateTime(status.datalogs.iotalog.lastkey)));
+    logs.appendChild(document.createTextNode("Current Log from: " + formatDateTime(status.datalogs.currlog.firstkey) + " to: " + formatDateTime(status.datalogs.currlog.lastkey)));
     logs.appendChild(document.createElement("br"));
-    logs.appendChild(document.createTextNode("HistLog from: " + formatDateTime(status.datalogs.histlog.firstkey) + " to: " + formatDateTime(status.datalogs.histlog.lastkey)));
+    logs.appendChild(document.createTextNode("History Log from: " + formatDateTime(status.datalogs.histlog.firstkey) + " to: " + formatDateTime(status.datalogs.histlog.lastkey)));
   }
   
   statusTable = document.getElementById("inputStatusTable");

@@ -70,8 +70,8 @@
 WiFiClient WifiClient;
 WiFiManager wifiManager;
 DNSServer dnsServer;    
-IotaLog iotaLog(5,400);                     // data log
-IotaLog histLog(60,4000);                   // history log    
+IotaLog currLog(5,400);                     // current data log
+IotaLog histLog(60,4000);                   // history data log    
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
 CBC<AES128> cypher;

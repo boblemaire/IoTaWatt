@@ -65,7 +65,7 @@ extern WiFiClient WifiClient;
 extern WiFiManager wifiManager;
 extern ESP8266WebServer server;
 extern DNSServer dnsServer;
-extern IotaLog iotaLog;
+extern IotaLog currLog;
 extern IotaLog histLog;
 extern RTC_PCF8523 rtc;
 extern Ticker ticker;

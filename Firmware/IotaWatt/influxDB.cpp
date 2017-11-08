@@ -46,7 +46,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           // We post the log to influx,
           // so wait until the log service is up and running.
       
-      if(!iotaLog.isOpen()){
+      if(!currLog.isOpen()){
         return UNIXtime() + 5;
       }
       msgLog("influxDB: started.", "url: " + influxURL + ",port=" + String(influxPort) + ",db=" + influxDataBase + 
@@ -58,7 +58,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
             
       if(influxPostLog){
         if(influxPostLog.size() == 0){
-          buf->data = iotaLog.lastKey();
+          buf->data = currLog.lastKey();
           influxPostLog.write((byte*)buf,4);
           influxPostLog.flush();
           msgLog(F("influxService: influxlog file created."));
@@ -69,7 +69,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         msgLog("influxDB: Start posting from ", String(logRecord->UNIXtime));
       }
       else {
-        logRecord->UNIXtime = iotaLog.lastKey();
+        logRecord->UNIXtime = currLog.lastKey();
       }
       
           // Get the last record in the log.
@@ -114,7 +114,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           // If we are current,
           // Anticipate next posting at next regular interval and break to reschedule.
  
-      if(iotaLog.lastKey() < UnixNextPost){ 
+      if(currLog.lastKey() < UnixNextPost){ 
         UnixNextPost = UNIXtime() + influxDBInterval - (UNIXtime() % influxDBInterval);
         return UnixNextPost;
       } 
@@ -164,7 +164,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       UnixNextPost +=  influxDBInterval - (UnixNextPost % influxDBInterval);
       
       if ((reqEntries < influxBulkSend) ||
-         ((iotaLog.lastKey() > UnixNextPost) &&
+         ((currLog.lastKey() > UnixNextPost) &&
          (reqData.length() < 1000))) {
         return UnixNextPost;
       }
