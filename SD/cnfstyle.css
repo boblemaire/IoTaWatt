@@ -1,6 +1,6 @@
  * {
    font-family: "arial", "sans-serif";
-   border-radius: 6px;
+   border-radius: 4px;
  }
  .color_outer {
    background-color: #c2eaba;
@@ -38,7 +38,7 @@
     height: 24px;
     min-width: 40px;
     border: 2px solid;
-    border-radius: 8px;
+    border-radius: 4px;
     text-align: center;
   }
   .actionDelete,
@@ -47,7 +47,7 @@
   .actionCal {
     border: 2px solid grey;
     height: 35px;
-    border-radius: 8px;
+    border-radius: 4px;
     font-size: 120%;
   }
   
@@ -55,6 +55,13 @@
     width: 100%;
     height: 30px;
     font-size: 100%;
+  }
+  
+  .statusMenuButton{
+    border-radius: 4px;
+    width: 100%;
+    height: 20px;
+    font-size: 80%;
   }
   
   input, select {
@@ -94,6 +101,12 @@
     width: 95%;
     margin: 1px auto 1px auto;
     border: 2px solid;
+    padding: 4px;
+  }
+  
+  .statusDiv{
+    width: 95%;
+    margin: 1px auto 1px auto;
     padding: 4px;
   }
   
@@ -210,4 +223,8 @@
   }
   .calcAbs {
     background-color: lightSteelBlue;
+  }
+  
+  .displayNone {
+    display: none;
   }

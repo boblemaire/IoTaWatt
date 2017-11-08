@@ -184,7 +184,7 @@ void setup()
   NewService(timeSync);
   NewService(WiFiService);
   NewService(updater);
-  
+  NewService(historyLog);
   
 }  // setup()
 /***************************************** End of Setup **********************************************/

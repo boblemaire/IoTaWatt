@@ -65,7 +65,8 @@ extern WiFiClient WifiClient;
 extern WiFiManager wifiManager;
 extern ESP8266WebServer server;
 extern DNSServer dnsServer;
-extern IotaLog iotaLog;
+extern IotaLog currLog;
+extern IotaLog histLog;
 extern RTC_PCF8523 rtc;
 extern Ticker ticker;
 extern CBC<AES128> cypher;
@@ -80,6 +81,7 @@ extern MD5Builder md5;
 
 extern String deviceName;
 extern String IotaLogFile;
+extern String historyLogFile;
 extern String IotaMsgLog;
 extern String EmonPostLogFile;
 extern String influxPostLogFile;
@@ -257,6 +259,7 @@ void      logTrace(void);
 void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*));
 void      AddService(struct serviceBlock*);
 uint32_t  dataLog(struct serviceBlock*);
+uint32_t  historyLog(struct serviceBlock*);
 uint32_t  statService(struct serviceBlock*);
 uint32_t  EmonService(struct serviceBlock*);
 uint32_t  influxService(struct serviceBlock*);
@@ -264,6 +267,8 @@ uint32_t  timeSync(struct serviceBlock*);
 uint32_t  updater(struct serviceBlock*);
 uint32_t  WiFiService(struct serviceBlock*);
 uint32_t  handleGetFeedData(struct serviceBlock*);
+
+uint32_t  logReadKey(IotaLogRecord* callerRecord);
 
 void      setLedCycle(const char*);
 void      endLedCycle();

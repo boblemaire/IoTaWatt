@@ -116,22 +116,30 @@
     <!-- ****************************** divStatus **********************************--> 
     
     <div class="bodyDiv color_body" id="divStatus">
-        <table width="100%">
-          <tr><th width="50%">Inputs</th><th width="50%">Outputs</th></tr>
-          <tr valign="top">
-            <td><table id="inputStatusTable"></table></td>
-            <td><table id="outputStatusTable"></table></td>
-          </tr>
-        </table>
-      <hr>
-      <table width="100%">
-        <tr><th width="50%"></th><th width="50%"></th></tr>
-        <tr valign="top">
-          <td><table id="statusTableL"></table></td>
-          <td><table id="statusTableR"></table></td>
-        </tr>
-      </table>
-      <table id="statusTable"></table>
+      <button id="statusIO" class="statusMenuButton" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs Status</button>
+        <div id="statusIODiv" class="statusDiv" style="display: block;">
+          <table id="statusIOBody" width="100%">
+            <tr><th width="50%">Inputs</th><th width="50%">Outputs</th></tr>
+            <tr valign="top">
+              <td><table id="inputStatusTable"></table></td>
+              <td><table id="outputStatusTable"></table></td>
+            </tr>
+          </table>
+        </div>
+      <button id="statusStats" class="statusMenuButton" onclick="toggleDisplay('statusStatsDiv')">IoTaWatt Statistics</button>
+        <div id="statusStatsDiv" class="statusDiv" style="display: block;">
+           <table width="100%">
+            <tr><th width="50%"></th><th width="50%"></th></tr>
+            <tr valign="top">
+              <td><table id="statusTableL"></table></td>
+              <td><table id="statusTableR"></table></td>
+            </tr>
+          </table>
+          <table id="statusTable"></table>
+        </div>
+      <button id="statusLogs" class="statusMenuButton" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
+        <div id="statusLogsDiv" class="statusDiv" style="display: none;">
+        </div>
     </div> <!-- divStatus -->
   
     <!-- ******************************divCalc **********************************--> 
@@ -1289,14 +1297,14 @@ function statusGet(){
       statusDisplay(xmlHttp.responseText);
     }
   }
-  xmlHttp.open("GET","/status?state=yes&inputs=yes&outputs=yes&stats=yes", true);
+  xmlHttp.open("GET","/status?state=yes&inputs=yes&outputs=yes&stats=yes&datalogs=yes", true);
   xmlHttp.send(null);
 }
 
 function statusDisplay(statusMessage){
   var status = JSON.parse(statusMessage);
-  var statusTable = document.getElementById("statusTableL");
   
+  var statusTable = document.getElementById("statusTableL");
   statusTable.innerHTML = null;
   addRow();
   column3.appendChild(document.createTextNode("Firmware version: " + status.stats.version));
@@ -1304,6 +1312,7 @@ function statusDisplay(statusMessage){
   column3.appendChild(document.createTextNode("Running time: " + formatRunTime(status.stats.runseconds)));
   addRow();
   column3.appendChild(document.createTextNode("free Heap: " + status.stats.stack));
+  
   statusTable = document.getElementById("statusTableR");
   statusTable.innerHTML = null;
   addRow();
@@ -1312,6 +1321,14 @@ function statusDisplay(statusMessage){
   column3.appendChild(document.createTextNode(status.stats.chanrate.toFixed(1) + " AC cycles sampled/second"));
   addRow();
   column3.appendChild(document.createTextNode(status.stats.frequency.toFixed(1) + " Hz"));
+  
+  if(status.datalogs !== undefined){
+    var logs = document.getElementById("statusLogsDiv");
+    logs.innerHTML = null;
+    logs.appendChild(document.createTextNode("Current Log from: " + formatDateTime(status.datalogs.currlog.firstkey) + " to: " + formatDateTime(status.datalogs.currlog.lastkey)));
+    logs.appendChild(document.createElement("br"));
+    logs.appendChild(document.createTextNode("History Log from: " + formatDateTime(status.datalogs.histlog.firstkey) + " to: " + formatDateTime(status.datalogs.histlog.lastkey)));
+  }
   
   statusTable = document.getElementById("inputStatusTable");
   statusTable.innerHTML = "";
@@ -1358,7 +1375,7 @@ function statusDisplay(statusMessage){
     column3.appendChild(wattNode);
   }
     
-  setTimeout(function(){if(getStatus)statusGet();},1500);
+  setTimeout(function(){if(getStatus)statusGet();},1000);
   
   function addRow(){
     newRow = document.createElement("tr");
@@ -1382,6 +1399,11 @@ function formatRunTime(time){
   time -= minutes * 60;
   var seconds = parseInt(time % 60, 10);
   return (days > 0 ? days + "d  " : "") +  hours + "h " + minutes + "m " + seconds + "s";
+}
+
+function formatDateTime(unixtime){
+  var date = new Date(unixtime*1000);
+  return date.toLocaleDateString() + " " + date.toLocaleTimeString();
 }
 
 function checkConfig(){
@@ -1512,6 +1534,10 @@ function loadEdit(){
 function showMsgs(){
   var myWindow = window.open(msgsFileURL, "_self");
   resetDisplay();
+}
+function toggleDisplay(id){
+  var element = document.getElementById(id);
+  element.style.display = element.style.display == "none" ? "block" : "none";
 }
 
 /**********************************************************************************************
