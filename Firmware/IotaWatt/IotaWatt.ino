@@ -61,7 +61,8 @@
  *   10/13/17 02_02_21 New release for production 
  *   10/18/17 02_02_22 Recompile with staged core to fix Krack vulnerability
  *   10/28/17 02_02_23 Fix several problems encountered using new arduino core 
- *   11/03/17 02_02_24 Improve error handling Emoncms, change API to use I/O channel names 
+ *   11/03/17 02_02_24 Improve error handling Emoncms, change API to use I/O channel names
+ *   11/08/17 02_02_25 Rework data log into current and history logs  
  * 
  *****************************************************************************************************/
 
@@ -70,8 +71,8 @@
 WiFiClient WifiClient;
 WiFiManager wifiManager;
 DNSServer dnsServer;    
-IotaLog currLog(5,400);                     // current data log
-IotaLog histLog(60,4000);                   // history data log    
+IotaLog currLog(5,402);                     // current data log  (1.1 years) 
+IotaLog histLog(60,5480);                   // history data log  (15 years)  
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
 CBC<AES128> cypher;
