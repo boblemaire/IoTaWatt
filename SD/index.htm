@@ -15,16 +15,16 @@
     <table id="bigIdeasTable">
       <tr>
         <td width="50%"><button ID="BIBdevice" class="mainMenuButton" onclick="menuButton(this,configureDevice)">Configure Device</button></td>
-        <td width="50%"><button ID="BIBstatus" class="mainMenuButton" onclick="menuButton(this,statusBegin)">Input Channels Status</button></td>
+        <td width="50%"><button ID="BIBstatus" class="mainMenuButton" onclick="menuButton(this,statusBegin)">Status</button></td>
       </tr><tr>
         <td><button ID="BIBinputs" class="mainMenuButton" onclick="menuButton(this,buildInputsList)">Configure Inputs</button></td>
         <td><button ID="BIBmsgs" class="mainMenuButton" onclick="menuButton(this,showMsgs)">Message Log</button><br></td>
       </tr><tr>
         <td><button ID="BIBoutputs" class="mainMenuButton" onclick="menuButton(this,buildOutputsList)">Configure Outputs</button></td>
-        <td><button ID="BIBgraph" class="mainMenuButton" onclick="menuButton(this,loadGraph)">Run Local Graph App</button><br></td>
+        <td><button ID="BIBgraph" class="mainMenuButton" onclick="menuButton(this,loadGraph)">Graphs</button><br></td>
       </tr><tr>
         <td><button ID="BIBserver" class="mainMenuButton" onclick="menuButton(this,buildWebServer)">Setup Web Server</button><br></td>
-        <td><button ID="BIBedit" class="mainMenuButton" onclick="menuButton(this,loadEdit)">Run Edit and File Manager App</button></td>
+        <td><button ID="BIBedit" class="mainMenuButton" onclick="menuButton(this,loadEdit)">File Manager and Editor</button></td>
       </tr><tr>
         <td></td>
         <td></td>
@@ -1337,7 +1337,10 @@ function statusDisplay(statusMessage){
     
     for(j in config.inputs){
       if(config.inputs[j] !== null && config.inputs[j].channel == status.inputs[i].channel){
-        if(config.inputs[j].name !== undefined) column1.innerHTML += "<strong>" + config.inputs[j].name + ":</strong>";
+        if (status.inputs[i].reversed)  column1.innerHTML += "<span title=\"CT reversed\">&#8634 </span>";
+        if(config.inputs[j].name !== undefined) {
+          column1.innerHTML += "<strong>" + config.inputs[j].name + ":</strong>";
+        }
         break;
       }
     }
@@ -1349,7 +1352,7 @@ function statusDisplay(statusMessage){
       column3.appendChild(wattNode);
       
       if(status.inputs[i].reversed == "true"){
-        wattNode.setAttribute("color","DarkRed");
+        //wattNode.setAttribute("color","DarkRed");
       } 
       if(status.inputs[i].Watts < 0){
           wattNode.setAttribute("color","DarkGreen");
