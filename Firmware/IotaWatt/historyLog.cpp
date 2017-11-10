@@ -66,8 +66,6 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         histLog.write(logRecord);
         delete logRecord;
       }
-
-      Serial.println("histLog");
       
       _serviceBlock->priority = priorityLow;
       state = logData;

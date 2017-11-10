@@ -14,7 +14,11 @@ void handleStatus();
 void handleVcal();
 void handleCommand();
 void handleGetFeedList();
+void handleGetFeedData();
+void handleGraphCreate();
+void handleGraphUpdate();
 void handleGraphGetall();
+void handleGraphDelete();
 void sendMsgFile(File &dataFile, int32_t relPos);
 void handleGetConfig();
 

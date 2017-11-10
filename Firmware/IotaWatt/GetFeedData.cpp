@@ -14,7 +14,7 @@
  * 
  **************************************************************************************************/
 
-uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
+uint32_t getFeedData(struct serviceBlock* _serviceBlock){
   // trace T_GFD
   enum   states {Initialize, Setup, process};
  
@@ -28,6 +28,7 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
   static uint32_t startUnixTime;
   static uint32_t endUnixTime;
   static uint32_t intervalSeconds;
+  static bool     modeRequest;
   static uint32_t UnixTime;
   static String   replyData = "";
   
@@ -53,12 +54,23 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
       
       startUnixTime = server.arg("start").substring(0,10).toInt();
       endUnixTime = server.arg("end").substring(0,10).toInt();
-      intervalSeconds = server.arg("interval").toInt();
+      if(server.hasArg("interval")){
+        intervalSeconds = server.arg("interval").toInt();
+        modeRequest = false;;
+      }
+      else if(server.hasArg("mode")){
+        modeRequest = true;
+        if(server.arg("mode")== "daily") intervalSeconds = 86400;
+        else if(server.arg("mode") == "weekly") intervalSeconds = 86400 * 7;
+        else if(server.arg("mode") == "monthly") intervalSeconds = 86400 * 30;
+        else if(server.arg("mode") == "yearly") intervalSeconds = 86400 * 365;
+      }
       if((startUnixTime % 5) ||
          (endUnixTime % 5) ||
          (intervalSeconds % 5) ||
          (intervalSeconds <= 0) ||
-         (endUnixTime < startUnixTime)){
+         (endUnixTime < startUnixTime) ||
+         ((endUnixTime - startUnixTime) / intervalSeconds > 2000)) {
         server.send(400, "text/plain", "Invalid request");
         state = Setup;
         serverAvailable = true;
@@ -176,7 +188,13 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
               replyData += String((logRecord->channel[channel].accum1 - lastRecord->channel[channel].accum1) / elapsedHours,1);
             }
             else if(reqPtr->queryType == 'E') {
-              replyData += String((logRecord->channel[channel].accum1 / 1000.0),2);
+              if(modeRequest){
+                replyData += String(((logRecord->channel[channel].accum1  - lastRecord->channel[channel].accum1)/ 1000.0),2);    
+              }
+              else {
+                replyData += String((logRecord->channel[channel].accum1 / 1000.0),2);
+              }
+              
             } 
             else {
               replyData += "null";
@@ -199,8 +217,15 @@ uint32_t handleGetFeedData(struct serviceBlock* _serviceBlock){
                 return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;}), 1);
             }
             else if(reqPtr->queryType == 'E'){
-              replyData += String(reqPtr->output->run([](int i)->double {
-                return logRecord->channel[i].accum1 / 1000.0;}), 2);
+              if(modeRequest){
+                replyData += String(reqPtr->output->run([](int i)->double {
+                  return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / 1000.0;}), 1);  
+              }
+              else {
+                replyData += String(reqPtr->output->run([](int i)->double {
+                              return logRecord->channel[i].accum1 / 1000.0;}), 2);
+              }  
+              
             }
             else {
               replyData += "null";
