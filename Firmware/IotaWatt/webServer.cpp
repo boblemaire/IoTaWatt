@@ -55,7 +55,6 @@ void returnOK() {
 }
 
 void returnFail(String msg) {
-  Serial.println("Fail routine.");
   server.send(500, "text/plain", msg + "\r\n");
 }
 
@@ -241,21 +240,7 @@ void printDirectory() {
 
 void handleNotFound(){
   trace(T_WEB,12); 
-  String serverURI = server.uri();
-  if(serverURI.startsWith("//")) serverURI.remove(0,1);   // fix EmonCMS graph bug
-  if(serverURI.startsWith("/feed/list")){
-    handleGetFeedList();
-    return;
-  }
-  if(serverURI == "/graph/getall"){
-    handleGraphGetall();
-    return;
-  }
-  if(serverURI.startsWith("/feed/data")){
-    serverAvailable = false;
-    NewService(handleGetFeedData);
-    return;
-  }
+  // String serverURI = server.uri();
   if(loadFromSdCard(server.uri())) return;
   String message = "Not found: ";
   message += (server.method() == HTTP_GET)?"GET":"POST";
@@ -473,9 +458,10 @@ void handleGetFeedList(){
   server.send(200, "application/json", response);
 }
 
-void handleGraphGetall(){                   // Stub to appease EmonCMS graph app
+void handleGetFeedData(){
+  serverAvailable = false;
+  NewService(getFeedData);
   return;
-  server.send(200, "ok", "{}");
 }
 
 // Had to roll our own streamFile function so we can set the actual partial

@@ -168,6 +168,12 @@ void setup()
   server.on("/edit", HTTP_DELETE, handleDelete);
   server.on("/edit", HTTP_PUT, handleCreate);
   server.on("/edit", HTTP_POST, returnOK, handleFileUpload);
+  server.on("/feed/list.json", handleGetFeedList);
+  server.on("/feed/data.json", handleGetFeedData);
+  server.on("/graph/create",HTTP_POST, handleGraphCreate);
+  server.on("/graph/update",HTTP_POST, handleGraphCreate);
+  server.on("/graph/delete",HTTP_POST, handleGraphDelete);
+  server.on("/graph/getall", handleGraphGetall);
   server.onNotFound(handleNotFound);
 
   SdFile::dateTimeCallback(dateTime);
@@ -176,7 +182,6 @@ void setup()
   msgLog(F("HTTP server started"));
   WiFi.mode(WIFI_STA);
   
-
  //*************************************** Start the logging services *********************************
    
   NewService(dataLog);
