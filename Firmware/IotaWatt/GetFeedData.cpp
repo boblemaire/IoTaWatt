@@ -188,13 +188,7 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
               replyData += String((logRecord->channel[channel].accum1 - lastRecord->channel[channel].accum1) / elapsedHours,1);
             }
             else if(reqPtr->queryType == 'E') {
-              if(modeRequest){
-                replyData += String(((logRecord->channel[channel].accum1  - lastRecord->channel[channel].accum1)/ 1000.0),2);    
-              }
-              else {
-                replyData += String((logRecord->channel[channel].accum1 / 1000.0),2);
-              }
-              
+                replyData += String((logRecord->channel[channel].accum1 / 1000.0),2);              
             } 
             else {
               replyData += "null";
@@ -217,15 +211,8 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
                 return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;}), 1);
             }
             else if(reqPtr->queryType == 'E'){
-              if(modeRequest){
-                replyData += String(reqPtr->output->run([](int i)->double {
-                  return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / 1000.0;}), 1);  
-              }
-              else {
                 replyData += String(reqPtr->output->run([](int i)->double {
                               return logRecord->channel[i].accum1 / 1000.0;}), 2);
-              }  
-              
             }
             else {
               replyData += "null";
