@@ -26,12 +26,12 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
   enum states {initialize, logData};
   static states state = initialize;                                          
   IotaLogRecord* logRecord;
-  
+  trace(T_history,0);  
  
   switch(state){
 
     case initialize: {
-
+      trace(T_history,1); 
       msgLog(F("historyLog: service started."));
 
         // If iotaLog not open or empty, check back later.
@@ -42,6 +42,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         
         // Initialize the historyLog class
      
+      trace(T_history,2);   
       if(int rtc = histLog.begin((char*)historyLogFile.c_str())){
         msgLog("historyLog: Log file open failed. ", String(rtc));
         dropDead();
@@ -66,21 +67,23 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         histLog.write(logRecord);
         delete logRecord;
       }
-      
+      trace(T_history,3); 
       _serviceBlock->priority = priorityLow;
       state = logData;
       break;
-    }
+    } 
 
     case logData: {
 
+      trace(T_history,4);   
       if((histLog.lastKey() + histLog.interval()) > currLog.lastKey()){
         return UNIXtime() + 5;
       }
-
+      trace(T_history,5); 
       logRecord = new IotaLogRecord;
       logRecord->UNIXtime = histLog.lastKey() + histLog.interval();
       if(logRecord->UNIXtime < currLog.firstKey()){
+        trace(T_history,6); 
         logRecord->UNIXtime = histLog.lastKey();
         histLog.readKey(logRecord);
         logRecord->UNIXtime += histLog.interval();
@@ -90,17 +93,19 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         delete logRecord;
         return 0;
       }
-
+      trace(T_history,7); 
       if(logRecord->UNIXtime % histLog.interval()){
         Serial.print("log file record not multiple of history interval: ");
         Serial.println(logRecord->UNIXtime);
         delete logRecord;
         return 0;
       }
+      trace(T_history,8); 
       histLog.write(logRecord);
       delete logRecord;
       break;
     }
   }
+  trace(T_history,9); 
   return histLog.lastKey() + histLog.interval(); 
 }

@@ -121,7 +121,8 @@ extern uint8_t ADC_selectPin[2];            // indexable reference for ADC selec
 #define T_WEB 100           // (30)Web server handlers
 #define T_CONFIG 130        //  Get Config
 #define T_encryptEncode 140 //  base64encode and encryptData in EmonService
-#define T_uploadGraph 150      
+#define T_uploadGraph 150 
+#define T_history 160           
 
       // ADC descriptors
 
