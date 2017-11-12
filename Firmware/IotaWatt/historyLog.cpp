@@ -24,7 +24,8 @@
       
 uint32_t historyLog(struct serviceBlock* _serviceBlock){
   enum states {initialize, logData};
-  static states state = initialize;                                          
+  static states state = initialize;
+  static uint32_t lastExitTime = 0;                                         
   IotaLogRecord* logRecord;
   trace(T_history,0);  
  
@@ -74,7 +75,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
     } 
 
     case logData: {
-
+      if((millis() - lastExitTime) < (2000 / frequency)) return 1;
       trace(T_history,4);   
       if((histLog.lastKey() + histLog.interval()) > currLog.lastKey()){
         return UNIXtime() + 5;
@@ -106,6 +107,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
       break;
     }
   }
-  trace(T_history,9); 
+  trace(T_history,9);
+  lastExitTime = millis();
   return histLog.lastKey() + histLog.interval(); 
 }

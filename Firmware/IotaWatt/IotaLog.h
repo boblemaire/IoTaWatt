@@ -19,7 +19,7 @@ When reading by key, the entry with the requested or next lower key is returned 
 ********************************************************************************************************/
 struct IotaLogRecord {
       uint32_t UNIXtime;        // Time period represented by this record
-      uint32_t serial;        // record number in file
+      int32_t serial;        // record number in file
       double logHours;        // Total hours of monitoring logged to date in this log 
       struct channels {
         double accum1;
@@ -44,28 +44,34 @@ class IotaLog
 		_firstSerial = 0;
 		_lastKey = 0;
 		_lastSerial = -1;
-		_entries = 0;
+    _entries = 0;
+    _cacheSize = 10;
+    _cacheWrap = 0;
+    _cacheKey = new uint32_t[_cacheSize];
+    _cacheSerial = new int32_t[_cacheSize];
 	}
 	
 	~IotaLog(){
-		IotaFile.close();
+    IotaFile.close();
+    delete[] _cacheKey;
+    delete[] _cacheSerial;
 	}
 	      
     int begin (const char* /* filepath */);
     int write (IotaLogRecord* /* pointer to record to be written*/);
     int readKey (IotaLogRecord* /* pointer to caller's buffer */);
-    int readSerial(IotaLogRecord* callerRecord, uint32_t serial); 
+    int readSerial(IotaLogRecord* callerRecord, int32_t serial); 
     int readNext(IotaLogRecord* /* pointer to caller's buffer */);
     int end();
     
     boolean  isOpen();
     uint32_t firstKey();
-    uint32_t firstSerial();
+    int32_t  firstSerial();
     uint32_t lastKey();
-    uint32_t lastSerial();
+    int32_t  lastSerial();
     uint32_t fileSize();
-	uint32_t readKeyIO();
-	uint32_t interval();
+    uint32_t readKeyIO();
+    uint32_t interval();
 	 	
       
     void     dumpFile();
@@ -81,19 +87,24 @@ class IotaLog
     uint32_t _entries;                      // Number of entries (fileSize / recsize(256))
     uint32_t _maxFileSize;					// Maximum filesize in bytes
     uint32_t _firstKey;                     // Key of first logical record
-    uint32_t _firstSerial;                  // Serial of...
+    int32_t  _firstSerial;                  // Serial of...
     uint32_t _lastKey;                      // Key of last logical record
-    uint32_t _lastSerial;                   // Serial of...
+    int32_t  _lastSerial;                   // Serial of...
     uint32_t _wrap;                         // Offset of logical record zero (0 if file not wrapped)
+
+    uint32_t  _cacheSize = 10;
+    uint32_t  _cacheWrap = 0;  
+    uint32_t* _cacheKey;
+    int32_t*  _cacheSerial;
   
     uint32_t _lastReadKey;           	    // Key of last record read with readKey
-    uint32_t _lastReadSerial;         	    // Serial of last...
+    int32_t  _lastReadSerial;         	    // Serial of last...
     uint32_t _readKeyIO;              	    // Running count of I/Os for keyed reads
     
     uint32_t  findWrap(uint32_t highPos, uint32_t highKey, uint32_t lowPos, uint32_t lowKey);
     void      searchKey(IotaLogRecord* callerRecord, const uint32_t key,
-                        const uint32_t lowKey, const uint32_t lowSerial, 
-                        const uint32_t highKey, const uint32_t highSerial);
+                        const uint32_t lowKey, const int32_t lowSerial, 
+                        const uint32_t highKey, const int32_t highSerial);
       
 };
 

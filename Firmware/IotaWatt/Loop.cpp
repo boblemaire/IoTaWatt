@@ -15,7 +15,7 @@ void loop()
 
   // ------- If AC zero crossing approaching, go sample a channel.
 
-  if((uint32_t)(millis() - lastCrossMs) >= (490 / int(frequency))){
+  if((uint32_t)(millis() - lastCrossMs) >= (430 / int(frequency))){
     ESP.wdtFeed();
     trace(T_LOOP,1);
     samplePower(nextChannel, 0);

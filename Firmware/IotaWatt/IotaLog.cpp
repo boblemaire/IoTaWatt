@@ -70,7 +70,12 @@ int IotaLog::begin (const char* path ){
 	Serial.println(_fileSize);
 	dumpFile();
 	IotaFile.close();
-  }
+	}
+	
+	for(int i=0; i<_cacheSize; i++){
+		_cacheKey[i] = _firstKey;
+		_cacheSerial[i] = _firstSerial;
+	}
 
   return 0;
 }
@@ -99,64 +104,103 @@ int IotaLog::readKey (IotaLogRecord* callerRecord){
 	uint32_t key = callerRecord->UNIXtime - (callerRecord->UNIXtime % _interval);
   if(!IotaFile) return 2;
   if(_entries == 0) return 1;
-	if(key < _firstKey){
+	if(key < _firstKey){													// Before the beginning of time
 		readSerial(callerRecord, _firstSerial);
 		callerRecord->UNIXtime = key;
 		return 1;
 	}
-	if(key > _lastKey){
+	if(key > _lastKey){														// Back to the future
 		readSerial(callerRecord, _lastSerial);
 		callerRecord->UNIXtime = key;
 		return 1;
 	}
-  if(key < _lastReadKey){
-	searchKey(callerRecord, key, _firstKey, _firstSerial, _lastReadKey, _lastReadSerial);
-  }
-  else {
-	searchKey(callerRecord, key, _lastReadKey, _lastReadSerial, _lastKey, _lastSerial);
-  }
-  _lastReadKey = callerRecord->UNIXtime;
-  _lastReadSerial = callerRecord->serial;
-  return 0;
+	/* 
+	Serial.print("search: ");
+	Serial.print(key);
+	Serial.println();
+	*/
+	uint32_t lowKey = _firstKey;
+	int32_t lowSerial = _firstSerial;
+	uint32_t highKey = _lastKey;
+	int32_t highSerial = _lastSerial;
+	
+	for(int i=0; i<_cacheSize; i++){
+		uint32_t cacheKey = _cacheKey[i];
+		if(cacheKey == key){												// Deja Vu
+			_cacheWrap = (_cacheWrap + _cacheSize - 1) % _cacheSize;
+			readSerial(callerRecord, _cacheSerial[i]);
+			return 0;	
+		}
+		else if(cacheKey > lowKey && cacheKey < key) {
+			lowKey = cacheKey;
+			lowSerial = _cacheSerial[i];
+		}
+		else if(cacheKey < highKey && cacheKey > key){
+			highKey = cacheKey;
+			highSerial = _cacheSerial[i];
+		}
+	}
+	if((highSerial - lowSerial) == 1) {						// Hole in file
+		_cacheWrap = (_cacheWrap + _cacheSize - 1) % _cacheSize;
+		readSerial(callerRecord, lowSerial);
+		callerRecord->UNIXtime = key;
+		return 0;	
+	}
+	searchKey(callerRecord, key, lowKey, lowSerial, highKey, highSerial);
+	callerRecord->UNIXtime = key;
+	return 0;
 }
 
-void IotaLog::searchKey(IotaLogRecord* callerRecord, const uint32_t key, const uint32_t lowKey, const uint32_t lowSerial, const uint32_t highKey, const uint32_t highSerial){
+void IotaLog::searchKey(IotaLogRecord* callerRecord, const uint32_t key, const uint32_t lowKey, const int32_t lowSerial, const uint32_t highKey, const int32_t highSerial){
 
-  uint32_t floorSerial = max(lowSerial, highSerial - (highKey - key) / _interval);
-  uint32_t ceilingSerial = min(highSerial, lowSerial + (key - lowKey) / _interval);
+  int32_t floorSerial = max(lowSerial, highSerial - (int32_t)((highKey - key) / _interval));
+	int32_t ceilingSerial = min(highSerial, lowSerial + (int32_t)((key - lowKey) / _interval));
+
+	/* 
+	Serial.print("low: ");
+	Serial.print(lowKey);
+	Serial.print("(");
+	Serial.print(lowSerial);
+	Serial.print("), high: ");
+	Serial.print(highKey);
+	Serial.print("(");
+	Serial.print(highSerial);
+	Serial.print("), floor: ");
+	Serial.print(floorSerial);
+	Serial.print(", ceiling: ");
+	Serial.print(ceilingSerial);
+	Serial.println();
+	*/ 
 
   if(ceilingSerial < highSerial || floorSerial == ceilingSerial){
-	readSerial(callerRecord, ceilingSerial);
-	_readKeyIO++;
-	if(callerRecord->UNIXtime == key){
-	  return;
-	}
-	searchKey(callerRecord, key, lowKey, lowSerial, callerRecord->UNIXtime, callerRecord->serial);
-	return;
+		readSerial(callerRecord, ceilingSerial);
+		
+		if(callerRecord->UNIXtime == key){
+			return;
+		}
+		searchKey(callerRecord, key, lowKey, lowSerial, callerRecord->UNIXtime, callerRecord->serial);
+		return;
   }
   if(floorSerial > lowSerial){
-	readSerial(callerRecord, floorSerial);
-	_readKeyIO++;
-	if(callerRecord->UNIXtime == key){
-	  return;
-	}
-	searchKey(callerRecord, key, callerRecord->UNIXtime, callerRecord->serial, highKey, highSerial);
-	return;
+		readSerial(callerRecord, floorSerial);
+		if(callerRecord->UNIXtime == key){
+			return;
+		}
+		searchKey(callerRecord, key, callerRecord->UNIXtime, callerRecord->serial, highKey, highSerial);
+		return;
   }
   if((highSerial - lowSerial) <= 1){
-	readSerial(callerRecord, lowSerial);
-	_readKeyIO++;
-	callerRecord->UNIXtime = key;
-	return;
+		readSerial(callerRecord, lowSerial);
+		return;
   }
   readSerial(callerRecord, (lowSerial + highSerial) / 2);
   _readKeyIO++;
   if(callerRecord->UNIXtime == key){
-	return;
+		return;
   }
   if(callerRecord->UNIXtime < key){
-	searchKey(callerRecord, key, callerRecord->UNIXtime, callerRecord->serial, highKey, highSerial);
-	return;
+		searchKey(callerRecord, key, callerRecord->UNIXtime, callerRecord->serial, highKey, highSerial);
+		return;
   }
   searchKey(callerRecord, key, lowKey, lowSerial, callerRecord->UNIXtime, callerRecord->serial);
   return;
@@ -179,19 +223,23 @@ boolean IotaLog::isOpen(){
 }
 
 uint32_t IotaLog::firstKey(){return _firstKey;}
-uint32_t IotaLog::firstSerial(){return _firstSerial;}
+int32_t IotaLog::firstSerial(){return _firstSerial;}
 uint32_t IotaLog::lastKey(){return _lastKey;}
-uint32_t IotaLog::lastSerial(){return _lastSerial;}
+int32_t IotaLog::lastSerial(){return _lastSerial;}
 uint32_t IotaLog::fileSize(){return _fileSize;}
 uint32_t IotaLog::readKeyIO(){return _readKeyIO;}
 uint32_t IotaLog::interval(){return _interval;}
   
-int IotaLog::readSerial(IotaLogRecord* callerRecord, uint32_t serial){
+int IotaLog::readSerial(IotaLogRecord* callerRecord, int32_t serial){
   if(serial < _firstSerial || serial > _lastSerial){
 	return 1;
   }
   IotaFile.seek(((serial - _firstSerial) * sizeof(IotaLogRecord) + _wrap) % _fileSize);
-  IotaFile.read(callerRecord, sizeof(IotaLogRecord));
+	IotaFile.read(callerRecord, sizeof(IotaLogRecord));
+	_cacheKey[_cacheWrap] = callerRecord->UNIXtime;
+	_cacheSerial[_cacheWrap++] = callerRecord->serial;
+	_cacheWrap %= _cacheSize;
+	_readKeyIO++;
   return 0;
 };
    
