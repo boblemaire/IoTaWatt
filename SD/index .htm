@@ -208,6 +208,7 @@ var configSHA256;
 var config;                         // configuration as Js Object
 var tables;                         // tables as Js Object
 var editing = false;
+var calculator = false;
 var getStatus = false;
 var calVoltageUpdate = false;
 var avgVoltage = 0;
@@ -657,7 +658,6 @@ function calVTsave(obj){
       nameColumn.innerHTML = "<strong>" + scriptEditSet[i].name + "</strong>";
       if(scriptEditSet[i].units === undefined) scriptEditSet[i].units = "";
       unitsColumn.innerHTML = scriptEditSet[i].units;
-      if(scriptEditSet[i].script == "")scriptEditSet[i].script = "#0";
       scriptColumn.innerHTML = " = " + scriptDisplay(parseScript(scriptEditSet[i].script));
       var editButton = document.createElement("button");
       editButton.setAttribute("class","outputEditButton");
@@ -675,7 +675,6 @@ function calVTsave(obj){
     editButton.appendChild(document.createTextNode("add"));
     editButton.setAttribute("onclick","addOutput()");
     selColumn.appendChild(editButton);
-    //editing = false;
   }
    
   
@@ -700,7 +699,7 @@ function calVTsave(obj){
     tokens = parseScript(scriptEditSet[index].script);
     document.getElementById("calcDelete").style.display = "inline";
     scriptEditIndex = index;
-    editing = true;
+    calculator = true;
     refreshCalcDisplay();
   }
 
@@ -712,11 +711,12 @@ function calVTsave(obj){
     document.getElementById("calcDelete").style.display = "none";
     scriptEditIndex = scriptEditSet.length;
     refreshCalcDisplay();
-    editing = true;
+    calculator = true;
   }
 
   function calcCancel(){
     currentBodyPop();
+    calculator = false;
     scriptEditReturn();
   }
 
@@ -734,6 +734,7 @@ function calVTsave(obj){
     }
     scriptEditSave();
     currentBodyPop();
+    calculator = false;
     scriptEditReturn();
   }
   
@@ -741,6 +742,7 @@ function calVTsave(obj){
     scriptEditSet.splice(scriptEditIndex,1);
     scriptEditSave();
     currentBodyPop();
+    calculator = false;
     scriptEditReturn();
   }
 
@@ -1493,7 +1495,7 @@ function demoStatus(){
  *                       Main menu navigation.
  * *****************************************************************************************/
 function menuButton(obj, handler){
-  if( ! editing){
+  if( ! editing && ! calculator){
     currentBodyPop();
     resetDisplay();
     obj.className = "mainMenuButton buttonDown";
