@@ -657,6 +657,7 @@ function calVTsave(obj){
       nameColumn.innerHTML = "<strong>" + scriptEditSet[i].name + "</strong>";
       if(scriptEditSet[i].units === undefined) scriptEditSet[i].units = "";
       unitsColumn.innerHTML = scriptEditSet[i].units;
+      if(scriptEditSet[i].script == "")scriptEditSet[i].script = "#0";
       scriptColumn.innerHTML = " = " + scriptDisplay(parseScript(scriptEditSet[i].script));
       var editButton = document.createElement("button");
       editButton.setAttribute("class","outputEditButton");
@@ -674,7 +675,7 @@ function calVTsave(obj){
     editButton.appendChild(document.createTextNode("add"));
     editButton.setAttribute("onclick","addOutput()");
     selColumn.appendChild(editButton);
-    editing = false;
+    //editing = false;
   }
    
   
@@ -1042,6 +1043,7 @@ function burdenSave(){
  * ******************************************************************************************/
 
 function buildWebServer(){
+  editing = true;
   var servers = ["None", "Emoncms", "InfluxDB"];
   document.getElementById("serverOutputs").innerHTML = "";
   document.getElementById("serverOutputsHeader").innerHTML = "";
@@ -1070,7 +1072,6 @@ function buildWebServer(){
 }
 
 function newServer(obj){
-  editing = true;
   if(obj.value.toLowerCase() == "none"){
     config.server = {type:"none"};
   }
