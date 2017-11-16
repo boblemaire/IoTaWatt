@@ -72,8 +72,8 @@
 WiFiClient WifiClient;
 WiFiManager wifiManager;
 DNSServer dnsServer;    
-IotaLog currLog(5,402);                     // current data log  (1.1 years) 
-IotaLog histLog(60,5480);                   // history data log  (15 years)  
+IotaLog currLog(5,400);                     // current data log  (1.1 years) 
+IotaLog histLog(60,4000);                   // history data log  (11 years)  
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
 CBC<AES128> cypher;
@@ -148,7 +148,6 @@ uint32_t programStartTime = 0;               // Time program started (UnixTime)
 uint32_t timeRefNTP = SEVENTY_YEAR_SECONDS;  // Last time from NTP server (NTPtime)
 uint32_t timeRefMs = 0;                      // Internal MS clock corresponding to timeRefNTP
 uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forward and try to refresh
-uint32_t dataLogInterval = 5;                // Interval (sec) to invoke dataLog
 uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS
 uint32_t influxDBInterval = 10;              // Interval (sec) to invoke inflexDB 
 uint32_t statServiceInterval = 1;            // Interval (sec) to invoke statService

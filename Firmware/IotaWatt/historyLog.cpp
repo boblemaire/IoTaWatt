@@ -33,14 +33,15 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
 
     case initialize: {
       trace(T_history,1); 
-      msgLog(F("historyLog: service started."));
 
         // If iotaLog not open or empty, check back later.
 
       if( ! currLog.isOpen() || (currLog.firstKey() - currLog.lastKey()) < histLog.interval()){
          return UNIXtime() + histLog.interval(); 
       }
-        
+
+      msgLog(F("historyLog: service started.")); 
+
         // Initialize the historyLog class
      
       trace(T_history,2);   

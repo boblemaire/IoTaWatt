@@ -35,7 +35,7 @@ class IotaLog
 	IotaLog(int interval=5, uint32_t days = 365) {
 		_interval = interval;
 		_recordSize = sizeof(IotaLogRecord);
-		_maxFileSize = days * _recordSize * (86400 / _interval);
+    _fileSize = 0;
 		_lastReadKey = 0;
 		_lastReadSerial = 0;
 		_readKeyIO = 0;
@@ -49,6 +49,7 @@ class IotaLog
     _cacheWrap = 0;
     _cacheKey = new uint32_t[_cacheSize];
     _cacheSerial = new int32_t[_cacheSize];
+    setDays(days);     
 	}
 	
 	~IotaLog(){
@@ -72,8 +73,8 @@ class IotaLog
     uint32_t fileSize();
     uint32_t readKeyIO();
     uint32_t interval();
-	 	
-      
+    uint32_t setDays(uint32_t); 
+	 	      
     void     dumpFile();
 
   private:

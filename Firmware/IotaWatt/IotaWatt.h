@@ -192,7 +192,6 @@ extern uint32_t programStartTime;;               // Time program started (UnixTi
 extern uint32_t timeRefNTP;  // Last time from NTP server (NTPtime)
 extern uint32_t timeRefMs;                     // Internal MS clock corresponding to timeRefNTP
 extern uint32_t timeSynchInterval;           // Interval (sec) to roll NTP forward and try to refresh
-extern uint32_t dataLogInterval;               // Interval (sec) to invoke dataLog
 extern uint32_t EmonCMSInterval;               // Interval (sec) to invoke EmonCMS
 extern uint32_t influxDBInterval;              // Interval (sec) to invoke inflexDB
 extern uint32_t statServiceInterval;           // Interval (sec) to invoke statService

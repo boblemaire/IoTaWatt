@@ -185,6 +185,12 @@ void handleDelete(){
     returnFail("BAD PATH");
     return;
   }
+  if(path == "/config.txt" ||
+     path.startsWith(IotaLogFile) ||
+     path.startsWith(historyLogFile)){
+    returnFail("Restricted File");
+    return;
+  }
   deleteRecursive(path);
   returnOK();
 }
@@ -394,6 +400,22 @@ void handleCommand(){
     msgLog(F("Disconnect command received."));
     WiFi.disconnect(false);
     return;
+  }
+  if(server.hasArg("deletelog")) {
+    trace(T_WEB,21); 
+    server.send(200, "text/plain", "ok");
+    msgLog(F("DeleteLog command received."));
+    deleteRecursive(IotaLogFile + ".log");
+    deleteRecursive(IotaLogFile + ".ndx");
+    ESP.restart();
+  }
+  if(server.hasArg("deletehist")) {
+    trace(T_WEB,21); 
+    server.send(200, "text/plain", "ok");
+    msgLog(F("DeleteLog command received."));
+    deleteRecursive(historyLogFile + ".log");
+    deleteRecursive(historyLogFile + ".ndx");
+    ESP.restart();
   }
   server.send(400, "text/json", "Unrecognized request");
 }

@@ -229,10 +229,20 @@ int32_t IotaLog::lastSerial(){return _lastSerial;}
 uint32_t IotaLog::fileSize(){return _fileSize;}
 uint32_t IotaLog::readKeyIO(){return _readKeyIO;}
 uint32_t IotaLog::interval(){return _interval;}
+
+uint32_t IotaLog::setDays(uint32_t days){
+	_maxFileSize = max(_fileSize, (uint32_t)(days * _recordSize * (86400UL / _interval)));
+	Serial.print("maxfilesize: ");
+	Serial.println(_maxFileSize);
+	_maxFileSize = max(_maxFileSize, (uint32_t)(_recordSize * (3600UL / _interval)));
+	Serial.print("maxfilesize: ");
+	Serial.println(_maxFileSize);
+	return _maxFileSize / (_recordSize * (86400 / _interval));
+}
   
 int IotaLog::readSerial(IotaLogRecord* callerRecord, int32_t serial){
   if(serial < _firstSerial || serial > _lastSerial){
-	return 1;
+		return 1;
   }
   IotaFile.seek(((serial - _firstSerial) * sizeof(IotaLogRecord) + _wrap) % _fileSize);
 	IotaFile.read(callerRecord, sizeof(IotaLogRecord));
@@ -244,23 +254,23 @@ int IotaLog::readSerial(IotaLogRecord* callerRecord, int32_t serial){
 };
    
 int IotaLog::write (IotaLogRecord* callerRecord){
-  uint32_t oldWrap = _wrap;
+
   if(!IotaFile){
-	return 2;
+		return 2;
   }
   if(callerRecord->UNIXtime <= _lastKey) {
-	return 1;
+		return 1;
   }
   callerRecord->serial = ++_lastSerial;
   if(_wrap || _fileSize >= _maxFileSize){
-	//Serial.print("seeking: "); Serial.println(_wrap);
-	IotaFile.seek(_wrap);
-	_wrap = (_wrap + sizeof(IotaLogRecord)) % _fileSize;
+		//Serial.print("seeking: "); Serial.println(_wrap);
+		IotaFile.seek(_wrap);
+		_wrap = (_wrap + sizeof(IotaLogRecord)) % _fileSize;
   }
   else {
-	IotaFile.seek(_fileSize);
-	_fileSize += sizeof(IotaLogRecord);
-	_entries++;
+		IotaFile.seek(_fileSize);
+		_fileSize += sizeof(IotaLogRecord);
+		_entries++;
   }
   //Serial.println("Writing");
   IotaFile.write((char*)callerRecord, sizeof(IotaLogRecord));
