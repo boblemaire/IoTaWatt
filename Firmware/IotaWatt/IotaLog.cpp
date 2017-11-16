@@ -232,11 +232,7 @@ uint32_t IotaLog::interval(){return _interval;}
 
 uint32_t IotaLog::setDays(uint32_t days){
 	_maxFileSize = max(_fileSize, (uint32_t)(days * _recordSize * (86400UL / _interval)));
-	Serial.print("maxfilesize: ");
-	Serial.println(_maxFileSize);
 	_maxFileSize = max(_maxFileSize, (uint32_t)(_recordSize * (3600UL / _interval)));
-	Serial.print("maxfilesize: ");
-	Serial.println(_maxFileSize);
 	return _maxFileSize / (_recordSize * (86400 / _interval));
 }
   
