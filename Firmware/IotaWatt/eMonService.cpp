@@ -19,13 +19,13 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
  ******************************************************************************************************/
 uint32_t EmonService(struct serviceBlock* _serviceBlock){
   // trace T_Emon
-  enum   states {initialize, post, resend};
+  enum   states {initialize, getPostTime, post, resend};
   static states state = initialize;
   static IotaLogRecord* logRecord = new IotaLogRecord;
   static File EmonPostLog;
   static double accum1Then [MAXINPUTS];
-  static uint32_t UnixLastPost = UNIXtime();
-  static uint32_t UnixNextPost = UNIXtime();
+  static uint32_t UnixLastPost = 0;
+  static uint32_t UnixNextPost = 0;
   static double _logHours;
   static double elapsedHours;
   static uint32_t resendCount;
@@ -46,8 +46,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     trace(T_Emon,1);
     EmonPostLog.close();
     trace(T_Emon,2);
-    SD.remove((char *)EmonPostLogFile.c_str());
-    trace(T_Emon,3);
     state = initialize;
     return 0;
   }
@@ -68,51 +66,68 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       msgLog("EmonService: started.", 
        "url: " + EmonURL + ":" + String(EmonPort) + EmonURI + ", node: " + String(node) + ", post interval: " + 
-       String(EmonCMSInterval) + (EmonSend == EmonSendGET ? ", unsecure GET" : ", encrypted POST")); 
+       String(EmonCMSInterval) + (EmonSend == EmonSendGET ? ", unsecure GET" : ", encrypted POST"));
 
-     
-      if(!EmonPostLog){
-        EmonPostLog = SD.open(EmonPostLogFile,FILE_WRITE);
+      state = getPostTime; 
+    }
+
+    case getPostTime: {
+
+      String URL = EmonURI + "/input/get?node=" + String(node);
+      http.begin(EmonURL, EmonPort, URL);
+      String auth = "Bearer " + apiKey;
+      http.addHeader("Authorization", auth.c_str());
+      http.setTimeout(500);
+      int httpCode = http.GET();
+      if(httpCode != HTTP_CODE_OK){
+        msgLog("EmonService: input/get failed.");
+        return UNIXtime() + 30;
       }
-            
-      if(EmonPostLog){
-        if(EmonPostLog.size() == 0){
-          buf->data = currLog.lastKey();
-          EmonPostLog.write((byte*)buf,4);
-          EmonPostLog.flush();
-          msgLog("EmonService: Emonlog file created.");
-        }
-        EmonPostLog.seek(EmonPostLog.size()-4);
-        EmonPostLog.read((byte*)buf,4);
-        logRecord->UNIXtime = buf->data;
-        msgLog("EmonService: Start posting from ", String(logRecord->UNIXtime));
+      String response = http.getString();
+      Serial.println(response);
+      if (response.startsWith("\"Node does not exist\"")){
+        UnixLastPost = UNIXtime();
+        UnixLastPost -= UnixLastPost % EmonCMSInterval;
       }
       else {
-        logRecord->UNIXtime = currLog.lastKey();
+        int pos = 0;
+        while((pos = response.indexOf("\"time\":", pos)) > 0) {
+          pos += 7;
+          uint32_t _time = (uint32_t)response.substring(pos, response.indexOf(',',pos)).toInt();
+          UnixLastPost = max(UnixLastPost, _time);
+        }
+        if(UnixLastPost == 0 || UnixLastPost > currLog.lastKey()) {
+          UnixLastPost = currLog.lastKey();
+        }  
+        if(UnixLastPost < currLog.firstKey()){
+          UnixLastPost = currLog.firstKey();
+        }
       }
-      
-          // Get the last record in the log.
-          // Posting will begin with the next log entry after this one,
-            
-      logReadKey(logRecord);
+      msgLog("EmonService: Start posting at ", UnixLastPost);
+    
+            // Get the last record in the log.
+            // Posting will begin with the next log entry after this one,
 
-          // Save the value*hrs to date, and logHours to date
-      
+      logRecord->UNIXtime = UnixLastPost;      
+      currLog.readKey(logRecord);
+
+            // Save the value*hrs to date, and logHours to date
+        
       for(int i=0; i<maxInputs; i++){ 
         accum1Then[i] = logRecord->channel[i].accum1;
         if(accum1Then[i] != accum1Then[i]) accum1Then[i] = 0;
       }
       _logHours = logRecord->logHours;
-      if(_logHours != _logHours) _logHours = 0;
+      if(_logHours != _logHours /*NaN*/) _logHours = 0;  
 
-          // Assume that record was posted (not important).
-          // Plan to start posting one interval later
-      
+            // Assume that record was posted (not important).
+            // Plan to start posting one interval later
+        
       UnixLastPost = logRecord->UNIXtime;
       UnixNextPost = UnixLastPost + EmonCMSInterval - (UnixLastPost % EmonCMSInterval);
-      
-          // Advance state.
-          // Set task priority low so that datalog will run before this.
+        
+            // Advance state.
+            // Set task priority low so that datalog will run before this.
 
       reqData = "";
       reqEntries = 0;
@@ -141,7 +156,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       
           // Not current.  Read the next log record.
           
-      trace(T_Emon,1);
+      trace(T_Emon,1);  
       logRecord->UNIXtime = UnixNextPost;
       logReadKey(logRecord);    
      
@@ -169,8 +184,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // Update the previous (Then) buckets to the most recent values.
      
       trace(T_Emon,5);
-
-      
       reqData += '[' + String(UnixNextPost - reqUnixtime) + ",\"" + String(node) + "\",";
             
       double value1;
@@ -232,8 +245,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 5;
       }
       buf->data = UnixLastPost;
-      EmonPostLog.write((byte*)buf,4);
-      EmonPostLog.flush();
       reqData = "";
       reqEntries = 0;    
       state = post;

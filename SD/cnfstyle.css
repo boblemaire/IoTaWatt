@@ -1,46 +1,45 @@
+  /****** Color Scheme ******************/
+ 
+ .color_outer {background-color: #c2eaba; border-color: black;}
+ .color_menu {background-color: #a7c4a0;}
+ .color_body {background-color: #e6efe9; border-color: grey;}
+ .color_inputcontainer {background-color: #b6dbab; border-color: grey;}
+ 
+ /***** Global style attributes *******/
+
  * {
+   box-sizing: border-box;
    font-family: "arial", "sans-serif";
    border-radius: 4px;
  }
- .color_outer {
-   background-color: #c2eaba;
-   border-color: black;
- }
- .color_menu{
-  background-color: #a7c4a0; 
- }
- .color_body {
-   background-color: #e6efe9;
-   border-color: grey;
- }
- .color_inputcontainer {
-   background-color: #b6dbab;
-   border-color: grey;
- }
- button{
-   background-color: #a9b4ce;
-   border-color: grey;
- }
- .buttonDown{
-   background-color: #e6efe9;
- }
- input, select {
-   background-color: whiteSmoke;
- }
- .actionDelete {background-color: red;}
- .actionCancel {background-color: yellow;}
- .actionSave {background-color: Green;}
- .actionCal {background-color: linen;}
  
-  table {width: 100%}
+ h1, h2, h3, h4 {text-align: center;}
+ 
+ input, select {
+    background-color: whiteSmoke;
+    height: 35px;
+    min-width: 50px;
+    padding: 2px 3px 2px 3px;
+    border: 2px solid;
+    border-radius: 4px;
+    font-size: 100%;
+  }
+ table {width: 100%}
   
-  button {
+  /***************** buttons  *************/  
+  
+ button { 
     height: 24px;
     min-width: 40px;
     border: 2px solid;
+    background-color: #a9b4ce; 
     border-radius: 4px;
     text-align: center;
   }
+ 
+  .buttonDown{background-color: #e6efe9;}
+  .buttonUp{background-color: #a9b4ce;}
+ 
   .actionDelete,
   .actionCancel,
   .actionSave,
@@ -50,60 +49,77 @@
     border-radius: 4px;
     font-size: 120%;
   }
-  
+   
+  .actionDelete {background-color: red;}
+  .actionCancel {background-color: yellow;}
+  .actionSave {background-color: Green;}
+  .actionCal {background-color: linen;}
+ 
   .mainMenuButton{
     width: 100%;
-    height: 30px;
+    height: 35px;
     font-size: 100%;
   }
   
-  .statusMenuButton{
+  .mainMenuButton:hover{
+    background-color: #e6efe9;
+  }
+  
+  .configButton {
+    width: 100%;
+    height: 20px;
+    font-size: 80%;
+    padding-bottom: 1px;
+  }
+  
+  .groupTab{
     border-radius: 4px;
     width: 100%;
     height: 20px;
     font-size: 80%;
   }
+  /************** Main Menu  Dropdown *************************/
   
-  input, select {
-    height: 25px;
-    min-width: 50px;
-    padding: 2px 5px 2px 5px;
-    border: 2px solid;
-    border-radius: 5px;
-    font-size: 100%;
+  .dropdown{
+    width: 100%;
+    position: relative;
+    display: inline-block;
   }
   
-  h1, h2, h3, h4 {text-align: center;}
+  .dropbtn{
+    cursor: pointer;
+  }
   
-  .outerContainer{
-      border: 2px solid;
-      max-width: 600px;
-      padding-bottom: 10px;
-      border-radius: 6px;
-    }
-    
-  .bigIdeasDiv{
+  .dropContent{
     display: none;
-    width: 95%;
-    margin: 2px auto 1px auto;
-    border: 2px solid grey;
-    border-radius: inherit;
-    padding: 4px;
+    position: absolute;
+    z-index: 1;
   }
   
-  #bigIdeasTable{
+  .dropContent button{
+    height: 35px;
+    display: block;
+  }
+  
+  .dropContent button:hover{
+    background-color: #e6efe9;
+  }
+  
+  .dropdown:hover .dropContent{
+    display: block;
+  }
+  
+  .dropdown:hover .dropbtn{
+    background-color: #e6efe9;
+  }
+  
+  /********************************************************/
+  
+  #mainMenuTable{
     width: 100%;
     border-radius: inherit;
   }
 
-  .bodyDiv{
-    display: none;
-    width: 95%;
-    margin: 1px auto 1px auto;
-    border: 2px solid;
-    padding: 4px;
-  }
-  
   .statusDiv{
     width: 95%;
     margin: 1px auto 1px auto;
@@ -124,6 +140,12 @@
     height: 25px;
   }
   
+  #inputEdit #inputCalVT {
+    width:340px;
+    border: 2px solid;
+    margin: auto;
+  }
+  
   .outputsRow{
     vertical-align: top;
   }
@@ -138,40 +160,106 @@
     background-color: red;
   }
 
-  #calcBody,
-  #inputEdit,
-  #inputCalVT {
-    width:338px;
-    padding: 20px;
+  .noDisplay {
+    display: none;
+  }
+  
+  .display {
+    display: block;
+  }
+  
+  /*   New Layout */
+  
+  #header {
+    margin: 0; border: 0; padding: 0;
+  }
+  
+  #outerContainer {
+      border: 2px solid;
+      max-width: 600px;
+      padding: 4px;
+      border-radius: 6px;
+    }
+    
+  #mainMenu {
+    width: 100%;
     border: 2px solid;
+    padding: 4px;
+    margin-bottom: 1px;
+  }
+  
+  #mainBody{
+    width: 100%;
+    border: 2px solid;
+    padding: 1px 4px 1px 4px;
     margin: auto;
   }
   
-  .calcDisplay{
-    font-family: "arial", "sans-serif";
+  #configMenu{
+    width: 100%;
+  }
+  /*  
+  .menu {
+    width: 100%;
+    border: 2px solid grey;
+    padding: 4px;
+  }
+  */
+  .body {
+    width: 100%;
+    padding: 4px;
+    margin: auto;
+  }
+  
+  .tools{
+    padding-left: 40%;
+  }
+   
+/************************ Calculator ******************************/
+
+  #divCalc{
+    border: 0px;
+    margin: auto;
+  }
+ 
+  #calcBody{
+    width: 400px;
+    margin: auto;
+    padding: 20px;
+    border-style: ridge;
+    border-radius: inherit;
+  }
+    
+  .calcField{text-align: right; }  
+  #calcName {width: 120px; height: 30px; margin-top: 4px; margin-bottom: 4px;}
+  #calcUnits {width: 60px; height: 30px; margin-bottom: 2px;}
+ 
+  #calcDisplay{
+    font-family: console, lucida, Sans-serif;
     background-color: whiteSmoke;
     border: 2px;
-  	padding: 5px 10px 5px 10px;
+    border-style: ridge;
+  	padding: 5px 5px 5px 5px;
   	font-size: 100%;
   	text-align: left;
   }
   
-  #calcName {width: 120px;}
-  
-  #calcUnits {width: 60px;}
-    
-  .calcTable {
-    width: 336px;
+  #calcTable {
+    width: 100%; 
     border: 2px;
-    border-style: ridge;
+    border-style: ridge; 
     border-radius: inherit;
   }
   
+  #calcActions {
+    margin-top: 5px;
+  }
+  
   .calcButton {
-  	border: 2px;
+  	border: 1px;
   	border-style: ridge;
   	width: 80px;
-  	height: 40px;
+  	height: 44px;
   	border-radius: 8px;
   	color: white;
   	font-size: 150%;
@@ -225,6 +313,5 @@
     background-color: lightSteelBlue;
   }
   
-  .displayNone {
-    display: none;
-  }
+  /******************************  end calc css *****************************/
+  
