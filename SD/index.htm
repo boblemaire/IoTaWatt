@@ -8,89 +8,40 @@
 </head>
 <body onload="setup()">
   
-<div id="outerContainer" class="color_outer">
+<div class="outerContainer color_outer">
   <h3 id="heading">IoTaWatt Power Monitor</h3>
   
-  <div id="mainMenu" class="menu color_menu" display="block">
+  <div class="bigIdeasDiv color_menu" id="bigIdeas">
     <table id="bigIdeasTable">
       <tr>
-        <td class="dropdown">
-          <button class="mainMenuButton buttonUp dropbtn">Setup</button>
-          <span class="dropContent">
-            <button class="mainMenuButton" onclick="mainMenuButton(this,configDevice)">Device</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,configInputs)">Inputs</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,configOutputs)">Outputs</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,buildWebServer)">Web Server</button>
-          </span>
-        </td>
-        <td width="50%"><button class="mainMenuButton" onclick="mainMenuButton(this,statusBegin)">Status</button></td>
-      </tr>
-      <tr>
-        <td class="dropdown">
-          <button class="mainMenuButton buttonUp dropbtn">Tools</button>
-          <span class="dropContent">
-            <button class="mainMenuButton" onclick="mainMenuButton(this,loadEdit)">File Manager and Editor</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,showMsgs)">Message Log</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsRestart)">Restart</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsDatalogs)">Datalogs</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsWiFi)">WIFi</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsUpdate)">Software Update</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsPhase)">Phase Measurement</button>
-          </span>
-        </td>
-        <td width="50%"><button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph)">Graphs</button></td>
+        <td width="50%"><button ID="BIBdevice" class="mainMenuButton" onclick="menuButton(this,configureDevice)">Configure Device</button></td>
+        <td width="50%"><button ID="BIBstatus" class="mainMenuButton" onclick="menuButton(this,statusBegin)">Status</button></td>
+      </tr><tr>
+        <td><button ID="BIBinputs" class="mainMenuButton" onclick="menuButton(this,buildInputsList)">Configure Inputs</button></td>
+        <td><button ID="BIBmsgs" class="mainMenuButton" onclick="menuButton(this,showMsgs)">Message Log</button><br></td>
+      </tr><tr>
+        <td><button ID="BIBoutputs" class="mainMenuButton" onclick="menuButton(this,buildOutputsList)">Configure Outputs</button></td>
+        <td><button ID="BIBgraph" class="mainMenuButton" onclick="menuButton(this,loadGraph)">Graphs</button><br></td>
+      </tr><tr>
+        <td><button ID="BIBserver" class="mainMenuButton" onclick="menuButton(this,buildWebServer)">Setup Web Server</button><br></td>
+        <td><button ID="BIBedit" class="mainMenuButton" onclick="menuButton(this,loadEdit)">File Manager and Editor</button></td>
+      </tr><tr>
+        <td></td>
+        <td></td>
       </tr>
     </table>
   </div>
+  <div id="divBody" display="inline">
+  <!-- ****************************** divInputs **********************************--> 
   
-  <div id="mainBody" class="color_body" style="display:none">
-  
-    <div id="configMenu" style="display:none">
-      <table><tr><th width="33%"></th><th width="33%"></th><th width="33%"></th></tr>
-        <tr>
-          <td><button id="tabDevice" class="configButton buttonUp" onclick="configButton(this,configDevice)">Device</button></td>
-          <td><button id="tabInputs" class="configButton buttonUp" onclick="configButton(this,configInputs)">Inputs</button></td>
-          <td><button id="tabOutputs" class="configButton buttonUp" onclick="configButton(this,configOutputs)">Outputs</button></td>
-        </tr>
+    <div class="bodyDiv color_body" id="inputList">
+      <h3>Inputs</h3>
+      <table id="inputTable">
+        <tbody id="inputTableBody"></tbody>
       </table>
-    </div> <!-- configMenu -->
-     
-                  <!-- *************** Device configuration ******************-->  
-        
-    <div id="configDevice" class="body color_body" style="display: none">
-      <h3>Configure IoTaWatt Device</h3>
-      <table id="deviceTable"></table>
-      <p>
-        <button id="actionBurden" onclick="configBurden()">Configure Burden Resistors</button>
-      </p>
-      <p>
-        <button class="actionCancel" id="deviceCancel" onclick="deviceCancel()">cancel</button>
-        <button class="actionSave" id="deviceSave" onclick="deviceSave()">save</button>
-      </p>
-    </div> 
-    
-    <div id="configBurden" class="body color_body" style="display: none">
-      <h3>Specify on-board burden resistors</h3>
-      <table id="burdenTable"></table>
-      <p>
-        <button class="actionCancel" id="burdenCancel" onclick="burdenCancel()">cancel</button>
-        <button class="actionSave" id="burdenSave" onclick="burdenSave()">save</button>
-      </p>
     </div>
     
-
-              <!-- *************** Inputs configuration ******************-->  
-  
-    <div id="configInputs" class="body" style="display: none">
-      <div class="bodyDiv color_body" id="inputList">
-        <h3>Inputs</h3>
-        <table id="inputTable">
-          <tbody id="inputTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-    
-    <div class="body color_body" id="inputEdit" style="display: none">
+    <div class="bodyDiv color_body" id="inputEdit">
       <h3 id="inputChannel"></h3>
       <table id="inputEditTable"></table>
       <p>
@@ -99,8 +50,8 @@
         <button class="actionSave" id="inputEditSave" onclick="inputEditSave()">save</button>
       </p>
     </div>
-
-    <div class="body color_body" id="inputCalVT" style="display: none">
+    
+    <div class="bodyDiv color_body" id="inputCalVT">
       <h3 id="inputCalChannel"></h3>
       <h1 id="inputCalVolts"></h1>
       <p>
@@ -115,18 +66,41 @@
       with the new calibration factor.</p>
     </div>
     
-              <!-- *************** Outputs configuration ******************-->
-
-    <div id="configOutputs" class="body" style="display: none;">
-      <div class="bodyDiv color_body" id="divOutputs">
-        <h3>Outputs</h3>
-        <table id="outputTable"></table>
-      </div>
+    
+     <!--****************************** divOutputs **********************************--> 
+    
+    <div class="bodyDiv color_body" id="divOutputs">
+      <h3>Outputs</h3>
+      <table id="outputTable"></table>
     </div>
     
-                <!-- ************* WebServer ********************--> 
+    <!-- ****************************** divDevice **********************************--> 
     
-    <div class="body color_body" id="divWebServer" style="display:none">
+    <div class="bodyDiv color_body" id="divDevice">
+      <h3>Configure IoTaWatt Device</h3>
+      <table id="deviceTable"></table>
+      <p><button class="actionBurden" id="actionBurden" onclick="configBurden()">Configure Burden Resistors</button></p>
+      <p>
+        <button class="actionCancel" id="deviceCancel" onclick="deviceCancel()">cancel</button>
+        <button class="actionSave" id="deviceSave" onclick="deviceSave()">save</button>
+      </p>
+    </div>
+    
+    <!-- ****************************** divBurden **********************************--> 
+    
+    <div class="bodyDiv color_body" id="divBurden">
+      <h3>Specify on-board burden resistors</h3>
+      
+      <table id="burdenTable"></table>
+      <p>
+        <button class="actionCancel" id="burdenCancel" onclick="burdenCancel()">cancel</button>
+        <button class="actionSave" id="burdenSave" onclick="burdenSave()">save</button>
+      </p>
+    </div>
+   
+   <!-- ****************************** divWebServer*********************************--> 
+    
+    <div class="bodyDiv color_body" id="divWebServer">
       <h3>Setup Web Server</h3>
       <form><table id="serverTable"></table></form>
       <div id="divServerOutputs">
@@ -141,18 +115,18 @@
     
     <!-- ****************************** divStatus **********************************--> 
     
-    <div id="divStatus" class="body color_body" style="display:none">
-      <button id="tabIO" class="groupTab" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs Status</button>
+    <div class="bodyDiv color_body" id="divStatus">
+      <button id="statusIO" class="statusMenuButton" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs Status</button>
         <div id="statusIODiv" class="statusDiv" style="display: block;">
           <table id="statusIOBody" width="100%">
-            <tr><th width="60%">Inputs</th><th width="40%">Outputs</th></tr>
+            <tr><th width="50%">Inputs</th><th width="50%">Outputs</th></tr>
             <tr valign="top">
               <td><table id="inputStatusTable"></table></td>
               <td><table id="outputStatusTable"></table></td>
             </tr>
           </table>
         </div>
-      <button id="tabStats" class="groupTab" onclick="toggleDisplay('statusStatsDiv')">IoTaWatt Statistics</button>
+      <button id="statusStats" class="statusMenuButton" onclick="toggleDisplay('statusStatsDiv')">IoTaWatt Statistics</button>
         <div id="statusStatsDiv" class="statusDiv" style="display: block;">
            <table width="100%">
             <tr><th width="50%"></th><th width="50%"></th></tr>
@@ -163,92 +137,20 @@
           </table>
           <table id="statusTable"></table>
         </div>
-      <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
+      <button id="statusLogs" class="statusMenuButton" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
         <div id="statusLogsDiv" class="statusDiv" style="display: none;">
         </div>
     </div> <!-- divStatus -->
   
-    <!--*************************************************************************************************
-  
-                                    Tools
-  
-     ***************************************************************************************************-->
-  
-    <!-- ****************************** Restart **********************************--> 
-      
-    <div id="divRestart" class="body tools color_body" style="display:none">
-      <h3>Reset IoTaWatt!</h3>
-      <p>
-        Press the restart button below to reset the IoTaWatt.<br>
-        Restart can take up to 30 seconds, longer if loading new software.<br>
-        After restart, refresh the browser window if this app fails to restart.
-      </p>
-      <h3 id="restartMsg"></h3>
-      <button id="restartButton" onclick="sendRestart()">Restart</button>
-    </div> <!-- divrestart -->
+    <!-- ******************************divCalc **********************************--> 
     
-    <!-- ****************************** WiFi **********************************--> 
-      
-    <div id="divWiFi" class="body tools color_body" style="display:none">
-      <h3>Manage WiFi</h3>
-      <p>
-        Use this tool to permanently disconnect from the current WiFi network.<br>
-      </p>
-      <h3 id="WiFiMsg"></h3>
-      <button id="WiFiButton" onclick="sendDisconnect()">Disconnect</button>
-    </div> 
-    
-    <!-- **************************** Datalogs ****************************** --> 
-      
-    <div id="divLogs" class="body tools color_body" style="display:none">
-      <h3>Datalogs</h3>
-      <table id="logsTable">
-        
-        <!--
-        <tr><th>Log</th><th>Begins</th><th>Ends</th><th>Size</th><th>wrap</th></tr>
-        <tr id="logsCurrent"></tr>
-        <tr id="logsHistory"></tr> -->
-      </table>
-      <button id="logsTab" class="groupTab" onclick="toggleDisplay('logsDelete')">Datalog delete functions</button>
-      <div id="logsDelete" style="display:none">
-        <h3>Delete Datalogs</h3>
-        <h3>Deleted logs cannot be recovered!</h3>
-        <p>
-          This is the only safe way to delete Data Logs.<br>
-          The IoTaWatt will restart.<br>
-        </p><p>
-          <button onclick="toolsDataLogsDelete('current')">Delete Current Log</button>
-           a new log will created beginning now.<br>
-        </p><p>
-          <button onclick="toolsDataLogsDelete('history')">Delete History Log</button>
-          a new history log will be built from the current log.<br>
-        </p>
-        <div id="logsConfirm" style="display:none">
-          <h3 id="logsMsg"></h3>
-          <p>Click DELETE to confirm.</p>
-          <button class="actionCancel" onclick="toolsDataLogsCancel()">Cancel</button>
-          <button id="logsConfirm" class="actionDelete">DELETE</button>
-        </div>
-      </div>
-    </div> <!--
-  
-    <!- *************************************************************************************************
-  
-                                    Calculator
-  
-    ****************************************************************************************************-->
-    
-    <div id="divCalc" class="color_body" style="display:none">
-      <div id="calcBody" class="color_inputcontainer">
-        <form>
-          <h3  style="text-align:center">Configure Output</h3>
-          <table><tr><th width="30%"></th><th></th></tr>
-            <tr><td class="calcField"><strong>Name:</strong></td><td><input id="calcName" type="text" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="refreshCalcDisplay()" title="invalid name"></td></tr>
-            <tr><td class="calcField"><strong>Units:</strong></td><td><input id="calcUnits" oninput="refreshCalcDisplay()"></td></tr>
-          </table>
-        </form>
-        <h3 id="calcDisplay">0</h3>  
-          <table id="calcTable"><tr><th></th><th></th><th></th><th></th></tr>
+    <div class="bodyDiv color_body" id="divCalc">
+      <div class="inputContainer color_inputcontainer" id="calcBody"><form>
+        <h3 style="text-align:center">Configure Output</h3>
+        <h3> Name: <input type="text" id="calcName" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="refreshCalcDisplay()" title="invalid name"></h3>
+        <h3> Units: <input id="calcUnits" oninput="refreshCalcDisplay()"></h3></form>
+        <h3 class="calcDisplay" id="calcDisplay">0</h3>  
+          <table class="calcTable"><tr><th></th><th></th><th></th><th></th></tr>
           <tr><td><button class="calcButton calcClr" onclick="keyClearAll()" title="Clear all" value="C">C</button></td>
           <td><button class="calcButton calcBack" onclick="keyClearEntry()" title="Clear last entry" value="CE">CE</button></td>
           <td> <button class="calcButton calcBack" onclick="keyClearChar()" title = "Backspace" value="del">&#x21e6;</button></td>
@@ -280,15 +182,15 @@
           <td> <button class="calcButton calcAbs" onclick="keyUniPos()" value="abs" title="make previous result positive">abs</button></td>
           <td></td></tr>
         </table>
-        <div id="calcActions">
+        <p>
           <button class="actionDelete" id="calcDelete" onclick="calcDelete()">delete</button>
           <button class="actionCancel" id="calcCancel" onclick="calcCancel();">cancel</button>
           <button class="actionSave" id="calcSave" onclick="calcSave()">save</button>
-        </div> 
+        </p> 
       </div>
     </div>
-  </div> <!-- mainBody -->  
-</div> <!-- outerContainer -->
+  </div> <!-- divBody -->  
+</div> 
 
 <script>
 // configuration files
@@ -306,7 +208,7 @@ var configSHA256;
 var config;                         // configuration as Js Object
 var tables;                         // tables as Js Object
 var editing = false;
-var editingScript = false;
+var calculator = false;
 var getStatus = false;
 var calVoltageUpdate = false;
 var avgVoltage = 0;
@@ -327,120 +229,11 @@ var scriptEditSave;
 var scriptEditReturn;
 
 /***************************************************************************************************
- *                       Tools
-* ************************************************************************************************/
-function toolsRestart() {
-  document.getElementById("restartMsg").innerHTML = "";
-  currentBodyPush("divRestart");
-}
-
-function sendRestart(){
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      editing = true;
-      document.getElementById("restartMsg").innerHTML = "Restarting...";
-      setTimeout(function(){setup();},15000);
-    }
-  }
-  xmlHttp.open("GET","/command?restart=yes", true);
-  xmlHttp.send(null);
-}
-
-function toolsWiFi() {
-  document.getElementById("WiFiMsg").innerHTML = "";
-  currentBodyPush("divWiFi");
-}
-
-function sendDisconnect(){
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      editing = true;
-      document.getElementById("WiFiMsg").innerHTML = "Disconnected";
-      setTimeout(function(){setup();},15000);
-    }
-  }
-  xmlHttp.open("GET","/command?disconnect=yes", true);
-  xmlHttp.send(null);
-}
-
-function toolsDatalogs(){
-  currentBodyPush("divLogs");
-  toolsDatalogsStatus();
-}
-
-function toolsDataLogsCancel(){
-  document.getElementById("logsConfirm").onclick="";
-  document.getElementById("logsMsg").innerHTML = "";
-  document.getElementById("logsConfirm").style.display = "none";
-  editing = false;
-  toggleDisplay("logsDelete");
-}
-
-
-function toolsDatalogsStatus(){
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      var status = JSON.parse(xmlHttp.responseText);
-      document.getElementById("logsTable").innerHTML = "<tr><th>Attribute</th><th>Current Log</th><th>History Log</th></tr>";
-      formatLine("Start Date",formatDateTime(status.datalogs.currlog.firstkey),formatDateTime(status.datalogs.histlog.firstkey));
-      formatLine("End Date",formatDateTime(status.datalogs.currlog.lastkey),formatDateTime(status.datalogs.histlog.lastkey));
-      formatLine("File Size",status.datalogs.currlog.size,status.datalogs.histlog.size);
-      formatLine("Interval (sec)",status.datalogs.currlog.interval,status.datalogs.histlog.interval);
-      formatLine("Complete", density(status.datalogs.currlog) + "%", density(status.datalogs.histlog) + "%");
-      return;            
-      function formatLine(attribute, value1, value2){
-        document.getElementById("logsTable").innerHTML += "<tr><td>" + attribute + "</td><td>" + value1 + "</td><td>" + value2 + "</td></tr>";
-      }
-      function density(log){
-        return ( (log.size / 256) * 100 /((log.lastkey-log.firstkey)/ log.interval)).toFixed(1);
-      }
-    }
-  }
-  xmlHttp.open("GET","/status?datalogs=yes", true);
-  xmlHttp.send(null);
-}
-
-function toolsDataLogsCommit(log){
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      var msg = document.getElementById("logsMsg");
-      msg.innerHTML = "Deleting " + log + " and restarting.";
-      setTimeout(function(){toolsDataLogsCancel(); setup();},15000);
-    }
-  }
-  var uri = "/command?deletelog=" + log;
-  xmlHttp.open("GET", uri, true);
-  xmlHttp.send(null);
-}
-
-function toolsDataLogsDelete(log){
-  var msg = document.getElementById("logsMsg");
-  msg.innerHTML = "You are about to permanently delete the ";
-  if(log == "current"){
-    msg.innerHTML += "current log.";
-    document.getElementById("logsConfirm").setAttribute("onclick","toolsDataLogsCommit('current')");
-  }
-  else if (log == "history"){
-    msg.innerHTML += "history log.";
-    document.getElementById("logsConfirm").setAttribute("onclick","toolsDataLogsCommit('history')");
-  }
-  else {
-    toolsDataLogsCancel();
-    return;
-  }
-  document.getElementById("logsConfirm").style.display = "block";
-  editing = true;
-}
-
-/***************************************************************************************************
  *                        Configure Inputs
  * ************************************************************************************************/
-function configInputs(){
-  currentBodyPush("configInputs");
+ 
+function buildInputsList(){
+  currentBodyPush("inputList");
   var inputsTable = document.getElementById("inputTableBody");
   inputsTable.innerHTML = "";
   voltageChannels = [];
@@ -720,7 +513,7 @@ function inputEditDelete(){
 
 function inputEditCancel(){
   currentBodyPop();
-  getConfig(configInputs);
+  getConfig(buildInputsList);
   editing = false;
 }
 
@@ -729,7 +522,7 @@ function inputEditSave(){
   editing = false;
   currentBodyPop();
   uploadConfig();
-  configInputs();
+  buildInputsList();
 }
 
       // This is used by other sections as well
@@ -814,8 +607,8 @@ function calVTsave(obj){
 /*******************************************************************************************
  *                    Configure Outputs
  * ****************************************************************************************/
- function configOutputs(){
-    currentBodyPush("configOutputs");
+ function buildOutputsList(){
+    currentBodyPush("divOutputs");
     document.getElementById("calcName").title="Name must be alphanumeric and start with a letter";
     document.getElementById("calcName").pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*";
     scriptEditSave = function(){
@@ -825,7 +618,7 @@ function calVTsave(obj){
     scriptEditReturn = function(){
       document.getElementById("divCalc").style.display = "none";
       document.getElementById("divOutputs").style.display = "table";
-      configOutputs();
+      buildOutputsList();
     };
     scriptEditTable = document.getElementById("outputTable");
     scriptEditTable.innerHTML = "";
@@ -869,7 +662,7 @@ function calVTsave(obj){
       var editButton = document.createElement("button");
       editButton.setAttribute("class","outputEditButton");
       editButton.appendChild(document.createTextNode("edit"));
-      editButton.setAttribute("onclick","calculator(" + i +")");
+      editButton.setAttribute("onclick","editOutput(" + i +")");
       selColumn.appendChild(editButton);
     }
     var newRow = document.createElement("tr");
@@ -899,19 +692,18 @@ function calVTsave(obj){
     }
   }
 
-  function calculator(index){
-    editingScript = true;
+  function editOutput(index){
     currentBodyPush("divCalc");
     document.getElementById("calcName").value = scriptEditSet[index].name;
     document.getElementById("calcUnits").value = scriptEditSet[index].units;
     tokens = parseScript(scriptEditSet[index].script);
     document.getElementById("calcDelete").style.display = "inline";
     scriptEditIndex = index;
+    calculator = true;
     refreshCalcDisplay();
   }
- 
+
   function addOutput(){
-    editingScript = true;
     currentBodyPush("divCalc");
     document.getElementById("calcName").value = "";
     document.getElementById("calcUnits").value = "";
@@ -919,11 +711,12 @@ function calVTsave(obj){
     document.getElementById("calcDelete").style.display = "none";
     scriptEditIndex = scriptEditSet.length;
     refreshCalcDisplay();
+    calculator = true;
   }
 
   function calcCancel(){
     currentBodyPop();
-    editingScript = false;
+    calculator = false;
     scriptEditReturn();
   }
 
@@ -941,7 +734,7 @@ function calVTsave(obj){
     }
     scriptEditSave();
     currentBodyPop();
-    editingScript = false;
+    calculator = false;
     scriptEditReturn();
   }
   
@@ -949,7 +742,7 @@ function calVTsave(obj){
     scriptEditSet.splice(scriptEditIndex,1);
     scriptEditSave();
     currentBodyPop();
-    editingScript = false;
+    calculator = false;
     scriptEditReturn();
   }
 
@@ -1113,8 +906,8 @@ function calVTsave(obj){
  *                                    Configure Device
  * ******************************************************************************************/
 
-function configDevice(){
-  currentBodyPush("configDevice");
+function configureDevice(){
+  currentBodyPush("divDevice");
   originalName = config.device.name;
   timezone = config.timezone;
   buildDevice();
@@ -1152,7 +945,6 @@ function buildDevice(){
 }
 
 function checkDevice(){
-  editing = true;
   var complete = true;
   var nameChange = false;
   if( ! validateInput("deviceName")) complete = false;
@@ -1172,15 +964,15 @@ function checkDevice(){
 }
 
 function deviceCancel(){
+  currentBodyPop();
   config.device.name = originalName;
   config.timezone = timezone;
   editing = false;
-  currentBodyPop();
+  resetDisplay();
 }
 
 function deviceSave(){
   currentBodyPop();
-  editing = false;
   uploadConfig(resetDisplay, (config.device.name != originalName) ? "restart" : "reload");
 }
 
@@ -1189,7 +981,11 @@ function deviceSave(){
  * ******************************************************************************************/
 
 function configBurden(){
-  currentBodyPush("configBurden");
+  currentBodyPush("divBurden");
+  buildBurden();
+}
+
+function buildBurden(){
   var burdenTable = document.getElementById("burdenTable");
   burdenTable.innerHTML = "";
   for(var i=0; i<config.device.channels; i++){
@@ -1210,7 +1006,6 @@ function configBurden(){
 }
 
 function newBurden(obj, index){
-  editing = true;
   var val = Number(obj.value);
   var msg = obj.nextSibling;
   if (msg != null){
@@ -1226,7 +1021,7 @@ function newBurden(obj, index){
     faults++;
   }
   else {
-    config.device.burden[index] = Number(val.toFixed(2));
+    config.device.burden[index] = Number(val.toFixed(1));
     if(Number.isInteger(val)){
       config.device.burden[index] = Number(val.toFixed(0));
     }
@@ -1242,7 +1037,7 @@ function burdenCancel(){
  
 function burdenSave(){
   currentBodyPop();
-  uploadConfig();
+  uploadConfig(resetDisplay);
 }
 
 /********************************************************************************************
@@ -1250,6 +1045,7 @@ function burdenSave(){
  * ******************************************************************************************/
 
 function buildWebServer(){
+  editing = true;
   var servers = ["None", "Emoncms", "InfluxDB"];
   document.getElementById("serverOutputs").innerHTML = "";
   document.getElementById("serverOutputsHeader").innerHTML = "";
@@ -1319,7 +1115,6 @@ function serverCancel(){
  *                                Configure eMonCMS
  * ********************************************************************************************/
 function buildEmoncms(){
-  editing = true;
   var serverTable = document.getElementById("serverTable");
   if(config.server.username !== undefined){
     config.server.userid = config.server.username;
@@ -1425,7 +1220,6 @@ function validateInput(id){
  *                                Configure influxDB
  * ********************************************************************************************/
 function buildInfluxdb(){
-  editing = true;
   var serverTable = document.getElementById("serverTable");
   
   var postInput =   addTableRow(serverTable, "post interval(sec): ", "serverPost", "input", 3);
@@ -1557,7 +1351,7 @@ function statusDisplay(statusMessage){
     
     if(status.inputs[i].Watts !== undefined){
       var wattNode = document.createElement("font");
-      wattNode.innerHTML = status.inputs[i].Watts + "&nbsp;" + "watts";
+      wattNode.innerHTML = status.inputs[i].Watts + " watts";
       column3.appendChild(wattNode);
       
       if(status.inputs[i].reversed == "true"){
@@ -1568,9 +1362,7 @@ function statusDisplay(statusMessage){
       }
       if(status.inputs[i].Watts >= 60){
         var pf = status.inputs[i].Pf;
-        var pfNode = document.createElement("font");
-        pfNode.innerHTML = ", pf:" + "&nbsp;" + pf.toFixed(2);
-        column3.appendChild(pfNode);
+        column3.appendChild(document.createTextNode(", pf: " + pf.toFixed(2)));
       }
       
     }
@@ -1702,58 +1494,56 @@ function demoStatus(){
 /********************************************************************************************
  *                       Main menu navigation.
  * *****************************************************************************************/
-function mainMenuButton(obj, handler){
-  if( ! (editing || editingScript)){
+function menuButton(obj, handler){
+  if( ! editing && ! calculator){
     currentBodyPop();
     resetDisplay();
+    obj.className = "mainMenuButton buttonDown";
     handler();
   }
 } 
 
 function currentBodyPop(){
   if(currentBody.length > 0) document.getElementById(currentBody.pop()).style.display = "none";
-  if(currentBody.length > 0) document.getElementById(currentBody[currentBody.length-1]).style.display = "block";
-  else resetDisplay();
+  if(currentBody.length > 0) document.getElementById(currentBody[currentBody.length-1]).style.display = "table";
 }
-
 function currentBodyPush(newBody){
   if(currentBody.length > 0){
     if(currentBody[currentBody.length-1] == newBody) return;
-    if(currentBody[currentBody.length-1].search("Menu") == -1) {
-      document.getElementById(currentBody[currentBody.length-1]).style.display = "none";
-    }
+    document.getElementById(currentBody[currentBody.length-1]).style.display = "none";
   } 
   currentBody.push(newBody);
   document.getElementById(currentBody[currentBody.length-1]).style.display = "table";
-  document.getElementById("mainBody").style.display = "block";
 }
-
+ 
 function resetDisplay(){
   getStatus = false;
-  editing = false;
+  document.getElementById("BIBdevice").className = "mainMenuButton";
+  document.getElementById("BIBinputs").className = "mainMenuButton";
+  document.getElementById("BIBoutputs").className = "mainMenuButton";
+  document.getElementById("BIBserver").className = "mainMenuButton";
+  document.getElementById("BIBstatus").className = "mainMenuButton";
+  document.getElementById("BIBmsgs").className = "mainMenuButton";
+  document.getElementById("BIBgraph").className = "mainMenuButton";
+  document.getElementById("BIBedit").className = "mainMenuButton";
   while(currentBody.length > 0) currentBodyPop();
 }
 
 function loadGraph(){
   var myWindow = window.open(graphURL, "_self");
   resetDisplay();
-  getConfig();
 }
 function loadEdit(){
   var myWindow = window.open(editURL, "_self");
   resetDisplay();
-  getConfig();
 }
 function showMsgs(){
   var myWindow = window.open(msgsFileURL, "_self");
   resetDisplay();
-  getConfig();
 }
 function toggleDisplay(id){
   var element = document.getElementById(id);
-  if(! editing){
-    element.style.display = element.style.display == "none" ? "block" : "none";
-  }
+  element.style.display = element.style.display == "none" ? "block" : "none";
 }
 
 /**********************************************************************************************
@@ -1772,7 +1562,7 @@ function getConfig(callback){
     checkConfig();
     if(callback !== undefined) callback();
     });
-    document.getElementById("mainMenu").style.display = "block";
+    document.getElementById("bigIdeas").style.display = "table";
 }
 
 function getTables(){
