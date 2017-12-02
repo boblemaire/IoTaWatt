@@ -26,7 +26,7 @@ struct IotaLogRecord {
         channels(){accum1 = 0;}
       } channel[30];
       IotaLogRecord(){UNIXtime=0; serial=0; logHours=0;};
-    };
+    };    
 
 class IotaLog
 {
@@ -80,13 +80,14 @@ class IotaLog
   private:
         
 	File 	 IotaFile;
-	String    ndxPath;						// For backward compatibility during transition
-       
+	String    ndxPath;						            // For backward compatibility during transition
+
+     
     uint16_t _interval;	                    // Posting interval to log. Currently tested only using 5.
-    uint16_t _recordSize;      	  		    // Size of a log record
+    uint16_t _recordSize;      	  		      // Size of a log record
     uint32_t _fileSize;                     // Size of file in bytes
     uint32_t _entries;                      // Number of entries (fileSize / recsize(256))
-    uint32_t _maxFileSize;					// Maximum filesize in bytes
+    uint32_t _maxFileSize;				        	// Maximum filesize in bytes
     uint32_t _firstKey;                     // Key of first logical record
     int32_t  _firstSerial;                  // Serial of...
     uint32_t _lastKey;                      // Key of last logical record

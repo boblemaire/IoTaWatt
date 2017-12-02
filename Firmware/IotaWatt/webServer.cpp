@@ -330,10 +330,16 @@ void handleStatus(){
     JsonObject& currlog = jsonBuffer.createObject();
     currlog.set("firstkey",currLog.firstKey());
     currlog.set("lastkey",currLog.lastKey());
+    currlog.set("size",currLog.fileSize());
+    currlog.set("interval",currLog.interval());
+    //currlog.set("wrap",currLog._wrap ? true : false);
     datalogs.set("currlog",currlog);
     JsonObject& histlog = jsonBuffer.createObject();
     histlog.set("firstkey",histLog.firstKey());
     histlog.set("lastkey",histLog.lastKey());
+    histlog.set("size",histLog.fileSize());
+    histlog.set("interval",histLog.interval());
+    //histlog.set("wrap",histLog._wrap ? true : false);
     datalogs.set("histlog",histlog);
     root.set("datalogs",datalogs);
   }
@@ -404,18 +410,25 @@ void handleCommand(){
   if(server.hasArg("deletelog")) {
     trace(T_WEB,21); 
     server.send(200, "text/plain", "ok");
-    msgLog(F("DeleteLog command received."));
-    deleteRecursive(IotaLogFile + ".log");
-    deleteRecursive(IotaLogFile + ".ndx");
-    ESP.restart();
-  }
-  if(server.hasArg("deletehist")) {
-    trace(T_WEB,21); 
-    server.send(200, "text/plain", "ok");
-    msgLog(F("DeleteLog command received."));
-    deleteRecursive(historyLogFile + ".log");
-    deleteRecursive(historyLogFile + ".ndx");
-    ESP.restart();
+    if(server.arg("deletelog") == "current"){
+      msgLog(F("delete current log command received."));
+      currLog.end();
+      delay(1000);
+      deleteRecursive(IotaLogFile + ".log");
+      deleteRecursive(IotaLogFile + ".ndx");
+      ESP.restart();
+    }
+    if(server.arg("deletelog") == "history"){
+      trace(T_WEB,21); 
+      server.send(200, "text/plain", "ok");
+      msgLog(F("delete history log command received."));
+      histLog.end();
+      deleteRecursive(historyLogFile + ".log");
+      deleteRecursive(historyLogFile + ".ndx");
+      delay(1000);
+      ESP.restart();
+    }
+    
   }
   server.send(400, "text/json", "Unrecognized request");
 }
