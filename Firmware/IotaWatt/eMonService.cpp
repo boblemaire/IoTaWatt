@@ -91,12 +91,9 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       else {
         int pos = 0;
-        while((pos = response.indexOf("\"time\":", pos)) > 0) {
-          Serial.print(pos);
-          Serial.print(", ");
+        while((pos = response.indexOf("\"time\":", pos)) > 0) {      
           pos += 7;
           uint32_t _time = (uint32_t)response.substring(pos, response.indexOf(',',pos)).toInt();
-          Serial.println(_time);
           UnixLastPost = max(UnixLastPost, _time);
         }
         if(UnixLastPost == 0 || UnixLastPost > currLog.lastKey()) {
