@@ -242,7 +242,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // Send the post       
 
       reqData += ']';
-      Serial.println(reqData);
       if(!EmonSendData(reqUnixtime, reqData, 500, false)){
         state = resend;
         resendCount = 0;
@@ -262,7 +261,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(resendCount > 1){
         msgLog("EmonService: Resending EmonCMS data:", resendCount);
       }
-      if(!EmonSendData(reqUnixtime, reqData, 1000, resendCount == 1)){ 
+      if(!EmonSendData(reqUnixtime, reqData, 1500, resendCount == 1)){ 
         if(resendCount < 10){
           return UNIXtime() + 60 * resendCount;
         }
@@ -316,12 +315,10 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
     }
     String response = http.getString();
     http.end();
-    Serial.println(response);
     if(response.startsWith("ok")){
       return true;        
     }
-    Serial.println("response not ok.");
-    
+    Serial.println("response not ok."); 
     return false;
   }
 
@@ -349,7 +346,6 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
       response = http.getString();
     }	
     http.end();
-    Serial.println(response);
     if(httpCode != HTTP_CODE_OK){
       String code = String(httpCode);
       if(httpCode < 0){
