@@ -130,7 +130,7 @@ boolean getConfig(void)
 
         //************************************ Check for dataLog overide **************************
 
-  if(Config.containsKey("logdays")){
+  if(Config.containsKey("logdays")){ 
     msgLog("Current log overide days: ", currLog.setDays(Config["logdays"].as<int>()));
   }      
     
