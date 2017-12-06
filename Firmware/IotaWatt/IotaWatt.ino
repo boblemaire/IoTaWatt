@@ -63,7 +63,8 @@
  *   10/28/17 02_02_23 Fix several problems encountered using new arduino core 
  *   11/03/17 02_02_24 Improve error handling Emoncms, change API to use I/O channel names
  *   11/08/17 02_02_25 Rework data log into current and history logs 
- *   11/11/17 02_02_26 Fix bug in searchKey, improve searchKey, throttle back historyLog Service   
+ *   11/11/17 02_02_26 Fix bug in searchKey, improve searchKey, throttle back historyLog Service 
+ *   12/05/17 02_02_27 Emoncms context from Emoncms, Rework config app   
  * 
  *****************************************************************************************************/
 
