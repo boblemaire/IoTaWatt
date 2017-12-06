@@ -84,7 +84,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 30;
       }
       String response = http.getString();
-      Serial.println(response);
       if (response.startsWith("\"Node does not exist\"")){
         UnixLastPost = UNIXtime();
         UnixLastPost -= UnixLastPost % EmonCMSInterval;
