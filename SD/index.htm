@@ -1740,14 +1740,12 @@ function loadGraph(){
   getConfig();
 }
 function loadEdit(){
-  var myWindow = window.open(editURL, "_self");
   resetDisplay();
-  getConfig();
+  var myWindow = window.open(editURL, "_self");
 }
 function showMsgs(){
-  var myWindow = window.open(msgsFileURL, "_self");
   resetDisplay();
-  getConfig();
+  var myWindow = window.open(msgsFileURL, "_self");
 }
 function toggleDisplay(id){
   var element = document.getElementById(id);
