@@ -4,7 +4,7 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData);
 String bin2hex(const uint8_t* in, size_t len);
 String encryptData(String in, const uint8_t* key);
 boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool logError);
-   
+
    /*******************************************************************************************************
  * EmonService - This SERVICE posts entries from the IotaLog to EmonCMS.  Details of the EmonCMS
  * account are provided in the configuration file at startup and this SERVICE is scheduled.  It runs
@@ -13,8 +13,8 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
  * The advantage of doing it this way is that there is really no EmonCMS specific code anywhere else
  * except a speciific section in getConfig.  Other web data logging services could be handled
  * the same way.
- * It's possible that multiple web services could be updated independently, each having their own 
- * SERVER.  The only issue right now would be the WiFi resource.  A future move to the 
+ * It's possible that multiple web services could be updated independently, each having their own
+ * SERVER.  The only issue right now would be the WiFi resource.  A future move to the
  * asynchWifiClient would solve that.
  ******************************************************************************************************/
 uint32_t EmonService(struct serviceBlock* _serviceBlock){
@@ -31,14 +31,14 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static uint32_t resendCount;
   static String reqData = "";
   static uint32_t reqUnixtime = 0;
-  static int  reqEntries = 0; 
+  static int  reqEntries = 0;
   static uint32_t postTime = millis();
   struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
   static SDbuffer* buf = new SDbuffer;
-          
+
   trace(T_Emon,0);
 
-            // If stop signaled, do so.  
+            // If stop signaled, do so.
 
   if(EmonStop) {
     msgLog("EmonService: stopped.");
@@ -53,22 +53,22 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     state = initialize;
     EmonInitialize = false;
   }
-      
+
   switch(state){
 
     case initialize: {
 
           // We post the log to EmonCMS,
           // so wait until the log service is up and running.
-      
+
       if(!currLog.isOpen()){
         return UNIXtime() + 5;
       }
-      msgLog("EmonService: started.", 
-       "url: " + EmonURL + ":" + String(EmonPort) + EmonURI + ", node: " + String(node) + ", post interval: " + 
+      msgLog("EmonService: started.",
+       "url: " + EmonURL + ":" + String(EmonPort) + EmonURI + ", node: " + String(node) + ", post interval: " +
        String(EmonCMSInterval) + (EmonSend == EmonSendGET ? ", unsecure GET" : ", encrypted POST"));
 
-      state = getPostTime; 
+      state = getPostTime;
     }
 
     case getPostTime: {
@@ -90,41 +90,41 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       else {
         int pos = 0;
-        while((pos = response.indexOf("\"time\":", pos)) > 0) {      
+        while((pos = response.indexOf("\"time\":", pos)) > 0) {
           pos += 7;
           uint32_t _time = (uint32_t)response.substring(pos, response.indexOf(',',pos)).toInt();
-          UnixLastPost = max(UnixLastPost, _time);
+          UnixLastPost = MAX(UnixLastPost, _time);
         }
         if(UnixLastPost == 0 || UnixLastPost > currLog.lastKey()) {
           UnixLastPost = currLog.lastKey();
-        }  
+        }
         if(UnixLastPost < currLog.firstKey()){
           UnixLastPost = currLog.firstKey();
         }
       }
       msgLog("EmonService: Start posting at ", UnixLastPost);
-    
+
             // Get the last record in the log.
             // Posting will begin with the next log entry after this one,
 
-      logRecord->UNIXtime = UnixLastPost;      
+      logRecord->UNIXtime = UnixLastPost;
       currLog.readKey(logRecord);
 
             // Save the value*hrs to date, and logHours to date
-        
-      for(int i=0; i<maxInputs; i++){ 
+
+      for(int i=0; i<maxInputs; i++){
         accum1Then[i] = logRecord->channel[i].accum1;
         if(accum1Then[i] != accum1Then[i]) accum1Then[i] = 0;
       }
       _logHours = logRecord->logHours;
-      if(_logHours != _logHours /*NaN*/) _logHours = 0;  
+      if(_logHours != _logHours /*NaN*/) _logHours = 0;
 
             // Assume that record was posted (not important).
             // Plan to start posting one interval later
-        
+
       UnixLastPost = logRecord->UNIXtime;
       UnixNextPost = UnixLastPost + EmonCMSInterval - (UnixLastPost % EmonCMSInterval);
-        
+
             // Advance state.
             // Set task priority low so that datalog will run before this.
 
@@ -134,7 +134,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       _serviceBlock->priority = priorityLow;
       return UnixNextPost;
     }
-    
+
     case post: {
       trace(T_Emon,4);
 
@@ -142,34 +142,34 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // just return without attempting to log and try again in a few seconds.
 
       if(WiFi.status() != WL_CONNECTED) {
-        return 2; 
+        return 2;
       }
 
           // If we are current,
           // Anticipate next posting at next regular interval and break to reschedule.
- 
-      if(currLog.lastKey() < UnixNextPost){ 
+
+      if(currLog.lastKey() < UnixNextPost){
         UnixNextPost = UNIXtime() + EmonCMSInterval - (UNIXtime() % EmonCMSInterval);
         return UnixNextPost;
-      } 
-      
+      }
+
           // Not current.  Read the next log record.
-          
-      trace(T_Emon,1);  
+
+      trace(T_Emon,1);
       logRecord->UNIXtime = UnixNextPost;
-      logReadKey(logRecord);    
-     
+      logReadKey(logRecord);
+
           // Compute the time difference between log entries.
           // If zero, don't bother.
-          
+
       elapsedHours = logRecord->logHours - _logHours;
       if(elapsedHours == 0){
         UnixNextPost += EmonCMSInterval;
-        return UnixNextPost;  
+        return UnixNextPost;
       }
-      
+
           // If new request, format preamble, otherwise, just tack it on with a comma.
-      
+
       if(reqData.length() == 0){
         reqUnixtime = UnixNextPost;
         reqData = "time=" + String(reqUnixtime) +  "&data=[";
@@ -181,13 +181,13 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // Build the request string.
           // values for each channel are (delta value hrs)/(delta log hours) = period value.
           // Update the previous (Then) buckets to the most recent values.
-     
+
       trace(T_Emon,5);
       reqData += '[' + String(UnixNextPost - reqUnixtime) + ",\"" + String(node) + "\",";
-            
+
       double value1;
       _logHours = logRecord->logHours;
-      if( ! emonOutputs){  
+      if( ! emonOutputs){
         for (int i = 0; i < maxInputs; i++) {
           IotaInputChannel *_input = inputChannel[i];
           value1 = (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;
@@ -223,22 +223,22 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
          // Serial.println(reqData);
         }
       }
-      for (int i = 0; i < maxInputs; i++) {  
+      for (int i = 0; i < maxInputs; i++) {
         accum1Then[i] = logRecord->channel[i].accum1;
       }
-      trace(T_Emon,6);    
+      trace(T_Emon,6);
       reqData.setCharAt(reqData.length()-1,']');
       reqEntries++;
       UnixLastPost = UnixNextPost;
       UnixNextPost +=  EmonCMSInterval - (UnixNextPost % EmonCMSInterval);
-      
+
       if ((reqEntries < EmonBulkSend) ||
          ((currLog.lastKey() > UnixNextPost) &&
          (reqData.length() < 1000))) {
         return UnixNextPost;
       }
 
-          // Send the post       
+          // Send the post
 
       reqData += ']';
       if(!EmonSendData(reqUnixtime, reqData, 500, false)){
@@ -248,11 +248,11 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       buf->data = UnixLastPost;
       reqData = "";
-      reqEntries = 0;    
+      reqEntries = 0;
       state = post;
       return UnixNextPost;
     }
-  
+
 
     case resend: {
       trace(T_Emon,7);
@@ -260,7 +260,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(resendCount > 1){
         msgLog("EmonService: Resending EmonCMS data:", resendCount);
       }
-      if(!EmonSendData(reqUnixtime, reqData, 1500, resendCount == 1)){ 
+      if(!EmonSendData(reqUnixtime, reqData, 1500, resendCount == 1)){
         if(resendCount < 10){
           return UNIXtime() + 60 * resendCount;
         }
@@ -275,7 +275,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         EmonPostLog.write((byte*)buf,4);
         EmonPostLog.flush();
         reqData = "";
-        reqEntries = 0;  
+        reqEntries = 0;
         state = post;
         return 1;
       }
@@ -286,16 +286,16 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
 }
 
 /************************************************************************************************
- *  EmonSend - send data to the EmonCMS server. 
- *  if secure transmission is configured, pas sthe request to a 
+ *  EmonSend - send data to the EmonCMS server.
+ *  if secure transmission is configured, pas sthe request to a
  *  similar WiFiClientSecure function.
  *  Secure takes about twice as long and can block sampling for more than a second.
  ***********************************************************************************************/
-boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool logError){ 
+boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool logError){
   trace(T_Emon,8);
   uint32_t startTime = millis();
   // Serial.println(reqData);
-  
+
   if(EmonSend == EmonSendGET){
     String URL = EmonURI + "/input/bulk.json?" + reqData + "&apikey=" + apiKey;
     http.begin(EmonURL, EmonPort, URL);
@@ -315,14 +315,14 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
     String response = http.getString();
     http.end();
     if(response.startsWith("ok")){
-      return true;        
+      return true;
     }
-    Serial.println("response not ok."); 
+    Serial.println("response not ok.");
     return false;
   }
 
   if(EmonSend == EmonSendPOSTsecure){
-    String URI = EmonURI + "/input/bulk";               
+    String URI = EmonURI + "/input/bulk";
     sha256.reset();
     sha256.update(reqData.c_str(), reqData.length());
     uint8_t value[32];
@@ -343,7 +343,7 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
     String response = "";
     if(responseLength > 0 && responseLength <= 1000){
       response = http.getString();
-    }	
+    }
     http.end();
     if(httpCode != HTTP_CODE_OK){
       String code = String(httpCode);
@@ -360,17 +360,17 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
       }
       return false;
     }
-    
+
     if(response.startsWith(base64Sha)){
-      return true;        
+      return true;
     }
     msgLog(reqData.substring(0,60));
     msgLog("EmonService: Invalid response: ", response.substring(0,60));
     msgLog("EmonService: Expectd response: ", base64Sha);
-    
+
     return false;
   }
-  
+
   msgLog("EmonService: Unsupported protocol - ", EmonSend);
   return false;
 }
@@ -386,7 +386,7 @@ String encryptData(String in, const uint8_t* key) {
   trace(T_encryptEncode, 2);
   for(int i=0; i<16; i++){
     ivBuf[i] = iv[i];
-  }  
+  }
   for(int i=0; i<in.length(); i++){
     encryptBuf[i] = in[i];
   }
@@ -396,7 +396,7 @@ String encryptData(String in, const uint8_t* key) {
   trace(T_encryptEncode, 3);
   cypher.setIV(iv, 16);
   cypher.setKey(cryptoKey, 16);
-  trace(T_encryptEncode, 4); 
+  trace(T_encryptEncode, 4);
   cypher.encrypt(encryptBuf, encryptBuf, encryptLen);
   trace(T_encryptEncode, 5);
   String result = base64encode(ivBuf, encryptLen+16);
@@ -458,4 +458,3 @@ String bin2hex(const uint8_t* in, size_t len){
   }
   return out;
 }
-
