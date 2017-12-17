@@ -516,7 +516,7 @@ void sendMsgFile(File &dataFile, int32_t relPos){
     server.setContentLength(dataFile.size() - absPos);
     server.send(200, "text/plain", "");
     WiFiClient _client = server.client();
-    _client.write(dataFile, 1460);
+    _client.write(dataFile);
 }
 
 void handleGetConfig(){
