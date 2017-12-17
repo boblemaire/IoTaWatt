@@ -66,7 +66,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       msgLog("EmonService: started.", 
        "url: " + EmonURL + ":" + String(EmonPort) + EmonURI + ", node: " + String(node) + ", post interval: " + 
-       String(EmonCMSInterval) + (EmonSend == EmonSendGET ? ", unsecure GET" : ", encrypted POST"));
+       String(EmonCMSInterval) + (EmonSend == EmonSendGET ? ", not encrypted" : ", encrypted"));
 
       state = getPostTime; 
     }
@@ -93,7 +93,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         while((pos = response.indexOf("\"time\":", pos)) > 0) {      
           pos += 7;
           uint32_t _time = (uint32_t)response.substring(pos, response.indexOf(',',pos)).toInt();
-          UnixLastPost = max(UnixLastPost, _time);
+          UnixLastPost = MAX(UnixLastPost, _time);
         }
         if(UnixLastPost == 0 || UnixLastPost > currLog.lastKey()) {
           UnixLastPost = currLog.lastKey();
@@ -297,16 +297,19 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
   // Serial.println(reqData);
   
   if(EmonSend == EmonSendGET){
-    String URL = EmonURI + "/input/bulk.json?" + reqData + "&apikey=" + apiKey;
+    String URL = EmonURI + "/input/bulk.json";
     http.begin(EmonURL, EmonPort, URL);
+    String auth = "Bearer " + apiKey;
+    http.addHeader("Authorization", auth.c_str());
+    http.addHeader("Content-Type","application/x-www-form-urlencoded");
     http.setTimeout(timeout);
-    int httpCode = http.GET();
+    int httpCode = http.POST(reqData);
     if(httpCode != HTTP_CODE_OK){
       if(logError){
-        msgLog("EmonService: GET failed. HTTP code:", http.errorToString(httpCode) );
+        msgLog("EmonService: POST failed. HTTP code:", http.errorToString(httpCode) );
       }
       else {
-        Serial.print("EmonService: GET failed. HTTP code: ");
+        Serial.print("EmonService: POST failed. HTTP code: ");
         Serial.println(http.errorToString(httpCode));
       }
       http.end();
