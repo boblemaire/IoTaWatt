@@ -491,12 +491,10 @@ void handleGetFeedList(){
     script = script->next();
   }
   
-        // server won't send large responses, so limit to smaller chunks and delay between.
-
   String response = "";
   array.printTo(response);
   server.setContentLength(response.length());
-  size_t chunkSize = 1024;
+  size_t chunkSize = 1024;                
   size_t sent = 0;
   while(sent < response.length()){
     size_t send = MIN(response.length()-sent,chunkSize);
@@ -504,13 +502,6 @@ void handleGetFeedList(){
     sent += send;
     delay(50);
   }
-  /*
-  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  size_t chunkSize = 1024;
-  for(int i=0; i<response.length(); i+=chunkSize){
-    server.sendContent(response.substring(i,i+MIN(response.length()-i,chunkSize)));
-    delay(100);
-  }*/
 }
 
 void handleGetFeedData(){
