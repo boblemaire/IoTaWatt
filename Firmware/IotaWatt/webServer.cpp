@@ -465,32 +465,52 @@ void handleGetFeedList(){
   Script* script = outputs->first();
   int outndx = 100;
   while(script){
-    String units = String(script->units());
-    if(units.equalsIgnoreCase("volts")){
-      JsonObject& voltage = jsonBuffer.createObject();
-      voltage["id"] = String("OV") + String(script->name());
-      voltage["tag"] = "Voltage";
-      voltage["name"] = script->name();
-      array.add(voltage);
-    } 
-    else if(units.equalsIgnoreCase("watts")) {
-      JsonObject& power = jsonBuffer.createObject();
-      power["id"] = String("OP") + String(script->name());
-      power["tag"] = "Power";
-      power["name"] = script->name();
-      array.add(power);
-      JsonObject& energy = jsonBuffer.createObject();
-      energy["id"] = String("OE") + String(script->name());
-      energy["tag"] = "Energy";
-      energy["name"] = script->name();
-      array.add(energy);
+    if(String(script->name()).indexOf(' ') == -1){
+      String units = String(script->units());
+      if(units.equalsIgnoreCase("volts")){
+        JsonObject& voltage = jsonBuffer.createObject();
+        voltage["id"] = String("OV") + String(script->name());
+        voltage["tag"] = "Voltage";
+        voltage["name"] = script->name();
+        array.add(voltage);
+      } 
+      else if(units.equalsIgnoreCase("watts")) {
+        
+        JsonObject& power = jsonBuffer.createObject();
+        power["id"] = String("OP") + String(script->name());
+        power["tag"] = "Power";
+        power["name"] = script->name();
+        array.add(power);
+        JsonObject& energy = jsonBuffer.createObject();
+        energy["id"] = String("OE") + String(script->name());
+        energy["tag"] = "Energy";
+        energy["name"] = script->name();
+        array.add(energy);
+      }
     }
     script = script->next();
   }
   
+        // server won't send large responses, so limit to smaller chunks and delay between.
+
   String response = "";
   array.printTo(response);
-  server.send(200, "application/json", response);
+  server.setContentLength(response.length());
+  size_t chunkSize = 1024;
+  size_t sent = 0;
+  while(sent < response.length()){
+    size_t send = MIN(response.length()-sent,chunkSize);
+    send = server.client().write(response.substring(sent,sent+send).c_str(), send);
+    sent += send;
+    delay(50);
+  }
+  /*
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  size_t chunkSize = 1024;
+  for(int i=0; i<response.length(); i+=chunkSize){
+    server.sendContent(response.substring(i,i+MIN(response.length()-i,chunkSize)));
+    delay(100);
+  }*/
 }
 
 void handleGetFeedData(){
