@@ -495,7 +495,7 @@ void handleGetFeedList(){
   array.printTo(response);
   server.setContentLength(response.length());
   size_t chunkSize = 1024;                
-  size_t sent = 0;
+  size_t sent = 0; 
   while(sent < response.length()){
     size_t send = MIN(response.length()-sent,chunkSize);
     send = server.client().write(response.substring(sent,sent+send).c_str(), send);

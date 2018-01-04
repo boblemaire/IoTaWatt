@@ -48,6 +48,7 @@ void loop()
     ESP.wdtFeed();
     trace(T_LOOP,5);
     thisBlock->callTime = thisBlock->service(thisBlock);
+    yield();
     trace(T_LOOP,6);
     if(thisBlock->callTime > 0){
       AddService(thisBlock); 
@@ -57,7 +58,7 @@ void loop()
   }
 
 // ----------- Another shout out to the Web 
-     
+  /*   
   yield();
   ESP.wdtFeed();
   if(serverAvailable){
@@ -65,7 +66,7 @@ void loop()
     server.handleClient();
     trace(T_LOOP,8);
     yield();
-  }
+  }*/
 }
 
 /*****************************************************************************************************

@@ -35,7 +35,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static uint32_t postTime = millis();
   struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
   static SDbuffer* buf = new SDbuffer;
-  static SyncClient* client;
+  static SyncClient *client;
+  static AsyncClient *asyncClient;
   static char *response;
   static char *respPtr;
   static uint32_t startTime;
@@ -250,13 +251,12 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     }
 
     case connect: {
-      Serial.println(reqData);
       startTime = millis();
       Serial.println("connect");
-      client = new SyncClient(1000);
-      if( ! client->connect(EmonURL.c_str(), EmonPort)){
+      asyncClient = new AsyncClient;
+      if( ! asyncClient->connect(EmonURL.c_str(), EmonPort)){
         Serial.println("EmonService: connect failed");
-        delete client;
+        delete asyncClient;
         state = resend;
         return 1;
       }
@@ -265,10 +265,11 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     }
 
     case send:{
-      if( ! client->connected()){
+      if( ! asyncClient->connected()){
         return 1;
       }
       Serial.printf("connected, elapsed=%dms\r\n", millis()-startTime);
+      client = new SyncClient(asyncClient, 1000);
       size_t headerLen = 0;
       //headerLen += client->printf("POST /input/bulk.json HTTP/1.1\r\n");
       headerLen += client->printf("POST /input/bulk.json HTTP/1/1\r\n");
@@ -300,21 +301,25 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         response = new char[1000];
         respPtr = response;
       }
-      if( ! client->available()){
-        return UNIXtime()+1;
-      }
-      Serial.printf("receive, elapsed=%dms\r\n", millis()-startTime);
-      size_t bytesRead = client->read((uint8_t*)respPtr, client->available());
-      respPtr += bytesRead;
-      
+      if(client->available()){
+        size_t bytesRead = client->read((uint8_t*)respPtr, client->available());
+        Serial.printf("receive, elapsed=%dms\r\n", millis()-startTime);
+        respPtr += bytesRead;
+      } 
       if(client->connected() || client->available()){
-        return UNIXtime() + 1;
+        return 1;
       }
       *respPtr = 0;
       Serial.println(response);
       Serial.printf("complete, elapsed=%dms\r\n", millis()-startTime);      
-      client->stop();
       delete client;
+      client = nullptr;
+      Serial.println("client deleted");
+      //asyncClient->free();
+      //Serial.println("asyncClient freed");
+      //delete asyncClient;
+      //asyncClient = nullptr;
+      //Serial.println("asyncClient deleted");
       delete[] response;
       response = nullptr;
       reqData = "";
