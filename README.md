@@ -1,8 +1,8 @@
-### IotaWatt 2.2
+### IotaWatt 4.8
 
 See the [WiKi](https://github.com/boblemaire/IoTaWatt/wiki) for detailed information concerning installation and use of IoTaWatt.
 
-![IotaWatt version 4](http://iotawatt.com/Images/IotaWattincase.jpg)
+![IotaWatt version 4.8](http://iotawatt.com/Images/IoTaWatt_new_case.JPG)
 
 IotaWatt is an open-hardware/open-source project to produce an accurate, low-cost, multi-channel, and easy to use electric power monitor.  It's based on the ESP8266 IoT platform using MCP3208 12 bit ADCs to sample voltage and current at high sample rates.
 
