@@ -8,8 +8,6 @@ IotaWatt is an open-hardware/open-source project to produce an accurate, low-cos
 
 The version 4 hardware supports 14 power monitoring channels and uses a nodeMCU esp8266. That version is being designed as a turnkey unit preloaded with firmware and contained in a wall mountable enclosure.
 
-There is also ongoing development to adapt the ESP32.
-
 The software samples input channels at a rate of 35-40 channels per second, and records voltage(V), power(Watts), and energy(kWh) to the local SD card every five seconds.  The Emoncms browser based graphing utility can be used on the local WiFi network to view the data.
 
 In addition, the data can be uploaded to an Emoncms server or an influxDB server. In the event of WiFi or internet service disruptions, the IotaWatt will continue to log locally and bulk update the server when WiFi is restored.
