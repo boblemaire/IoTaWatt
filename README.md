@@ -8,6 +8,8 @@ IotaWatt is an open-hardware/open-source project to produce an accurate, low-cos
 
 * monitors up to 14 circuits  
 * Accuracy typically within 1%  
+* Local SDcard stores up to 15 years worth of data.
+* REST APIs to extract data
 * Supports many different make, model and capacity current transformers  
 * Supports generic definition of any current transformer  
 * Three-phase capable  
