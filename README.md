@@ -30,4 +30,4 @@ The configuration and monitoring app runs on any browser based device that is co
 
 Thanks to contributors of other open software that have been incorporated into this project.  In particular the Emoncms, ArduinoJSON and SDWebServer software made a lot of this possible, not to mention the Arduino/ESP8266 project and related forums.
 
-The WiKi is a work in progress and provides details concerning installation and use.
+The [WiKi][https://github.com/boblemaire/IoTaWatt/wiki) is a work in progress and provides details of installation and use.
