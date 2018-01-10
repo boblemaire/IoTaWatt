@@ -26,7 +26,7 @@ The software samples input channels at a rate of 35-40 channels per second, reco
 
 The basic configuration uses one voltage reference channel and fourteen current sense channels for monitoring up to fourteen single phase circuits.  Current sense channels may be used, with slight modification, as additional voltage/phase reference channels to allow monitoring of three-phase power systems.  There is also an option to estimate three phase power using a single voltage/phase reference.
 
-The configuration and monitoring app runs on any browser based device that is connected to the local WiFi network. There is a demo version at [iotawatt.com](http://iotawatt.com)
+The configuration and monitoring app runs on any browser based device that is connected to the local WiFi network. A demo is available at [iotawatt.com](http://iotawatt.com)
 
 Thanks to contributors of other open software that have been incorporated into this project.  In particular the Emoncms, ArduinoJSON and SDWebServer software made a lot of this possible, not to mention the Arduino/ESP8266 project and related forums.
 
