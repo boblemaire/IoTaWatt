@@ -87,6 +87,9 @@
         <table id="inputTable">
           <tbody id="inputTableBody"></tbody>
         </table>
+        <div align="center">
+          <input type="checkbox" id="derive3ph" onclick="derive3ph()" title="For 3-phase power with one voltage reference">Enable derived three-phase
+        </div>
       </div>
     </div>
     
@@ -320,6 +323,7 @@ var parenLevel = 0;
 var inputEditChannel;
 var voltageChannels = [];
 var vchanUsed = [];
+var vphaseNames = ["A", "B", "C"];
 var scriptEditTable;
 var scriptEditSet;
 var scriptEditIndex = -1;
@@ -444,12 +448,20 @@ function configInputs(){
   var inputsTable = document.getElementById("inputTableBody");
   inputsTable.innerHTML = "";
   voltageChannels = [];
+  document.getElementById("derive3ph").disabled = false;
   for(i in config.inputs){
     vchanUsed[i] = false;
-    if(config.inputs[i] !== null && config.inputs[i].type == "VT"){
-      voltageChannels.push(i);
+    if(config.inputs[i] !== null){
+      if(config.inputs[i].type == "VT"){
+        voltageChannels.push(i);
+      }
+      if(config.inputs[i].vphase !== undefined && config.inputs[i].vphase != 0){
+        config.derive3ph = true;
+        document.getElementById("derive3ph").disabled = true;
+      }
     }
   }
+  document.getElementById("derive3ph").checked = config.derive3ph ? true : false;
   for( i in config.inputs){
     var newRow = inputsTable.insertRow(-1);
     newRow.setAttribute("class","chanEditRow");
@@ -463,18 +475,28 @@ function configInputs(){
     newColumn = newRow.insertCell(-1);
     if(config.inputs[i] !== null){
       nameColumn.innerHTML += "<strong>" + config.inputs[i].name + "</strong>";
-      newColumn.innerHTML = "<small>type:</small>" + config.inputs[i].type;
-      newColumn.innerHTML += ", <small>model:</small>" + config.inputs[i].model;
-      newColumn.innerHTML += ", <small>cal:</small>" + config.inputs[i].cal;
-      newColumn.innerHTML += ", <small>phase:</small>" + config.inputs[i].phase;
+      newColumn.innerHTML = "<small><strong>" + config.inputs[i].type + "</strong>";
+      newColumn.innerHTML += ", <strong>" + config.inputs[i].model + "</strong>";
+      newColumn.innerHTML += ", cal:<strong>" + config.inputs[i].cal + "</strong>";
+      newColumn.innerHTML += ", lead:<strong>" + config.inputs[i].phase + "&#176</strong>";
       if(config.inputs[i].vchan !== undefined){
         vchanUsed[config.inputs[i].vchan] = true;
         if(config.inputs[i].vchan != 0){
-          newColumn.innerHTML += ", <small>Vref:</small>" + config.inputs[i].vchan;
+          newColumn.innerHTML += ", Vref:<strong>" + config.inputs[i].vchan + "</strong>";
         }
+      }
+      if(config.derive3ph){
+        var phase = (config.inputs[i].vphase === undefined) ? vphaseNames[0] : vphaseNames[config.inputs[i].vphase/120];
+        newColumn.innerHTML += ", phase:<strong>" + phase + "</strong>";
       }
     }
   }
+}
+
+function derive3ph(){
+  config.derive3ph = !config.derive3ph;
+  uploadConfig();
+  configInputs();
 }
 
 function inputEdit(channel){
@@ -614,7 +636,7 @@ function refreshInputEdit(){
   }
  
   if(inputEditObject.model == "generic"){
-    inputPhase = addTableRow(table, "Phase: ", "inputPhase", "input", 4);
+    inputPhase = addTableRow(table, "Phase lead: ", "inputPhase", "input", 4);
     inputPhase.setAttribute("onblur","inputEditObject.phase = this.value.trim(); refreshInputEdit();");
     inputPhase.value = inputEditObject.phase;
     if(Number.isNaN(inputPhase.value)){
@@ -626,17 +648,35 @@ function refreshInputEdit(){
     }
   }
   
-   if(inputEditObject.type == "CT" && voltageChannels.length > 1){
-    inputVchan = addTableRow(table, "VRef", "inputVchan", "select");
-    inputVchan.setAttribute("oninput","inputEditObject.vchan = Number(this.value); refreshInputEdit();");
-    for(i in voltageChannels){
-      option = document.createElement("option");
-      option.value = voltageChannels[i];
-      option.text = config.inputs[voltageChannels[i]].name;
-      inputVchan.add(option);
-      if(inputEditObject.vchan !== undefined && inputEditObject.vchan == voltageChannels[i]){
-        option.selected = true;
-      } 
+  if(inputEditObject.type == "CT"){
+    if(voltageChannels.length > 1){
+      inputVchan = addTableRow(table, "VRef", "inputVchan", "select");
+      inputVchan.setAttribute("oninput","inputEditObject.vchan = Number(this.value); refreshInputEdit();");
+      for(i in voltageChannels){
+        option = document.createElement("option");
+        option.value = voltageChannels[i];
+        option.text = config.inputs[voltageChannels[i]].name;
+        inputVchan.add(option);
+        if(inputEditObject.vchan !== undefined && inputEditObject.vchan == voltageChannels[i]){
+          option.selected = true;
+        } 
+      }
+    }
+    if(config.derive3ph){
+      inputVchan = addTableRow(table, "Mains Phase", "inputVphase", "select");
+      inputVchan.setAttribute("oninput","inputEditObject.vphase = Number(this.value); refreshInputEdit();");
+      for(i in vphaseNames){
+        option = document.createElement("option");
+        option.value = i * 120;
+        option.innerHTML = vphaseNames[i];
+        if(i > 0){
+          option.innerHTML += " (+" + option.value + "&#176)";
+        }
+        inputVchan.add(option);
+        if(inputEditObject.vphase !== undefined && inputEditObject.vphase == option.value){
+          option.selected = true;
+        } 
+      }
     }
   }
   
@@ -725,6 +765,9 @@ function inputEditCancel(){
 }
 
 function inputEditSave(){
+  if(inputEditObject.vphase !== undefined && inputEditObject.vphase == 0){
+    inputEditObject.vphase = undefined;
+  }
   config.inputs[inputEditChannel] = inputEditObject;
   editing = false;
   currentBodyPop();

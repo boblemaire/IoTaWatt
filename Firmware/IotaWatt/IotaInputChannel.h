@@ -32,21 +32,22 @@ class IotaInputChannel {
   public:
     channelTypes _type;                       // voltage, power, etc.
     String       _name;                       // External name
-	  String		 _model;					  // VT or CT (or ?) model	
+	  String		   _model;					            // VT or CT (or ?) model	
     uint8_t      _channel;                    // Internal identifying number
-	  uint8_t		 _ADCbits;					  // ADC resolution		
+	  uint8_t		   _ADCbits;					          // ADC resolution		
     uint8_t      _addr;                       // Highbyte ADC, Lowbyte port on ADC
     uint8_t      _aRef;                       // Reference voltage address (Highbyte ADC, Lowbyte port on ADC)
     uint16_t     _offset;                     // ADC bias 
     byte         _vchannel;                   // Voltage [input] channel associated with a power channel;
-	  float		 _burden;					  // Value of on-board burden resistor, zero if none	
+	  float		     _burden;					            // Value of on-board burden resistor, zero if none	
     float        _calibration;                // Calibration factor
     float        _phase;                      // Phase correction in degrees (+lead, - lag);
-	  bool		 _active;	
+    float        _vphase;                     // Phase offset for 3-phase voltage reference
+	  bool		     _active;	
     bool         _reversed;                   // True if negative power in being made positive (reversed CT)
     bool         _signed;                     // True if channel should not be reversed when negative (net metered main)
     const double MS_PER_HOUR = 3600000UL;     // useful constant
-    dataBuckets   dataBucket;
+    dataBuckets  dataBucket;
     
 
     IotaInputChannel(uint8_t channel){
@@ -61,6 +62,7 @@ class IotaInputChannel {
 	  _burden = 0;
     _calibration = 0;
     _phase = 0;
+    _vphase = 0;
 	  _active = false;
     _reversed = false;
     _signed = false;

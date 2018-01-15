@@ -395,7 +395,7 @@ void handleCommand(){
     samplePower(chan,0);
     String response = String(samples) + "\n\r";
     for(int i=0; i<samples; i++){
-      response += String(Vsample[i]) + "," + String(Isample[i]) + "\n";
+      response += String(Vsample[i]) + "," + String(Isample[i]) + "," + String(Vshifted[i]) + "\n";
     }
     server.send(200, "text/plain", response);
     return; 
@@ -495,7 +495,7 @@ void handleGetFeedList(){
   array.printTo(response);
   server.setContentLength(response.length());
   size_t chunkSize = 1024;                
-  size_t sent = 0;
+  size_t sent = 0; 
   while(sent < response.length()){
     size_t send = MIN(response.length()-sent,chunkSize);
     send = server.client().write(response.substring(sent,sent+send).c_str(), send);
