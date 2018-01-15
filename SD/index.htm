@@ -765,7 +765,7 @@ function inputEditCancel(){
 }
 
 function inputEditSave(){
-  if(inputEditObject.vphase !== undefined && inputEditObject.vphase == 0){
+  if(inputEditObject && inputEditObject.vphase !== undefined && inputEditObject.vphase == 0){
     inputEditObject.vphase = undefined;
   }
   config.inputs[inputEditChannel] = inputEditObject;
