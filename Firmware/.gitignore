@@ -6,3 +6,4 @@
 .piolibdeps
 .clang_complete
 .gcc-flags.json
+.vscode/launch.json
