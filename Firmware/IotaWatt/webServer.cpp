@@ -395,7 +395,7 @@ void handleCommand(){
     samplePower(chan,0);
     String response = String(samples) + "\n\r";
     for(int i=0; i<samples; i++){
-      response += String(Vsample[i]) + "," + String(Isample[i]) + "\n";
+      response += String(Vsample[i]) + "," + String(Isample[i]) + "," + String(Vshifted[i]) + "\n";
     }
     server.send(200, "text/plain", response);
     return; 

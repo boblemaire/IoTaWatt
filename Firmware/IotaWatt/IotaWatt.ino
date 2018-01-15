@@ -206,6 +206,7 @@ ScriptSet* influxOutputs;
 int16_t   samples = 0;                              // Number of samples taken in last sampling
 int16_t   Vsample [MAX_SAMPLES];                    // voltage/current pairs during sampling
 int16_t   Isample [MAX_SAMPLES];
+int16_t   Vshifted [MAX_SAMPLES];
 
 
 

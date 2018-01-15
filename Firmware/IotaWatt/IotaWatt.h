@@ -19,7 +19,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.  
    
 ***********************************************************************************/
-#define IOTAWATT_VERSION "02_02_28"
+#define IOTAWATT_VERSION "02_02_27"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -252,6 +252,7 @@ extern ScriptSet* influxOutputs;
 extern int16_t samples;                           // Number of samples taken in last sampling
 extern int16_t Vsample [MAX_SAMPLES];             // voltage/current pairs during sampling
 extern int16_t Isample [MAX_SAMPLES];
+extern int16_t Vshifted [MAX_SAMPLES];
 
       // ************************ Declare global functions
 void      setup();

@@ -34,6 +34,7 @@ void samplePower(int channel, int overSample){
 
   int16_t* VsamplePtr = Vsample;
   int16_t* IsamplePtr = Isample;
+  int16_t* VshiftedPtr = Vshifted;
    
         // Invoke high speed sample collection.
         // If it fails, return.
@@ -55,35 +56,39 @@ void samplePower(int channel, int overSample){
   int32_t sumIsq = 0;  
 
       // Determine phase correction components.
-      // stepCorrection is the number of I samples to add or subtract.
-      // stepFraction is the interpolation to apply to the next I sample (0.0 - 1.0)
-      // The phase correction is the net phase lead (+) of voltage computed as the 
-      // (VT lead - CT lead) + any gross phase correction for 3 phase measurement.
+      // stepCorrection is the number of V samples to add or subtract.
+      // stepFraction is the interpolation to apply to the next V sample (0.0 - 1.0)
+      // The phase correction is the net phase lead (+) of current computed as the 
+      // (CT lead - VT lead) - any gross phase correction for 3 phase measurement.
       // Note that a reversed CT can be corrected by introducing a 180deg gross correction.
 
-  float _phaseCorrection = (Vchannel->_phase - Ichannel->_phase) * samples / 360.0;  // fractional Isamples correction
-  int stepCorrection = int(_phaseCorrection);                                                // whole steps to correct 
-  float stepFraction = _phaseCorrection - stepCorrection;                                    // fractional step correction
-  if(stepFraction < 0){                                                                      // if current lead
-    stepCorrection--;                                                                        // One sample back
-    stepFraction += 1.0;                                                                     // and forward 1-fraction
+  float _phaseCorrection = ( Ichannel->_phase - Vchannel->_phase -Ichannel->_vphase) * samples / 360.0;  // fractional Isamples correction
+  int stepCorrection = int(_phaseCorrection);                                        // whole steps to correct 
+  float stepFraction = _phaseCorrection - stepCorrection;                            // fractional step correction
+  if(stepFraction < 0){                                                              // if current lead
+    stepCorrection--;                                                                // One sample back
+    stepFraction += 1.0;                                                             // and forward 1-fraction
   }
 
   trace(T_POWER,3);
         // get sums, squares, and all that stuff.
-  Isample[samples] = Isample[0];      
-  int Iindex = (samples + stepCorrection) % samples;
+  Isample[samples] = Isample[0];
+  Vsample[samples] = Vsample[0];      
+  int Vindex = (samples + stepCorrection) % samples;
   for(int i=0; i<samples; i++){  
-    rawV = *VsamplePtr;
-    rawI = Isample[Iindex]; 
-    rawI += int(stepFraction * (Isample[Iindex + 1] - Isample[Iindex]));
+    rawI = *IsamplePtr;
+    rawV = Vsample[Vindex]; 
+    rawV += int(stepFraction * (Vsample[Vindex + 1] - Vsample[Vindex]));
     sumV += rawV;
     sumVsq += rawV * rawV;
     sumI += rawI;
     sumIsq += rawI * rawI;
     sumP += rawV * rawI;      
+    IsamplePtr++;
     VsamplePtr++;
-    Iindex = (Iindex + 1) % samples;
+    *VshiftedPtr = rawV;
+    VshiftedPtr++;
+    Vindex = ++Vindex % samples;
   }
   
         // Adjust the offset values assuming symmetric waves but within limits otherwise.
@@ -140,7 +145,7 @@ void samplePower(int channel, int overSample){
 
   trace(T_POWER,5);
   Ichannel->setPower(_watts, _Irms);
-  Vchannel->setVoltage(_Vrms);
+  //Vchannel->setVoltage(_Vrms);
   trace(T_POWER,9);                                                                               
   return;
 }
@@ -154,7 +159,7 @@ void samplePower(int channel, int overSample){
   *    
   *  The approach is to start sampling voltage/current pairs in a tight loop.
   *  When voltage crosses zero, we start recording the pairs.
-  *  When we have crossed zero cycles*2 more times we stop and return to compute the results.
+  *  When we  cross zero 2 more times we stop and return to compute the results.
   *  
   *  Note:  If ever there was a time for low-level hardware manipulation, this is it.
   *  the tighter and faster the samples can be taken, the more accurate the results can be.
@@ -163,12 +168,8 @@ void samplePower(int channel, int overSample){
   *  
   *  By manipulating the SPI chip select pin through hardware registers and
   *  running the SPI for only the required bits, again using the hardware 
-  *  registers, it's possinble to get about 500 sample pairs per cycle running
-  *  the SPI at 2MHz, which is the spec for the MCP3208 at 5v.
-  *  
-  *  The code supports both the MCP3008(10 bit) and MCP3208(12 bit) ADCs.
-  *  Although there is currently no way to configure the 3008, the support
-  *  here and elsewhere is low profile enough that it was left in.  
+  *  registers, it's possinble to get about 640 sample pairs per cycle (60Hz) running
+  *  the SPI at 2MHz, which is the spec for the MCP3208.
   *  
   *  I've tried to segregate the bit-banging and document it well.
   *  For anyone interested in the low level registers, you can find 
@@ -260,8 +261,6 @@ void samplePower(int channel, int overSample){
           *IsamplePtr = (rawI + lastI) / 2;
           if(*IsamplePtr >= -1 && *IsamplePtr <= 1) *IsamplePtr = 0;
           lastI = rawI;
-                 
-          // if((*IsamplePtr > -3) && (*IsamplePtr < 3)) *IsamplePtr = 0;       // Filter noise from previous reading while SPI reads ADC  
               
           if(crossCount) {                                  // If past first crossing 
             VsamplePtr++;                                   // Accumulate samples
@@ -330,7 +329,7 @@ void samplePower(int channel, int overSample){
    
        
         // Finish up loop cycle by checking for zero crossing.
-        // Crossing is defined by I and V having different signs (Xor) and crossGuard negative.
+        // Crossing is defined by voltage changing signs  (Xor) and crossGuard negative.
 
         if(((rawV ^ lastV) & crossGuard) >> 15) {        // If crossed unambiguously (one but not both Vs negative and crossGuard negative 
           startMs = millis();                            // Reset the cycle clock 
