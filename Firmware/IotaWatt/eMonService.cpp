@@ -19,7 +19,7 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
  ******************************************************************************************************/
 uint32_t EmonService(struct serviceBlock* _serviceBlock){
   // trace T_Emon
-  enum   states {initialize, getPostTime, post, connect, send, receive, resend};
+  enum   states {initialize, getPostTime, post, resend};
   static states state = initialize;
   static IotaLogRecord* logRecord = new IotaLogRecord;
   static File EmonPostLog;
@@ -35,11 +35,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static uint32_t postTime = millis();
   struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
   static SDbuffer* buf = new SDbuffer;
-  static SyncClient *client;
-  static AsyncClient *asyncClient;
-  static char *response;
-  static char *respPtr;
-  static uint32_t startTime;
           
   trace(T_Emon,0);
 
@@ -71,7 +66,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       msgLog("EmonService: started.", 
        "url: " + EmonURL + ":" + String(EmonPort) + EmonURI + ", node: " + String(node) + ", post interval: " + 
-       String(EmonCMSInterval) + (EmonSend == EmonSendGET ? ", not encrypted" : ", encrypted"));
+       String(EmonCMSInterval) + (EmonSend == EmonSendGET ? ", unsecure GET" : ", encrypted POST"));
 
       state = getPostTime; 
     }
@@ -246,96 +241,48 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // Send the post       
 
       reqData += ']';
-      state = connect;
-      return 1;
-    }
-
-    case connect: {
-      startTime = millis();
-      Serial.println("connect");
-      asyncClient = new AsyncClient;
-      if( ! asyncClient->connect(EmonURL.c_str(), EmonPort)){
-        Serial.println("EmonService: connect failed");
-        delete asyncClient;
+      if(!EmonSendData(reqUnixtime, reqData, 500, false)){
         state = resend;
-        return 1;
+        resendCount = 0;
+        return UNIXtime() + 5;
       }
-      state = send;
-      return 1;
-    }
-
-    case send:{
-      if( ! asyncClient->connected()){
-        return 1;
-      }
-      Serial.printf("connected, elapsed=%dms\r\n", millis()-startTime);
-      client = new SyncClient(asyncClient, 1000);
-      size_t headerLen = 0;
-      //headerLen += client->printf("POST /input/bulk.json HTTP/1.1\r\n");
-      headerLen += client->printf("POST /input/bulk.json HTTP/1/1\r\n");
-      headerLen += client->printf("Host: %s\r\n", EmonURL.c_str());
-      headerLen += client->printf("Authorization: Bearer %s\r\n", apiKey.c_str());
-      headerLen += client->printf("Content-Type: application/x-www-form-urlencoded\r\n");
-      headerLen += client->printf("Content-Length: %d\r\n", reqData.length());
-      headerLen += client->printf("connection: close\r\n\r\n");
-      size_t reqLen = client->print(reqData);
-      if(reqLen != reqData.length()){
-        Serial.printf("Request data size %d, sent %d\r\n",reqData.length(), reqLen);
-      }
-      
-      Serial.printf("header length %d\r\n", headerLen);
-      if(!headerLen) {
-        Serial.print("EmonService: Send Failed");
-        client->stop();
-        while(client->connected()) delay(0);
-        delete client;
-        state = resend;
-        return 1;
-      }
-      state = receive;
-      return 1;
-    }
-
-    case receive: {
-      if( ! response){
-        response = new char[1000];
-        respPtr = response;
-      }
-      if(client->available()){
-        size_t bytesRead = client->read((uint8_t*)respPtr, client->available());
-        Serial.printf("receive, elapsed=%dms\r\n", millis()-startTime);
-        respPtr += bytesRead;
-      } 
-      if(client->connected() || client->available()){
-        return 1;
-      }
-      *respPtr = 0;
-      Serial.println(response);
-      Serial.printf("complete, elapsed=%dms\r\n", millis()-startTime);      
-      delete client;
-      client = nullptr;
-      Serial.println("client deleted");
-      //asyncClient->free();
-      //Serial.println("asyncClient freed");
-      //delete asyncClient;
-      //asyncClient = nullptr;
-      //Serial.println("asyncClient deleted");
-      delete[] response;
-      response = nullptr;
+      buf->data = UnixLastPost;
       reqData = "";
       reqEntries = 0;    
       state = post;
-      Serial.printf("next post: %d\r\n", UnixNextPost);
       return UnixNextPost;
     }
+  
 
     case resend: {
-      Serial.println("EmonService: resend");
-      state = send;
-      return UNIXtime() + 5;
+      trace(T_Emon,7);
+      resendCount++;
+      if(resendCount > 1){
+        msgLog("EmonService: Resending EmonCMS data:", resendCount);
+      }
+      if(!EmonSendData(reqUnixtime, reqData, 1500, resendCount == 1)){ 
+        if(resendCount < 10){
+          return UNIXtime() + 60 * resendCount;
+        }
+        msgLog(F("EmonService: Unable to post to Emoncms after 10 retries.  Restarting ESP."));
+        ESP.restart();
+      }
+      else {
+        if(resendCount > 1){
+          msgLog(F("EmonService: Retry successful."));
+        }
+        buf->data = UnixLastPost;
+        EmonPostLog.write((byte*)buf,4);
+        EmonPostLog.flush();
+        reqData = "";
+        reqEntries = 0;  
+        state = post;
+        return 1;
+      }
+      break;
     }
-
-  } 
+  }
+  return 1;
 }
 
 /************************************************************************************************
@@ -350,19 +297,16 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
   // Serial.println(reqData);
   
   if(EmonSend == EmonSendGET){
-    String URL = EmonURI + "/input/bulk.json";
+    String URL = EmonURI + "/input/bulk.json?" + reqData + "&apikey=" + apiKey;
     http.begin(EmonURL, EmonPort, URL);
-    String auth = "Bearer " + apiKey;
-    http.addHeader("Authorization", auth.c_str());
-    http.addHeader("Content-Type","application/x-www-form-urlencoded");
     http.setTimeout(timeout);
-    int httpCode = http.POST(reqData);
+    int httpCode = http.GET();
     if(httpCode != HTTP_CODE_OK){
       if(logError){
-        msgLog("EmonService: POST failed. HTTP code:", http.errorToString(httpCode) );
+        msgLog("EmonService: GET failed. HTTP code:", http.errorToString(httpCode) );
       }
       else {
-        Serial.print("EmonService: POST failed. HTTP code: ");
+        Serial.print("EmonService: GET failed. HTTP code: ");
         Serial.println(http.errorToString(httpCode));
       }
       http.end();
