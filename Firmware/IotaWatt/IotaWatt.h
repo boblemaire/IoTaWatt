@@ -252,7 +252,6 @@ extern ScriptSet* influxOutputs;
 extern int16_t samples;                           // Number of samples taken in last sampling
 extern int16_t Vsample [MAX_SAMPLES];             // voltage/current pairs during sampling
 extern int16_t Isample [MAX_SAMPLES];
-extern int16_t Vshifted [MAX_SAMPLES];
 
       // ************************ Declare global functions
 void      setup();

@@ -477,8 +477,8 @@ function configInputs(){
       nameColumn.innerHTML += "<strong>" + config.inputs[i].name + "</strong>";
       newColumn.innerHTML = "<small><strong>" + config.inputs[i].type + "</strong>";
       newColumn.innerHTML += ", <strong>" + config.inputs[i].model + "</strong>";
-      newColumn.innerHTML += ", cal:<strong>" + config.inputs[i].cal + "</strong>";
-      newColumn.innerHTML += ", lead:<strong>" + config.inputs[i].phase + "&#176</strong>";
+      newColumn.innerHTML += ", cal:<strong>" + Number(config.inputs[i].cal).toFixed(2) + "</strong>";
+      newColumn.innerHTML += ", lead:<strong>" + Number(config.inputs[i].phase).toFixed(2) + "&#176</strong>";
       if(config.inputs[i].vchan !== undefined){
         vchanUsed[config.inputs[i].vchan] = true;
         if(config.inputs[i].vchan != 0){
@@ -644,7 +644,7 @@ function refreshInputEdit(){
       complete = false;
     }
     else {
-      inputPhase.value = Number(inputPhase.value).toFixed(1);
+      inputPhase.value = Number(inputPhase.value).toFixed(2);
     }
   }
   

@@ -285,7 +285,6 @@ void configInputs(JsonArray& JsonInputs){
       inputChannel[i]->_calibration = input["cal"].as<float>();
       inputChannel[i]->_phase = input["phase"].as<float>();
       inputChannel[i]->_vphase = input["vphase"].as<float>();
-      PRINTL("Vphase",inputChannel[i]->_vphase)
       inputChannel[i]->_vchannel = input.containsKey("vref") ? input["vref"].as<int>() : 0;
       inputChannel[i]->active(true);
       String type = input["type"]; 
