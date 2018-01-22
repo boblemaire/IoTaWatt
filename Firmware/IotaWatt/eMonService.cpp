@@ -241,7 +241,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // Send the post       
 
       reqData += ']';
-      if(!EmonSendData(reqUnixtime, reqData, 500, false)){
+      if(!EmonSendData(reqUnixtime, reqData, 750, false)){
         state = resend;
         resendCount = 0;
         return UNIXtime() + 5;

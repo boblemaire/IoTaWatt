@@ -32,7 +32,7 @@
       udp.write(packetBuffer, NTP_PACKET_SIZE);           // send an NTP packet to a time server
       udp.endPacket();
       
-      int maxWait = 5;                                    // We'll wait 5 100ms intervals
+      int maxWait = 10;                                   // We'll wait 5 100ms intervals
       while(maxWait--){
         if(udp.parsePacket()){
           udp.read(packetBuffer,NTP_PACKET_SIZE);

@@ -31,7 +31,7 @@ bool checkUpdate(){
   http.addHeader(F("X_STA_MAC"), WiFi.macAddress());
   http.addHeader(F("X-UPDATE-CLASS"), updateClass);
   http.addHeader(F("X_CURRENT_VERSION"), IOTAWATT_VERSION);
-  http.setTimeout(500);
+  http.setTimeout(1500);
   int httpCode = http.GET();
   uint32_t len = http.getSize();
   if(httpCode != HTTP_CODE_OK  || len != 8){
@@ -93,6 +93,7 @@ bool downloadUpdate(String version){
   http.begin(updateURL, 80, URI);
   http.addHeader(F("Host"),updateURL);
   http.setUserAgent(F("IotaWatt"));
+  http.setTimeout(1500);
   int httpCode = http.GET();
   if(httpCode != HTTP_CODE_OK) {
     Serial.print("Http code: ");
