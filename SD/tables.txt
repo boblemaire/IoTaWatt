@@ -2,31 +2,30 @@
 "VT":[
   {"model":"generic120V","type":"U","cal":11.50,"phase":2.0},
   {"model":"generic240V","type":"U","cal":23.00,"phase":2.0},
-  {"model":"Ideal 77DB-06-09(UK)","cal":20.69,"phase":2.0},
-  {"model":"Ideal 77DE-06-09(EU)","cal":19.26,"phase":2.0},
-  {"model":"Ideal 77DA-10-09-MI(USA)","cal":11.06,"phase":1.55},
-  {"model":"Jameco/100061","cal":11.68,"phase":4.8},
-  {"model":"Jameco/102234","cal":11.43,"phase":3.5},
-  {"model":"Jameco/2227444","cal":11.51,"phase":1.82},
-  {"model":"MGT1240","cal":9.37,"phase":1.75},
-  {"model":"CUI","cal":10.10,"phase":1.9}
+  {"model":"Ideal 77DB-06-09(UK)","cal":20.69,"phase":1.78},
+  {"model":"Ideal 77DE-06-09(EU)","cal":19.26,"phase":1.78},
+  {"model":"Ideal 77DA-10-09-MI(USA)","cal":11.06,"phase":1.43},
+  {"model":"Jameco/100061","cal":11.68,"phase":4.51},
+  {"model":"Jameco/102234","cal":11.43,"phase":3.26},
+  {"model":"Jameco/2227444","cal":11.51,"phase":1.95},
+  {"model":"CUI","cal":10.10,"phase":1.80}
   ],
 
 "CT":[
 	{"model":"generic","type":"U"},
-	{"model":"CR3110-3000","type":"C","turns":3000,"phase":1.5},
+	{"model":"CR3110-3000","type":"C","turns":3016,"phase":1.85},
 	{"model":"SCT013-030","mfg":"YHDC","type":"V","cal":30,"phase":3.8},
 	{"model":"SCT013-050","mfg":"YHDC","type":"V","cal":49.8,"phase":3.0},
-	{"model":"SCT006-000","mfg":"YHDC","type":"C","turns":800,"phase":3.0},
-	{"model":"SCT013-000","mfg":"YHDC","type":"C","turns":2000,"phase":3.0},
-	{"model":"SCT019-000","mfg":"YHDC","type":"C","turns":6000,"phase":2.0},
-	{"model":"SCT023R","mfg":"YHDC","type":"C","turns":3780,"phase":0.75},
+	{"model":"SCT006-000","mfg":"YHDC","type":"C","turns":800,"phase":4.6},
+	{"model":"SCT013-000","mfg":"YHDC","type":"C","turns":2000,"phase":3.00},
+	{"model":"SCT019-000","mfg":"YHDC","type":"C","turns":6072,"phase":2.0},
+	{"model":"SCT023R","mfg":"YHDC","type":"C","turns":3780,"phase":0.8},
 	{"model":"SCT027H","mfg":"YHDC","type":"C","turns":4000,"phase":2.0},
 	{"model":"CTHMC-100-UB","mfg":"Dent","type":"V","cal":301,"phase":0.25},
-	{"model":"HWCT-004","mfg":"China","type":"C","turns":1000,"phase":0.45},
+	{"model":"HWCT-004","mfg":"China","type":"C","turns":1000,"phase":1.97},
 	{"model":"ZDKCT10M","mfg":"China","type":"C","turns":2007,"phase":1.5},
-	{"model":"PZCT-02","mfg":"China","type":"C","turns":1000,"phase":2.0},
-	{"model":"WC1","mfg":"Wattcore","type":"C","turns":1000,"phase":1.6},
+	{"model":"PZCT-02","mfg":"China","type":"C","turns":1000,"phase":2.5},
 	{"model":"SCT0750-000","mfg":"Magnalab","type":"C","turns":7550,"phase":2.55}
+
 	]
 }

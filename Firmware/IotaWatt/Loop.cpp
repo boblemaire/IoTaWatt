@@ -160,9 +160,17 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   
   double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
   for(int i=0; i<maxInputs; i++){
-    inputChannel[i]->ageBuckets(timeNow); 
-    statBucket[i].value1 = (damping * statBucket[i].value1) + ((1.0 - damping) * (inputChannel[i]->dataBucket.accum1 - statBucket[i].accum1) / elapsedHrs);
-    statBucket[i].value2 = (damping * statBucket[i].value2) + ((1.0 - damping) * (inputChannel[i]->dataBucket.accum2 - statBucket[i].accum2) / elapsedHrs);
+    inputChannel[i]->ageBuckets(timeNow);
+    double newValue = (inputChannel[i]->dataBucket.accum1 - statBucket[i].accum1) / elapsedHrs;
+    if(abs(statBucket[i].value1 - newValue) / abs(statBucket[i].value1) < 0.02){
+      statBucket[i].value1 = damping * statBucket[i].value1 + (1.0 - damping) * newValue;
+    }
+    else statBucket[i].value1 = newValue;
+    newValue = (inputChannel[i]->dataBucket.accum2 - statBucket[i].accum2) / elapsedHrs;
+    if(abs(statBucket[i].value2 - newValue) / abs(statBucket[i].value2) < 0.02){
+      statBucket[i].value2 = damping * statBucket[i].value2 + (1.0 - damping) * newValue;
+    }
+    else statBucket[i].value2 = newValue;
     statBucket[i].accum1 = inputChannel[i]->dataBucket.accum1;
     statBucket[i].accum2 = inputChannel[i]->dataBucket.accum2;
   }

@@ -34,7 +34,6 @@ void samplePower(int channel, int overSample){
 
   int16_t* VsamplePtr = Vsample;
   int16_t* IsamplePtr = Isample;
-  int16_t* VshiftedPtr = Vshifted;
    
         // Invoke high speed sample collection.
         // If it fails, return.
@@ -51,9 +50,9 @@ void samplePower(int channel, int overSample){
   int16_t rawI;  
   int32_t sumV = 0;
   int32_t sumI = 0;
-  int32_t sumP = 0;
-  int32_t sumVsq = 0;
-  int32_t sumIsq = 0;  
+  double sumP = 0;
+  double sumVsq = 0;
+  double sumIsq = 0;  
 
       // Determine phase correction components.
       // stepCorrection is the number of V samples to add or subtract.
@@ -62,7 +61,7 @@ void samplePower(int channel, int overSample){
       // (CT lead - VT lead) - any gross phase correction for 3 phase measurement.
       // Note that a reversed CT can be corrected by introducing a 180deg gross correction.
 
-  float _phaseCorrection = ( Ichannel->_phase - Vchannel->_phase -Ichannel->_vphase) * samples / 360.0;  // fractional Isamples correction
+  float _phaseCorrection = ( Ichannel->_phase - (Vchannel->_phase) -Ichannel->_vphase) * samples / 360.0;  // fractional Isamples correction
   int stepCorrection = int(_phaseCorrection);                                        // whole steps to correct 
   float stepFraction = _phaseCorrection - stepCorrection;                            // fractional step correction
   if(stepFraction < 0){                                                              // if current lead
@@ -85,9 +84,6 @@ void samplePower(int channel, int overSample){
     sumIsq += rawI * rawI;
     sumP += rawV * rawI;      
     IsamplePtr++;
-    VsamplePtr++;
-    *VshiftedPtr = rawV;
-    VshiftedPtr++;
     Vindex = ++Vindex % samples;
   }
   
@@ -223,18 +219,8 @@ void samplePower(int channel, int overSample){
   uint32_t ADC_VselectMask = 1 << ADC_VselectPin;
   
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
-
-          // Make sure there is a voltage signal
  
-  lastV = readADC(Vchan) - offsetV;
-  do {
-    if((millis() - startMs) > 2){
-      return 2;
-    }
-    rawV = readADC(Vchan) - offsetV;   
-  } while(abs(rawV - lastV) < 20);
-  
-  *VsamplePtr = readADC(Vchan) - offsetV;             // Prime the pump
+  rawV = readADC(Vchan) - offsetV;                    // Prime the pump
   samples = 0;                                        // Start with nothing
 
           // Have at it.
@@ -269,7 +255,7 @@ void samplePower(int channel, int overSample){
               samples++;
               if(samples >= MAX_SAMPLES){                   // If over the legal limit
                 trace(T_SAMP,0);                            // shut down and return
-                GPOS = ADC_IselectMask;                     // (Chip select high) 
+                GPOS = ADC_VselectMask;                     // (Chip select high) 
                 Serial.println("Max samples exceeded.");       
                 return 2;
               }
@@ -312,9 +298,9 @@ void samplePower(int channel, int overSample){
             trace(T_SAMP,2);                                            // Leave a meaningful trace
             trace(T_SAMP,Ichan);
             trace(T_SAMP,Vchan);
-            GPOS = ADC_VselectMask;                                     // ADC select pin high 
-            Serial.print("Sample timeout: ");                                         
-            Serial.println(Ichan);                               
+            GPOS = ADC_IselectMask;                                     // ADC select pin high 
+            //Serial.print("Sample timeout: ");                                         
+            //Serial.println(Ichan);                               
             return 2;                                                   // Return a failure
           }
                               
@@ -415,7 +401,6 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
   uint32_t sumVsq = 0;
   while(int rtc = sampleCycle(Vchannel, Vchannel, 1, 0)){
     if(rtc == 2){
-      Serial.println("Zero sample voltage");
       return 0.0;
     }
   }
@@ -472,7 +457,7 @@ void printSamples() {
   return;
 }
 
-float samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
+String samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
   
   int16_t cycles = 1;
     
@@ -486,12 +471,12 @@ float samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
   double sumIsq = 0;
   double sumVI = 0;
 
-  sampleCycle(Vchannel, Ichannel, cycles, Ishift);
-  PRINTL("samples: ",samples)
-  PRINTL("Vsample[0]: ", Vsample[0])
-  PRINTL("Vsample[1]: ", Vsample[1])
-  PRINTL("Vsample[n-1]: ", Vsample[samples-1])
-  PRINTL("Vsample[n]: ", Vsample[samples])
+  uint32_t startTime = millis();
+  while (sampleCycle(Vchannel, Ichannel, cycles, Ishift)){
+    if(millis()-startTime > 250){
+      return String("Unable to sample");
+    }
+  }
 
   double IshiftDeg = (double)Ishift * 360.0 / (samples / cycles);
   PRINTL("ShiftDeg: ", IshiftDeg) 
@@ -505,10 +490,17 @@ float samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
   double Vrms = sqrt(sumVsq / (double)samples);
   double Irms = sqrt(sumIsq / (double)samples);
   double VI = sumVI / (double)samples;
+  float phaseDiff = (double)57.29578 * acos(VI / (Vrms * Irms)) - 0.055;  // 0.055 is shift introduced in sampling timing
 
-  float phaseDiff = (double)57.29578 * acos(VI / (Vrms * Irms)) - IshiftDeg;
-  PRINTL("phaseDiff: ",phaseDiff)
-  return phaseDiff;
+  String response = "Sample phase lead\r\n\r\nChannel: " + String(Ichan) + "\r\n";
+  response += "Refchan: " + String(Vchan) + "\r\n";
+  if(Ishift){
+    response += "Measured shift: " + String(phaseDiff,2) + " degrees\r\n";
+    response += "Artificial shift: " + String(IshiftDeg,2) + " degrees (" + String(Ishift) + ") samples\r\n";
+  }
+  response += "Net shift: " + String(phaseDiff-IshiftDeg,2) + " degrees\r\n\r\n";
+  
+  return response;
 }
 
 
