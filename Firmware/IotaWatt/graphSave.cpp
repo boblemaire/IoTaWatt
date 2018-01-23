@@ -1,7 +1,7 @@
 #include "IotaWatt.h"
 
 #define graphDir "graphs"
-String hashFileName(const char* name);
+String hashName(const char* name);
 
 void handleGraphCreate(){
   File graphFile = SD.open(graphDir);
@@ -20,7 +20,7 @@ void handleGraphCreate(){
   DynamicJsonBuffer Json;
   JsonObject& graph = Json.parseObject(server.arg("data"));
   String filePath = graphDir;
-  String fileName = hashFileName(graph["name"].as<char*>());
+  String fileName = hashName(graph["name"].as<char*>());
   filePath += "/" + fileName + ".txt";
   SD.remove(filePath);
   graphFile = SD.open(filePath, FILE_WRITE);
@@ -75,7 +75,7 @@ void handleGraphGetall(){
   return;
 }
 
-String hashFileName(const char* name){
+String hashName(const char* name){
   uint8_t hash[6];
   sha256.reset();
   sha256.update(name, strlen(name));

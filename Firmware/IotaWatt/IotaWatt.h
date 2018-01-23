@@ -291,5 +291,6 @@ boolean   getConfig(void);
 void      sendChunk(char* bufr, uint32_t bufrPos);
 String    base64encode(const uint8_t* in, size_t len);
 
+String    hashName(const char* name);
 String    formatHex(uint32_t);
 #endif
