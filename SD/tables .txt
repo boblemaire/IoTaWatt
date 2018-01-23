@@ -22,7 +22,8 @@
 	{"model":"SCT023R","mfg":"YHDC","type":"C","turns":3780,"phase":0.8},
 	{"model":"SCT027H","mfg":"YHDC","type":"C","turns":4000,"phase":2.0},
 	{"model":"CTHMC-100-UB","mfg":"Dent","type":"V","cal":301,"phase":0.25},
-	{"model":"HWCT-004","mfg":"China","type":"C","turns":1000,"phase":1.97},
+	{"model":"HWCT-004","mfg":"China","type":"C","turns":1004,"phase":0.35},
+	{"model":"DL-CT08CL2","mfg":"China","type":"C","turns":1006,"phase":0.35},
 	{"model":"ZDKCT10M","mfg":"China","type":"C","turns":2007,"phase":1.5},
 	{"model":"PZCT-02","mfg":"China","type":"C","turns":1000,"phase":2.5},
 	{"model":"SCT0750-000","mfg":"Magnalab","type":"C","turns":7550,"phase":2.55}
