@@ -65,7 +65,8 @@
  *   11/08/17 02_02_25 Rework data log into current and history logs 
  *   11/11/17 02_02_26 Fix bug in searchKey, improve searchKey, throttle back historyLog Service 
  *   12/05/17 02_02_27 Emoncms context from Emoncms, Rework config app 
- *   01/14/18 02_02_28 Add derived three-phase support   
+ *   01/14/18 02_02_28 Add derived three-phase support 
+ *   01/23/18 02_02_29 Improved phase correction plus misc. fixes  
  * 
  *****************************************************************************************************/
 
