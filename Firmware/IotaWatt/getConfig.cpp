@@ -1,17 +1,28 @@
 #include "IotaWatt.h"
 
+struct phaseTableEntry {
+    phaseTableEntry* next;
+    char modelHash[8];
+    float value;
+    phaseTableEntry() {next = nullptr; value = 0.0;}
+    ~phaseTableEntry(){delete next;}
+  }; 
+
 void configInputs(JsonArray& JsonInputs);
 void hashFile(uint8_t* sha, File file);
 uint32_t condensedJsonSize(File JsonFile);
 void condenseJson(char* ConfigBuffer, File JsonFile);
 String old2newScript(JsonArray& script);
+void getTable(void);
+void buildPhaseTable(phaseTableEntry**);
+void phaseTableAdd(phaseTableEntry**, JsonArray&);
 
-boolean getConfig(void)
-{
+boolean getConfig(void){
+
   DynamicJsonBuffer Json;              
   File ConfigFile;
   String ConfigFileURL = "config.txt";
-    
+      
   //************************************** Load and parse Json Config file ************************
 
   trace(T_CONFIG,0);
@@ -273,6 +284,8 @@ boolean getConfig(void)
 }
 
 void configInputs(JsonArray& JsonInputs){
+  phaseTableEntry* phaseTable = nullptr;
+  buildPhaseTable(&phaseTable);
   for(int i=0; i<MIN(maxInputs,JsonInputs.size()); i++) {
     if(JsonInputs[i].is<JsonObject>()){
       JsonObject& input = JsonInputs[i].as<JsonObject&>();
@@ -287,7 +300,16 @@ void configInputs(JsonArray& JsonInputs){
       inputChannel[i]->_vphase = input["vphase"].as<float>();
       inputChannel[i]->_vchannel = input.containsKey("vref") ? input["vref"].as<int>() : 0;
       inputChannel[i]->active(true);
-      String type = input["type"]; 
+      String type = input["type"];
+      String _hashName = hashName(input["model"].as<char*>());
+      phaseTableEntry* entry = phaseTable;
+      while(entry){
+        if(memcmp(entry->modelHash, _hashName.c_str(), 8) == 0){
+          inputChannel[i]->_phase = entry->value;
+          break;
+        }
+        entry = entry->next;
+      }
       if(type == "VT") {
         inputChannel[i]->_type = channelTypeVoltage;
       }
@@ -304,6 +326,7 @@ void configInputs(JsonArray& JsonInputs){
       inputChannel[i]->reset();
     }
   }
+  delete phaseTable;
 }
 
 void hashFile(uint8_t* sha, File file){
@@ -372,3 +395,33 @@ String old2newScript(JsonArray& script){
   return newScript;
 }
 
+void buildPhaseTable(phaseTableEntry** phaseTable){
+  DynamicJsonBuffer Json;              
+  File TableFile;
+  String TableFileURL = "tables.txt";
+  TableFile = SD.open(TableFileURL, FILE_READ);
+  if(!TableFile) return;
+  JsonObject& Table = Json.parse(TableFile);
+  TableFile.close();
+  if(!Table.success()) return;
+  if(Table.containsKey("VT")) phaseTableAdd(phaseTable, Table["VT"]);
+  if(Table.containsKey("CT")) phaseTableAdd(phaseTable, Table["CT"]);
+  return;  
+}
+
+void phaseTableAdd(phaseTableEntry** phaseTable, JsonArray& table){
+  int size = table.size();
+  char modelHash[9];
+  for(int i=0; i<size; i++){
+    if(table[i].is<JsonObject>()) {
+      JsonObject& entry = table[i].as<JsonObject&>();
+      if(memcmp(entry["model"].as<char*>(),"generic",7) == 0) continue;
+      phaseTableEntry* tableEntry = new phaseTableEntry;
+      tableEntry->next = *phaseTable;
+      *phaseTable = tableEntry;
+      tableEntry->value = entry["phase"].as<float>();
+      String _hashName = hashName(entry["model"].as<char*>());
+      memcpy(tableEntry->modelHash, _hashName.c_str(), 8);
+    }
+  }
+}
