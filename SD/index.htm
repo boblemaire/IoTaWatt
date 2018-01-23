@@ -246,7 +246,7 @@
         <form>
           <h3  style="text-align:center">Configure Output</h3>
           <table><tr><th width="30%"></th><th></th></tr>
-            <tr><td class="calcField"><strong>Name:</strong></td><td><input id="calcName" type="text" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="refreshCalcDisplay()" title="invalid name"></td></tr>
+            <tr><td class="calcField"><strong>Name:</strong></td><td><input id="calcName" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="refreshCalcDisplay()" title="invalid name"></td></tr>
             <tr><td class="calcField"><strong>Units:</strong></td><td><input id="calcUnits" oninput="refreshCalcDisplay()"></td></tr>
           </table>
         </form>
@@ -860,7 +860,7 @@ function calVTsave(obj){
  function configOutputs(){
     currentBodyPush("configOutputs");
     document.getElementById("calcName").title="Name must be alphanumeric and start with a letter";
-    document.getElementById("calcName").pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*";
+    document.getElementById("calcName").pattern="^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
     scriptEditSave = function(){
       config.outputs = scriptEditSet
       uploadConfig();
@@ -873,6 +873,7 @@ function calVTsave(obj){
     scriptEditTable = document.getElementById("outputTable");
     scriptEditTable.innerHTML = "";
     scriptEditSet = config.outputs;
+    
     editScript();
   }
   
@@ -998,14 +999,16 @@ function calVTsave(obj){
 
   function refreshCalcDisplay(){
     document.getElementById("calcDisplay").innerHTML = scriptDisplay(tokens);
+    var calcName = document.getElementById("calcName");
     if(document.getElementById("calcName").value.trim() == "" ||
        parenLevel > 0 || 
        RegExp("^[-+*\/]").test(tokens[tokens.length-1])){
       document.getElementById("calcSave").style.display = "none";
     }
-    else if(document.getElementById("calcName").validity.valid){
-      document.getElementById("calcSave").style.display = "inline";
+    else if (! RegExp(calcName.pattern).test(calcName.value)){
+      document.getElementById("calcSave").style.display = "none";
     }
+    else document.getElementById("calcSave").style.display = "inline";
   }
 
   function parseScript(script){
@@ -1427,8 +1430,8 @@ function buildEmoncms(){
   document.getElementById("divServerOutputs").style.display = "inline";
   document.getElementById("serverOutputsHeader").innerHTML = "Emoncms inputs";
   
-  document.getElementById("calcName").pattern="[1-9]{1}[0-9]?";
-  document.getElementById("calcName").title="Name is Emoncms Input Key 1-99";
+  document.getElementById("calcName").pattern="^[1-9]{1}$|^[1-2]{1}[0-9]{1}$";
+  document.getElementById("calcName").title="Name is Emoncms Input Key 1-29";
   scriptEditSave = function(){
     scriptEditSet.sort(function(a, b){return a.name - b.name});
     config.server.outputs = scriptEditSet;
@@ -1668,7 +1671,7 @@ function checkConfig(){
     config.device.channels = 15;
   }
   if(config.inputs === undefined){
-    config.inputs = [{channel:0, type:"VT", model:"generic", cal:10, phase:0}];
+    config.inputs = [{channel:0, type:"VT", model:"generic", cal:10, phase:2}];
   }
   for(var i=0; i<config.inputs.length; i++){
     if(config.inputs[i] === undefined ||
@@ -1676,7 +1679,7 @@ function checkConfig(){
       config.inputs.splice(i,0,null);
     }
   }
- for(var i=config.inputs.length; i<config.device.channels; i++){
+  for(var i=config.inputs.length; i<config.device.channels; i++){
     config.inputs.push(null);
   }
   config.inputs.splice(config.device.channels,config.inputs.length-config.device.channels);
@@ -1686,6 +1689,17 @@ function checkConfig(){
   } 
   for(var i=config.device.burden.length; i<config.device.channels; i++){
     config.device.burden.push(24);
+  }
+  for(i in config.inputs){
+    if(config.inputs[i] != null && config.inputs[i].model != "generic"){
+      var table = tables.CT;
+      if(config.inputs[i].type == "VT")table = tables.VT;
+      for(j in table){
+        if(config.inputs[i].model == table[j].model){
+          config.inputs[i].phase = table[j].phase;
+        }
+      }
+    }
   }
   
   if(config.format == 1){
@@ -1884,8 +1898,8 @@ function writeFile(fileString, url, responseHandler){
 
 
 function setup(){
-  getConfig();
   getTables();
+  getConfig();
   if(document.domain == "iotawatt.com"){
     demo = true;
     document.getElementById("heading").innerHTML += " Demo Mode";
