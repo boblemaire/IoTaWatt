@@ -346,7 +346,7 @@ void samplePower(int channel, int overSample){
    
   trace(T_SAMP,8);
 
-  if(samples < ((lastCrossUs - firstCrossUs) * 10 / 264)){
+  if(samples < ((lastCrossUs - firstCrossUs) * 381 / 10000)){
     Serial.print("Low sample count ");
     Serial.println(samples);
     return 1;
@@ -466,25 +466,26 @@ String samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
   
   int16_t rawV;                               // Raw ADC readings
   int16_t rawI;
-    
+
+  double IshiftDeg = (double)Ishift * 360.0 / (samples / cycles);  
   double sumVsq = 0;
   double sumIsq = 0;
   double sumVI = 0;
+  float  sumSamples;
 
-  uint32_t startTime = millis();
-  while (sampleCycle(Vchannel, Ichannel, cycles, Ishift)){
-    if(millis()-startTime > 250){
-      return String("Unable to sample");
+  for(int i=0; i<4; i++){
+    uint32_t startTime = millis();
+    while (sampleCycle(Vchannel, Ichannel, cycles, Ishift)){
+      if(millis()-startTime > 75){
+        return String("Unable to sample");
+      }
     }
-  }
-
-  double IshiftDeg = (double)Ishift * 360.0 / (samples / cycles);
-  PRINTL("ShiftDeg: ", IshiftDeg) 
-
-  for(int i=0; i<samples; i++){
-    sumVsq += Vsample[i] * Vsample[i];
-    sumIsq += Isample[(i + Ishift) % samples] * Isample[(i + Ishift) % samples];
-    sumVI += Vsample[i] * Isample[(i + Ishift) % samples];
+    for(int i=0; i<samples; i++){
+      sumVsq += Vsample[i] * Vsample[i];
+      sumIsq += Isample[(i + Ishift) % samples] * Isample[(i + Ishift) % samples];
+      sumVI += Vsample[i] * Isample[(i + Ishift) % samples];
+    }
+    sumSamples += samples;
   }
 
   double Vrms = sqrt(sumVsq / (double)samples);
