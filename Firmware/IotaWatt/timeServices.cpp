@@ -87,7 +87,6 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock){
     case start: { 
       msgLog(F("timeSync: service started."));    
       state = setRtc;     
-      return 1;
     }
 
     case setRtc: {
@@ -103,6 +102,8 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock){
           timeRefMs = millis();
           RTCrunning = true;
           programStartTime = UNIXtime();
+          rtc.adjust(UNIXtime());
+          msgLog(F("timeSync: RTC initalized to NTP time"));
           state = syncRtc;
           break;    
         }
@@ -127,13 +128,6 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock){
         if(timeDiff < -1 || timeDiff > 1){
           msgLog("timeSync: adjusting RTC by ", String(timeDiff));
           rtc.adjust(UNIXtime());
-
-            // Reset battery to "direct" mode (adjust sets "standard" mode
-          
-//          Wire.beginTransmission(PCF8523_ADDRESS);            // Set direct battery switchover
-//          Wire.write((byte)2);
-//          Wire.write((byte)0x20);
-//          Wire.endTransmission();
         }
       }
       retryCount = 0;
