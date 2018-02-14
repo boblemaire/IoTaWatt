@@ -36,7 +36,7 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266httpUpdate.h>
 #include <ESPAsyncTCP.h>
-#include <SyncClient.h>
+#include <asyncHTTPrequest.h>
 
 #include <SPI.h>
 #include <RTClib.h>

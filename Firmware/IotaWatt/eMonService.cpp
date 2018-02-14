@@ -19,7 +19,7 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
  ******************************************************************************************************/
 uint32_t EmonService(struct serviceBlock* _serviceBlock){
   // trace T_Emon
-  enum   states {initialize, getPostTime, post, resend};
+  enum   states {initialize, getPostTime, waitPostTime, sendPost, waitPost, sendSecure, waitSecure, post, resend};
   static states state = initialize;
   static IotaLogRecord* logRecord = new IotaLogRecord;
   static File EmonPostLog;
@@ -33,8 +33,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static uint32_t reqUnixtime = 0;
   static int  reqEntries = 0; 
   static uint32_t postTime = millis();
-  struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
-  static SDbuffer* buf = new SDbuffer;
+  static asyncHTTPrequest request;
+  static String base64Sha;
           
   trace(T_Emon,0);
 
@@ -44,8 +44,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     msgLog("EmonService: stopped.");
     EmonStarted = false;
     trace(T_Emon,1);
-    EmonPostLog.close();
-    trace(T_Emon,2);
     state = initialize;
     return 0;
   }
@@ -73,17 +71,31 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
 
     case getPostTime: {
 
-      String URL = EmonURI + "/input/get?node=" + String(node);
-      http.begin(EmonURL, EmonPort, URL);
+      String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/get?node=" + String(node);
+      request.setRxTimeout(5);
+      request.setAckTimeout(2000);
+      request.setDebug(false);
+      request.open("GET", URL.c_str());
       String auth = "Bearer " + apiKey;
-      http.addHeader("Authorization", auth.c_str());
-      http.setTimeout(500);
-      int httpCode = http.GET();
-      if(httpCode != HTTP_CODE_OK){
-        msgLog("EmonService: input/get failed.");
-        return UNIXtime() + 30;
+      request.setReqHeader("Authorization", auth.c_str());
+      request.send();
+      state = waitPostTime;
+      return 1;
+    } 
+
+    case waitPostTime: {
+
+      if(request.readyState() != 4){
+        return UNIXtime() + 1; 
       }
-      String response = http.getString();
+
+      if(request.responseHTTPcode() != 200){
+        msgLog("EmonService: get input list failed, code: ", request.responseHTTPcode());
+        state = getPostTime;
+        return UNIXtime() + 5;
+      }
+          
+      String response = request.responseText();
       if (response.startsWith("\"Node does not exist\"")){
         UnixLastPost = UNIXtime();
         UnixLastPost -= UnixLastPost % EmonCMSInterval;
@@ -241,138 +253,97 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // Send the post       
 
       reqData += ']';
-      if(!EmonSendData(reqUnixtime, reqData, 750, false)){
-        state = resend;
-        resendCount = 0;
-        return UNIXtime() + 5;
+      if(EmonSend == EmonSendGET){
+        state = sendPost;
       }
-      buf->data = UnixLastPost;
+      else {
+        state = sendSecure;
+      }
+      return 1;
+    }
+
+    case sendPost:{
+      String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
+      request.setRxTimeout(5);
+      request.setAckTimeout(2000);
+      request.setDebug(false);
+      request.open("POST", URL.c_str());
+      String auth = "Bearer " + apiKey;
+      request.setReqHeader("Authorization", auth.c_str());
+      request.setReqHeader("Content-Type","application/x-www-form-urlencoded");
+      request.send(reqData);
+      state = waitPost;
+      return 1;
+    } 
+
+    case waitPost: {
+      if(request.readyState() != 4){
+        return UNIXtime() + 1; 
+      }
+      if(request.responseHTTPcode() != 200){
+        msgLog("EmonService: post failed, retrying, code: ", request.responseHTTPcode());
+        state = sendPost;
+        return UNIXtime() + 1;
+      }
+      String response = request.responseText();
+      if(! response.startsWith("ok")){
+        msgLog("EmonService: response not ok. Retrying.");
+        state = sendPost;
+        return UNIXtime() + 1;
+      }
       reqData = "";
       reqEntries = 0;    
       state = post;
       return UnixNextPost;
     }
-  
 
-    case resend: {
-      trace(T_Emon,7);
-      resendCount++;
-      if(resendCount > 1){
-        msgLog("EmonService: Resending EmonCMS data:", resendCount);
-      }
-      if(!EmonSendData(reqUnixtime, reqData, 1500, resendCount == 1)){ 
-        if(resendCount < 10){
-          return UNIXtime() + 60 * resendCount;
-        }
-        msgLog(F("EmonService: Unable to post to Emoncms after 10 retries.  Restarting ESP."));
-        ESP.restart();
-      }
-      else {
-        if(resendCount > 1){
-          msgLog(F("EmonService: Retry successful."));
-        }
-        buf->data = UnixLastPost;
-        EmonPostLog.write((byte*)buf,4);
-        EmonPostLog.flush();
-        reqData = "";
-        reqEntries = 0;  
-        state = post;
-        return 1;
-      }
-      break;
-    }
-  }
-  return 1;
-}
+case sendSecure:{
+      String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
+      request.setRxTimeout(5);
+      request.setAckTimeout(2000);
+      request.setDebug(false);
+      sha256.reset();
+      sha256.update(reqData.c_str(), reqData.length());
+      uint8_t value[32];
+      sha256.finalize(value, 32);
+      base64Sha = base64encode(value, 32);
+      sha256.resetHMAC(cryptoKey,16);
+      sha256.update(reqData.c_str(), reqData.length());
+      sha256.finalizeHMAC(cryptoKey, 16, value, 32);
+      String auth = EmonUsername + ':' + bin2hex(value, 32);
+      request.open("POST", URL.c_str());
+      request.setReqHeader("Content-Type","aes128cbc");
+      request.setReqHeader("Authorization", auth.c_str());
+      request.send(encryptData(reqData, cryptoKey));
+      state = waitSecure;
+      return 1;
+    } 
 
-/************************************************************************************************
- *  EmonSend - send data to the EmonCMS server. 
- *  if secure transmission is configured, pas sthe request to a 
- *  similar WiFiClientSecure function.
- *  Secure takes about twice as long and can block sampling for more than a second.
- ***********************************************************************************************/
-boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool logError){ 
-  trace(T_Emon,8);
-  uint32_t startTime = millis();
-  // Serial.println(reqData);
-  
-  if(EmonSend == EmonSendGET){
-    String URL = EmonURI + "/input/bulk.json?" + reqData + "&apikey=" + apiKey;
-    http.begin(EmonURL, EmonPort, URL);
-    http.setTimeout(timeout);
-    int httpCode = http.GET();
-    if(httpCode != HTTP_CODE_OK){
-      if(logError){
-        msgLog("EmonService: GET failed. HTTP code:", http.errorToString(httpCode) );
+    case waitSecure: {
+      if(request.readyState() != 4){
+        return UNIXtime() + 1; 
       }
-      else {
-        Serial.print("EmonService: GET failed. HTTP code: ");
-        Serial.println(http.errorToString(httpCode));
+      if(request.responseHTTPcode() != 200){
+        msgLog("EmonService: post failed, retrying, code: ", request.responseHTTPcode());
+        state = sendSecure;
+        return UNIXtime() + 1;
       }
-      http.end();
-      return false;
-    }
-    String response = http.getString();
-    http.end();
-    if(response.startsWith("ok")){
-      return true;        
-    }
-    Serial.println("response not ok."); 
-    return false;
-  }
-
-  if(EmonSend == EmonSendPOSTsecure){
-    String URI = EmonURI + "/input/bulk";               
-    sha256.reset();
-    sha256.update(reqData.c_str(), reqData.length());
-    uint8_t value[32];
-    sha256.finalize(value, 32);
-    String base64Sha = base64encode(value, 32);
-    sha256.resetHMAC(cryptoKey,16);
-    sha256.update(reqData.c_str(), reqData.length());
-    sha256.finalizeHMAC(cryptoKey, 16, value, 32);
-    String auth = EmonUsername + ':' + bin2hex(value, 32);
-    http.begin(EmonURL, EmonPort, URI);
-    http.addHeader("Host",EmonURL);
-    http.addHeader("Content-Type","aes128cbc");
-    http.addHeader("Authorization", auth.c_str());
-    http.setTimeout(timeout);
-    int httpCode = http.POST(encryptData(reqData, cryptoKey));
-    trace(T_Emon,9);
-    int responseLength = http.getSize();
-    String response = "";
-    if(responseLength > 0 && responseLength <= 1000){
-      response = http.getString();
-    }	
-    http.end();
-    if(httpCode != HTTP_CODE_OK){
-      String code = String(httpCode);
-      if(httpCode < 0){
-        code = http.errorToString(httpCode);
-      }
-      if(logError){
-        msgLog("EmonService: POST failed. HTTP code:", code);
-      }
-      else {
-        Serial.print("EmonService: POST failed. HTTP code: ");
-        Serial.println(code);
+      String response = request.responseText();
+      if(! response.startsWith(base64Sha)){
+        msgLog("EmonService: Invalid response, Retrying.");
+        Serial.println(base64Sha);
         Serial.println(response);
+
+        state = sendSecure;
+        return UNIXtime() + 1;
       }
-      return false;
+      reqData = "";
+      reqEntries = 0;    
+      state = post;
+      return UnixNextPost;
     }
-    
-    if(response.startsWith(base64Sha)){
-      return true;        
-    }
-    msgLog(reqData.substring(0,60));
-    msgLog("EmonService: Invalid response: ", response.substring(0,60));
-    msgLog("EmonService: Expectd response: ", base64Sha);
-    
-    return false;
   }
-  
-  msgLog("EmonService: Unsupported protocol - ", EmonSend);
-  return false;
+  return 1;   
 }
 
 String encryptData(String in, const uint8_t* key) {
