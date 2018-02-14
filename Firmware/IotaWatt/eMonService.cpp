@@ -28,7 +28,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static uint32_t UnixNextPost = 0;
   static double _logHours;
   static double elapsedHours;
-  static uint32_t resendCount;
   static String reqData = "";
   static uint32_t reqUnixtime = 0;
   static int  reqEntries = 0; 
@@ -154,7 +153,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // just return without attempting to log and try again in a few seconds.
 
       if(WiFi.status() != WL_CONNECTED) {
-        return 2; 
+        return UNIXtime() + 1;
       }
 
           // If we are current,
