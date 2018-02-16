@@ -406,13 +406,7 @@ String base64encode(const uint8_t* in, size_t len){
     *(base64out++) = base64codes[*in & 0x3f];
   }
   *base64out = 0;
-  if((base64out - base64) != base64Len){
-    Serial.print("Base 64 output length error:");
-    Serial.print(base64out - base64);
-    Serial.print(" ");
-    Serial.println(base64Len);
-    dropDead();
-  }
+  
   trace(T_encryptEncode, 9);
   String out = base64;
   delete[] base64;
