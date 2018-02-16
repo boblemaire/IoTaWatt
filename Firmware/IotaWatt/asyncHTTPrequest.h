@@ -31,13 +31,16 @@
 #define DEBUG_IOTA_HTTP_SET false
 #endif
 
-#define DEBUG_HTTP(...)  if(_debug){DEBUG_IOTA_PORT.print("Debug: "); DEBUG_IOTA_PORT.printf(__VA_ARGS__ );}
+#include <Arduino.h>
+#include <ESPasyncTCP.h>
+#include <pgmspace.h>
+
+#define DEBUG_HTTP(format,...)  if(_debug){\
+                                    DEBUG_IOTA_PORT.print("Debug: ");\
+                                    DEBUG_IOTA_PORT.printf_P(PSTR(format),##__VA_ARGS__);}
 
 #define DEFAULT_RX_TIMEOUT 3                    // Seconds for connect timeout
 #define DEFAULT_ACK_TIMEOUT 2000                // Ms for ack timeout
-
-#include <Arduino.h>
-#include <ESPasyncTCP.h>
 
 #define HTTPCODE_CONNECTION_REFUSED  (-1)
 #define HTTPCODE_SEND_HEADER_FAILED  (-2)
@@ -134,12 +137,12 @@ class asyncHTTPrequest {
 	bool	respHeaderExists(const char* name);                     // Does header exist by name?
     String  headers();                                              // Return all headers as String
 
+    void    onData(onDataCB, void* arg = 0);                        // Notify when min data is available
+    size_t  available();                                            // response available
     int     responseHTTPcode();                                     // HTTP response code or (negative) error code
     String  responseText();                                         // response (whole* or partial* as string)
     String* responseStringPtr();                                    // response (whole* or partial* as String*)
-    size_t  read(uint8_t* buffer, size_t len);                      // Read response into buffer
-    size_t  available();                                            // response available
-    void    onData(onDataCB, void* arg = 0);                        // Notify when min data is available
+    size_t  responseRead(uint8_t* buffer, size_t len);              // Read response into buffer
     uint32_t elapsedTime();                                         // Elapsed time of in progress transaction or last completed (ms)                                                                // Note, caller takes posession, responsible for delete
 //___________________________________________________________________________________________________________________________________
 
@@ -147,11 +150,12 @@ class asyncHTTPrequest {
   
 	enum	{HTTPmethodGET,	HTTPmethodPOST} _HTTPmethod;
 			
-	enum	readyStates {readyStateUnsent = 0,
-			readyStateOpened =  1,
-			readyStateHdrsRecvd = 2,
-			readyStateLoading = 3,
-			readyStateDone = 4} _readyState;
+	enum	readyStates {
+                readyStateUnsent = 0,
+                readyStateOpened =  1,
+                readyStateHdrsRecvd = 2,
+                readyStateLoading = 3,
+                readyStateDone = 4} _readyState;
 
     int16_t     _HTTPcode;
     bool        _connecting;
@@ -167,19 +171,17 @@ class asyncHTTPrequest {
     onDataCB            _onDataCB;
     void*               _onDataCBarg; 
     size_t              _onDataCBmin;
-
-			
+		
 	URL*        _URL;
-    char*       _host;
     uint16_t    port;
 	AsyncClient* _client;
     size_t      _contentLength;
     size_t      _contentRead;
     size_t      _notAcked;
 
-	String*     request;
-	String*	    response;
-	
+	String*     _request;
+	String*	    _response;
+
 	header*	    _headers;
 
     header*     _addHeader(const char*, const char*);

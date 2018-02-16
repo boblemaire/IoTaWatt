@@ -34,6 +34,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static uint32_t postTime = millis();
   static asyncHTTPrequest request;
   static String base64Sha;
+  static int32_t retryCount = 0;
           
   trace(T_Emon,0);
 
@@ -262,6 +263,9 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     }
 
     case sendPost:{
+      if(WiFi.status() != WL_CONNECTED){
+        return UNIXtime() + 1;
+      }
       String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
       request.setRxTimeout(5);
       request.setAckTimeout(2000);
@@ -280,7 +284,9 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 1; 
       }
       if(request.responseHTTPcode() != 200){
-        msgLog("EmonService: post failed, retrying, code: ", request.responseHTTPcode());
+        if(++retryCount  % 10 == 0){
+            msgLog("EmonService: retry count ", retryCount);
+        }
         state = sendPost;
         return UNIXtime() + 1;
       }
@@ -290,6 +296,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         state = sendPost;
         return UNIXtime() + 1;
       }
+      retryCount = 0;
       reqData = "";
       reqEntries = 0;    
       state = post;
@@ -297,6 +304,9 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     }
 
 case sendSecure:{
+      if(WiFi.status() != WL_CONNECTED){
+        return UNIXtime() + 1;
+      }
       String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
       request.setRxTimeout(5);
       request.setAckTimeout(2000);
@@ -323,7 +333,9 @@ case sendSecure:{
         return UNIXtime() + 1; 
       }
       if(request.responseHTTPcode() != 200){
-        msgLog("EmonService: post failed, retrying, code: ", request.responseHTTPcode());
+        if(++retryCount  % 10 == 0){
+            msgLog("EmonService: retry count ", retryCount);
+        }
         state = sendSecure;
         return UNIXtime() + 1;
       }
@@ -336,6 +348,7 @@ case sendSecure:{
         state = sendSecure;
         return UNIXtime() + 1;
       }
+      retryCount = 0;
       reqData = "";
       reqEntries = 0;    
       state = post;
