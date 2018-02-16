@@ -11,11 +11,10 @@ boolean EmonSendData(uint32_t reqUnixtime, String reqData, size_t timeout, bool 
  * more or less independent of everything else, just reading the log records as they become available
  * and sending the data out.
  * The advantage of doing it this way is that there is really no EmonCMS specific code anywhere else
- * except a speciific section in getConfig.  Other web data logging services could be handled
+ * except a complimentary section in getConfig.  Other web data logging services should be handled
  * the same way.
- * It's possible that multiple web services could be updated independently, each having their own 
- * SERVER.  The only issue right now would be the WiFi resource.  A future move to the 
- * asynchWifiClient would solve that.
+ * Now that the HTTP posts are asynchronous, It's possible that multiple web services could be
+ * updated independently, each having their own independantly scheduled Server instance.
  ******************************************************************************************************/
 uint32_t EmonService(struct serviceBlock* _serviceBlock){
   // trace T_Emon
