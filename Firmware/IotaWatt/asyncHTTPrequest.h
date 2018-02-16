@@ -1,10 +1,8 @@
 #ifndef asyncHTTPrequest_h
 #define asyncHTTPrequest_h
 
-
    /***********************************************************************************
-    IotaWatt Electric Power Monitor System
-    Copyright (C) <2017>  <Bob Lemaire, IoTaWatt, Inc.>
+    Copyright (C) <2018>  <Bob Lemaire, IoTaWatt, Inc.>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -139,6 +137,7 @@ class asyncHTTPrequest {
 
     void    onData(onDataCB, void* arg = 0);                        // Notify when min data is available
     size_t  available();                                            // response available
+    size_t  responseLength();                                       // indicated response length or sum of chunks to date     
     int     responseHTTPcode();                                     // HTTP response code or (negative) error code
     String  responseText();                                         // response (whole* or partial* as string)
     String* responseStringPtr();                                    // response (whole* or partial* as String*)

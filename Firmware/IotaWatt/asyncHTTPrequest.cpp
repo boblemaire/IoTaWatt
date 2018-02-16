@@ -32,6 +32,10 @@ asyncHTTPrequest::~asyncHTTPrequest(){
 
 //**************************************************************************************************************
 void	asyncHTTPrequest::setDebug(bool debug){
+    if(_debug || debug) {
+        _debug = true;
+        DEBUG_HTTP("setDebug(%s)\r\n", debug ? "on" : "off");
+    }
     _debug = debug;
 }
 
@@ -128,7 +132,7 @@ String	asyncHTTPrequest::responseText(){
     if( ! localString.reserve(avail)) {
         DEBUG_HTTP("!responseText() no buffer\r\n")
         _HTTPcode = HTTPCODE_TOO_LESS_RAM;
-        return String("");
+        return String();
         _client->abort();
     }
     localString = _response->substring(0, avail);
@@ -178,9 +182,9 @@ size_t  asyncHTTPrequest::responseRead(uint8_t* buf, size_t len){
     _response->remove(0, avail);
     _contentRead += avail;
     if(_client){
-        _client->ack(_notAcked);   
+        _client->ack(avail); 
+        _notAcked -= avail;  
     }
-    _notAcked = 0;
     return avail;
 }
 
@@ -192,6 +196,12 @@ size_t	asyncHTTPrequest::available(){
         return _contentLength - _contentRead;
     }
     return _response->length();
+}
+
+//**************************************************************************************************************
+size_t	asyncHTTPrequest::responseLength(){
+    if(_readyState < readyStateLoading) return 0;
+    return _contentLength;
 }
 
 //**************************************************************************************************************
@@ -521,8 +531,7 @@ void  asyncHTTPrequest::_onData(void* Vbuf, size_t len){
         _client->close();
     }
 
-                // If onData callback requested and data above minimum
-                // make the call.
+                // If onData callback requested, do so.
 
     if(_onDataCB && available()){
         _onDataCB(_onDataCBarg, this, available());
