@@ -684,13 +684,14 @@ function refreshInputEdit(){
     inputNeg = addTableRow(table, "", "inputNeg", "input");
     inputNeg.parentNode.appendChild(document.createTextNode("Allow negative power value"));
     inputNeg.setAttribute("type","checkbox");
-    if(config.inputs[inputEditChannel].signed){
+    inputNeg.setAttribute("onchange","inputEditObject.signed = this.checked; refreshInputEdit();");
+    if(inputEditObject.signed != undefined && inputEditObject.signed){
       inputNeg.checked = true;
     }
     else {
-      config.inputs[inputEditChannel].signed = undefined;
+      inputEditObject.signed = undefined;
     }
-    inputNeg.setAttribute("onchange","config.inputs[inputEditChannel].signed = this.checked; refreshInputEdit();");
+    
     document.getElementById("inputEditDelete").style.display = (config.inputs[inputEditChannel] == null) ? "none" : "inline";
   }
 
