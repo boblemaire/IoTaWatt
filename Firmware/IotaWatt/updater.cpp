@@ -8,6 +8,9 @@ size_t httpRead(uint8_t* buff, size_t len);
  * 
  *************************************************************************************************/
 uint32_t updater(struct serviceBlock* _serviceBlock) {
+  if( ! WiFi.isConnected()){
+    return UNIXtime() + 1;
+  }
   if(checkUpdate()){
     msgLog ("Firmware updated, restarting.");
     delay(500);
