@@ -330,7 +330,7 @@ case sendSecure:{
       String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
       request.setRxTimeout(5);
       request.setAckTimeout(2000);
-      request.setDebug(false);
+      request.setDebug(true);
       trace(T_Emon,8);
       sha256.reset();
       sha256.update(reqData.c_str(), reqData.length());
@@ -344,6 +344,11 @@ case sendSecure:{
       sha256.finalizeHMAC(cryptoKey, 16, value, 32);
       trace(T_Emon,8);
       String auth = EmonUsername + ':' + bin2hex(value, 32);
+      if(request.debug()){
+        DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
+        String msg = timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second());
+        Serial.println(msg);
+      }
       request.open("POST", URL.c_str());
       trace(T_Emon,8);
       request.setReqHeader("Content-Type","aes128cbc");

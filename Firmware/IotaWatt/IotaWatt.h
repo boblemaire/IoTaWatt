@@ -285,6 +285,7 @@ uint32_t  NTPtime();
 uint32_t  UNIXtime();
 uint32_t  MillisAtUNIXtime(uint32_t);
 void      dateTime(uint16_t* date, uint16_t* time);
+String    timeString(int value);
 
 boolean   getConfig(void);
 

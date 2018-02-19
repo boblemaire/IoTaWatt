@@ -105,34 +105,35 @@ class asyncHTTPrequest {
 	
   public:
     asyncHTTPrequest();
-	~asyncHTTPrequest();
+    ~asyncHTTPrequest();
 
      
     //External functions in typical order of use:
     //__________________________________________________________________________________________________________*/
     void    setDebug(bool);                                         // Turn debug message on/off
+    bool    debug();                                                // is debug on or off?
 
-	bool	open(const char* /*GET/POST*/, const char* URL);        // Initiate a request
+    bool    open(const char* /*GET/POST*/, const char* URL);        // Initiate a request
     void    onReadyStateChange(readyStateChangeCB, void* arg = 0);  // Optional event handler for ready state change
                                                                     // or you can simply poll readyState()    
     void	setRxTimeout(int);                                      // overide default connect timeout (seconds)
     void    setAckTimeout(uint32_t);                                // overide default data ack timeout (ms)
 
-    void	setReqHeader(const char* name, const char* value);      // add a request header     
-	void	setReqHeader(const char* name, int32_t value);          // overload to use integer value     
+    void    setReqHeader(const char* name, const char* value);      // add a request header     
+    void    setReqHeader(const char* name, int32_t value);          // overload to use integer value     
 
-	bool	send();                                                 // Send the request (GET)
-	bool	send(String body);                                      // Send the request (POST)
-	bool	send(const char* body);                                 // Send the request (POST)
+    bool    send();                                                 // Send the request (GET)
+    bool    send(String body);                                      // Send the request (POST)
+    bool    send(const char* body);                                 // Send the request (POST)
     void    abort();                                                // Abort the current operation
     
-    int		readyState();                                           // Return the ready state
-	
-	int		respHeaderCount();                                      // Retrieve count of response headers
-	char*	respHeaderName(int index);                              // Return header name by index
-	char*	respHeaderValue(int index);                             // Return header value by index
-	char*	respHeaderValue(const char* name);                      // Return header value by name
-	bool	respHeaderExists(const char* name);                     // Does header exist by name?
+    int     readyState();                                           // Return the ready state
+
+    int     respHeaderCount();                                      // Retrieve count of response headers
+    char*   respHeaderName(int index);                              // Return header name by index
+    char*   respHeaderValue(int index);                             // Return header value by index
+    char*   respHeaderValue(const char* name);                      // Return header value by name
+    bool    respHeaderExists(const char* name);                     // Does header exist by name?
     String  headers();                                              // Return all headers as String
 
     void    onData(onDataCB, void* arg = 0);                        // Notify when min data is available
@@ -147,41 +148,39 @@ class asyncHTTPrequest {
 
   private:
   
-	enum	{HTTPmethodGET,	HTTPmethodPOST} _HTTPmethod;
+    enum    {HTTPmethodGET,	HTTPmethodPOST} _HTTPmethod;
 			
-	enum	readyStates {
-                readyStateUnsent = 0,
-                readyStateOpened =  1,
-                readyStateHdrsRecvd = 2,
-                readyStateLoading = 3,
-                readyStateDone = 4} _readyState;
+    enum    readyStates {
+                readyStateUnsent = 0,           // Client created, open not yet called
+                readyStateOpened =  1,          // open() has been called, connected
+                readyStateHdrsRecvd = 2,        // send() called, response headers available
+                readyStateLoading = 3,          // receiving, partial data available
+                readyStateDone = 4} _readyState; // Request complete, all data available.
 
-    int16_t     _HTTPcode;
-    bool        _connecting;
-    bool        _chunked;
-    bool        _debug;
-    uint32_t    _RxTimeout;
-    uint32_t    _AckTimeout;
-    uint32_t    _requestStartTime;
-    uint32_t    _requestEndTime;
+    int16_t         _HTTPcode;                  // HTTP response code or (negative) exception code
+    bool            _chunked;                   // Processing chunked response
+    bool            _debug;                     // Debug state
+    uint32_t        _RxTimeout;                 // Default or user overide RxTimeout in seconds
+    uint32_t        _AckTimeout;                // Default or user overide AckTimeout in ms
+    uint32_t        _requestStartTime;          // Time last open() issued
+    uint32_t        _requestEndTime;            // Time of last disconnect
+    URL*            _URL;                       // -> URL data structure
+    AsyncClient*    _client;                    // ESPAsyncTCP AsyncClient instance
+    size_t          _contentLength;             // content-length header value or sum of chunk headers  
+    size_t          _contentRead;               // number of bytes retrieved by user since last open()
+    size_t          _notAcked;                  // number of bytes not acked since last open()
+    readyStateChangeCB  _readyStateChangeCB;    // optional callback for readyState change
+    void*           _readyStateChangeCBarg;     // associated user argument
+    onDataCB        _onDataCB;                  // optional callback when data received
+    void*           _onDataCBarg;               // associated user argument
 
-    readyStateChangeCB  _readyStateChangeCB;
-    void*               _readyStateChangeCBarg;
-    onDataCB            _onDataCB;
-    void*               _onDataCBarg; 
-    size_t              _onDataCBmin;
-		
-	URL*        _URL;
-    uint16_t    port;
-	AsyncClient* _client;
-    size_t      _contentLength;
-    size_t      _contentRead;
-    size_t      _notAcked;
+    // request and response String buffers and header list (same queue for request and response).   
 
-	String*     _request;
-	String*	    _response;
+    String*     _request;                       // Tx data buffer 
+	String*     _response;                      // Rx data buffer 
+    header*     _headers;                       // request or (readyState > readyStateHdrsRcvd) response headers    
 
-	header*	    _headers;
+    // Protected functions
 
     header*     _addHeader(const char*, const char*);
     header*     _getHeader(const char*);
@@ -194,13 +193,13 @@ class asyncHTTPrequest {
     size_t      _send();
     void        _setReadyState(readyStates);
 
+    // callbacks
+
     void        _onConnect(AsyncClient*);
     void        _onDisconnect(AsyncClient*);
     void        _onData(void*, size_t);
     void        _onError(AsyncClient*, int8_t);
     void        _onTimeout(AsyncClient*);
     bool        _collectHeaders();
-    
-	
 };
 #endif 
