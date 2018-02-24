@@ -279,9 +279,14 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 1;
       }
       String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
-      request.setRxTimeout(5);
-      request.setAckTimeout(2000);
-      request.setDebug(false);
+      request.setRxTimeout(1);
+      request.setAckTimeout(0);
+      request.setDebug(true);
+      if(request.debug()){
+        DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
+        String msg = timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second());
+        Serial.println(msg);
+      }
       request.open("POST", URL.c_str());
       trace(T_Emon,6);
       String auth = "Bearer " + apiKey;
@@ -328,8 +333,8 @@ case sendSecure:{
       }
       trace(T_Emon,8);
       String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
-      request.setRxTimeout(5);
-      request.setAckTimeout(2000);
+      request.setRxTimeout(1);
+      request.setAckTimeout(0);
       request.setDebug(true);
       trace(T_Emon,8);
       sha256.reset();
