@@ -76,6 +76,7 @@ void handleGraphGetall(){
 }
 
 String hashName(const char* name){
+  SHA256 sha256;
   uint8_t hash[6];
   sha256.reset();
   sha256.update(name, strlen(name));

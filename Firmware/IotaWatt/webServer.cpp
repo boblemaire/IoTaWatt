@@ -111,11 +111,9 @@ bool loadFromSdCard(String path){
 
 void handleFileUpload(){
   trace(T_WEB,11);
-  static bool hashFile = false; 
   if(server.uri() != "/edit") return;
   HTTPUpload& upload = server.upload();
   if(upload.status == UPLOAD_FILE_START){
-    hashFile = false;
     if(upload.filename.equalsIgnoreCase("config.txt") ||
         upload.filename.equalsIgnoreCase("/config.txt")){ 
       if(server.hasArg("configSHA256")){
@@ -124,8 +122,10 @@ void handleFileUpload(){
           return;
         }
       }
-      hashFile = true;
-      sha256.reset();  
+      if( ! uploadSHA){
+        uploadSHA = new SHA256;
+      }
+      uploadSHA->reset();  
     }
     if(SD.exists((char *)upload.filename.c_str())) SD.remove((char *)upload.filename.c_str());
     if(uploadFile = SD.open(upload.filename.c_str(), FILE_WRITE)){
@@ -134,7 +134,9 @@ void handleFileUpload(){
   } else if(upload.status == UPLOAD_FILE_WRITE){
     if(uploadFile) {
       uploadFile.write(upload.buf, upload.currentSize);
-      sha256.update(upload.buf, upload.currentSize);
+      if(uploadSHA){
+        uploadSHA->update(upload.buf, upload.currentSize);
+      }
       DBG_OUTPUT_PORT.print("Upload: WRITE, Bytes: "); DBG_OUTPUT_PORT.println(upload.currentSize);
     }
     
@@ -142,8 +144,10 @@ void handleFileUpload(){
     if(uploadFile){
       uploadFile.close();
       DBG_OUTPUT_PORT.print("Upload: END, Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
-      if(hashFile){
-        sha256.finalize(configSHA256, 32);
+      if(uploadSHA){
+        uploadSHA->finalize(configSHA256, 32);
+        delete uploadSHA;
+        uploadSHA = nullptr;
         server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
       }
     }
@@ -562,7 +566,6 @@ void sendChunked(String response){
     bufr[4] = '\n'; 
     bufr[send+5] = '\r';
     bufr[send+6] = '\n';
-    Serial.print(bufr);
     server.client().write(bufr, send+7);
     sent += send;
   }

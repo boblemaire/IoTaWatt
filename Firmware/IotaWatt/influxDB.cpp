@@ -19,7 +19,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static uint32_t postTime = millis();
   struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
   static SDbuffer* buf = new SDbuffer;
-          
+            
   trace(T_influx,0);
 
             // If stop signaled, do so.  
@@ -212,6 +212,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
  *  Secure takes about twice as long and can block sampling for more than a second.
  ***********************************************************************************************/
 boolean influxSendData(uint32_t reqUnixtime, String reqData){ 
+  HTTPClient http;
   trace(T_influx,7);
   uint32_t startTime = millis();
   String URI = "/write?precision=s&db=" + influxDataBase;

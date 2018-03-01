@@ -80,10 +80,6 @@ IotaLog currLog(5,400);                     // current data log  (1.1 years)
 IotaLog histLog(60,4000);                   // history data log  (11 years)  
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
-CBC<AES128> cypher;
-SHA256 sha256;
-HTTPClient http;
-MD5Builder md5;
 
       // Define filename Strings of system files.          
 
@@ -141,6 +137,7 @@ ESP8266WebServer server(80);
 String  host = "IotaWatt";
 bool    hasSD = false;
 File    uploadFile;
+SHA256* uploadSHA;
 boolean serverAvailable = true;   // Set false when asynchronous handler active to avoid new requests
 boolean wifiConnected = false;
 uint8_t configSHA256[32];         // Hash of config file last time read or written
@@ -166,7 +163,7 @@ uint8_t  ledCount;                           // Current index into cycle
       // ****************************** Firmware update ****************************
       
 String   updateURL = "iotawatt.com";
-String   updateURI = "/firmware/iotaupdt.php";
+String   updatePath = "/firmware/iotaupdt.php";
 String   updateClass = "NONE";              // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
 uint8_t  publicKey[32] = {0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
                          0xcc, 0x2c, 0xea, 0x2e, 0x88, 0x9c, 0xe0, 0xea,

@@ -114,6 +114,9 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock){
     }
 
     case syncRtc: {
+      if( ! WiFi.isConnected()){
+        return UNIXtime() + 1;
+      }
       uint32_t _NTPtime = getNTPtime();
       if(! _NTPtime){
         if(retryCount++ < 5){

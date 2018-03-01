@@ -14,7 +14,7 @@ String formatIP(uint32_t IP);
 
 void msgLog(String message){msgLog((const char*)message.c_str(), "", "");}
 void msgLog(const char* segment1, String segment2){msgLog(segment1,(const char*)segment2.c_str());}
-void msgLog(const char* segment1, uint32_t segment2){msgLog(segment1, String(segment2));}
+void msgLog(const char* segment1, int32_t segment2){msgLog(segment1, String(segment2));}
 void msgLog(const char* segment1){msgLog(segment1, "", "");}
 void msgLog(const char* segment1,const  char* segment2){msgLog(segment1, segment2, "");}
 void msgLog(const char* segment1,const  char* segment2,const  char* segment3){

@@ -11,7 +11,8 @@ union dataBuckets {
         double value2;
         double accum1;
         double accum2;
-		uint32 timeThen;
+		    uint32 timeThen;
+        
       };
       struct {
         double  volts;
@@ -24,15 +25,20 @@ union dataBuckets {
         double  amps;
         double  wattHrs;
         double  ampHrs;
-      };	  
-	  dataBuckets(){value1=0; value2=0; accum1=0; accum2=0; timeThen=millis();}
-    };
+      };
+      dataBuckets()
+      :value1(0)
+      ,value2(0)
+      ,accum1(0)
+      ,accum2(0)
+      ,timeThen(millis()){}
+      };
 	
 class IotaInputChannel {
   public:
     channelTypes _type;                       // voltage, power, etc.
-    String       _name;                       // External name
-	  String		   _model;					            // VT or CT (or ?) model	
+    char*        _name;                       // External name
+	  char* 		   _model;					            // VT or CT (or ?) model	
     uint8_t      _channel;                    // Internal identifying number
 	  uint8_t		   _ADCbits;					          // ADC resolution		
     uint8_t      _addr;                       // Highbyte ADC, Lowbyte port on ADC
@@ -50,30 +56,32 @@ class IotaInputChannel {
     dataBuckets  dataBucket;
     
 
-    IotaInputChannel(uint8_t channel){
-    _name = "";
-	  _model = "";
-    _channel = channel;
-    _addr = channel + channel / 8;
-    _aRef = 8;
-	  _ADCbits = 12;
-    _offset = 1 << (_ADCbits-1);
-    _vchannel = 0;
-	  _burden = 0;
-    _calibration = 0;
-    _phase = 0;
-    _vphase = 0;
-	  _active = false;
-    _reversed = false;
-    _signed = false;
-    }
+    IotaInputChannel(uint8_t channel)
+    :_name(nullptr)
+	  ,_model(nullptr)
+    ,_channel(channel)
+    ,_addr(channel + channel / 8)
+    ,_aRef(8)
+	  ,_ADCbits(12)
+    ,_offset(1 << (_ADCbits-1))
+    ,_vchannel(0)
+	  ,_burden(0)
+    ,_calibration(0)
+    ,_phase(0)
+    ,_vphase(0)
+	  ,_active(false)
+    ,_reversed(false)
+    ,_signed(false)
+   {}
 	~IotaInputChannel(){
 		
 	}
 
 	void reset(){
-	  _name = "";
-	  _model = "";
+    delete _name;
+	  _name = nullptr;
+    delete _model;
+	  _model = nullptr;
 	  _vchannel = 0;
 	  _burden = 0;
     _calibration = 0;
