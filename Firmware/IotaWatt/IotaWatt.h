@@ -291,4 +291,8 @@ String    base64encode(const uint8_t* in, size_t len);
 
 String    hashName(const char* name);
 String    formatHex(uint32_t);
+char*     charstar(const char*);
+char*     charstar(String);
+char*     charstar(const char);
+
 #endif

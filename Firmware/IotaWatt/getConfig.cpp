@@ -102,7 +102,8 @@ boolean getConfig(void){
     }
     for(int i=MIN(channels,maxInputs); i<channels; i++){
       newList[i] = new IotaInputChannel(i);
-      newList[i]->_name = "Input(" + String(i) + ")";
+      String name = "Input(" + String(i) + ")";
+      newList[i]->_name = charstar(name);
     }
     delete[] inputChannel;
     inputChannel = newList;
@@ -293,8 +294,10 @@ void configInputs(JsonArray& JsonInputs){
         msgLog("Config input channel mismatch: ", i);
         continue;
       }
-      inputChannel[i]->_name = input["name"].as<String>();
-      inputChannel[i]->_model = input["model"].as<String>();
+      delete inputChannel[i]->_name;
+      inputChannel[i]->_name = charstar(input["name"].as<char*>());
+      delete inputChannel[i]->_model;
+      inputChannel[i]->_model = charstar(input["model"].as<char*>());
       inputChannel[i]->_calibration = input["cal"].as<float>();
       inputChannel[i]->_phase = input["phase"].as<float>();
       inputChannel[i]->_vphase = input["vphase"].as<float>();
@@ -425,4 +428,21 @@ void phaseTableAdd(phaseTableEntry** phaseTable, JsonArray& table){
       memcpy(tableEntry->modelHash, _hashName.c_str(), 8);
     }
   }
+}
+
+char* charstar(const char* str){
+  char* ptr = new char[strlen(str)];
+  strcpy(ptr, str);
+  return ptr;
+}
+
+char* charstar(String str){
+  return charstar(str.c_str());
+}
+
+char* charstar(const char str){
+  char* ptr = new char[2];
+  ptr[0] = str;
+  ptr[1] = 0;
+  return ptr;
 }
