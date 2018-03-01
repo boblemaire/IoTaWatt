@@ -67,7 +67,8 @@
  *   12/05/17 02_02_27 Emoncms context from Emoncms, Rework config app 
  *   01/14/18 02_02_28 Add derived three-phase support 
  *   01/23/18 02_02_29 Improved phase correction plus misc. fixes  
- *   02/08/18 02_02_30 Bump version to release with tables.txt filename fixed 
+ *   02/08/18 02_02_30 Bump version to release with tables.txt filename fixed
+ *   03/01/18 02_02_31 AsyncHTTP 
  * 
  *****************************************************************************************************/
 
