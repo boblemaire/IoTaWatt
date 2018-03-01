@@ -330,6 +330,7 @@ void configInputs(JsonArray& JsonInputs){
 }
 
 void hashFile(uint8_t* sha, File file){
+  SHA256 sha256;
   int buffSize = 256;
   uint8_t* buff = new uint8_t[buffSize];
   file.seek(0);

@@ -71,10 +71,6 @@ extern IotaLog currLog;
 extern IotaLog histLog;
 extern RTC_PCF8523 rtc;
 extern Ticker ticker;
-extern CBC<AES128> cypher;
-extern SHA256 sha256;
-extern HTTPClient http;
-extern MD5Builder md5;
 
 #define MS_PER_HOUR   3600000UL
 #define SEVENTY_YEAR_SECONDS  2208988800UL
@@ -183,6 +179,7 @@ extern ScriptSet* outputs;
 extern String   host;
 extern bool     hasSD;
 extern File     uploadFile;
+extern SHA256*  uploadSHA;  
 extern boolean  serverAvailable;          // Set false when asynchronous handler active to avoid new requests
 extern boolean  wifiConnected;
 extern uint8_t  configSHA256[32];         // Hash of config file
@@ -207,7 +204,7 @@ extern uint8_t  ledCount;                             // Current index into cycl
 
       // ****************************** Firmware update ****************************
 extern String   updateURL;
-extern String   updateURI;
+extern String   updatePath;
 extern String   updateClass;            // NONE, MAJOR, MINOR, BETA, ALPHA, TEST
 extern uint8_t  publicKey[32];
 
@@ -248,7 +245,7 @@ extern ScriptSet* influxOutputs;
 
       // ************************ ADC sample pairs ************************************
 
-#define MAX_SAMPLES 1000
+#define MAX_SAMPLES 900
 extern int16_t samples;                           // Number of samples taken in last sampling
 extern int16_t Vsample [MAX_SAMPLES];             // voltage/current pairs during sampling
 extern int16_t Isample [MAX_SAMPLES];

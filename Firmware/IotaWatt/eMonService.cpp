@@ -74,8 +74,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 1;
       }
       String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/get?node=" + String(node);
-      request.setRxTimeout(5);
-      request.setAckTimeout(2000);
+      request.setTimeout(1);
       request.setDebug(false);
       request.open("GET", URL.c_str());
       String auth = "Bearer " + apiKey;
@@ -279,9 +278,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 1;
       }
       String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
-      request.setRxTimeout(1);
-      request.setAckTimeout(0);
-      request.setDebug(true);
+      request.setTimeout(1);
+      request.setDebug(false);
       if(request.debug()){
         DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
         String msg = timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second());
@@ -333,20 +331,21 @@ case sendSecure:{
       }
       trace(T_Emon,8);
       String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
-      request.setRxTimeout(1);
-      request.setAckTimeout(0);
-      request.setDebug(true);
+      request.setTimeout(1);
+      request.setDebug(false);
       trace(T_Emon,8);
-      sha256.reset();
-      sha256.update(reqData.c_str(), reqData.length());
+      SHA256* sha256 = new SHA256;
+      sha256->reset();
+      sha256->update(reqData.c_str(), reqData.length());
       uint8_t value[32];
-      sha256.finalize(value, 32);
+      sha256->finalize(value, 32);
       trace(T_Emon,8);
       base64Sha = base64encode(value, 32);
       trace(T_Emon,8);
-      sha256.resetHMAC(cryptoKey,16);
-      sha256.update(reqData.c_str(), reqData.length());
-      sha256.finalizeHMAC(cryptoKey, 16, value, 32);
+      sha256->resetHMAC(cryptoKey,16);
+      sha256->update(reqData.c_str(), reqData.length());
+      sha256->finalizeHMAC(cryptoKey, 16, value, 32);
+      delete sha256;
       trace(T_Emon,8);
       String auth = EmonUsername + ':' + bin2hex(value, 32);
       if(request.debug()){
@@ -399,6 +398,7 @@ case sendSecure:{
 }
 
 String encryptData(String in, const uint8_t* key) {
+  CBC<AES128> cypher;
   trace(T_encryptEncode, 0);
   uint8_t iv[16];
   os_get_random((unsigned char*)iv,16);

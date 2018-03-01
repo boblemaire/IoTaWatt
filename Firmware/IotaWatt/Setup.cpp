@@ -141,14 +141,6 @@ void setup()
   if(WiFi.status() != WL_CONNECTED){
     msgLog(F("No WiFi connection."));
   }
-
-  //**************************************** Check for pending update ********************************
-
-  if(checkUpdate()){
-    msgLog(F("Firmware updated, restarting"));
-    delay(500);
-    ESP.restart();
-  }  
     
   //*************************************** Start the local DNS service ****************************
 
