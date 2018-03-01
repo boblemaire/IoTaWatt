@@ -295,6 +295,7 @@ void samplePower(int channel, int overSample){
               // So handling needs to be robust.
         
           if((uint32_t)(millis()-startMs)>timeoutMs){                   // Something is wrong
+            Serial.printf("timeout Ichan %d, Vchan %d, Isel %d, Vsel %d\r\n", Ichan, Vchan, ADC_IselectMask, ADC_VselectMask);
             trace(T_SAMP,2);                                            // Leave a meaningful trace
             trace(T_SAMP,Ichan);
             trace(T_SAMP,Vchan);

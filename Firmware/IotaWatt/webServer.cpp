@@ -275,11 +275,17 @@ void handleStatus(){
     trace(T_WEB,14);
     JsonObject& stats = jsonBuffer.createObject();
     stats.set("cyclerate", samplesPerCycle);
+    trace(T_WEB,14);
     stats.set("chanrate",cycleSampleRate);
+    trace(T_WEB,14);
     stats.set("runseconds", UNIXtime()-programStartTime);
+    trace(T_WEB,14);
     stats.set("stack",ESP.getFreeHeap());
+    trace(T_WEB,14);
     stats.set("version",IOTAWATT_VERSION);
+    trace(T_WEB,14);
     stats.set("frequency",frequency);
+    trace(T_WEB,14);
     root.set("stats",stats);
   }
   
@@ -464,7 +470,7 @@ void handleGetFeedList(){
       }
     }
   }
-  trace(T_WEB,19);
+  trace(T_WEB,18);
   Script* script = outputs->first();
   int outndx = 100;
   while(script){
@@ -494,11 +500,9 @@ void handleGetFeedList(){
     script = script->next();
   }
   
-  String response = "";
+  String response;
   array.printTo(response);
-  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(200,"application/json","");
-  sendChunked(response);
+  server.send(200,"application/json",response);
 }
 
 void handleGetFeedData(){
@@ -544,33 +548,3 @@ void handleGetConfig(){
   }
   server.send(400, "text/plain", "Bad Request.");
 }
-
-//  Cannot get any of the standard response protocols to work with IOS/Safari 
-//  with data size above about 1040. Lower level code now tries to chunk that
-//  and does something unacceptable to IOS.  So implimented chunked response 
-//  here just like in getFeedData, which works fine on Safari.  No big deal and
-//  can be used to chunk out any Stream.
-
-void sendChunked(String response){
-  const char* hexDigit = "0123456789ABCDEF";
-  size_t chunkSize = 512;
-  size_t sent = 0;
-  char* bufr = new char[chunkSize+7];
-  while(sent < response.length()){
-    size_t send = MIN(chunkSize, response.length()-sent);
-    memcpy(bufr+5,response.substring(sent, sent+send).c_str(), send);
-    bufr[0] = hexDigit[send/256];
-    bufr[1] = hexDigit[(send/16) % 16];
-    bufr[2] = hexDigit[send % 16];
-    bufr[3] = '\r';
-    bufr[4] = '\n'; 
-    bufr[send+5] = '\r';
-    bufr[send+6] = '\n';
-    server.client().write(bufr, send+7);
-    sent += send;
-  }
-  server.client().write("000\r\n\r\n",7);
-  delete [] bufr;
-}
-
-
