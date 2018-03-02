@@ -1,43 +1,80 @@
 #include "IotaWatt.h"
-  
+uint32_t littleEndian(uint32_t);
+
+#define ntpPort 2390 
+  struct ntpPacket {  /* courtesy Eugene Ma */
+    uint8_t flags;
+    uint8_t stratum;
+    uint8_t poll;
+    uint8_t precision;
+    uint32_t root_delay;
+    uint32_t root_dispersion;
+    uint8_t referenceID[4];
+    uint32_t ref_ts_sec;
+    uint32_t ref_ts_frac;
+    uint32_t origin_ts_sec;
+    uint32_t origin_ts_frac;
+    uint32_t recv_ts_sec;
+    uint32_t recv_ts_frac;
+    uint32_t trans_ts_sec;
+    uint32_t trans_ts_frac;
+    ntpPacket()
+    :flags(0xE3)
+    ,stratum(0)
+    ,poll(6)
+    ,precision(0xEC)
+    ,root_delay(0)
+    ,root_dispersion(0)
+    ,referenceID{49, 0x4E, 49, 52}
+    ,ref_ts_sec(0)
+    ,ref_ts_frac(0)
+    ,origin_ts_sec(0)
+    ,origin_ts_frac(0)
+    ,recv_ts_sec(0)
+    ,recv_ts_frac(0)
+    ,trans_ts_sec(0)
+    ,trans_ts_frac(0)
+    {};
+}; 
+
   /***************************************************************************************************
-   * setNTPtime() - returns uint32_t bimary count of seconds since 1/1/1900 - UTC aka GMT.
-   * This is the fundamental time standard used by the program. The value is obtained from one of
-   * many synchronized time servers using the basic UDP internet protocol.  This function is a
-   * bastard son of several similar routines that I came across while putting this together. Here,
-   * the emphasis was on just making it a straightforward utility resource.  It's not well documented,
-   * but any similar routine that returns the NTP value could be used.
+   * getNTPtime() - returns uint32_t binary count of seconds since 1/1/1900 - UTC aka GMT.
+   * This is the fundamental time reference used by the program. The value is obtained from one of
+   * many synchronized time servers using the basic UDP internet protocol.
    * 
    * The program stores the returned value along with the simultaneous value of the internal 
    * millisecond clock.  With those two values and the current millisecond clock value, an updated 
    * NTP time can be computed.  The program checks back in with NTP from time to time for a 
    * reality check.
    * 
-   * Unix time is NTP time minus 70 years worth of seconds (seconds since 1/1/70 when the world began). 
+   * NTP time is the number of seconds since 1/1/1900 (when the world began)
+   * Unix time is NTP time minus 70 years worth of seconds (seconds since 1/1/70).
+   * 
+   * This program uses UNIXtime with a resolution of 1 second as the epoch. 
    **************************************************************************************************/ 
+
+  // Following is a blocking routine to get NTP time that is used during startup when the RTC is not running.
+  // Periodic synchronization of the internal millisecond clock is done asynchronously in the
+  // timeSync() Service with minimal blocking. 
+
   uint32_t getNTPtime() {
     if(WiFi.isConnected()) {
       WiFiUDP udp;
       const char* ntpServerName = "time.nist.gov";
-      const int NTP_PACKET_SIZE = 48;
-      unsigned int localPort = 2390;
-      byte packetBuffer[NTP_PACKET_SIZE] = {0xE3, 0, 6, 0xEC, 0,0,0,0,0,0,0,0, 49, 0x4E, 49, 52};
-      const byte packet[16] = {0xE3, 0, 6, 0xEC, 0,0,0,0,0,0,0,0, 49, 0x4E, 49, 52};
-      udp.begin(localPort);
+      ntpPacket packet;
+      udp.begin(ntpPort);
       IPAddress timeServerIP;
       WiFi.hostByName(ntpServerName, timeServerIP);       // get a random server from the pool
-      memset(packetBuffer, 0, NTP_PACKET_SIZE);
-      for(int i=0; i<16; i++) packetBuffer[i] = packet[i];
       udp.beginPacket(timeServerIP, 123);
-      udp.write(packetBuffer, NTP_PACKET_SIZE);           // send an NTP packet to a time server
+      udp.write((uint8_t*)&packet, sizeof(ntpPacket));                  // send an NTP packet to a time server
       udp.endPacket();
       
       int maxWait = 10;                                   // We'll wait 5 100ms intervals
       while(maxWait--){
         if(udp.parsePacket()){
-          udp.read(packetBuffer,NTP_PACKET_SIZE);
+          udp.read((uint8_t*)&packet,sizeof(ntpPacket));
           udp.stop();
-          timeRefNTP = (((((packetBuffer[40] << 8) | packetBuffer[41]) << 8) | packetBuffer[42]) << 8) | packetBuffer[43];
+          timeRefNTP = littleEndian(packet.trans_ts_sec);
           timeRefMs = millis();
           return timeRefNTP;
         }
@@ -72,71 +109,99 @@ uint32_t MillisAtUNIXtime(uint32_t UnixTime){
 
 /********************************************************************************************
  * timeSync is a SERVICE that periodically (timeSynchInterval seconds) attempts to get
- * the NTP time from the internet and synchronize to it.  No heroics to compensate for
- * internet latency.  Close enough.
+ * the NTP time from the internet, synchronize to that time and update the RTC.
+ * No heroics to compensate for internet latency at this time.
+ * The NTP request is mostly non-blocking, so no penalty for repeated attempts.
+ * Failed attempts are just retried.... forever. 
+ * Service logs when no reality check after 24 hours.
  *******************************************************************************************/
  
-uint32_t timeSync(struct serviceBlock* _serviceBlock){
-  static boolean firstCall = true;
-  enum states {start, setRtc, syncRtc};
+uint32_t timeSync(struct serviceBlock* _serviceBlock) {
+  enum states {start, getNTPtime, waitNTPtime, setRTC};
   static states state = start;
-  static int retryCount = 0;
+  static WiFiUDP* udp = nullptr;;
+  static uint32_t startTime;
+  static uint32_t lastNTPupdate = 0;
  
   switch(state){
 
     case start: { 
-      msgLog(F("timeSync: service started."));    
-      state = setRtc;     
+      msgLog(F("timeSync: service started."));
+      lastNTPupdate = UNIXtime();  
+      state = getNTPtime;    
     }
 
-    case setRtc: {
-      uint32_t _NTPtime;
-      if(RTCrunning){
-        state = syncRtc;
-        return 1;
+    case getNTPtime: {
+      if(UNIXtime() - lastNTPupdate > 86400UL){ 
+        msgLog(F("timeSync: No time update in last 24 hours."));
+        lastNTPupdate = UNIXtime();
       }
       if(WiFi.isConnected()){
-        _NTPtime = getNTPtime();
-        if(_NTPtime){
-          timeRefNTP = _NTPtime;
-          timeRefMs = millis();
-          RTCrunning = true;
-          programStartTime = UNIXtime();
-          rtc.adjust(UNIXtime());
-          msgLog(F("timeSync: RTC initalized to NTP time"));
-          state = syncRtc;
-          break;    
+        IPAddress timeServerIP;
+        startTime = millis();
+        if(WiFi.hostByName(ntpServerName, timeServerIP) == 1){    // get a random server from the pool
+          if( ! udp) udp = new WiFiUDP;
+          ntpPacket packet;
+          udp->begin(ntpPort);
+          udp->beginPacket(timeServerIP, 123);
+          udp->write((uint8_t*)&packet, sizeof(ntpPacket));        // send an NTP packet to a time server
+          udp->endPacket();
+          state = waitNTPtime;
+          return 1;
         }
       }
-      else {
-        return UNIXtime() + 10;
-      }      
+      return UNIXtime() + RTCrunning ? 60 : 0;
+      break;
+    }  
+    
+    case waitNTPtime: {
+      if(udp->parsePacket()){
+        ntpPacket packet;
+        udp->read((uint8_t*)&packet,sizeof(ntpPacket));
+        udp->stop();
+        delete udp;
+        udp = nullptr;
+        timeRefNTP = littleEndian(packet.trans_ts_sec);
+        timeRefMs = millis();
+        lastNTPupdate = UNIXtime();
+        state = setRTC;
+        return 1;
+      }
+      else if(millis() - startTime > 3000){
+        udp->stop();
+        state = getNTPtime;
+        return UNIXtime() + RTCrunning ? 60 : 0;
+      }
+      return 1;
     }
 
-    case syncRtc: {
-      if( ! WiFi.isConnected()){
-        return UNIXtime() + 1;
-      }
-      uint32_t _NTPtime = getNTPtime();
-      if(! _NTPtime){
-        if(retryCount++ < 5){
-          return UNIXtime() + 60;
-        }
-        msgLog(F("timeSync: Failed to get NTPtime."));
+    case setRTC: {
+      if( ! RTCrunning) {
+        programStartTime = UNIXtime();
+        rtc.adjust(UNIXtime());
+        msgLog(F("timeSync: RTC initalized to NTP time"));
       }
       else {
-        timeRefNTP = _NTPtime;                 
-        timeRefMs = millis();
         int32_t timeDiff = UNIXtime() - rtc.now().unixtime();
         if(timeDiff < -1 || timeDiff > 1){
           msgLog("timeSync: adjusting RTC by ", String(timeDiff));
           rtc.adjust(UNIXtime());
         }
       }
-      retryCount = 0;
-      return ((uint32_t) timeSynchInterval * ( 1 + UNIXtime() / timeSynchInterval));
+      state = getNTPtime;
+      return UNIXtime() + timeSynchInterval;  
     }
   }    
+}
+
+//  This can be a little mind-bogling. The ESP stores words in little-endian format,
+//  so internally the bytes are backasswards.  Although this would appear to do nothing
+//  in fact it reverses the byte order to make it work in the ESP.  I don't fully 
+//  understand it right now either, but it works.
+
+uint32_t littleEndian(uint32_t in){
+  uint8_t* bytes = (uint8_t*)&in; 
+  return (((bytes[0] << 8 | bytes[1]) << 8) | bytes[2]) << 8 | bytes[3];
 }
 
 /********************************************************************************

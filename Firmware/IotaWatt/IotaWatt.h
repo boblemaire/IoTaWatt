@@ -83,6 +83,7 @@ extern String historyLogFile;
 extern String IotaMsgLog;
 extern String EmonPostLogFile;
 extern String influxPostLogFile;
+extern const char* ntpServerName;
 extern uint16_t deviceVersion;
 
         // Define the hardware pins
