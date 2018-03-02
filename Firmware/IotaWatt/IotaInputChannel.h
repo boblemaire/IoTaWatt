@@ -74,9 +74,9 @@ class IotaInputChannel {
 	}
 
 	void reset(){
-    delete _name;
+    delete[] _name;
 	  _name = nullptr;
-    delete _model;
+    delete[] _model;
 	  _model = nullptr;
 	  _vchannel = 0;
 	  _burden = 0;
