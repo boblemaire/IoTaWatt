@@ -90,6 +90,7 @@ String historyLogFile = "/IotaWatt/histLog";
 String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
 String EmonPostLogFile = "/iotawatt/Emonlog.log";
 String influxPostLogFile = "/iotawatt/influxdb.log";
+const char* ntpServerName = "pool.ntp.org";
 
                        
 uint8_t ADC_selectPin[2] = {pin_CS_ADC0,    // indexable reference for ADC select pins
