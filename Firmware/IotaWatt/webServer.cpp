@@ -301,7 +301,7 @@ void handleStatus(){
           channelObject.set("Hz",statBucket[i].Hz);
         }
         else if(inputChannel[i]->_type == channelTypePower){
-          if(statBucket[i].watts < 0 && statBucket[i].watts > -.5) statBucket[i].watts = 0;
+          if(statBucket[i].watts > -2 && statBucket[i].watts < 2) statBucket[i].watts = 0;
           channelObject.set("Watts",String(statBucket[i].watts,0));
           channelObject.set("Irms",String(statBucket[i].amps,3));
           if(statBucket[i].watts > 10){

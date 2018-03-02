@@ -131,7 +131,7 @@ void samplePower(int channel, int overSample){
     Ichannel->_reversed = false;
     if(_watts < 0){
       _watts = -_watts;
-      if(_watts > 0.5){
+      if(_watts > 5){
         Ichannel->_reversed = true;
       }
     }
@@ -256,7 +256,7 @@ void samplePower(int channel, int overSample){
               if(samples >= MAX_SAMPLES){                   // If over the legal limit
                 trace(T_SAMP,0);                            // shut down and return
                 GPOS = ADC_VselectMask;                     // (Chip select high) 
-                Serial.println("Max samples exceeded.");       
+                Serial.println(F("Max samples exceeded."));       
                 return 2;
               }
             }
@@ -295,7 +295,6 @@ void samplePower(int channel, int overSample){
               // So handling needs to be robust.
         
           if((uint32_t)(millis()-startMs)>timeoutMs){                   // Something is wrong
-            Serial.printf("timeout Ichan %d, Vchan %d, Isel %d, Vsel %d\r\n", Ichan, Vchan, ADC_IselectMask, ADC_VselectMask);
             trace(T_SAMP,2);                                            // Leave a meaningful trace
             trace(T_SAMP,Ichan);
             trace(T_SAMP,Vchan);
@@ -348,7 +347,7 @@ void samplePower(int channel, int overSample){
   trace(T_SAMP,8);
 
   if(samples < ((lastCrossUs - firstCrossUs) * 381 / 10000)){
-    Serial.print("Low sample count ");
+    Serial.print(F("Low sample count "));
     Serial.println(samples);
     return 1;
   }
