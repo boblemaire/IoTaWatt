@@ -351,8 +351,10 @@ void samplePower(int channel, int overSample){
     Serial.println(samples);
     return 1;
   }
-  
-          // Update damped frequency.
+  if(abs(samples - (midCrossSamples * 2)) > 3){
+    return 1;
+  }
+            // Update damped frequency.
 
   float Hz = 1000000.0  / float((uint32_t)(lastCrossUs - firstCrossUs));
   Vchannel->setHz(Hz);
