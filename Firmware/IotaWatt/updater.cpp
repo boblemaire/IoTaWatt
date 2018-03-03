@@ -62,8 +62,8 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       updateVersion = request->responseText();
       delete request;
       if(strcmp(updateVersion.c_str(), IOTAWATT_VERSION) == 0){
-        //state = getVersion;
-        //return UNIXtime() + updaterServiceInterval;
+        state = getVersion;
+        return UNIXtime() + updaterServiceInterval;
       }
       String msg = "Update from " + String(IOTAWATT_VERSION) + " to " + updateVersion;
       msgLog("Updater: ", msg);
@@ -120,7 +120,6 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       String msg = String(request->elapsedTime()).c_str();
       msg += "ms, size " + String(fileSize);
       msgLog("Updater: Release downloaded ", msg);
-      msgLog("Updater: filesize ", fileSize);
       delete request;
       state = install;
       
@@ -128,7 +127,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
 
     case install: {
-      if(unpackUpdate(updateVersion)){ state = getVersion; return 1;
+      if(unpackUpdate(updateVersion)){
         if(installUpdate(updateVersion)){
           msgLog (F("Firmware updated, restarting."));
           delay(500);
