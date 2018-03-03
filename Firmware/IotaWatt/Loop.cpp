@@ -21,7 +21,7 @@ void loop()
     samplePower(nextChannel, 0);
     trace(T_LOOP,2);
     nextCrossMs = lastCrossMs + 490 / int(frequency);
-    while( ! inputChannel[++nextChannel % maxInputs]);
+    while( ! inputChannel[++nextChannel % maxInputs]->isActive());
     nextChannel = nextChannel % maxInputs;
   }
 
