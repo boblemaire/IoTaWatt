@@ -63,7 +63,7 @@ void samplePower(int channel, int overSample){
       // (CT lead - VT lead) - any gross phase correction for 3 phase measurement.
       // Note that a reversed CT can be corrected by introducing a 180deg gross correction.
 
-  float _phaseCorrection = 0; //( Ichannel->_phase - (Vchannel->_phase) -Ichannel->_vphase) * samples / 360.0;  // fractional Isamples correction
+  float _phaseCorrection =  ( Ichannel->_phase - (Vchannel->_phase) -Ichannel->_vphase) * samples / 360.0;  // fractional Isamples correction
   int stepCorrection = int(_phaseCorrection);                                        // whole steps to correct 
   float stepFraction = _phaseCorrection - stepCorrection;                            // fractional step correction
   if(stepFraction < 0){                                                              // if current lead
@@ -142,7 +142,6 @@ void samplePower(int channel, int overSample){
       }
     }
   }
-
       // Update with the new power and voltage values.
 
   trace(T_POWER,5);
