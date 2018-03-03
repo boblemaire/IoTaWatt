@@ -22,9 +22,9 @@ union dataBuckets {
       };
       struct {
         double  watts;
-        double  amps;
+        double  pf;
         double  wattHrs;
-        double  ampHrs;
+        double  pfHrs;
       };
       dataBuckets()
       :value1(0)
@@ -110,11 +110,11 @@ class IotaInputChannel {
 		dataBucket.Hz = Hz;
     }
 	
-	void setPower(float watts, float amps){
+	void setPower(float watts, float pf){
 		if(_type != channelTypePower) return;
 		ageBuckets(millis());
 		dataBucket.watts = watts;
-		dataBucket.amps = amps;
+		dataBucket.pf = pf;
 	}
 	
 	bool isActive(){return _active;}
@@ -122,7 +122,7 @@ class IotaInputChannel {
 	
 	double getVoltage(){return dataBucket.volts;}	
 	double getPower(){return dataBucket.watts;}
-	double getAmps(){return dataBucket.amps;}
+	double getPf(){return dataBucket.pf;}
 	
   private:
 };

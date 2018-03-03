@@ -5,6 +5,7 @@
   *  
   ****************************************************************************************************/
 void samplePower(int channel, int overSample){
+  static uint32_t trapTime = 0;
   uint32_t timeNow = millis();
   
       // If it's a voltage channel, use voltage only sample, update and return.
@@ -31,6 +32,7 @@ void samplePower(int channel, int overSample){
   double _Irms = 0;
   double _watts = 0;
   double _Vrms = 0;
+  double _pf = 0;
 
   int16_t* VsamplePtr = Vsample;
   int16_t* IsamplePtr = Isample;
@@ -61,7 +63,7 @@ void samplePower(int channel, int overSample){
       // (CT lead - VT lead) - any gross phase correction for 3 phase measurement.
       // Note that a reversed CT can be corrected by introducing a 180deg gross correction.
 
-  float _phaseCorrection = ( Ichannel->_phase - (Vchannel->_phase) -Ichannel->_vphase) * samples / 360.0;  // fractional Isamples correction
+  float _phaseCorrection = 0; //( Ichannel->_phase - (Vchannel->_phase) -Ichannel->_vphase) * samples / 360.0;  // fractional Isamples correction
   int stepCorrection = int(_phaseCorrection);                                        // whole steps to correct 
   float stepFraction = _phaseCorrection - stepCorrection;                            // fractional step correction
   if(stepFraction < 0){                                                              // if current lead
@@ -123,6 +125,10 @@ void samplePower(int channel, int overSample){
   _Vrms = Vratio * sqrt((double)(sumVsq / samples));
   _Irms = Iratio * sqrt((double)(sumIsq / samples));
   _watts = Vratio * Iratio * (double)(sumP / samples);
+  _pf = _Vrms * _Irms;
+  if(_pf != 0){
+    _pf = abs(_watts) / _pf;
+  }
 
         // If watts is negative and the channel is not explicitely signed, reverse it (backward CT).
         // If we do reverse it, and it's significant, mark it as such for reporting in the status API.
@@ -140,8 +146,7 @@ void samplePower(int channel, int overSample){
       // Update with the new power and voltage values.
 
   trace(T_POWER,5);
-  Ichannel->setPower(_watts, _Irms);
-  //Vchannel->setVoltage(_Vrms);
+  Ichannel->setPower(_watts, _pf);
   trace(T_POWER,9);                                                                               
   return;
 }
