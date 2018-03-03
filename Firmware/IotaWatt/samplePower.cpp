@@ -128,12 +128,6 @@ void samplePower(int channel, int overSample){
   _pf = _Vrms * _Irms;
   if(_pf != 0){
     _pf = abs(_watts) / _pf;
-    if(_pf < .60 && millis() - trapTime > 15000){
-      Serial.printf("Ichan, pf, samples, watts, Vratio, Iratio\r\n");
-      Serial.printf("%d,%f6.4,%d,%f6.1,%f8.3,%f8.3\r\n", Ichan, _pf, samples, _watts, Vratio, Iratio);
-      printSamples();
-      trapTime = millis();
-    }
   }
 
         // If watts is negative and the channel is not explicitely signed, reverse it (backward CT).
