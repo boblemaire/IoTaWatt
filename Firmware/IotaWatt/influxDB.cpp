@@ -1,42 +1,63 @@
 #include "IotaWatt.h"
+#include "xbuf.h"
 
-boolean influxSendData(uint32_t reqUnixtime, String reqData);
+bool      influxStarted = false;                    // True when Service started
+bool      influxStop = false;                       // Stop the influx service
+bool      influxRestart = true;                     // Restart the influx service
+String    influxURL = "192.168.1.109";
+String    influxDataBase = "iotawatt";
+uint16_t  influxBulkSend = 1;
+uint16_t  influxPort = 8086;
+int32_t   influxRevision = -1;
+const char* influxMeasurement = "iotawatt";  
+influxTag* influxTagSet = nullptr;  
+ScriptSet* influxOutputs;      
 
 uint32_t influxService(struct serviceBlock* _serviceBlock){
   // trace T_influx
-  enum   states {initialize, post, resend};
+
+      // This is a standard IoTaWatt Service operating as a state machine.
+
+  enum   states {initialize,        // Basic startup of the service - one time
+                 queryLast,         // Issue query to get time of last post
+                 queryLastWait,     // wait for [async] query to complete
+                 getLastJson,       // parse the json response from influxDB
+                 getLastRecord,     // Read the logRec and prep the context for logging
+                 post,              // Add a measurement to the reqData xbuf
+                 sendPost,          // Send the accumulated measurements
+                 waitPost};         // Wait for the [async] post to complete
+
   static states state = initialize;
-  static IotaLogRecord* logRecord = new IotaLogRecord;
-  static File influxPostLog;
-  static double accum1Then [MAXINPUTS];
+  static IotaLogRecord* logRecord = nullptr;
+  static IotaLogRecord* oldRecord = nullptr;
   static uint32_t UnixLastPost = UNIXtime();
   static uint32_t UnixNextPost = UNIXtime();
-  static double _logHours;
-  static double elapsedHours;
-  static String reqData = "";
   static uint32_t reqUnixtime = 0;
+  static double elapsedHours; 
   static int  reqEntries = 0; 
-  static uint32_t postTime = millis();
-  struct SDbuffer {uint32_t data; SDbuffer(){data = 0;}};
-  static SDbuffer* buf = new SDbuffer;
+  static int16_t retryCount = 0;
+  static xbuf reqData;
+  static asyncHTTPrequest* request = nullptr;
+  static String* response = nullptr;
             
   trace(T_influx,0);
 
-            // If stop signaled, do so.  
-    if(influxStop) {
+            // If stop signaled, do so. 
+
+  if(influxStop) {
     msgLog(F("influxDB: stopped."));
     influxStarted = false;
-    trace(T_influx,4);
-    influxPostLog.close();
-    trace(T_influx,5);
-    SD.remove((char *)influxPostLogFile.c_str());
-    trace(T_influx,6);
+    trace(T_influx,4);    
     state = initialize;
+    delete oldRecord;
+    oldRecord = nullptr;
+    delete logRecord;
+    logRecord = nullptr;
     return 0;
   }
-  if(influxInitialize){
+  if(influxRestart){
     state = initialize;
-    influxInitialize = false;
+    influxRestart = false;
   }
       
   switch(state){
@@ -51,51 +72,102 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       }
       msgLog("influxDB: started.", "url: " + influxURL + ",port=" + String(influxPort) + ",db=" + influxDataBase + 
       ",post interval: " + String(influxDBInterval));
-    
-      if(!influxPostLog){
-        influxPostLog = SD.open(influxPostLogFile,FILE_WRITE);
+      state = queryLast;
+      return 1;
+    }
+ 
+    case queryLast:{
+      if( ! request){
+        request = new asyncHTTPrequest;
       }
-            
-      if(influxPostLog){
-        if(influxPostLog.size() == 0){
-          buf->data = currLog.lastKey();
-          influxPostLog.write((byte*)buf,4);
-          influxPostLog.flush();
-          msgLog(F("influxService: influxlog file created."));
-        }
-        influxPostLog.seek(influxPostLog.size()-4);
-        influxPostLog.read((byte*)buf,4);
-        logRecord->UNIXtime = buf->data;
-        msgLog("influxDB: Start posting from ", String(logRecord->UNIXtime));
+      String URL = influxURL + ":" + String(influxPort) + "/query";
+      request->setTimeout(3);
+      request->setDebug(false);
+      request->open("POST", URL.c_str());
+      trace(T_influx,2);
+      reqData.flush();
+      request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
+      reqData.printf_P(PSTR("db=%s&epoch=s&q=select last(%s) from %s"), influxDataBase.c_str(), influxOutputs->first()->name(), influxMeasurement);
+      if(influxTagSet){
+        reqData.printf_P(PSTR(" where %s = '%s'"), influxTagSet->key, influxTagSet->value);
       }
-      else {
-        logRecord->UNIXtime = currLog.lastKey();
-      }
-      
-          // Get the last record in the log.
-          // Posting will begin with the next log entry after this one,
-            
-      logReadKey(logRecord);
+      Serial.println(reqData.peekString(reqData.available()));
+      request->send(&reqData, reqData.available());
+      response = new String;
+      state = queryLastWait;
+      return 1;
+    }
 
-          // Save the value*hrs to date, and logHours to date
-      
-      for(int i=0; i<maxInputs; i++){ 
-        accum1Then[i] = logRecord->channel[i].accum1;
-        if(accum1Then[i] != accum1Then[i]) accum1Then[i] = 0;
+    case queryLastWait: {
+      trace(T_influx,3);
+      if(request->readyState() <= 2){
+        return 1;
       }
-      _logHours = logRecord->logHours;
-      if(_logHours != _logHours) _logHours = 0;
+      if(request->available()){
+        *response += request->responseText();
+      }
+      if(request->readyState() != 4){
+        return 1; 
+      }
+      trace(T_influx,3);
+      int HTTPcode = request->responseHTTPcode();
+      delete request;
+      request = nullptr;
+      if(HTTPcode != 200){
+        msgLog("influxService: last entry query failed: ", HTTPcode);
+        delete response;
+        UnixLastPost = currLog.lastKey();
+        state = getLastRecord;
+        return 1;
+      } 
+      state = getLastJson;
+      return 1;
+    }
+
+    case getLastJson: {
+      UnixLastPost = currLog.lastKey() - 604800L;
+      DynamicJsonBuffer Json;  
+      Serial.println(*response);
+      JsonObject& result = Json.parseObject(*response); 
+      delete response;
+      if( ! result.success()){
+        msgLog(F("influxService: Json parse of last post query failed."));
+        UnixLastPost = currLog.lastKey();
+        state = getLastRecord;
+        return 1;
+      }
+      JsonArray& lastColumns = result["results"][0]["series"][0]["columns"];
+      JsonArray& lastValues = result["results"][0]["series"][0]["values"][0];
+      if(lastColumns.success() && lastValues.success()){
+        for(int i=0; i<lastColumns.size(); i++){
+          if(strcmp("time", lastColumns.get<const char*>(i)) == 0){
+            UnixLastPost = lastValues.get<unsigned long>(i);         
+          }
+        }
+      }
+      state = getLastRecord;
+      return 1;
+    }
+
+    case getLastRecord: {
+
+      msgLog("influxService: start posting after ", UnixLastPost);        
+      if( ! oldRecord){
+        oldRecord = new IotaLogRecord;
+      }
+      oldRecord->UNIXtime = UnixLastPost;      
+      logReadKey(oldRecord);
 
           // Assume that record was posted (not important).
           // Plan to start posting one interval later
       
-      UnixLastPost = logRecord->UNIXtime;
+      UnixLastPost = oldRecord->UNIXtime;
       UnixNextPost = UnixLastPost + influxDBInterval - (UnixLastPost % influxDBInterval);
       
           // Advance state.
           // Set task priority low so that datalog will run before this.
 
-      reqData = "";
+      reqData.flush();
       reqEntries = 0;
       state = post;
       _serviceBlock->priority = priorityLow;
@@ -120,23 +192,26 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       } 
       
           // Not current.  Read the next log record.
-          
+
+      if( ! logRecord){
+        logRecord = new IotaLogRecord;            
+      }
       trace(T_influx,1);
       logRecord->UNIXtime = UnixNextPost;
-      logReadKey(logRecord);    
+      logReadKey(logRecord);
       
           // Compute the time difference between log entries.
           // If zero, don't bother.
           
-      elapsedHours = logRecord->logHours - _logHours;
+      elapsedHours = logRecord->logHours - oldRecord->logHours;
       if(elapsedHours == 0){
         UnixNextPost += influxDBInterval;
         return UnixNextPost;  
       }
       
-          // If new request, save the uinx time;
+          // If new request, save the start time;
       
-      if(reqData.length() == 0){
+      if(reqData.available() == 0){
         reqUnixtime = UnixNextPost;
       }
      
@@ -145,18 +220,28 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           // Update the previous (Then) buckets to the most recent values.
      
       trace(T_influx,2);
+      reqData.write(influxMeasurement);
+      if(influxTagSet){
+        influxTag* tag = influxTagSet;
+        while(tag){
+          reqData.printf_P(PSTR(",%s=%s"), tag->key, tag->value);
+          tag = tag->next;
+        }
+      }
       Script* script = influxOutputs->first();
+      char separator = ' ';
       while(script){
-        reqData += script->name();
-        double value = script->run([](int i)->double {return (logRecord->channel[i].accum1 - accum1Then[i]) / elapsedHours;});
-        reqData += " value=" + String(value,1) + ' ' + String(UnixNextPost) + "\n";
+        double value = script->run([](int i)->double {return (logRecord->channel[i].accum1 - oldRecord->channel[i].accum1) / elapsedHours;});
+        if(value == value){
+          reqData.printf_P(PSTR("%c%s=%.1f"), separator, script->name(), value);
+          separator = ',';
+        }
         script = script->next();
       }
-
-      _logHours = logRecord->logHours;
-      for(int i=0; i<MAXINPUTS; ++i){
-        accum1Then[i] = logRecord->channel[i].accum1;
-      }
+      reqData.printf(" %d\n", UnixNextPost);
+      delete oldRecord;
+      oldRecord = logRecord;
+      logRecord = nullptr;
       
       trace(T_influx,3);  
       reqEntries++;
@@ -165,77 +250,124 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       
       if ((reqEntries < influxBulkSend) ||
          ((currLog.lastKey() > UnixNextPost) &&
-         (reqData.length() < 1000))) {
+         (reqData.available() < 4000))) {
         return UnixNextPost;
       }
 
-          // Send the post       
+          // Send the post  
 
-      if(!influxSendData(reqUnixtime, reqData)){
-        state = resend;
-        return UNIXtime() + 30;
+      state = sendPost;
+      return 1;
+    }
+
+    case sendPost: {
+      trace(T_influx,6);
+     
+      if( ! WiFi.isConnected()){
+        return UNIXtime() + 1;
       }
-      buf->data = UnixLastPost;
-      influxPostLog.write((byte*)buf,4);
-      influxPostLog.flush();
-      reqData = "";
+      if( ! request){
+        request = new asyncHTTPrequest;
+      }
+      String URL = influxURL + ":" + String(influxPort) + "/write?precision=s&db=" + influxDataBase;
+      request->setTimeout(3);
+      request->setDebug(false);
+      if(request->debug()){
+        DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
+        String msg = timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second());
+        Serial.println(msg);
+        Serial.println(reqData.peekString(reqData.available()));
+      }
+      Serial.printf("ms: %d, time: %d\r\n", millis(), UnixNextPost);
+      request->open("POST", URL.c_str());
+      trace(T_influx,6);
+      request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
+      trace(T_influx,6);
+      request->send(&reqData, reqData.available());
+      state = waitPost;
+      return 1;
+    } 
+
+    case waitPost: {
+      trace(T_influx,7);
+      if(request->readyState() != 4){
+        return 1; 
+      }
+      trace(T_influx,7);
+      if(request->responseHTTPcode() != 204){
+        if(++retryCount < 10){
+          state = sendPost;
+          return UNIXtime() + 1;
+        }
+        retryCount = 0;
+        msgLog("influxService: Post Failed: ", request->responseHTTPcode());
+        Serial.println(request->responseText());
+        UnixLastPost = reqUnixtime - influxDBInterval;
+        state = getLastRecord;
+        return 1;
+      }
+      trace(T_influx,7);
+      delete request;
+      request = nullptr;
+      retryCount = 0;
+      reqData.flush();
       reqEntries = 0;    
       state = post;
       return UnixNextPost;
-    }
-  
-
-    case resend: {
-      msgLog(F("Resending influx data."));
-      if(!influxSendData(reqUnixtime, reqData)){ 
-        return UNIXtime() + 60;
-      }
-      else {
-        buf->data = UnixLastPost;
-        influxPostLog.write((byte*)buf,4);
-        influxPostLog.flush();
-        reqData = "";
-        reqEntries = 0;  
-        state = post;
-        return 1;
-      }
-      break;
-    }
+    }   
   }
+
   return 1;
 }
 
-/************************************************************************************************
- *  influxSend - send data to the influx server. 
- *  if secure transmission is configured, pas sthe request to a 
- *  similar WiFiClientSecure function.
- *  Secure takes about twice as long and can block sampling for more than a second.
- ***********************************************************************************************/
-boolean influxSendData(uint32_t reqUnixtime, String reqData){ 
-  HTTPClient http;
-  trace(T_influx,7);
-  uint32_t startTime = millis();
-  String URI = "/write?precision=s&db=" + influxDataBase;
-  Serial.print(influxURL);
-  Serial.println(URI);
-  http.begin(influxURL, influxPort, URI);
-  http.addHeader("Host",influxURL);
-  http.addHeader("Content-Type","application/x-www-form-urlencoded");
-  http.setTimeout(500);
-  Serial.print(reqData);
-  int httpCode = http.POST(reqData);
-  String response = http.getString();
-  http.end();
-  if(httpCode != HTTP_CODE_OK && httpCode != 204){
-    String code = String(httpCode);
-    if(httpCode < 0){
-      code = http.errorToString(httpCode);
+bool influxConfig(JsonObject& config){
+  int revision = config["revision"];
+  if(revision == influxRevision){
+    return true;
+  }
+  influxRevision = revision;
+  if(influxStarted){
+    influxRestart = true;
+  }
+  influxURL = config.get<String>("url");
+  if(influxURL.startsWith("http")){
+    influxURL.remove(0,4);
+    if(influxURL.startsWith("s"))influxURL.remove(0,1);
+    if(influxURL.startsWith(":"))influxURL.remove(0,1);
+    while(influxURL.startsWith("/")) influxURL.remove(0,1);
+  }  
+  if(influxURL.indexOf(":") > 0){
+    influxPort = influxURL.substring(influxURL.indexOf(":")+1).toInt();
+    influxURL.remove(influxURL.indexOf(":"));
+  }
+  influxDataBase = config["database"].as<String>();
+  influxDBInterval = config["postInterval"].as<int>();
+  influxBulkSend = config["bulksend"].as<int>();
+  if(influxBulkSend <1) influxBulkSend = 1;
+
+  delete influxTagSet;
+  influxTagSet = nullptr;
+  JsonArray& tagset = config["tagset"];
+  if(tagset.success()){
+    for(int i=tagset.size(); i>0;){
+      i--;
+      influxTag* tag = new influxTag;
+      tag->next = influxTagSet;
+      influxTagSet = tag;
+      tag->key = charstar(tagset[i]["key"].as<const char*>());
+      tag->value = charstar(tagset[i]["value"].as<const char*>());
     }
-    msgLog("influxDB: POST failed. HTTP code: ", code);
-    Serial.println(response);
-    return false;
-  } 
-  return true;
+  }
+
+  delete influxOutputs;
+  JsonVariant var = config["outputs"];
+  if(var.success()){
+    influxOutputs = new ScriptSet(var.as<JsonArray>()); 
+  }
+  if( ! influxStarted) {
+    NewService(influxService);
+    influxStarted = true;
+    influxStop = false;
+  }    
 }
 
- 

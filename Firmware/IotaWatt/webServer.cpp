@@ -101,7 +101,9 @@ bool loadFromSdCard(String path){
     if(path.equalsIgnoreCase("/config.txt")){
       server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
     }
-    if (server.streamFile(dataFile, dataType) != dataFile.size()) {
+    size_t sent = server.streamFile(dataFile, dataType);
+    if ( sent != dataFile.size()) {
+      Serial.printf("less data than expected. file %s, sent %d, expected %d\r\n", dataFile.name(), sent, dataFile.size());
       msgLog(F("Server: Sent less data than expected!"));
     }
   }

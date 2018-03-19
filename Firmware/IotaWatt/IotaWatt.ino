@@ -191,18 +191,6 @@ int16_t   EmonBulkSend = 1;
 EmonSendMode EmonSend = EmonSendPOSTsecure;
 ScriptSet* emonOutputs;
 
-      //********************** influxDB configuration stuff *****************************//
-      // again, need to move this stuff to a class.
-
-bool      influxStarted = false;                    // set true when Service started
-bool      influxStop = false;                       // set true to stop the Service
-bool      influxInitialize = true;                  // Initialize or reinitialize 
-String    influxURL = "167.114.114.94";
-uint16_t  influxPort = 8086;
-String    influxDataBase = "test";
-int16_t   influxBulkSend = 1;
-ScriptSet* influxOutputs;      
-
       // ************************ ADC sample pairs ************************************
  
 int16_t   samples = 0;                              // Number of samples taken in last sampling

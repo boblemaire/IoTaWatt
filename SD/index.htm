@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en-US">
+  /* Version 02_03_02 */
 <head>
 <meta charset="utf-8">
 <title>IoTaWatt Configuration app</title>
@@ -130,17 +131,48 @@
                 <!-- ************* WebServer ********************--> 
     
     <div class="body color_body" id="divWebServer" style="display:none">
-      <h3>Setup Web Server</h3>
+      <h3 id=serverHead>Setup Web Server</h3>
       <form><table id="serverTable"></table></form>
-      <div id="divServerOutputs">
+      <div id="divInfluxTagSet" style="display:none">
+        <h3>tag set</h3>
+        <table id="influxTagSet"></table>
+      </div>
+      <div id="divServerOutputs" style="display:none">
         <h3 id="serverOutputsHeader">Outputs</h3>
         <table id="serverOutputs"></table>
       </div>
       <p>
+        <button class="actionDelete" id="serverDelete">delete</button>
         <button class="actionCancel" id="serverCancel" onclick="serverCancel()">cancel</button>
         <button class="actionSave" id="serverSave" onclick="serverSave()">save</button>
       </p>
     </div>
+    
+    <div class="body color_body" id="divInfluxTag" style="display:none">
+      <h3>Edit influx tag</h3>
+      <table width="80%">
+        <tr><th>tag key</th><th> </th><th>tag value</th></tr>
+        <tr>
+          <td><input id="influxTagKey" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="influxTagCheck()"></td>
+          <td>=</td>
+          <td><input id="influxTagValue" pattern="[a-zA-Z0-9_]{1,}" oninput="influxTagCheck()"></td>
+        </tr>
+      </table>
+      
+      <p>Tags are optional key-value pairs of metadata that can be associated with the measurement.
+      Because they are indexed, queries on tags perform better than queries on fields.
+      </p>
+      <p>When tags are specified, IoTaWatt assumes the first tag is unique to this measurement
+      and is referenced to determine the time of last measurement during restart recovery. 
+      In that way, an IoTaWatt can maintain context and continuity where multiple data
+      sources are writing to a single database.</p>
+      <p>
+        <button class="actionDelete" id="influxTagDelete">delete</button>
+        <button class="actionCancel" id="influxTagCancel" onclick="influxTagCancel()">cancel</button>
+        <button class="actionSave" id="influxTagSave">save</button>
+      </p>
+    </div>
+              
     
     <!-- ****************************** divStatus **********************************--> 
     
@@ -331,10 +363,15 @@ var scriptEditSave;
 var scriptEditReturn;
 
 /***************************************************************************************************
+ *                       Shorthand functions
+* ************************************************************************************************/
+function EbyId(id) {return document.getElementById(id)};
+
+/***************************************************************************************************
  *                       Tools
 * ************************************************************************************************/
 function toolsRestart() {
-  document.getElementById("restartMsg").innerHTML = "";
+  EbyId("restartMsg").innerHTML = "";
   currentBodyPush("divRestart");
 }
 
@@ -343,7 +380,7 @@ function sendRestart(){
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       editing = true;
-      document.getElementById("restartMsg").innerHTML = "Restarting...";
+      EbyId("restartMsg").innerHTML = "Restarting...";
       setTimeout(function(){setup();},15000);
     }
   }
@@ -352,7 +389,7 @@ function sendRestart(){
 }
 
 function toolsWiFi() {
-  document.getElementById("WiFiMsg").innerHTML = "";
+  EbyId("WiFiMsg").innerHTML = "";
   currentBodyPush("divWiFi");
 }
 
@@ -361,7 +398,7 @@ function sendDisconnect(){
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       editing = true;
-      document.getElementById("WiFiMsg").innerHTML = "Disconnected";
+      EbyId("WiFiMsg").innerHTML = "Disconnected";
       setTimeout(function(){setup();},15000);
     }
   }
@@ -375,9 +412,9 @@ function toolsDatalogs(){
 }
 
 function toolsDataLogsCancel(){
-  document.getElementById("logsConfirm").onclick="";
-  document.getElementById("logsMsg").innerHTML = "";
-  document.getElementById("logsConfirm").style.display = "none";
+  EbyId("logsConfirm").onclick="";
+  EbyId("logsMsg").innerHTML = "";
+  EbyId("logsConfirm").style.display = "none";
   editing = false;
   toggleDisplay("logsDelete");
 }
@@ -388,7 +425,7 @@ function toolsDatalogsStatus(){
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       var status = JSON.parse(xmlHttp.responseText);
-      document.getElementById("logsTable").innerHTML = "<tr><th>Attribute</th><th>Current Log</th><th>History Log</th></tr>";
+      EbyId("logsTable").innerHTML = "<tr><th>Attribute</th><th>Current Log</th><th>History Log</th></tr>";
       formatLine("Start Date",formatDateTime(status.datalogs.currlog.firstkey),formatDateTime(status.datalogs.histlog.firstkey));
       formatLine("End Date",formatDateTime(status.datalogs.currlog.lastkey),formatDateTime(status.datalogs.histlog.lastkey));
       formatLine("File Size",status.datalogs.currlog.size,status.datalogs.histlog.size);
@@ -396,7 +433,7 @@ function toolsDatalogsStatus(){
       formatLine("Complete", density(status.datalogs.currlog) + "%", density(status.datalogs.histlog) + "%");
       return;            
       function formatLine(attribute, value1, value2){
-        document.getElementById("logsTable").innerHTML += "<tr><td>" + attribute + "</td><td>" + value1 + "</td><td>" + value2 + "</td></tr>";
+        EbyId("logsTable").innerHTML += "<tr><td>" + attribute + "</td><td>" + value1 + "</td><td>" + value2 + "</td></tr>";
       }
       function density(log){
         return ( (log.size / 256) * 100 /((log.lastkey-log.firstkey)/ log.interval)).toFixed(1);
@@ -411,7 +448,7 @@ function toolsDataLogsCommit(log){
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      var msg = document.getElementById("logsMsg");
+      var msg = EbyId("logsMsg");
       msg.innerHTML = "Deleting " + log + " and restarting.";
       setTimeout(function(){toolsDataLogsCancel(); setup();},15000);
     }
@@ -422,21 +459,21 @@ function toolsDataLogsCommit(log){
 }
 
 function toolsDataLogsDelete(log){
-  var msg = document.getElementById("logsMsg");
+  var msg = EbyId("logsMsg");
   msg.innerHTML = "You are about to permanently delete the ";
   if(log == "current"){
     msg.innerHTML += "current log.";
-    document.getElementById("logsConfirm").setAttribute("onclick","toolsDataLogsCommit('current')");
+    EbyId("logsConfirm").setAttribute("onclick","toolsDataLogsCommit('current')");
   }
   else if (log == "history"){
     msg.innerHTML += "history log.";
-    document.getElementById("logsConfirm").setAttribute("onclick","toolsDataLogsCommit('history')");
+    EbyId("logsConfirm").setAttribute("onclick","toolsDataLogsCommit('history')");
   }
   else {
     toolsDataLogsCancel();
     return;
   }
-  document.getElementById("logsConfirm").style.display = "block";
+  EbyId("logsConfirm").style.display = "block";
   editing = true;
 }
 
@@ -445,10 +482,10 @@ function toolsDataLogsDelete(log){
  * ************************************************************************************************/
 function configInputs(){
   currentBodyPush("configInputs");
-  var inputsTable = document.getElementById("inputTableBody");
+  var inputsTable = EbyId("inputTableBody");
   inputsTable.innerHTML = "";
   voltageChannels = [];
-  document.getElementById("derive3ph").disabled = false;
+  EbyId("derive3ph").disabled = false;
   for(i in config.inputs){
     vchanUsed[i] = false;
     if(config.inputs[i] !== null){
@@ -457,11 +494,11 @@ function configInputs(){
       }
       if(config.inputs[i].vphase !== undefined && config.inputs[i].vphase != 0){
         config.derive3ph = true;
-        document.getElementById("derive3ph").disabled = true;
+        EbyId("derive3ph").disabled = true;
       }
     }
   }
-  document.getElementById("derive3ph").checked = config.derive3ph ? true : false;
+  EbyId("derive3ph").checked = config.derive3ph ? true : false;
   for( i in config.inputs){
     var newRow = inputsTable.insertRow(-1);
     newRow.setAttribute("class","chanEditRow");
@@ -518,9 +555,9 @@ function inputEditMsg(element, msg){
 
 function refreshInputEdit(){
   var complete = true;
-  var table = document.getElementById("inputEditTable");
+  var table = EbyId("inputEditTable");
   table.innerHTML = "";
-  document.getElementById("inputChannel").innerHTML = "Configure Input " + inputEditChannel;
+  EbyId("inputChannel").innerHTML = "Configure Input " + inputEditChannel;
   
   var newInput = addTableRow(table, "Burden:", "inputBurden", "span");
   if(config.device.burden[inputEditChannel] == 0) inputBurden.innerHTML = "none configured.";
@@ -692,11 +729,11 @@ function refreshInputEdit(){
       inputEditObject.signed = undefined;
     }
     
-    document.getElementById("inputEditDelete").style.display = (config.inputs[inputEditChannel] == null) ? "none" : "inline";
+    EbyId("inputEditDelete").style.display = (config.inputs[inputEditChannel] == null) ? "none" : "inline";
   }
 
   if(inputEditObject.type == "VT"){
-    document.getElementById("inputEditDelete").style.display = 
+    EbyId("inputEditDelete").style.display = 
       (config.inputs[inputEditChannel] == null || vchanUsed[inputEditChannel]) ? "none" : "inline";
     if(complete){
       inputCal = addTableRow(table, "", "inputCal", "button");
@@ -706,7 +743,7 @@ function refreshInputEdit(){
     }
   }
 
-  document.getElementById("inputEditSave").style.display = complete ? "inline" : "none";
+  EbyId("inputEditSave").style.display = complete ? "inline" : "none";
 }
 
 function inputEditNewModel(obj){
@@ -809,9 +846,9 @@ function addTableText(table,col1Text,col2Text){
 
 function calVTvoltage(obj){
   currentBodyPush("inputCalVT");
-  document.getElementById("inputCalChannel").innerHTML = "Calibrate Voltage Channel " + inputEditChannel;
-  document.getElementById("inputCalVolts").innerHTML = "120.1";
-  document.getElementById("inputCalCal").value = inputEditObject.cal;
+  EbyId("inputCalChannel").innerHTML = "Calibrate Voltage Channel " + inputEditChannel;
+  EbyId("inputCalVolts").innerHTML = "120.1";
+  EbyId("inputCalCal").value = inputEditObject.cal;
   
   calRefreshVoltage = true;
   calVTvolts = 0;
@@ -839,17 +876,17 @@ function calUpdateVoltage(){
         var response = JSON.parse(xmlHttp.responseText);
         if(calVTvolts == 0) calVTvolts = response.vrms;
         else calVTvolts = .8 * calVTvolts + .2 * response.vrms;
-        document.getElementById("inputCalVolts").innerHTML = calVTvolts.valueOf().toFixed(1);
+        EbyId("inputCalVolts").innerHTML = calVTvolts.valueOf().toFixed(1);
         calUpdateVoltage();
       }
     }
   }
-  xmlHttp.open("GET","/vcal?channel=" + inputEditChannel + "&cal=" + Number(document.getElementById("inputCalCal").value), true);
+  xmlHttp.open("GET","/vcal?channel=" + inputEditChannel + "&cal=" + Number(EbyId("inputCalCal").value), true);
   xmlHttp.send(null);
 }
 
 function calVTsave(obj){
-  inputEditObject.cal = Number(document.getElementById("inputCalCal").value);
+  inputEditObject.cal = Number(EbyId("inputCalCal").value);
   currentBodyPop();
   calRefreshVoltage = false;
   inputEditSave();
@@ -860,18 +897,18 @@ function calVTsave(obj){
  * ****************************************************************************************/
  function configOutputs(){
     currentBodyPush("configOutputs");
-    document.getElementById("calcName").title="Name must be alphanumeric and start with a letter";
-    document.getElementById("calcName").pattern="^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
+    EbyId("calcName").title="Name must be alphanumeric and start with a letter";
+    EbyId("calcName").pattern="^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
     scriptEditSave = function(){
       config.outputs = scriptEditSet
       uploadConfig();
     };
     scriptEditReturn = function(){
-      document.getElementById("divCalc").style.display = "none";
-      document.getElementById("divOutputs").style.display = "table";
+      EbyId("divCalc").style.display = "none";
+      EbyId("divOutputs").style.display = "table";
       configOutputs();
     };
-    scriptEditTable = document.getElementById("outputTable");
+    scriptEditTable = EbyId("outputTable");
     scriptEditTable.innerHTML = "";
     scriptEditSet = config.outputs;
     
@@ -931,7 +968,7 @@ function calVTsave(obj){
    
   
   function calcBuildDropdown(){
-    var inputDropdown = document.getElementById("calcInputDropdown-content");
+    var inputDropdown = EbyId("calcInputDropdown-content");
     inputDropdown.innerHTML = "";
     for(i in config.inputs){
       if(config.inputs[i] != null){
@@ -947,10 +984,10 @@ function calVTsave(obj){
   function calculator(index){
     editingScript = true;
     currentBodyPush("divCalc");
-    document.getElementById("calcName").value = scriptEditSet[index].name;
-    document.getElementById("calcUnits").value = scriptEditSet[index].units;
+    EbyId("calcName").value = scriptEditSet[index].name;
+    EbyId("calcUnits").value = scriptEditSet[index].units;
     tokens = parseScript(scriptEditSet[index].script);
-    document.getElementById("calcDelete").style.display = "inline";
+    EbyId("calcDelete").style.display = "inline";
     scriptEditIndex = index;
     refreshCalcDisplay();
   }
@@ -958,10 +995,10 @@ function calVTsave(obj){
   function addOutput(){
     editingScript = true;
     currentBodyPush("divCalc");
-    document.getElementById("calcName").value = "";
-    document.getElementById("calcUnits").value = "";
+    EbyId("calcName").value = "";
+    EbyId("calcUnits").value = "";
     tokens = ["#0"];
-    document.getElementById("calcDelete").style.display = "none";
+    EbyId("calcDelete").style.display = "none";
     scriptEditIndex = scriptEditSet.length;
     refreshCalcDisplay();
   }
@@ -976,8 +1013,8 @@ function calVTsave(obj){
     if(scriptEditIndex < scriptEditSet.length){
       scriptEditSet.splice(scriptEditIndex,1);
     }
-    scriptEditSet.push({name:document.getElementById("calcName").value.trim(),
-                        units:document.getElementById("calcUnits").value.trim(),
+    scriptEditSet.push({name:EbyId("calcName").value.trim(),
+                        units:EbyId("calcUnits").value.trim(),
                         script:tokens.join("") 
                       });
     scriptEditSet.sort(function(a, b){return a.name.toString().localeCompare(b.name.toString())});
@@ -999,17 +1036,17 @@ function calVTsave(obj){
   }
 
   function refreshCalcDisplay(){
-    document.getElementById("calcDisplay").innerHTML = scriptDisplay(tokens);
-    var calcName = document.getElementById("calcName");
-    if(document.getElementById("calcName").value.trim() == "" ||
+    EbyId("calcDisplay").innerHTML = scriptDisplay(tokens);
+    var calcName = EbyId("calcName");
+    if(EbyId("calcName").value.trim() == "" ||
        parenLevel > 0 || 
        RegExp("^[-+*\/]").test(tokens[tokens.length-1])){
-      document.getElementById("calcSave").style.display = "none";
+      EbyId("calcSave").style.display = "none";
     }
     else if (! RegExp(calcName.pattern).test(calcName.value)){
-      document.getElementById("calcSave").style.display = "none";
+      EbyId("calcSave").style.display = "none";
     }
-    else document.getElementById("calcSave").style.display = "inline";
+    else EbyId("calcSave").style.display = "inline";
   }
 
   function parseScript(script){
@@ -1169,7 +1206,7 @@ function configDevice(){
 
 function buildDevice(){
   var updateClasses = ["NONE", "MAJOR", "MINOR", "BETA", "ALPHA"];
-  var deviceTable = document.getElementById("deviceTable");
+  var deviceTable = EbyId("deviceTable");
   deviceTable.innerHTML = "";
   editing = false;
   originalName = config.device.name;
@@ -1206,7 +1243,7 @@ function checkDevice(){
   else {
     if(config.device.name != originalName){
       nameChange = true;
-      var obj = document.getElementById("deviceName");
+      var obj = EbyId("deviceName");
       obj.parentNode.appendChild(document.createElement("BR"));
       obj.parentNode.appendChild(document.createTextNode("Name changed, IoTaWatt will restart on Save."));
       obj.parentNode.appendChild(document.createElement("BR"));
@@ -1214,8 +1251,8 @@ function checkDevice(){
     }
   }
   if( ! validateInput("deviceTimezone")) complete = false;
-  document.getElementById("actionBurden").style.display = (complete && (!nameChange)) ? "inline" : "none";
-  document.getElementById("deviceSave").style.display = complete ? "inline" : "none";
+  EbyId("actionBurden").style.display = (complete && (!nameChange)) ? "inline" : "none";
+  EbyId("deviceSave").style.display = complete ? "inline" : "none";
 }
 
 function deviceCancel(){
@@ -1237,7 +1274,7 @@ function deviceSave(){
 
 function configBurden(){
   currentBodyPush("configBurden");
-  var burdenTable = document.getElementById("burdenTable");
+  var burdenTable = EbyId("burdenTable");
   burdenTable.innerHTML = "";
   for(var i=0; i<config.device.channels; i++){
     var newRow = burdenTable.insertRow(-1);
@@ -1252,7 +1289,7 @@ function configBurden(){
     newInput.value = config.device.burden[i];
     newCol.appendChild(newInput);
     faults = 0;
-    document.getElementById("burdenSave").style.display = "inline";
+    EbyId("burdenSave").style.display = "inline";
   }
 }
 
@@ -1279,7 +1316,7 @@ function newBurden(obj, index){
     }
     obj.value = config.device.burden[index];
   }
-  document.getElementById("burdenSave").style.display = faults ? "none" : "inline";
+  EbyId("burdenSave").style.display = faults ? "none" : "inline";
 }
 
 function burdenCancel(){
@@ -1297,57 +1334,42 @@ function burdenSave(){
  * ******************************************************************************************/
 
 function buildWebServer(){
-  var servers = ["None", "Emoncms", "InfluxDB"];
-  document.getElementById("serverOutputs").innerHTML = "";
-  document.getElementById("serverOutputsHeader").innerHTML = "";
-  currentBodyPush("divWebServer");
-  var serverTable = document.getElementById("serverTable");
+  var servers = ["Emoncms", "InfluxDB"];
+  EbyId("serverHead").innerHTML = "Web Server Setup";
+  EbyId("divInfluxTagSet").style.display = "none";
+  EbyId("divServerOutputs").style.display = "none";
+  var serverTable = EbyId("serverTable");
   serverTable.innerHTML = "";
-  document.getElementById("divServerOutputs").style.display = "none";
-  var serverSelect = addTableRow(serverTable, "Web Service Type", "serverType", "select");
-  serverSelect.setAttribute("onchange","newServer(this)");
-  
+  currentBodyPush("divWebServer");
+  var serverSelect = addTableRow(serverTable, "Web Service", "serverType", "select");
+  serverSelect.setAttribute("onchange","editServer(this)");
+  var option = document.createElement("option");
+  option.text = "select server";
+  serverSelect.add(option);
+
   for(i in servers){
     var option = document.createElement("option");
     option.text = servers[i];
-    if(config.server.type.toLowerCase() == servers[i].toLowerCase()) option.selected = true;
+    option.value = servers[i];
+    if(servers[i].toLowerCase() == "emoncms"){
+      option.text += (config.server.type.toLowerCase() == "emoncms") ? " (edit)" : " (add)";
+    }
+    if(servers[i].toLowerCase() == "influxdb"){
+      option.text += (config.influxdb !== undefined) ? " (edit)" : " (add)";
+    }
     serverSelect.add(option);
   }
-  if(config.server.type.toLowerCase() == "emoncms"){
-    buildEmoncms();
-  }
-  else if(config.server.type.toLowerCase() == "influxdb"){
-    buildInfluxdb();
-  }
-  else if(config.server.type.toLowerCase() == "none"){
-    document.getElementById("serverSave").style.display = "inline";
-  }
+  EbyId("serverDelete").style.display = "none";
+  EbyId("serverSave").style.display = "none";
 }
 
-function newServer(obj){
-  if(obj.value.toLowerCase() == "none"){
-    config.server = {type:"none"};
-  }
-  else if(obj.value.toLowerCase() == "emoncms"){
-    config.server =  {type:"emoncms",
-                      node:config.device.name,
-                      postInterval:10,
-                      bulksend:1,
-                      url:"http://emoncms.org",
-                      apikey:"",
-                      userid:""
-                      };
+function editServer(obj){
+  if(obj.value.toLowerCase() == "emoncms"){
+    editEmoncms();
   }
   else if(obj.value.toLowerCase() == "influxdb"){
-    config.server =  {type:"influxdb",
-                      postInterval:10,
-                      bulksend:1,
-                      url:"",
-                      "database":"",
-                      "outputs":[]
-                      };
+    editInfluxdb();
   }
-  buildWebServer();
 }
 
 function serverSave(){
@@ -1365,13 +1387,37 @@ function serverCancel(){
 /***********************************************************************************************
  *                                Configure eMonCMS
  * ********************************************************************************************/
-function buildEmoncms(){
+function editEmoncms(){
   editing = true;
-  var serverTable = document.getElementById("serverTable");
+  var serverTable = EbyId("serverTable");
+  serverTable.innerHTML = "";
+  
+  if(config.server.type.toLowerCase() != "emoncms"){
+    config.server =  {type:"emoncms",
+                      revision:0,
+                      node:config.device.name,
+                      postInterval:10,
+                      bulksend:1,
+                      url:"http://emoncms.org",
+                      apikey:"",
+                      user:"",
+                      pwd:"",
+                      };
+    EbyId("serverDelete").style.display = "none";
+    EbyId("serverHead").innerHTML = "Add Emoncms Service";
+  }
+  else {
+    config.server.revision++;
+    EbyId("serverHead").innerHTML = "Edit Emoncms Service";
+    EbyId("serverDelete").style.display = "inline";
+    EbyId("serverDelete").setAttribute("onclick","deleteEmoncms();");
+  }
+
   if(config.server.username !== undefined){
     config.server.userid = config.server.username;
     config.server.username = undefined;
   }
+  
   if(config.server.outputs === undefined){
     config.server.outputs = [];
     for(var i=0; i<config.device.channels; i++){
@@ -1381,20 +1427,17 @@ function buildEmoncms(){
   
   var nodeInput = addTableRow(serverTable, "Node:", "serverNode", "input", 8);
   nodeInput.value = config.server.node;
-  nodeInput.setAttribute("onchange","config.server.node = this.value; checkEmoncms();");
-  nodeInput.setAttribute("style","width: 80px;");
-  nodeInput.setAttribute("min","0");
-  nodeInput.setAttribute("max","99");
-  nodeInput.setAttribute("step","1");
+  nodeInput.onchange = "config.server.node = this.value; checkEmoncms();";
+  nodeInput.style = "width: 80px;";
   
   var postInput =   addTableRow(serverTable, "post interval(sec): ", "serverPost", "input", 3);
   postInput.value = Number(config.server.postInterval);
   postInput.setAttribute("onchange","config.server.postInterval = Number(this.value); checkEmoncms();");
   postInput.setAttribute("style","width: 40px;");
   postInput.type = "number";
-  postInput.setAttribute("min","0");
-  postInput.setAttribute("max","3600");
-  postInput.setAttribute("step","5");
+  postInput.min = 5;
+  postInput.max = 3600;
+  postInput.step = 5;
   
   if(isNaN(config.server.bulksend)) config.server.bulksend = 1;
   var bulksendInput = addTableRow(serverTable, "bulk send:", "serverBulk", "input", 3);
@@ -1402,20 +1445,20 @@ function buildEmoncms(){
   bulksendInput.setAttribute("onchange","config.server.bulksend = Number(this.value); checkEmoncms();");
   bulksendInput.style = "width: 40px;";
   bulksendInput.type = "number";
-  bulksendInput.min = "1";
-  bulksendInput.max = "10";
-  bulksendInput.step = "1";
+  bulksendInput.min = 1;
+  bulksendInput.max = 60;
+  bulksendInput.step = 1;
   bulksendInput.title = "Send multiple entries in a single HTTP transaction";
   
   var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 32);
   urlInput.value = config.server.url
   urlInput.setAttribute("onchange","config.server.url = this.value; checkEmoncms();");
-  urlInput.setAttribute("type","url");
+  urlInput.type = "url";
   
   var keyInput = addTableRow(serverTable, "api key:", "serverKey", "input", 32);
   keyInput.value = config.server.apikey;
-  keyInput.setAttribute("oninput","config.server.apikey = this.value; checkEmoncms();");
-  keyInput.setAttribute("size","32");
+  keyInput.setAttribute("onchange","config.server.apikey = this.value; checkEmoncms();");
+  keyInput.size = 32;
   keyInput.pattern = "[0-9a-f]{32}";
   keyInput.title = "read/write key - 32 hexadecimal digits";
   
@@ -1423,16 +1466,16 @@ function buildEmoncms(){
   var keyInput = addTableRow(serverTable, "Emoncms userid", "serverUser", "input", 10);
   if(config.server.userid === undefined) config.server.userid = "";
   keyInput.value = config.server.userid;
-  keyInput.setAttribute("onchange","config.server.userid = this.value; checkEmoncms()");
+  keyInput.setAttribute("onchange","config.server.userid = this.value; checkEmoncms();");
   keyInput.setAttribute("size","16");
   keyInput.pattern = "[0-9]*";
   keyInput.title = "In upper-left corner of Emoncms My Account";
   
-  document.getElementById("divServerOutputs").style.display = "inline";
-  document.getElementById("serverOutputsHeader").innerHTML = "Emoncms inputs";
+  EbyId("divServerOutputs").style.display = "inline";
+  EbyId("serverOutputsHeader").innerHTML = "Emoncms inputs";
   
-  document.getElementById("calcName").pattern="^[1-9]{1}$|^[1-2]{1}[0-9]{1}$";
-  document.getElementById("calcName").title="Name is Emoncms Input Key 1-29";
+  EbyId("calcName").pattern="^[1-9]{1}$|^[1-2]{1}[0-9]{1}$";
+  EbyId("calcName").title="Name is Emoncms Input Key 1-29";
   scriptEditSave = function(){
     scriptEditSet.sort(function(a, b){return a.name - b.name});
     config.server.outputs = scriptEditSet;
@@ -1442,7 +1485,7 @@ function buildEmoncms(){
     editScript();
     checkEmoncms();
   };
-  scriptEditTable = document.getElementById("serverOutputs");
+  scriptEditTable = EbyId("serverOutputs");
   scriptEditSet = config.server.outputs;
   editScript();
   checkEmoncms();
@@ -1456,38 +1499,73 @@ function checkEmoncms(){
                  validateInput("serverKey") &&
                  validateInput("serverUser") &&
                  (config.server.apikey != "");
-  document.getElementById("serverSave").style.display = complete ? "inline" : "none";
+  EbyId("serverSave").style.display = complete ? "inline" : "none";
 }
 
-function validateInput(id){
-  var obj = document.getElementById(id);
+function deleteEmoncms(){
+  config.server = {type: "none"};
+  serverSave();
+}
+
+function validateInput(id, required=false, msg=undefined){
+  var obj = EbyId(id);
   while(obj.nextSibling !== null) obj.parentNode.removeChild(obj.nextSibling);
-  if(obj.validationMessage == "") return true;
-  obj.parentNode.appendChild(document.createElement("BR"));
-  obj.parentNode.appendChild(document.createTextNode(obj.validationMessage));
-  return false;
+  if(obj.validationMessage != ""){
+    obj.parentNode.appendChild(document.createElement("BR"));
+    obj.parentNode.appendChild(document.createTextNode(msg === undefined ? obj.validationMessage : msg));
+    return false;
+  }
+  if(required && obj.value == ""){
+    obj.parentNode.appendChild(document.createElement("BR"));
+    obj.parentNode.appendChild(document.createTextNode("Required"));
+    return false;
+  }
+  return true;
 }
 
 /***********************************************************************************************
  *                                Configure influxDB
  * ********************************************************************************************/
-function buildInfluxdb(){
+function editInfluxdb(){
   editing = true;
-  var serverTable = document.getElementById("serverTable");
+  
+  var serverTable = EbyId("serverTable");
+  serverTable.innerHTML = "";
+  
+  if(config.influxdb === undefined){
+    config.influxdb = {type:"influxdb",
+                      revision: 0,
+                      postInterval:10,
+                      bulksend:6,
+                      url:"",
+                      "database": "iotawatt",
+                      "measurement":"config.device.name",
+                      "tagset": [],
+                      "outputs":[]
+                      };
+    EbyId("serverDelete").style.display = "none";
+    EbyId("serverHead").innerHTML = "Add influxDB Service";
+  }
+  else {
+    config.influxdb.revision++;
+    EbyId("serverHead").innerHTML = "Edit influxDB Service";
+    EbyId("serverDelete").style.display = "inline";
+    EbyId("serverDelete").setAttribute("onclick","deleteInfluxdb();");
+  }
   
   var postInput =   addTableRow(serverTable, "post interval(sec): ", "serverPost", "input", 3);
-  postInput.value = Number(config.server.postInterval);
-  postInput.setAttribute("onchange","config.server.postInterval = Number(this.value); checkInfluxdb();");
+  postInput.value = Number(config.influxdb.postInterval);
+  postInput.setAttribute("onchange","config.influxdb.postInterval = Number(this.value); checkInfluxdb();");
   postInput.setAttribute("style","width: 40px;");
   postInput.type = "number";
   postInput.setAttribute("min","0");
   postInput.setAttribute("max","3600");
   postInput.setAttribute("step","5");
   
-  if(isNaN(config.server.bulksend)) config.server.bulksend = 1;
+  if(isNaN(config.influxdb.bulksend)) config.influxdb.bulksend = 1;
   var bulksendInput = addTableRow(serverTable, "bulk send:", "serverBulk", "input", 3);
-  bulksendInput.value = Number(config.server.bulksend);
-  bulksendInput.setAttribute("onchange","config.server.bulksend = Number(this.value); checkInfluxdb();");
+  bulksendInput.value = Number(config.influxdb.bulksend);
+  bulksendInput.setAttribute("onchange","config.influxdb.bulksend = Number(this.value); checkInfluxdb();");
   bulksendInput.setAttribute("style","width: 40px;");
   bulksendInput.setAttribute("type","number");
   bulksendInput.setAttribute("min","1");
@@ -1495,30 +1573,50 @@ function buildInfluxdb(){
   bulksendInput.setAttribute("step","1");
   
   var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 32);
-  urlInput.value = config.server.url
-  urlInput.setAttribute("onchange","config.server.url = this.value; checkInfluxdb();");
-  urlInput.setAttribute("type","url");
+  urlInput.value = config.influxdb.url
+  urlInput.setAttribute("oninput","config.influxdb.url = this.value; checkInfluxdb();");
+  urlInput.type = "url";
   
   var dbInput = addTableRow(serverTable, "database:", "serverDb", "input", 16);
-  dbInput.value = config.server.database;
-  dbInput.setAttribute("oninput","config.server.database = this.value; checkInfluxdb();");
-  dbInput.pattern = "^[0-9a-zA-Z_$-/\.\+]+$";
+  dbInput.value = config.influxdb.database;
+  dbInput.setAttribute("oninput","config.influxdb.database = this.value; checkInfluxdb();");
+  dbInput.pattern = "[A-Za-z0-9_]+";
   
-  document.getElementById("divServerOutputs").style.display = "inline";
-  document.getElementById("serverOutputsHeader").innerHTML = "influxDB fields";
+  var MeasInput = addTableRow(serverTable, "measurement:", "serverMeas", "input", 16);
+  MeasInput.value = config.influxdb.database;
+  MeasInput.setAttribute("oninput","config.influxdb.measurement = this.value; checkInfluxdb();");
+  MeasInput.pattern = "[A-Za-z0-9_]+";
+  
+  if(config.influxdb.user === undefined) config.influxdb.user = "";
+  var userInput = addTableRow(serverTable, "(opt) username:", "serverUser", "input", 16);
+  userInput.value = config.influxdb.user;
+  userInput.setAttribute("oninput","config.influxdb.user = this.value; checkInfluxdb();");
+  userInput.pattern = "[a-zA-Z]{1}[a-zA-Z0-9_]*";
 
-  document.getElementById("calcName").title="Name must be valid influxDB field name";
-  document.getElementById("calcName").pattern="^[0-9a-zA-Z_$-/\.\+]+$";
+  if(config.influxdb.pwd === undefined) config.influxdb.pwd = "";
+  var pwdInput = addTableRow(serverTable, "(opt) password:", "serverPwd", "input", 16);
+  pwdInput.value = config.influxdb.pwd;
+  pwdInput.setAttribute("oninput","config.influxdb.pwd = this.value; checkInfluxdb();"); 
+  pwdInput.pattern = "[A-Za-z0-9_!$/%&#]*";
+  
+  EbyId("divInfluxTagSet").style.display = "inline";
+  buildTagSet();
+  
+  EbyId("divServerOutputs").style.display = "inline";
+  EbyId("serverOutputsHeader").innerHTML = "field set";
+
+  EbyId("calcName").title="Name must be valid influxDB field name";
+  EbyId("calcName").pattern="^[0-9a-zA-Z_$-/\.\+]+$";
   scriptEditSave = function(){
-    config.server.outputs = scriptEditSet;
+    config.influxdb.outputs = scriptEditSet;
   };
   scriptEditReturn = function(){
     scriptEditTable.innerHTML = "";
     editScript();
     checkInfluxdb();
   };
-  scriptEditTable = document.getElementById("serverOutputs");
-  scriptEditSet = config.server.outputs;
+  scriptEditTable = EbyId("serverOutputs");
+  scriptEditSet = config.influxdb.outputs;
   editScript();
   checkInfluxdb();
 }
@@ -1527,10 +1625,104 @@ function checkInfluxdb(){
   var complete = true;
   if( ! validateInput("serverPost")) complete = false;
   if( ! validateInput("serverBulk")) complete = false;
-  if( ! validateInput("serverDb")) complete = false;
-  if( ! validateInput("serverURL")) complete = false;
-  if(config.server.outputs.length == 0) complete = false;
-  document.getElementById("serverSave").style.display = complete ? "inline" : "none";
+  if( ! validateInput("serverURL", true, "not a valid url")) complete = false;
+  if( ! validateInput("serverDb", true, "alphanumeric")) complete = false;
+  if( ! validateInput("serverMeas", true, "alphanumeric")) complete = false;
+  if( ! validateInput("serverUser", config.influxdb.pwd != "", "username is alphanumeric")) complete = false;
+  if( ! validateInput("serverPwd", config.influxdb.user != "", "password is alphanumeric + _!$/%&#")) complete = false;
+  if(config.influxdb.outputs.length == 0) complete = false;
+  EbyId("serverSave").style.display = complete ? "inline" : "none";
+}
+
+function deleteInfluxdb(){
+  config.influxdb = undefined;
+  serverSave();
+}
+
+function buildTagSet(){
+  table = EbyId("influxTagSet");
+  table.innerHTML = "";
+  for(i in config.influxdb.tagset){
+    var newRow = document.createElement("tr");
+    table.appendChild(newRow);
+    newRow.setAttribute("class","outputsRow");
+    var selColumn = document.createElement("td");
+    newRow.appendChild(selColumn);
+    var keyColumn = document.createElement("td");
+    newRow.appendChild(keyColumn);
+    var valueColumn = document.createElement("td");
+    newRow.appendChild(valueColumn);
+    var noteColumn = document.createElement("td");
+    newRow.appendChild(noteColumn);
+    var editButton = document.createElement("button");
+    editButton.setAttribute("class","outputEditButton");
+    editButton.appendChild(document.createTextNode("edit"));
+    editButton.setAttribute("onclick","influxTagEdit(" + i + ");");
+    selColumn.appendChild(editButton);
+    keyColumn.innerHTML = config.influxdb.tagset[i].key;
+    valueColumn.innerHTML = config.influxdb.tagset[i].value;
+    if(i == 0){
+      noteColumn.innerHTML = "(uniquely identifies this device)";
+    }
+  }
+  var newRow = document.createElement("tr");
+  table.appendChild(newRow);
+  newRow.setAttribute("class","outputsRow")
+  var selColumn = document.createElement("td");
+  newRow.appendChild(selColumn);
+  var editButton = document.createElement("button");
+  editButton.setAttribute("class","outputEditButton");
+  editButton.appendChild(document.createTextNode("add"));
+  editButton.setAttribute("onclick","influxTagAdd(" + config.influxdb.tagset.length + ")");
+  selColumn.appendChild(editButton);
+}
+
+function influxTagEdit(index){
+  EbyId("influxTagSave").setAttribute("onclick","influxTagSave(" + index + ");");
+  EbyId("influxTagDelete").setAttribute("onclick","influxTagDelete(" + index + ");");
+  EbyId("influxTagDelete").style.display = "inline";
+  EbyId("influxTagSave").style.display = "inline";
+  EbyId("influxTagKey").value = config.influxdb.tagset[index].key;
+  EbyId("influxTagValue").value = config.influxdb.tagset[index].value;
+  currentBodyPush("divInfluxTag");
+}
+
+function influxTagAdd(index){
+  EbyId("influxTagSave").setAttribute("onclick","influxTagSave(" + index + ");");
+  EbyId("influxTagDelete").style.display = "none";
+  EbyId("influxTagSave").style.display = "none";
+  EbyId("influxTagKey").value = "";
+  EbyId("influxTagValue").value = "";
+  currentBodyPush("divInfluxTag");
+}
+
+function influxTagCancel(){
+  currentBodyPop();
+}
+
+function influxTagDelete(index){
+  config.influxdb.tagset.splice(index,1);
+  buildTagSet();
+  currentBodyPop();
+}
+
+function influxTagSave(index){
+  if(index == config.influxdb.tagset.length){
+    config.influxdb.tagset.push({key:EbyId("influxTagKey").value, value:EbyId("influxTagValue").value});
+  }
+  else {
+    config.influxdb.tagset[index].key = EbyId("influxTagKey").value;
+    config.influxdb.tagset[index].value = EbyId("influxTagValue").value;
+  }
+  buildTagSet();
+  currentBodyPop();
+}
+
+function influxTagCheck(){
+  var complete = true;
+  if( ! validateInput("influxTagKey", true, "key is alpha numeric")) complete = false;
+  if( ! validateInput("influxTagValue", true, "invalid character")) complete = false;
+  EbyId("influxTagSave").style.display = complete ? "inline" : "none";
 }
 
 /***********************************************************************************************
@@ -1560,7 +1752,7 @@ function statusGet(){
 function statusDisplay(statusMessage){
   var status = JSON.parse(statusMessage);
   
-  var statusTable = document.getElementById("statusTableL");
+  var statusTable = EbyId("statusTableL");
   statusTable.innerHTML = null;
   addRow();
   column3.appendChild(document.createTextNode("Firmware version: " + status.stats.version));
@@ -1569,7 +1761,7 @@ function statusDisplay(statusMessage){
   addRow();
   column3.appendChild(document.createTextNode("free Heap: " + status.stats.stack));
   
-  statusTable = document.getElementById("statusTableR");
+  statusTable = EbyId("statusTableR");
   statusTable.innerHTML = null;
   addRow();
   column3.appendChild(document.createTextNode(status.stats.cyclerate.toFixed(0) + " samples per AC cycle"));
@@ -1579,14 +1771,14 @@ function statusDisplay(statusMessage){
   column3.appendChild(document.createTextNode(status.stats.frequency.toFixed(1) + " Hz"));
   
   if(status.datalogs !== undefined){
-    var logs = document.getElementById("statusLogsDiv");
+    var logs = EbyId("statusLogsDiv");
     logs.innerHTML = null;
     logs.appendChild(document.createTextNode("Current Log from: " + formatDateTime(status.datalogs.currlog.firstkey) + " to: " + formatDateTime(status.datalogs.currlog.lastkey)));
     logs.appendChild(document.createElement("br"));
     logs.appendChild(document.createTextNode("History Log from: " + formatDateTime(status.datalogs.histlog.firstkey) + " to: " + formatDateTime(status.datalogs.histlog.lastkey)));
   }
   
-  statusTable = document.getElementById("inputStatusTable");
+  statusTable = EbyId("inputStatusTable");
   statusTable.innerHTML = "";
   for(i in status.inputs){
     addRow();
@@ -1626,7 +1818,7 @@ function statusDisplay(statusMessage){
     }
   }
   
-  statusTable = document.getElementById("outputStatusTable");
+  statusTable = EbyId("outputStatusTable");
   statusTable.innerHTML = "";
   for(i in status.outputs){
     addRow();
@@ -1694,7 +1886,7 @@ function checkConfig(){
   for(i in config.inputs){
     if(config.inputs[i] != null && config.inputs[i].model != "generic"){
       var table = tables.CT;
-      if(config.inputs[i].type == "VT")table = tables.VT;
+      if(config.inputs[i].type == "VT") table = tables.VT;
       for(j in table){
         if(config.inputs[i].model == table[j].model){
           config.inputs[i].phase = table[j].phase;
@@ -1708,6 +1900,10 @@ function checkConfig(){
       config.outputs[i].script = old2newScript(config.outputs[i].script);
     }
     config.format == 2;
+  }
+  
+  if(config.server === undefined || config.server.type === undefined){
+    config.server = {type: "none"};
   }
 }
 
@@ -1769,8 +1965,8 @@ function mainMenuButton(obj, handler){
 } 
 
 function currentBodyPop(){
-  if(currentBody.length > 0) document.getElementById(currentBody.pop()).style.display = "none";
-  if(currentBody.length > 0) document.getElementById(currentBody[currentBody.length-1]).style.display = "block";
+  if(currentBody.length > 0) EbyId(currentBody.pop()).style.display = "none";
+  if(currentBody.length > 0) EbyId(currentBody[currentBody.length-1]).style.display = "block";
   else resetDisplay();
 }
 
@@ -1778,12 +1974,12 @@ function currentBodyPush(newBody){
   if(currentBody.length > 0){
     if(currentBody[currentBody.length-1] == newBody) return;
     if(currentBody[currentBody.length-1].search("Menu") == -1) {
-      document.getElementById(currentBody[currentBody.length-1]).style.display = "none";
+      EbyId(currentBody[currentBody.length-1]).style.display = "none";
     }
   } 
   currentBody.push(newBody);
-  document.getElementById(currentBody[currentBody.length-1]).style.display = "table";
-  document.getElementById("mainBody").style.display = "block";
+  EbyId(currentBody[currentBody.length-1]).style.display = "table";
+  EbyId("mainBody").style.display = "block";
 }
 
 function resetDisplay(){
@@ -1806,7 +2002,7 @@ function showMsgs(){
   var myWindow = window.open(msgsFileURL, "_self");
 }
 function toggleDisplay(id){
-  var element = document.getElementById(id);
+  var element = EbyId(id);
   if(! editing){
     element.style.display = element.style.display == "none" ? "block" : "none";
   }
@@ -1828,7 +2024,7 @@ function getConfig(callback){
     checkConfig();
     if(callback !== undefined) callback();
     });
-    document.getElementById("mainMenu").style.display = "block";
+    EbyId("mainMenu").style.display = "block";
 }
 
 function getTables(){
@@ -1903,7 +2099,7 @@ function setup(){
   getConfig();
   if(document.domain == "iotawatt.com"){
     demo = true;
-    document.getElementById("heading").innerHTML += " Demo Mode";
+    EbyId("heading").innerHTML += " Demo Mode";
   } 
   resetDisplay();
 }

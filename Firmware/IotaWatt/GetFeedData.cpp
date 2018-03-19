@@ -218,6 +218,10 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
               replyData += "null";
             }
           }
+          if(replyData.endsWith("NaN")){
+            replyData.remove(replyData.length()-3);
+            replyData += "null";
+          }
           replyData += ',';
         } 
            
