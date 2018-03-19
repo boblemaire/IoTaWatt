@@ -166,13 +166,11 @@ boolean getConfig(void){
                                                   
   String serverType = Config["server"]["type"].as<String>();
   serverType.toLowerCase();
-  
+
       // ************************************** configure EmonCMS **********************************
 
   trace(T_CONFIG,8);
   if(serverType.equals("emoncms")) {
-    if(influxStarted) influxStop = true;
-    SD.remove((char *)influxPostLogFile.c_str());
     EmonURL = Config["server"]["url"].as<String>();
     if(EmonURL.startsWith("http://")) EmonURL = EmonURL.substring(7);
     else if(EmonURL.startsWith("https://")){
@@ -228,57 +226,22 @@ boolean getConfig(void){
       EmonStop = false;
     } 
   }
+  else {
+    EmonStop = true;
+  }
   
         // ************************************** configure influxDB **********************************
 
-  else if(serverType.equals("influxdb")) {
-    if(EmonStarted) EmonStop = true;
-    SD.remove((char *)EmonPostLogFile.c_str());
-    influxURL = Config["server"]["url"].as<String>();
-    if(influxURL.startsWith("http")){
-      influxURL.remove(0,4);
-      if(influxURL.startsWith("s"))influxURL.remove(0,1);
-      if(influxURL.startsWith(":"))influxURL.remove(0,1);
-      while(influxURL.startsWith("/")) influxURL.remove(0,1);
-    }
-   
-    if(influxURL.indexOf(":") > 0){
-      influxPort = influxURL.substring(influxURL.indexOf(":")+1).toInt();
-      influxURL.remove(influxURL.indexOf(":"));
-    }
-    influxDataBase = Config["server"]["database"].as<String>();
-    influxDBInterval = Config["server"]["postInterval"].as<int>();
-    influxBulkSend = Config["server"]["bulksend"].as<int>();
-    if(influxBulkSend > 10) influxBulkSend = 10;
-    if(influxBulkSend <1) influxBulkSend = 1;
-
-    delete influxOutputs;
-    JsonVariant var = Config["server"]["outputs"];
-    if(var.success()){
-      influxOutputs = new ScriptSet(var.as<JsonArray>()); 
-    }
-    if( ! influxStarted) {
-      NewService(influxService);
-      influxStarted = true;
-      influxStop = false;
+  JsonVariant influxObj = Config["influxdb"];
+  if(influxObj.success()){
+    if( ! influxConfig(influxObj)){
+      msgLog(F("influxService: Invalid configuration."));
     }
   }
-
-  else if(serverType.equals("none")){
-    EmonStop = true;
+  else {
     influxStop = true;
-    SD.remove((char *)influxPostLogFile.c_str());
-    SD.remove((char *)EmonPostLogFile.c_str());
   }
   
-  else {
-    EmonStop = true;
-    influxStop = true;
-    if(!serverType.equals("none")){
-      msgLog("server type is not supported: ", serverType);
-    }
-  }
-
   trace(T_CONFIG,9);
   delete[] ConfigBuffer;
   return true;

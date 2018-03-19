@@ -60,6 +60,7 @@
 #include "webServer.h"
 #include "updater.h"
 #include "samplePower.h"
+#include "influxDB.h"
 
       // Declare instances of major classes
 
@@ -231,18 +232,6 @@ enum EmonSendMode {
 };
 extern EmonSendMode EmonSend;
 extern ScriptSet* emonOutputs;
-
-      //********************** influxDB configuration stuff *****************************//
-      // again, need to move this stuff to a class.
-
-extern bool     influxStarted;                    // set true when Service started
-extern bool     influxStop;                       // set true to stop the Service
-extern bool     influxInitialize;                 // Initialize or reinitialize
-extern String   influxURL;
-extern uint16_t influxPort;
-extern String   influxDataBase;
-extern int16_t  influxBulkSend;
-extern ScriptSet* influxOutputs;
 
       // ************************ ADC sample pairs ************************************
 

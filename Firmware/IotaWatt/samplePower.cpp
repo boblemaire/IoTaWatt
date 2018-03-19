@@ -95,7 +95,7 @@ void samplePower(int channel, int overSample){
   const uint16_t maxOffset = ADC_RANGE / 2 + ADC_RANGE / 200;
 
   trace(T_POWER,4);
-  if(sumV >= 0) sumV += samples / 2;
+  if(sumV >= 0) sumV += samples / 2; 
   else sumV -= samples / 2;
   int16_t offsetV = Vchannel->_offset + sumV / samples;
   if(offsetV < minOffset) offsetV = minOffset;
