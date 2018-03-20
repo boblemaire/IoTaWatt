@@ -4,8 +4,8 @@
 bool      influxStarted = false;                    // True when Service started
 bool      influxStop = false;                       // Stop the influx service
 bool      influxRestart = true;                     // Restart the influx service
-String    influxURL = "192.168.1.109";
-String    influxDataBase = "iotawatt";
+String    influxURL = "";
+String    influxDataBase = "";
 uint16_t  influxBulkSend = 1;
 uint16_t  influxPort = 8086;
 int32_t   influxRevision = -1;

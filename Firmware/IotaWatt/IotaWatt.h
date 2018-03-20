@@ -61,6 +61,7 @@
 #include "updater.h"
 #include "samplePower.h"
 #include "influxDB.h"
+#include "Emonservice.h"
 
       // Declare instances of major classes
 
@@ -209,29 +210,6 @@ extern String   updateURL;
 extern String   updatePath;
 extern String   updateClass;            // NONE, MAJOR, MINOR, BETA, ALPHA, TEST
 extern uint8_t  publicKey[32];
-
-      // *********************** EmonCMS configuration stuff *************************
-      // Note: nee dto move out to a class and change for dynamic configuration
-      // Start stop is a kludge for now.
-
-extern bool     EmonStarted;                      // set true when Service started
-extern bool     EmonStop;                         // set true to stop the Service
-extern bool     EmonInitialize;                   // Initialize or reinitialize EmonService
-extern String   EmonURL;                          // These are set from the config file
-extern uint16_t  EmonPort;
-extern String   EmonURI;
-extern String   apiKey;
-extern uint8_t  cryptoKey[16];
-extern String   node;
-extern boolean  EmonSecure;
-extern String   EmonUsername;
-extern int16_t  EmonBulkSend;
-enum EmonSendMode {
-  EmonSendGET = 1,
-  EmonSendPOSTsecure = 2
-};
-extern EmonSendMode EmonSend;
-extern ScriptSet* emonOutputs;
 
       // ************************ ADC sample pairs ************************************
 
