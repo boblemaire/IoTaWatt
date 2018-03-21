@@ -314,7 +314,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         base64encode(&xb);
         String auth = "Basic ";
         auth += xb.readString(xb.available());
-        request->setReqHeader("Authorization", auth.c_str());
+        request->setReqHeader("Authorization", auth.c_str()); 
       }
       request->send(&reqData, reqData.available());
       state = waitPost;
