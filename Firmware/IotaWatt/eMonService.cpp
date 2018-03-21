@@ -22,14 +22,29 @@ ScriptSet* emonOutputs;
  * more or less independent of everything else, just reading the log records as they become available
  * and sending the data out.
  * The advantage of doing it this way is that there is really no EmonCMS specific code anywhere else
- * except a complimentary section in getConfig.  Other web data logging services should be handled
- * the same way.
- * Now that the HTTP posts are asynchronous, It's possible that multiple web services could be
- * updated independently, each having their own independantly scheduled Server instance.
+ * except a shout out in getConfig to process the Emoncms config Json. Other web data logging services 
+ * are handled the same way.
+ * Now that the HTTP posts are asynchronous,  multiple web services can be run simultaneously with
+ * minimal impact on overall sampling and operation.
+ * This service uses the new xbuf extensively. xbuf is like a circular buffer, but is implimented 
+ * using linked segments in heap, so that rather than wrapping the data, new segments are added
+ * as data is written, and old segments are deleted as data is read.  This works to advantage handling
+ * large buffers because the size is dynamically adjusted as data is sent, received, and copied
+ * from one xbuf to another or, as in the case here, read and written  to the same buffer to
+ * do things like encrypt and base64encode.  xbuf also does a good job of using fragmented heap by
+ * not requiring large contiguous allocations.
  ******************************************************************************************************/
 uint32_t EmonService(struct serviceBlock* _serviceBlock){
   // trace T_Emon
-  enum   states {initialize, getPostTime, waitPostTime, sendPost, waitPost, sendSecure, waitSecure, post, resend};
+  enum   states {initialize,                    // Initialize the service
+                getLastPostTime,                // Get Json details about inputs from Emoncms
+                waitLastPostTime,               // Wait for previous async request to finish then process
+                primeLastRecord,                // Get the logrec of the last data posted to Emoncms
+                post,                           // Process logrecs and build reqData
+                sendPost,                       // Send the data to Emoncms in plaintext post
+                waitPost,                       // Wait for acknowledgent
+                sendSecure,                     // Send the data to Emoncms using encrypted protocol
+                waitSecure};                    // Wait for acknowledgement
   static states state = initialize;
   static IotaLogRecord* lastRecord = nullptr;
   static IotaLogRecord* logRecord = nullptr;
@@ -38,7 +53,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static double elapsedHours;
   static xbuf reqData;
   static uint32_t reqUnixtime = 0;
-  static String* reqStr = nullptr;
   static int  reqEntries = 0; 
   static uint32_t postTime = millis();
   static asyncHTTPrequest* request = nullptr;
@@ -46,6 +60,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static int32_t retryCount = 0;
           
   trace(T_Emon,0);
+  if( ! _serviceBlock) return 0;
 
             // If stop signaled, do so.  
 
@@ -58,12 +73,13 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     logRecord = nullptr;
     delete request;
     request = nullptr;
-    delete reqStr;
-    reqStr = nullptr;
+    delete request;
+    request = nullptr;
     state = initialize;
     if(EmonStop) {
       EmonStop = false;
       EmonStarted = false;
+      EmonRevision = -1;
       msgLog("EmonService: stopped.");
       return 0;
     }
@@ -85,10 +101,10 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
        "url: " + EmonURL + ":" + String(EmonPort) + EmonURI + ", node: " + String(node) + ", post interval: " + 
        String(EmonCMSInterval) + (EmonSend == EmonSendGET ? ", unsecure GET" : ", encrypted POST"));
       EmonStarted = true;
-      state = getPostTime; 
+      state = getLastPostTime; 
     }
 
-    case getPostTime: {
+    case getLastPostTime: {
       trace(T_Emon,2);
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
@@ -104,11 +120,11 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       request->setReqHeader("Authorization", auth.c_str());
       trace(T_Emon,2);
       request->send();
-      state = waitPostTime;
+      state = waitLastPostTime;
       return 1;
     } 
 
-    case waitPostTime: {
+    case waitLastPostTime: {
       trace(T_Emon,3);
       if(request->readyState() != 4){
         return UNIXtime() + 1; 
@@ -117,7 +133,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       trace(T_Emon,3);
       if(request->responseHTTPcode() != 200){
         msgLog("EmonService: get input list failed, code: ", request->responseHTTPcode());
-        state = getPostTime;
+        state = getLastPostTime;
         return UNIXtime() + 5;
       }
 
@@ -146,7 +162,12 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         }
       }
       msgLog("EmonService: Start posting at ", UnixLastPost);
-    
+      state = primeLastRecord;
+      return 1;
+    }
+
+    case primeLastRecord: {  
+
             // Get the last record in the log.
             // Posting will begin with the next log entry after this one,
 
@@ -287,10 +308,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         state = sendPost;
       }
       else {
-        if( ! reqStr){
-          reqStr = new String;
-        }
-        *reqStr = reqData.readString(reqData.available());
         state = sendSecure;
       }
       return 1;
@@ -362,35 +379,76 @@ case sendSecure:{
         request = new asyncHTTPrequest;
       }
       trace(T_Emon,8);
-      String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
-      request->setTimeout(1);
-      request->setDebug(true);
-      trace(T_Emon,8);
+
+        // Need to put in a decent RNG, have plenty of entropy in the low ADC bits.
+
+      uint8_t iv[16];
+      os_get_random((unsigned char*)iv,16);
+      
+        // Initialize sha256, shaHMAC and cypher
+
       SHA256* sha256 = new SHA256;
       sha256->reset();
-      sha256->update(reqStr->c_str(), reqStr->length());
+      SHA256* shaHMAC = new SHA256;
+      shaHMAC->resetHMAC(cryptoKey,16);
+      CBC<AES128>* cypher = new CBC<AES128>;
+      cypher->setIV(iv, 16);
+      cypher->setKey(cryptoKey, 16);
+
+        // Process payload while
+        // updating SHAs and encrypting. 
+    
+      uint8_t* temp = new uint8_t[64+16];
+      size_t supply = reqData.available();
+      reqData.write(iv, 16);
+      while(supply){
+        size_t len = supply < 64 ? supply : 64;
+        reqData.read(temp, len);
+        supply -= len;
+        sha256->update(temp, len);
+        shaHMAC->update(temp, len);
+        if(len < 64 || supply == 0){
+          size_t padlen = 16 - (len % 16);
+          for(int i=0; i<padlen; i++){
+            temp[len+i] = padlen;
+          }
+          len += padlen;
+        }
+        cypher->encrypt(temp, temp, len);
+        reqData.write(temp, len);
+      }
+      delete[] temp;
+      delete cypher;
+      
+        // finalize the Sha256 and shaHMAC
+
       uint8_t value[32];
       sha256->finalize(value, 32);
-      trace(T_Emon,8);
-      base64Sha = base64encode(value, 32);
-      trace(T_Emon,8);
-      sha256->resetHMAC(cryptoKey,16);
-      sha256->update(reqStr->c_str(), reqStr->length());
-      sha256->finalizeHMAC(cryptoKey, 16, value, 32);
+      String _base64Sha = base64encode(value, 32);
+      shaHMAC->finalizeHMAC(cryptoKey, 16, value, 32);
       delete sha256;
+      delete shaHMAC;
+
+        // Now base64 encode and send
+
+      base64encode(&reqData); 
       trace(T_Emon,8);
+      String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
+      request->setTimeout(1);
+      request->setDebug(false);
+      trace(T_Emon,8); 
       String auth = EmonUsername + ':' + bin2hex(value, 32);
-      //if(request->debug()){
+      if(request->debug()){
         DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
-        //String msg = timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second());
-        Serial.printf_P(PSTR("time %02d:%02d:%02d, length %d\r\n"), now.hour(),now.minute(),now.second(), reqStr->length());
-      //}
+        Serial.printf_P(PSTR("time %02d:%02d:%02d, length %d, %d\r\n"), now.hour(),now.minute(),now.second(), reqData.available(), reqUnixtime);
+      }
       request->open("POST", URL.c_str());
       trace(T_Emon,8);
       request->setReqHeader("Content-Type","aes128cbc");
       request->setReqHeader("Authorization", auth.c_str());
       trace(T_Emon,8);
-      request->send(encryptData(*reqStr, cryptoKey));
+      request->send(&reqData, reqData.available());
+      reqData.flush();
       state = waitSecure;
       return 1;
     } 
@@ -400,12 +458,14 @@ case sendSecure:{
       if(request->readyState() != 4){
         return 1; 
       }
+      reqData.flush();
       trace(T_Emon,9);
       if(request->responseHTTPcode() != 200){
         if(++retryCount  % 10 == 0){
             msgLog("EmonService: retry count ", retryCount);
         }
-        state = sendSecure;
+        UnixLastPost = reqUnixtime - EmonCMSInterval;
+        state = primeLastRecord;
         return UNIXtime() + 1;
       }
       trace(T_Emon,9);
@@ -414,16 +474,14 @@ case sendSecure:{
         msgLog("EmonService: Invalid response, Retrying.");
         Serial.println(base64Sha);
         Serial.println(response);
-        state = sendSecure;
+        UnixLastPost = reqUnixtime - EmonCMSInterval;
+        state = primeLastRecord;
         return UNIXtime() + 1;
       }
       trace(T_Emon,9);
       delete request;
       request = nullptr;
       retryCount = 0;
-      delete reqStr;
-      reqStr = nullptr;
-      reqData.flush();
       reqEntries = 0;    
       state = post;
       return UnixNextPost;
@@ -432,84 +490,47 @@ case sendSecure:{
   return 1;   
 }
 
-String encryptData(String in, const uint8_t* key) {
-  CBC<AES128> cypher;
-  trace(T_encryptEncode, 0);
-  uint8_t iv[16];
-  os_get_random((unsigned char*)iv,16);
-  uint8_t padLen = 16 - (in.length() % 16);
-  int encryptLen = in.length() + padLen;
-  uint8_t* ivBuf = new uint8_t[encryptLen + 16];
-  if( ! ivBuf){
-    Serial.printf("no ivBuf, length %\r\n", encryptLen+16);
+    // base64encode(xbuf*)  - convert the contents of an xbuf to base64
+
+void base64encode(xbuf* buf){
+  const char* base64codes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  size_t supply = buf->available();
+  uint8_t in[3];
+  uint8_t out[4];
+  trace(T_Emon,8);
+  while(supply >= 3){
+    buf->read(in,3);
+    out[0] = (uint8_t) base64codes[in[0]>>2];
+    out[1] = (uint8_t) base64codes[(in[0]<<4 | in[1]>>4) & 0x3f];
+    out[2] = (uint8_t) base64codes[(in[1]<<2 | in[2]>>6) & 0x3f];
+    out[3] = (uint8_t) base64codes[in[2] & 0x3f];
+    buf->write(out, 4);
+    supply -= 3;
   }
-  uint8_t* encryptBuf = ivBuf + 16;
-  trace(T_encryptEncode, 2);
-  for(int i=0; i<16; i++){
-    ivBuf[i] = iv[i];
-  }  
-  for(int i=0; i<in.length(); i++){
-    encryptBuf[i] = in[i];
+  if(supply > 0){
+    in[0] = in[1] = in[2] = 0;
+    buf->read(in,supply);
+    out[0] = (uint8_t) base64codes[in[0]>>2];
+    out[1] = (uint8_t) base64codes[(in[0]<<4 | in[1]>>4) & 0x3f];
+    out[2] = (uint8_t) base64codes[(in[1]<<2 | in[2]>>6) & 0x3f];
+    out[3] = (uint8_t) base64codes[in[2] & 0x3f];
+    if(supply == 1) {
+      out[2] = out[3] = (uint8_t) '=';
+    }
+    else if(supply == 2){
+      out[3] = (uint8_t) '=';
+    }
+    buf->write(out, 4);
   }
-  for(int i=0; i<padLen; i++){
-    encryptBuf[in.length()+i] = padLen;
-  }
-  trace(T_encryptEncode, 3);
-  cypher.setIV(iv, 16);
-  cypher.setKey(cryptoKey, 16); 
-  trace(T_encryptEncode, 3); 
-  cypher.encrypt(encryptBuf, encryptBuf, encryptLen);
-  trace(T_encryptEncode, 3);
-  String result = base64encode(ivBuf, encryptLen+16);
-  trace(T_encryptEncode, 3);
-  delete[] ivBuf;
-  trace(T_encryptEncode, 3);
-  return result;
 }
 
 String base64encode(const uint8_t* in, size_t len){
-  static const char* base64codes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-  int base64Len = int((len+2)/3) * 4;
-  int wholeSextets = int((len*8)/6);
-  char* base64 = new char[base64Len + 1];
-  if( ! base64){
-    Serial.printf("no base64, length %d\r\n", base64Len + 1);
-  }
-  char* base64out = base64;
-  int sextetSeq = 0;
-  uint8_t sextet;
-  trace(T_encryptEncode, 4);
-  for(int i=0; i<wholeSextets; i++){
-    if(sextetSeq == 0) sextet = *in >> 2;
-    else if(sextetSeq == 1) sextet = (*in++ << 4) | (*in >> 4);
-    else if(sextetSeq == 2) sextet = (*in++ << 2) | (*in >> 6);
-    else sextet = *in++;
-    *(base64out++) = base64codes[sextet & 0x3f];
-    sextetSeq = ++sextetSeq % 4;
-  }
-  trace(T_encryptEncode, 4);
-  if(sextetSeq == 1){
-    trace(T_encryptEncode, 5);
-    *(base64out++) = base64codes[(*in << 4) & 0x3f];
-    *(base64out++) = '=';
-    *(base64out++) = '=';
-  }
-  else if(sextetSeq == 2){
-    trace(T_encryptEncode, 6);
-    *(base64out++) = base64codes[(*in << 2) & 0x3f];
-    *(base64out++) = '=';
-  }
-  else if(sextetSeq == 3){
-    trace(T_encryptEncode, 7);
-    *(base64out++) = base64codes[*in & 0x3f];
-  }
-  *base64out = 0;
-  
-  trace(T_encryptEncode, 8);
-  String out = base64;
-  delete[] base64;
-  return out;
-} 
+  xbuf work;
+  work.write(in, len);
+  base64encode(&work);
+  return work.readString(work.available());
+}
+
 String bin2hex(const uint8_t* in, size_t len){
   static const char* hexcodes = "0123456789abcdef";
   String out = "";
@@ -520,20 +541,20 @@ String bin2hex(const uint8_t* in, size_t len){
   return out;
 }
 
+          // EmonConfig - process the configuration Json
+          // invoked from getConfig
+
 bool EmonConfig(JsonObject& config){
-  if(config["type"].as<String>() == "none"){
-    EmonStop = true;
-    return true;
-  }
+
   if(config["type"].as<String>() != "emoncms"){
     EmonStop = true;
+    if(config["type"].as<String>() == "none") return true;
     return false;
   }
-  int revision = config["revision"];
-  if(revision == EmonRevision){
+  if(EmonRevision == config["revision"]){
     return true;
   }
-  EmonRevision = revision;
+  EmonRevision = config["revision"];
   EmonRestart = true;
   EmonURL = config["url"].as<String>();
   if(EmonURL.startsWith("http://")) EmonURL = EmonURL.substring(7);

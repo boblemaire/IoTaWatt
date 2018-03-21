@@ -4,8 +4,8 @@
 #include "xbuf.h"
 
 String bin2hex(const uint8_t* in, size_t len);
-String encryptData(String in, const uint8_t* key);
 String base64encode(const uint8_t* in, size_t len);
+void   base64encode(xbuf*);
 uint32_t EmonService(struct serviceBlock* _serviceBlock);
 bool EmonConfig(JsonObject& config);
 

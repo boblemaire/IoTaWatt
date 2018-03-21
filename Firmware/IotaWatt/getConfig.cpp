@@ -165,6 +165,7 @@ boolean getConfig(void){
          // ************************************** configure Emoncms **********************************
 
   trace(T_CONFIG,8);
+  EmonService((serviceBlock*) nullptr);
   JsonVariant EmonObj = Config["server"];
   if(EmonObj.success()){
     trace(T_CONFIG,8);
@@ -179,6 +180,7 @@ boolean getConfig(void){
   
         // ************************************** configure influxDB **********************************
 
+  influxService((serviceBlock*) nullptr);
   JsonVariant influxObj = Config["influxdb"];
   if(influxObj.success()){
     if( ! influxConfig(influxObj)){
@@ -190,7 +192,7 @@ boolean getConfig(void){
   }
   
   trace(T_CONFIG,9);
-  
+
   delete[] ConfigBuffer;
   return true;
 }
