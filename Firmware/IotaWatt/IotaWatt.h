@@ -110,25 +110,40 @@ extern uint8_t ADC_selectPin[2];            // indexable reference for ADC selec
 
      // RTC trace trace module values by module. (See trace routines in Loop tab)
 
-#define T_LOOP 10           // Loop
-#define T_LOG 20            // dataLog
-#define T_Emon 30           // EmonService
-#define T_GFD 40            // GetFeedData
-#define T_UPDATE 50         // updater
-#define T_SETUP 60          // Setup
-#define T_influx 70         // influxDB
-#define T_SAMP 80           // sampleCycle
-#define T_POWER 90          // Sample Power
-#define T_WEB 100           // (30)Web server handlers
-#define T_CONFIG 130        //  Get Config
-#define T_encryptEncode 140 //  base64encode and encryptData in EmonService
-#define T_uploadGraph 150 
-#define T_history 160           
+#define T_LOOP 1           // Loop
+#define T_LOG 2            // dataLog
+#define T_Emon 3           // EmonService
+#define T_GFD 4            // GetFeedData
+#define T_UPDATE 5         // updater
+#define T_SETUP 6          // Setup
+#define T_influx 7         // influxDB
+#define T_SAMP 8           // sampleCycle
+#define T_POWER 9          // Sample Power
+#define T_WEB 10           // (30)Web server handlers
+#define T_CONFIG 11        //  Get Config
+#define T_encryptEncode 12 //  base64encode and encryptData in EmonService
+#define T_uploadGraph 13 
+#define T_history 14
+#define T_base64 15        // base 64 encode
+#define T_EmonConfig 16    // Emon configuration                  
 
       // ADC descriptors
 
 #define ADC_BITS 12
 #define ADC_RANGE 4096      // 2^12
+
+      // Trace context and work area
+
+union traceUnion {
+      uint32_t    traceWord;
+      struct {
+            uint16_t    seq;
+            uint8_t     mod;
+            uint8_t     id;
+      };
+};
+
+extern traceUnion traceEntry;
 
 extern uint32_t lastCrossMs;           // Timestamp at last zero crossing (ms) (set in samplePower)
 extern uint32_t nextCrossMs;           // Time just before next zero crossing (ms) (computed in Loop)
@@ -221,7 +236,7 @@ extern int16_t Isample [MAX_SAMPLES];
       // ************************ Declare global functions
 void      setup();
 void      loop();
-void      trace(uint32_t, int);
+void      trace(const uint8_t, const uint8_t);
 void      logTrace(void);
 
 void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*));

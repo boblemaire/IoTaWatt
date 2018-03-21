@@ -98,6 +98,10 @@ uint8_t ADC_selectPin[2] = {pin_CS_ADC0,    // indexable reference for ADC selec
                             pin_CS_ADC1};  
 
 
+      // Trace context and work area
+
+traceUnion traceEntry;
+
       /**************************************************************************************************
        * Core dispatching parameters - There's a lot going on, but the steady rhythm is sampling the
        * power channels, and that has to be done on their schedule - the AC frequency.  During sampling,

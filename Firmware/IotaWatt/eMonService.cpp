@@ -90,6 +90,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   switch(state){
 
     case initialize: {
+      trace(T_Emon,2);
 
           // We post the log to EmonCMS,
           // so wait until the log service is up and running.
@@ -105,7 +106,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     }
 
     case getLastPostTime: {
-      trace(T_Emon,2);
+      trace(T_Emon,3);
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
@@ -115,29 +116,30 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/get?node=" + String(node);
       request->setTimeout(1);
       request->setDebug(false);
+      trace(T_Emon,3);
       request->open("GET", URL.c_str());
       String auth = "Bearer " + apiKey;
       request->setReqHeader("Authorization", auth.c_str());
-      trace(T_Emon,2);
+      trace(T_Emon,3);
       request->send();
       state = waitLastPostTime;
       return 1;
     } 
 
     case waitLastPostTime: {
-      trace(T_Emon,3);
+      trace(T_Emon,4);
       if(request->readyState() != 4){
         return UNIXtime() + 1; 
       }
 
-      trace(T_Emon,3);
+      trace(T_Emon,4);
       if(request->responseHTTPcode() != 200){
         msgLog("EmonService: get input list failed, code: ", request->responseHTTPcode());
         state = getLastPostTime;
         return UNIXtime() + 5;
       }
 
-      trace(T_Emon,3);    
+      trace(T_Emon,4);    
       String response = request->responseText();
       delete request;
       request = nullptr;
@@ -147,7 +149,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         UnixLastPost -= UnixLastPost % EmonCMSInterval;
       }
       else {
-        trace(T_Emon,3);
+        trace(T_Emon,4);
         int pos = 0;
         while((pos = response.indexOf("\"time\":", pos)) > 0) {      
           pos += 7;
@@ -166,7 +168,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       return 1;
     }
 
-    case primeLastRecord: {  
+    case primeLastRecord: {
+      trace(T_Emon,5);  
 
             // Get the last record in the log.
             // Posting will begin with the next log entry after this one,
@@ -174,13 +177,9 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if( ! lastRecord){
         lastRecord = new IotaLogRecord;
       }
-      trace(T_Emon,3);
+      trace(T_Emon,5);
       lastRecord->UNIXtime = UnixLastPost;      
       currLog.readKey(lastRecord);
-
-            // Save the value*hrs to date, and logHours to date
-
-      trace(T_Emon,3);  
 
             // Assume that record was posted (not important).
             // Plan to start posting one interval later
@@ -198,7 +197,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     }
     
     case post: {
-      trace(T_Emon,4);
+      trace(T_Emon,6);
 
           // If WiFi is not connected,
           // just return without attempting to log and try again in a few seconds.
@@ -217,7 +216,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       
           // Not current.  Read the next log record.
           
-      trace(T_Emon,4);
+      trace(T_Emon,6);
       if( ! logRecord){
         logRecord = new IotaLogRecord;
       }
@@ -235,7 +234,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       
           // If new request, format preamble, otherwise, just tack it on with a comma.
       
-      trace(T_Emon,4);
+      trace(T_Emon,6);
       if(reqData.available() == 0){
         reqUnixtime = UnixNextPost;
         reqData.printf_P(PSTR("time=%d&data=["),reqUnixtime);
@@ -248,7 +247,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // values for each channel are (delta value hrs)/(delta log hours) = period value.
           // Update the previous (Then) buckets to the most recent values.
      
-      trace(T_Emon,4);
+      trace(T_Emon,6);
       reqData.printf_P(PSTR("[%d,\"%s\""), UnixNextPost - reqUnixtime, node.c_str());
             
       double value1;
@@ -271,7 +270,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         }
       }
       else {
-        trace(T_Emon,5);
+        trace(T_Emon,6);
         Script* script = emonOutputs->first();
         int index=1;
         while(script){
@@ -314,7 +313,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     }
 
     case sendPost:{
-      trace(T_Emon,6);
+      trace(T_Emon,7);
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
@@ -330,22 +329,22 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         Serial.println(msg);
       }
       request->open("POST", URL.c_str());
-      trace(T_Emon,6);
+      trace(T_Emon,7);
       String auth = "Bearer " + apiKey;
       request->setReqHeader("Authorization", auth.c_str());
       request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
-      trace(T_Emon,6);
+      trace(T_Emon,7);
       request->send(&reqData, reqData.available());
       state = waitPost;
       return 1;
     } 
 
     case waitPost: {
-      trace(T_Emon,7);
+      trace(T_Emon,8);
       if(request->readyState() != 4){
         return 1; 
       }
-      trace(T_Emon,7);
+      trace(T_Emon,8);
       if(request->responseHTTPcode() != 200){
         if(++retryCount  % 10 == 0){
             msgLog("EmonService: retry count ", retryCount);
@@ -353,14 +352,14 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         state = sendPost;
         return UNIXtime() + 1;
       }
-      trace(T_Emon,7);
+      trace(T_Emon,8);
       String response = request->responseText();
       if(! response.startsWith("ok")){
         msgLog("EmonService: response not ok. Retrying.");
         state = sendPost;
         return UNIXtime() + 1;
       }
-      trace(T_Emon,7);
+      trace(T_Emon,8);
       delete request;
       request = nullptr;
       retryCount = 0;
@@ -371,14 +370,14 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     }
 
 case sendSecure:{
-      trace(T_Emon,8);
+      trace(T_Emon,9);
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
       if( ! request) {
         request = new asyncHTTPrequest;
       }
-      trace(T_Emon,8);
+      trace(T_Emon,9);
 
         // Need to put in a decent RNG, have plenty of entropy in the low ADC bits.
 
@@ -397,7 +396,8 @@ case sendSecure:{
 
         // Process payload while
         // updating SHAs and encrypting. 
-    
+
+      trace(T_Emon,9);    
       uint8_t* temp = new uint8_t[64+16];
       size_t supply = reqData.available();
       reqData.write(iv, 16);
@@ -417,11 +417,13 @@ case sendSecure:{
         cypher->encrypt(temp, temp, len);
         reqData.write(temp, len);
       }
+      trace(T_Emon,9);
       delete[] temp;
       delete cypher;
       
         // finalize the Sha256 and shaHMAC
 
+      trace(T_Emon,9);
       uint8_t value[32];
       sha256->finalize(value, 32);
       String _base64Sha = base64encode(value, 32);
@@ -432,21 +434,21 @@ case sendSecure:{
         // Now base64 encode and send
 
       base64encode(&reqData); 
-      trace(T_Emon,8);
+      trace(T_Emon,10);
       String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/bulk";
       request->setTimeout(1);
       request->setDebug(false);
-      trace(T_Emon,8); 
+      trace(T_Emon,10); 
       String auth = EmonUsername + ':' + bin2hex(value, 32);
       if(request->debug()){
         DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
         Serial.printf_P(PSTR("time %02d:%02d:%02d, length %d, %d\r\n"), now.hour(),now.minute(),now.second(), reqData.available(), reqUnixtime);
       }
       request->open("POST", URL.c_str());
-      trace(T_Emon,8);
+      trace(T_Emon,10);
       request->setReqHeader("Content-Type","aes128cbc");
       request->setReqHeader("Authorization", auth.c_str());
-      trace(T_Emon,8);
+      trace(T_Emon,10);
       request->send(&reqData, reqData.available());
       reqData.flush();
       state = waitSecure;
@@ -454,12 +456,12 @@ case sendSecure:{
     } 
 
     case waitSecure: {
-      trace(T_Emon,9);
+      trace(T_Emon,11);
       if(request->readyState() != 4){
         return 1; 
       }
       reqData.flush();
-      trace(T_Emon,9);
+      trace(T_Emon,11);
       if(request->responseHTTPcode() != 200){
         if(++retryCount  % 10 == 0){
             msgLog("EmonService: retry count ", retryCount);
@@ -468,7 +470,7 @@ case sendSecure:{
         state = primeLastRecord;
         return UNIXtime() + 1;
       }
-      trace(T_Emon,9);
+      trace(T_Emon,11);
       String response = request->responseText();
       if(! response.startsWith(base64Sha)){
         msgLog("EmonService: Invalid response, Retrying.");
@@ -478,7 +480,7 @@ case sendSecure:{
         state = primeLastRecord;
         return UNIXtime() + 1;
       }
-      trace(T_Emon,9);
+      trace(T_Emon,11);
       delete request;
       request = nullptr;
       retryCount = 0;
@@ -497,7 +499,7 @@ void base64encode(xbuf* buf){
   size_t supply = buf->available();
   uint8_t in[3];
   uint8_t out[4];
-  trace(T_Emon,8);
+  trace(T_base64,0);
   while(supply >= 3){
     buf->read(in,3);
     out[0] = (uint8_t) base64codes[in[0]>>2];
@@ -507,6 +509,7 @@ void base64encode(xbuf* buf){
     buf->write(out, 4);
     supply -= 3;
   }
+  trace(T_base64,0);
   if(supply > 0){
     in[0] = in[1] = in[2] = 0;
     buf->read(in,supply);
@@ -525,6 +528,7 @@ void base64encode(xbuf* buf){
 }
 
 String base64encode(const uint8_t* in, size_t len){
+  trace(T_base64,1);
   xbuf work;
   work.write(in, len);
   base64encode(&work);
@@ -545,12 +549,13 @@ String bin2hex(const uint8_t* in, size_t len){
           // invoked from getConfig
 
 bool EmonConfig(JsonObject& config){
-
+  trace(T_EmonConfig,0);
   if(config["type"].as<String>() != "emoncms"){
     EmonStop = true;
     if(config["type"].as<String>() == "none") return true;
     return false;
   }
+  trace(T_EmonConfig,1);
   if(EmonRevision == config["revision"]){
     return true;
   }
@@ -570,6 +575,7 @@ bool EmonConfig(JsonObject& config){
     EmonPort = EmonURL.substring(EmonURL.indexOf(":")+1).toInt();
     EmonURL.remove(EmonURL.indexOf(":"));
   }
+  trace(T_EmonConfig,2);
   apiKey = config["apikey"].as<String>();
   node = config["node"].as<String>();
   EmonCMSInterval = config["postInterval"].as<int>();
@@ -580,6 +586,7 @@ bool EmonConfig(JsonObject& config){
   EmonSend = EmonSendGET;
   if(EmonUsername != "")EmonSend = EmonSendPOSTsecure;
   
+  trace(T_EmonConfig,3);
   #define hex2bin(x) (x<='9' ? (x - '0') : (x - 'a') + 10)
   apiKey.toLowerCase();
   for(int i=0; i<16; i++){
@@ -588,6 +595,7 @@ bool EmonConfig(JsonObject& config){
   delete emonOutputs;
   JsonVariant var = config["outputs"];
   if(var.success()){
+    trace(T_EmonConfig,4);
     emonOutputs = new ScriptSet(var.as<JsonArray>());
     Script* script = emonOutputs->first();
     int index = 0;
@@ -602,11 +610,13 @@ bool EmonConfig(JsonObject& config){
       script = script->next();
     }
   }
-  
+  trace(T_EmonConfig,5);
   if( ! EmonStarted) {
+    trace(T_EmonConfig,6);
     NewService(EmonService);
     EmonStarted = true;
     EmonStop = false;
   }
+  trace(T_EmonConfig,7);
   return true; 
 }

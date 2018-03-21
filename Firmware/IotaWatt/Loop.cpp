@@ -194,11 +194,11 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
  *  using logTrace.
  *************************************************************************************************/
 
-void trace(uint32_t module, int seq){
-  static uint16_t traceSeq = 0;
-  static uint32_t entry;
-  entry = (module+seq) | (traceSeq++ << 16);
-  WRITE_PERI_REG(RTC_USER_MEM + 96 + (traceSeq & 0x1F), entry);
+inline void trace(const uint8_t module, const uint8_t id){
+  traceEntry.seq++;
+  traceEntry.mod = module;
+  traceEntry.id = id;
+  WRITE_PERI_REG(RTC_USER_MEM + 96 + (traceEntry.seq & 0x1F), (uint32_t) traceEntry.traceWord);
 }
 
 void logTrace(void){
@@ -207,8 +207,9 @@ void logTrace(void){
   while(((uint16_t)++_counter) == (READ_PERI_REG(RTC_USER_MEM + 96 + (i%32)) >> 16)) i++;
   String line = "Trace: ";
   for(int j=0; j<32; j++){
-    uint32_t _entry = READ_PERI_REG(RTC_USER_MEM + 96 + ((j+i)%32)) & 0xFFFF;
-    line += String(_entry) + ",";
+    traceUnion traceEntry;
+    traceEntry.traceWord = READ_PERI_REG(RTC_USER_MEM + 96 + ((j+i)%32));
+    line += ' ' + String(traceEntry.mod) + ':' + String(traceEntry.id) + ',';
   }
   line.remove(line.length()-1);  
   msgLog(line);
