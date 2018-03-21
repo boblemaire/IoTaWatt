@@ -172,25 +172,6 @@ uint8_t  publicKey[32] = {0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
                          0x3f, 0x20, 0x5a, 0x78, 0x22, 0x0c, 0xbc, 0x78,
                          0x2b, 0xe6, 0x28, 0x5a, 0x21, 0x9c, 0xb7, 0xf3}; 
 
-      // *********************** EmonCMS configuration stuff *************************
-      // Note: need to move out to a class and change for dynamic configuration
-      // Start stop is a kludge for now.
-      
-bool      EmonStarted = false;                    // set true when Service started
-bool      EmonStop = false;                       // set true to stop the Service
-bool      EmonInitialize = true;                  // Initialize or reinitialize EmonService                                         
-String    EmonURL;                                // These are set from the config file 
-uint16_t  EmonPort = 80;
-String    EmonURI = "";
-String    apiKey;
-uint8_t   cryptoKey[16];
-String    node = "IotaWatt";
-boolean   EmonSecure = false;
-String    EmonUsername;
-int16_t   EmonBulkSend = 1;
-EmonSendMode EmonSend = EmonSendPOSTsecure;
-ScriptSet* emonOutputs;
-
       // ************************ ADC sample pairs ************************************
  
 int16_t   samples = 0;                              // Number of samples taken in last sampling

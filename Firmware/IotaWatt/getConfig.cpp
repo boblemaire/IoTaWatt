@@ -162,76 +162,25 @@ boolean getConfig(void){
     outputs = new ScriptSet(var.as<JsonArray>()); 
   }
       
-        // Get server type
-                                                  
-  String serverType = Config["server"]["type"].as<String>();
-  serverType.toLowerCase();
-
-      // ************************************** configure EmonCMS **********************************
+         // ************************************** configure Emoncms **********************************
 
   trace(T_CONFIG,8);
-  if(serverType.equals("emoncms")) {
-    EmonURL = Config["server"]["url"].as<String>();
-    if(EmonURL.startsWith("http://")) EmonURL = EmonURL.substring(7);
-    else if(EmonURL.startsWith("https://")){
-      EmonURL = EmonURL.substring(8);
+  EmonService((serviceBlock*) nullptr);
+  JsonVariant EmonObj = Config["server"];
+  if(EmonObj.success()){
+    trace(T_CONFIG,8);
+    if( ! EmonConfig(EmonObj)){
+      msgLog(F("Emonservice: Invalid configuration."));
     }
-    EmonURI = "";
-    if(EmonURL.indexOf("/") > 0){
-      EmonURI = EmonURL.substring(EmonURL.indexOf("/"));
-      EmonURL.remove(EmonURL.indexOf("/"));
-    }
-    if(EmonURL.indexOf(":") > 0){
-      EmonPort = EmonURL.substring(EmonURL.indexOf(":")+1).toInt();
-      EmonURL.remove(EmonURL.indexOf(":"));
-    }
-    apiKey = Config["server"]["apikey"].as<String>();
-    node = Config["server"]["node"].as<String>();
-    EmonCMSInterval = Config["server"]["postInterval"].as<int>();
-    EmonBulkSend = Config["server"]["bulksend"].as<int>();
-    if(EmonBulkSend > 10) EmonBulkSend = 10;
-    if(EmonBulkSend <1) EmonBulkSend = 1;
-    EmonUsername = Config["server"]["userid"].as<String>();
-    EmonSendMode EmonPrevSend = EmonSend;
-    EmonSend = EmonSendGET;
-    if(EmonUsername != "")EmonSend = EmonSendPOSTsecure;
-    if(EmonPrevSend != EmonSend) EmonInitialize = true;  
-    
-    #define hex2bin(x) (x<='9' ? (x - '0') : (x - 'a') + 10)
-    apiKey.toLowerCase();
-    for(int i=0; i<16; i++){
-      cryptoKey[i] = hex2bin(apiKey[i*2]) * 16 + hex2bin(apiKey[i*2+1]); 
-    }
-    delete emonOutputs;
-    JsonVariant var = Config["server"]["outputs"];
-    if(var.success()){
-      emonOutputs = new ScriptSet(var.as<JsonArray>());
-      Script* script = emonOutputs->first();
-      int index = 0;
-      while(script){
-        if(String(script->name()).toInt() <= index){
-          delete emonOutputs;
-          break;
-        }
-        else {
-          index = String(script->name()).toInt();
-        }
-        script = script->next();
-      }
-    }
-    
-    if( ! EmonStarted) {
-      NewService(EmonService);
-      EmonStarted = true;
-      EmonStop = false;
-    } 
   }
   else {
     EmonStop = true;
   }
+  trace(T_CONFIG,8);
   
         // ************************************** configure influxDB **********************************
 
+  influxService((serviceBlock*) nullptr);
   JsonVariant influxObj = Config["influxdb"];
   if(influxObj.success()){
     if( ! influxConfig(influxObj)){
@@ -243,6 +192,7 @@ boolean getConfig(void){
   }
   
   trace(T_CONFIG,9);
+
   delete[] ConfigBuffer;
   return true;
 }

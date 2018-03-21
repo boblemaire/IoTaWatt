@@ -4,8 +4,8 @@
 bool      influxStarted = false;                    // True when Service started
 bool      influxStop = false;                       // Stop the influx service
 bool      influxRestart = true;                     // Restart the influx service
-String    influxURL = "192.168.1.109";
-String    influxDataBase = "iotawatt";
+String    influxURL = "";
+String    influxDataBase = "";
 uint16_t  influxBulkSend = 1;
 uint16_t  influxPort = 8086;
 int32_t   influxRevision = -1;
@@ -39,12 +39,14 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static xbuf reqData;
   static asyncHTTPrequest* request = nullptr;
   static String* response = nullptr;
+
+  if( ! _serviceBlock) return 0;
             
   trace(T_influx,0);
 
             // If stop signaled, do so. 
 
-  if(influxStop) {
+  if(influxStop && state != waitPost) {
     msgLog(F("influxDB: stopped."));
     influxStarted = false;
     trace(T_influx,4);    
@@ -53,6 +55,9 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
     oldRecord = nullptr;
     delete logRecord;
     logRecord = nullptr;
+    delete request;
+    request = nullptr;
+    influxRevision = -1;
     return 0;
   }
   if(influxRestart){
@@ -250,7 +255,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       
       if ((reqEntries < influxBulkSend) ||
          ((currLog.lastKey() > UnixNextPost) &&
-         (reqData.available() < 4000))) {
+         (reqData.available() < 2000))) {
         return UnixNextPost;
       }
 
