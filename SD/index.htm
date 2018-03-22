@@ -1539,7 +1539,7 @@ function editInfluxdb(){
                       bulksend:6,
                       url:"",
                       "database": "iotawatt",
-                      "measurement": config.device.name,
+                      "measurement":"",
                       "tagset": [],
                       "outputs":[]
                       };
@@ -1583,7 +1583,7 @@ function editInfluxdb(){
   dbInput.pattern = "[A-Za-z0-9_]+";
   
   var MeasInput = addTableRow(serverTable, "measurement:", "serverMeas", "input", 16);
-  MeasInput.value = config.influxdb.database;
+  MeasInput.value = config.influxdb.measurement;
   MeasInput.setAttribute("oninput","config.influxdb.measurement = this.value; checkInfluxdb();");
   MeasInput.pattern = "[A-Za-z0-9_]+";
   
