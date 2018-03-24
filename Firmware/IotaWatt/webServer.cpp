@@ -299,15 +299,15 @@ void handleStatus(){
         JsonObject& channelObject = jsonBuffer.createObject();
         channelObject.set("channel",inputChannel[i]->_channel);
         if(inputChannel[i]->_type == channelTypeVoltage){
-          channelObject.set("Vrms",statBucket[i].volts);
-          channelObject.set("Hz",statBucket[i].Hz);
+          channelObject.set("Vrms",statRecord.accum1[i]);
+          channelObject.set("Hz",statRecord.accum2[i]);
         }
         else if(inputChannel[i]->_type == channelTypePower){
-          if(statBucket[i].watts > -2 && statBucket[i].watts < 2) statBucket[i].watts = 0;
-          channelObject.set("Watts",String(statBucket[i].watts,0));
-          double pf = statBucket[i].VA;
+          if(statRecord.accum1[i] > -2 && statRecord.accum1[i] < 2) statRecord.accum1[i] = 0;
+          channelObject.set("Watts",String(statRecord.accum1[i],0));
+          double pf = statRecord.accum2[i];
           if(pf != 0){
-            pf = statBucket[i].watts / statBucket[i].VA;
+            pf = statRecord.accum1[i] / pf;
           }
           channelObject.set("Pf",pf);
           if(inputChannel[i]->_reversed){
@@ -328,9 +328,8 @@ void handleStatus(){
       JsonObject& channelObject = jsonBuffer.createObject();
       channelObject.set("name",script->name());
       channelObject.set("units",script->units());
-      double value = script->run([](int i)->double {return statBucket[i].value1;});
+      double value = script->run((IotaLogRecord*)nullptr, &statRecord, 1.0);
       channelObject.set("value",value);
-      channelObject.set("Watts",value);  // depricated 3.04
       outputArray.add(channelObject);
       script = script->next();
     }
@@ -498,6 +497,13 @@ void handleGetFeedList(){
         energy["tag"] = "Energy";
         energy["name"] = script->name();
         array.add(energy);
+      }
+      else {
+        JsonObject& other = jsonBuffer.createObject();
+        other["id"] = String("OO") + String(script->name());
+        other["tag"] = "Outputs";
+        other["name"] = script->name();
+        array.add(other);
       }
     }
     script = script->next();

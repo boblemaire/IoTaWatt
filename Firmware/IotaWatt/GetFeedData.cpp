@@ -145,9 +145,6 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
       bufr[4] = '\n'; 
       bufrPos = 5;
       server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-      // chunked content implicit with CONTENT_LENGTH_UNKNOWN in new core webServer. (02_02_22)  
-      // server.sendHeader("Accept-Ranges","none");
-      // server.sendHeader("Transfer-Encoding","chunked");
       server.send(200,"application/json","");
       replyData = "[";
       UnixTime = startUnixTime;
@@ -203,16 +200,16 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
               replyData += "null";
             }
             else if(reqPtr->queryType == 'V'){
-              replyData += String(reqPtr->output->run([](int i)->double {
-                return (logRecord->accum1[i] - lastRecord->accum1[i]) / elapsedHours;}), 1);
+              replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), 1);
             }
             else if(reqPtr->queryType == 'P'){
-              replyData += String(reqPtr->output->run([](int i)->double {
-                return (logRecord->accum1[i] - lastRecord->accum1[i]) / elapsedHours;}), 1);
+              replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), 1);
             }
             else if(reqPtr->queryType == 'E'){
-                replyData += String(reqPtr->output->run([](int i)->double {
-                              return logRecord->accum1[i] / 1000.0;}), 2);
+                replyData += String(reqPtr->output->run(lastRecord, logRecord, 1000.0), 2);
+            }
+            else if(reqPtr->queryType == 'O'){
+              replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), 3);
             }
             else {
               replyData += "null";

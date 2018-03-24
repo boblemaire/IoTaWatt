@@ -74,12 +74,3 @@ void handleGraphGetall(){
   directory.close();
   return;
 }
-
-String hashName(const char* name){
-  SHA256 sha256;
-  uint8_t hash[6];
-  sha256.reset();
-  sha256.update(name, strlen(name));
-  sha256.finalize(hash, 6);
-  return base64encode(hash, 6);
-}

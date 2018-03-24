@@ -237,7 +237,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       char separator = ' ';
       trace(T_influx,8);
       while(script){
-        double value = script->run([](int i)->double {return (logRecord->accum1[i] - oldRecord->accum1[i]) / elapsedHours;});
+        double value = script->run(oldRecord, logRecord, elapsedHours);
         if(value == value){
           reqData.printf_P(PSTR("%c%s=%.1f"), separator, script->name(), value);
           separator = ',';

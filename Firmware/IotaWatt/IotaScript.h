@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include "iotalog.h"
 
 class Script {
 
@@ -10,36 +11,14 @@ class Script {
 
   public:
 
-    Script(JsonObject& JsonScript) {
-      _next = NULL;
-      JsonVariant var = JsonScript["name"];
-      if(var.success()){
-        _name = new char[strlen(var.as<char*>())+1];
-        strcpy(_name, var.as<char*>());
-      }
-      var = JsonScript["units"];
-      if(var.success()){
-        _units = new char[strlen(var.as<char*>())+1];
-        strcpy(_units, var.as<char*>());
-      }
-      var = JsonScript["script"];
-      if(var.success()){
-        encodeScript(var.as<char*>() );
-      }
-    }
-
-    ~Script() {
-      delete[] _name;
-      delete[] _units;
-      delete[] _tokens;
-      delete[] _constants;
-    }
+    Script(JsonObject&); 
+    ~Script();
 
     char*   name();     // name associated with this Script
     char*   units();    // units associated with this Script
     Script*   next();     // -> next Script in set
 
-    double    run(double inputCallback(int)); // Run this Script
+    double    run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours); // Run this Script
     void    print();
 
   private:
@@ -48,6 +27,7 @@ class Script {
     char*       _name;      // name associated with this Script
     char*       _units;     // units associated with this Script
     uint8_t*    _tokens;    // Script tokens
+    uint8_t     _accum;     // Accumulators to use in fetching operands
     float*     _constants;   // Constant values referenced in Script
     const byte  getInputOp = 32;
     const byte  getConstOp = 64;
@@ -62,7 +42,7 @@ class Script {
                 opPop   = 7};
     const char* opChars = "=+-*/|()";
 
-    double    runRecursive(uint8_t**, double inputCallback(int));
+    double    runRecursive(uint8_t**, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours);
     double    evaluate(double, byte, double);
     bool      encodeScript(const char* script);
 
