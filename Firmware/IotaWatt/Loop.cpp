@@ -56,17 +56,6 @@ void loop()
       delete thisBlock;    
     }
   }
-
-// ----------- Another shout out to the Web 
-  /*   
-  yield();
-  ESP.wdtFeed();
-  if(serverAvailable){
-    trace(T_LOOP,7);
-    server.handleClient();
-    trace(T_LOOP,8);
-    yield();
-  }*/
 }
 
 /*****************************************************************************************************
@@ -135,53 +124,6 @@ void AddService(struct serviceBlock* newBlock){
   }
 }
 
-/******************************************************************************************************** 
- * All of the other SERVICEs that harvest values from the main "buckets" do so for their own selfish 
- * purposes, and have no global scope to share with others. This simple service maintains periodic
- * values for each of the buckets in a global set of buckets called statBucket.  It also is where 
- * status statistics like sample rates are maintained.  
- *******************************************************************************************************/
-
-uint32_t statService(struct serviceBlock* _serviceBlock) { 
-  static uint32_t timeThen = millis();        
-  static boolean started = false;
-  static float damping = .5;
-  uint32_t timeNow = millis();
-
-  if(!started){
-    msgLog(F("statService: started."));
-    started = true;
-    for(int i=0; i<maxInputs; i++){
-      statBucket[i].accum1 = inputChannel[i]->dataBucket.accum1;
-      statBucket[i].accum2 = inputChannel[i]->dataBucket.accum2;
-    }
-    return (uint32_t)UNIXtime() + 1;
-  }
-  
-  double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
-  for(int i=0; i<maxInputs; i++){
-    inputChannel[i]->ageBuckets(timeNow);
-    double newValue = (inputChannel[i]->dataBucket.accum1 - statBucket[i].accum1) / elapsedHrs;
-    if(abs(statBucket[i].value1 - newValue) / abs(statBucket[i].value1) < 0.02){
-      statBucket[i].value1 = damping * statBucket[i].value1 + (1.0 - damping) * newValue;
-    }
-    else statBucket[i].value1 = newValue;
-    newValue = (inputChannel[i]->dataBucket.accum2 - statBucket[i].accum2) / elapsedHrs;
-    if(abs(statBucket[i].value2 - newValue) / abs(statBucket[i].value2) < 0.02){
-      statBucket[i].value2 = damping * statBucket[i].value2 + (1.0 - damping) * newValue;
-    }
-    else statBucket[i].value2 = newValue;
-    statBucket[i].accum1 = inputChannel[i]->dataBucket.accum1;
-    statBucket[i].accum2 = inputChannel[i]->dataBucket.accum2;
-  }
-  
-  cycleSampleRate = damping * cycleSampleRate + (1.0 - damping) * float(cycleSamples * 1000) / float((uint32_t)(timeNow - timeThen));
-  cycleSamples = 0;
-  timeThen = timeNow;
-  
-  return ((uint32_t)UNIXtime() + statServiceInterval);
-}
-
 /************************************************************************************************
  *  Program Trace Routines.
  *  
@@ -214,6 +156,3 @@ void logTrace(void){
   line.remove(line.length()-1);  
   msgLog(line);
 }
-
-
- 

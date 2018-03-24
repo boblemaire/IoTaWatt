@@ -56,6 +56,7 @@
 #include <SHA256.h>
 #include <Ed25519.h>
 
+#include "utilities.h"
 #include "msgLog.h"
 #include "webServer.h"
 #include "updater.h"
@@ -102,11 +103,25 @@ extern uint16_t deviceVersion;
 
 extern uint8_t ADC_selectPin[2];            // indexable reference for ADC select pins
 
+      // Trace context and work area
+
+union traceUnion {
+      uint32_t    traceWord;
+      struct {
+            uint16_t    seq;
+            uint8_t     mod;
+            uint8_t     id;
+      };
+};
+
+extern traceUnion traceEntry;
+
       // Identifiers used to construct id numbers for graph API
 
 #define QUERY_VOLTAGE  1
 #define QUERY_POWER  2
 #define QUERY_ENERGY 3
+#define QUERY_OTHER 4
 
      // RTC trace trace module values by module. (See trace routines in Loop tab)
 
@@ -131,19 +146,6 @@ extern uint8_t ADC_selectPin[2];            // indexable reference for ADC selec
 
 #define ADC_BITS 12
 #define ADC_RANGE 4096      // 2^12
-
-      // Trace context and work area
-
-union traceUnion {
-      uint32_t    traceWord;
-      struct {
-            uint16_t    seq;
-            uint8_t     mod;
-            uint8_t     id;
-      };
-};
-
-extern traceUnion traceEntry;
 
 extern uint32_t lastCrossMs;           // Timestamp at last zero crossing (ms) (set in samplePower)
 extern uint32_t nextCrossMs;           // Time just before next zero crossing (ms) (computed in Loop)
@@ -185,7 +187,7 @@ extern float   frequency;                             // Split the difference to
 extern float   samplesPerCycle;                       // Here as well
 extern float   cycleSampleRate;
 extern int16_t cycleSamples;
-extern dataBuckets statBucket[MAXINPUTS];
+extern IotaLogRecord statRecord;
 
       // ****************************** list of output channels **********************
 
@@ -236,7 +238,7 @@ extern int16_t Isample [MAX_SAMPLES];
       // ************************ Declare global functions
 void      setup();
 void      loop();
-void      trace(const uint8_t, const uint8_t);
+void      trace(const uint8_t module, const uint8_t id);
 void      logTrace(void);
 
 void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*));
@@ -270,12 +272,5 @@ String    timeString(int value);
 boolean   getConfig(void);
 
 void      sendChunk(char* bufr, uint32_t bufrPos);
-String    base64encode(const uint8_t* in, size_t len);
-
-String    hashName(const char* name);
-String    formatHex(uint32_t);
-char*     charstar(const char*);
-char*     charstar(String);
-char*     charstar(const char);
 
 #endif

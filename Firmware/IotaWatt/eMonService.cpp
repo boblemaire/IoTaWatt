@@ -275,7 +275,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         int index=1;
         while(script){
           while(index++ < String(script->name()).toInt()) reqData.write(",null");
-          value1 = script->run([](int i)->double {return (logRecord->accum1[i] - lastRecord->accum1[i]) / elapsedHours;});
+          value1 = script->run(lastRecord, logRecord, elapsedHours);
           if(value1 > -1.0 && value1 < 1){
             reqData.write(",0");
           }
@@ -492,58 +492,6 @@ case sendSecure:{
   return 1;   
 }
 
-    // base64encode(xbuf*)  - convert the contents of an xbuf to base64
-
-void base64encode(xbuf* buf){
-  const char* base64codes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-  size_t supply = buf->available();
-  uint8_t in[3];
-  uint8_t out[4];
-  trace(T_base64,0);
-  while(supply >= 3){
-    buf->read(in,3);
-    out[0] = (uint8_t) base64codes[in[0]>>2];
-    out[1] = (uint8_t) base64codes[(in[0]<<4 | in[1]>>4) & 0x3f];
-    out[2] = (uint8_t) base64codes[(in[1]<<2 | in[2]>>6) & 0x3f];
-    out[3] = (uint8_t) base64codes[in[2] & 0x3f];
-    buf->write(out, 4);
-    supply -= 3;
-  }
-  trace(T_base64,0);
-  if(supply > 0){
-    in[0] = in[1] = in[2] = 0;
-    buf->read(in,supply);
-    out[0] = (uint8_t) base64codes[in[0]>>2];
-    out[1] = (uint8_t) base64codes[(in[0]<<4 | in[1]>>4) & 0x3f];
-    out[2] = (uint8_t) base64codes[(in[1]<<2 | in[2]>>6) & 0x3f];
-    out[3] = (uint8_t) base64codes[in[2] & 0x3f];
-    if(supply == 1) {
-      out[2] = out[3] = (uint8_t) '=';
-    }
-    else if(supply == 2){
-      out[3] = (uint8_t) '=';
-    }
-    buf->write(out, 4);
-  }
-}
-
-String base64encode(const uint8_t* in, size_t len){
-  trace(T_base64,1);
-  xbuf work;
-  work.write(in, len);
-  base64encode(&work);
-  return work.readString(work.available());
-}
-
-String bin2hex(const uint8_t* in, size_t len){
-  static const char* hexcodes = "0123456789abcdef";
-  String out = "";
-  for(int i=0; i<len; i++){
-    out += hexcodes[*in >> 4];
-    out += hexcodes[*in++ & 0x0f];
-  }
-  return out;
-}
 
           // EmonConfig - process the configuration Json
           // invoked from getConfig

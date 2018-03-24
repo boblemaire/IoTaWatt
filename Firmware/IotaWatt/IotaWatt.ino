@@ -135,7 +135,7 @@ float   frequency = 55;                  // Split the difference to start
 float   samplesPerCycle = 550;           // Here as well
 float   cycleSampleRate = 0;
 int16_t cycleSamples = 0;
-dataBuckets statBucket[MAXINPUTS];
+IotaLogRecord statRecord;                 // Maintained by statService with real-time values
 
       // ****************************** SDWebServer stuff ****************************
 

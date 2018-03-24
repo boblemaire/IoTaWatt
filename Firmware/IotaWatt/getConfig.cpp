@@ -342,20 +342,3 @@ void phaseTableAdd(phaseTableEntry** phaseTable, JsonArray& table){
     }
   }
 }
-
-char* charstar(const char* str){
-  char* ptr = new char[strlen(str)+1];
-  strcpy(ptr, str);
-  return ptr;
-}
-
-char* charstar(String str){
-  return charstar(str.c_str());
-}
-
-char* charstar(const char str){
-  char* ptr = new char[2];
-  ptr[0] = str;
-  ptr[1] = 0;
-  return ptr;
-}

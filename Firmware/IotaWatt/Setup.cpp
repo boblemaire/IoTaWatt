@@ -186,18 +186,6 @@ void setup()
 }  // setup()
 /***************************************** End of Setup **********************************************/
 
-
-String formatHex(uint32_t data){
-  const char* hexDigits = "0123456789ABCDEF";
-  String str = "00000000";
-  uint32_t _data = data;
-  for(int i=7; i>=0; i--){
-    str[i] = hexDigits[_data % 16];
-    _data /= 16;
-  }
-  return str;
-}
-
 void dropDead(void){dropDead("R.R.R...");}
 void dropDead(const char* pattern){
   msgLog(F("Program halted."));
