@@ -32,7 +32,7 @@ void samplePower(int channel, int overSample){
   double _Irms = 0;
   double _watts = 0;
   double _Vrms = 0;
-  double _pf = 0;
+  double _VA = 0;
 
   int16_t* VsamplePtr = Vsample;
   int16_t* IsamplePtr = Isample;
@@ -125,10 +125,8 @@ void samplePower(int channel, int overSample){
   _Vrms = Vratio * sqrt((double)(sumVsq / samples));
   _Irms = Iratio * sqrt((double)(sumIsq / samples));
   _watts = Vratio * Iratio * (double)(sumP / samples);
-  _pf = _Vrms * _Irms;
-  if(_pf != 0){
-    _pf = abs(_watts) / _pf;
-  }
+  _VA = _Vrms * _Irms;
+  
 
         // If watts is negative and the channel is not explicitely signed, reverse it (backward CT).
         // If we do reverse it, and it's significant, mark it as such for reporting in the status API.
@@ -145,7 +143,7 @@ void samplePower(int channel, int overSample){
       // Update with the new power and voltage values.
 
   trace(T_POWER,5);
-  Ichannel->setPower(_watts, _pf);
+  Ichannel->setPower(_watts, _VA);
   trace(T_POWER,9);                                                                               
   return;
 }

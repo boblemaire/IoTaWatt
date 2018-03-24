@@ -21,11 +21,12 @@ struct IotaLogRecord {
       uint32_t UNIXtime;        // Time period represented by this record
       int32_t serial;        // record number in file
       double logHours;        // Total hours of monitoring logged to date in this log 
-      struct channels {
-        double accum1;
-        channels(){accum1 = 0;}
-      } channel[30];
-      IotaLogRecord(){UNIXtime=0; serial=0; logHours=0;};
+      double accum1[15];
+      double accum2[15];
+      IotaLogRecord()
+      :UNIXtime(0)
+      ,serial(0)
+      ,logHours(0){};
     };    
 
 class IotaLog

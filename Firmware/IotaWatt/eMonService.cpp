@@ -254,7 +254,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if( ! emonOutputs){  
         for (int i = 0; i < maxInputs; i++) {
           IotaInputChannel *_input = inputChannel[i];
-          value1 = (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;
+          value1 = (logRecord->accum1[i] - lastRecord->accum1[i]) / elapsedHours;
           if( ! _input){
             reqData.write(",null");
           }
@@ -275,7 +275,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         int index=1;
         while(script){
           while(index++ < String(script->name()).toInt()) reqData.write(",null");
-          value1 = script->run([](int i)->double {return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;});
+          value1 = script->run([](int i)->double {return (logRecord->accum1[i] - lastRecord->accum1[i]) / elapsedHours;});
           if(value1 > -1.0 && value1 < 1){
             reqData.write(",0");
           }

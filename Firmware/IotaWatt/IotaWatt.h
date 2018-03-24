@@ -168,7 +168,7 @@ extern serviceBlock* serviceQueue;     // Head of ordered list of services
       // Can be specified in config.device.aref
       // Voltage adjustments are the values for AC reference attenuation in IotaWatt 2.1.
 
-#define MAXINPUTS 15                          // Arbitrary compile time limit for input channels
+#define MAXINPUTS 15                          // Compile time input channels, can't be changed easily 
 extern IotaInputChannel* *inputChannel;       // -->s to incidences of input channels (maxInputs entries)
 extern uint8_t  maxInputs;                    // channel limit based on configured hardware (set in Config)
 extern float    VrefVolts;                    // Voltage reference shunt value used to calibrate

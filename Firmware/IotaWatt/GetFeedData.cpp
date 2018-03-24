@@ -182,13 +182,13 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
           else if(channel >= 0){
             trace(T_GFD,3);       
             if(reqPtr->queryType == 'V') {
-              replyData += String((logRecord->channel[channel].accum1 - lastRecord->channel[channel].accum1) / elapsedHours,1);
+              replyData += String((logRecord->accum1[channel] - lastRecord->accum1[channel]) / elapsedHours,1);
             } 
             else if(reqPtr->queryType == 'P') {
-              replyData += String((logRecord->channel[channel].accum1 - lastRecord->channel[channel].accum1) / elapsedHours,1);
+              replyData += String((logRecord->accum1[channel] - lastRecord->accum1[channel]) / elapsedHours,1);
             }
             else if(reqPtr->queryType == 'E') {
-                replyData += String((logRecord->channel[channel].accum1 / 1000.0),2);              
+                replyData += String((logRecord->accum1[channel] / 1000.0),2);              
             } 
             else {
               replyData += "null";
@@ -204,15 +204,15 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
             }
             else if(reqPtr->queryType == 'V'){
               replyData += String(reqPtr->output->run([](int i)->double {
-                return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;}), 1);
+                return (logRecord->accum1[i] - lastRecord->accum1[i]) / elapsedHours;}), 1);
             }
             else if(reqPtr->queryType == 'P'){
               replyData += String(reqPtr->output->run([](int i)->double {
-                return (logRecord->channel[i].accum1 - lastRecord->channel[i].accum1) / elapsedHours;}), 1);
+                return (logRecord->accum1[i] - lastRecord->accum1[i]) / elapsedHours;}), 1);
             }
             else if(reqPtr->queryType == 'E'){
                 replyData += String(reqPtr->output->run([](int i)->double {
-                              return logRecord->channel[i].accum1 / 1000.0;}), 2);
+                              return logRecord->accum1[i] / 1000.0;}), 2);
             }
             else {
               replyData += "null";

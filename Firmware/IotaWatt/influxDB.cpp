@@ -24,7 +24,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   enum   states {initialize,        // Basic startup of the service - one time
                  queryLast,         // Issue query to get time of last post
                  queryLastWait,     // wait for [async] query to complete
-                 getLastJson,       // parse the json response from influxDB
                  getLastRecord,     // Read the logRec and prep the context for logging
                  post,              // Add a measurement to the reqData xbuf
                  sendPost,          // Send the accumulated measurements
@@ -104,46 +103,30 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       }
       request->send(&reqData, reqData.available());
       trace(T_influx,4);
-      response = new String;
       state = queryLastWait;
       return 1;
     }
 
     case queryLastWait: {
       trace(T_influx,5);
-      if(request->readyState() <= 2){
-        return 1;
-      }
-      if(request->available()){
-        *response += request->responseText();
-      }
       if(request->readyState() != 4){
         return 1; 
       }
-      
+      String response = request->responseText(); 
       int HTTPcode = request->responseHTTPcode();
       delete request;
       request = nullptr;
       if(HTTPcode != 200){
         msgLog("influxService: last entry query failed: ", HTTPcode);
-        delete response;
         UnixLastPost = currLog.lastKey();
         state = getLastRecord;
         return 1;
       } 
       trace(T_influx,5);
-      state = getLastJson;
-      return 1;
-    }
-
-    case getLastJson: {
-      trace(T_influx,6);
       UnixLastPost = currLog.lastKey() - 604800L;
       DynamicJsonBuffer Json;  
-      Serial.println(*response);
       trace(T_influx,6);
-      JsonObject& result = Json.parseObject(*response); 
-      delete response;
+      JsonObject& result = Json.parseObject(response); 
       if( ! result.success()){
         msgLog(F("influxService: Json parse of last post query failed."));
         UnixLastPost = currLog.lastKey();
@@ -254,7 +237,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       char separator = ' ';
       trace(T_influx,8);
       while(script){
-        double value = script->run([](int i)->double {return (logRecord->channel[i].accum1 - oldRecord->channel[i].accum1) / elapsedHours;});
+        double value = script->run([](int i)->double {return (logRecord->accum1[i] - oldRecord->accum1[i]) / elapsedHours;});
         if(value == value){
           reqData.printf_P(PSTR("%c%s=%.1f"), separator, script->name(), value);
           separator = ',';

@@ -27,6 +27,7 @@
   static states state = initialize;                                                       
   static IotaLogRecord* logRecord = new IotaLogRecord;
   static double accum1Then [MAXINPUTS];
+  static double accum2Then [MAXINPUTS];
   static uint32_t timeThen = 0;
   uint32_t timeNow = millis();
   static uint32_t timeNext;
@@ -41,6 +42,13 @@
       if(int rtc = currLog.begin((char*)IotaLogFile.c_str())){
         msgLog("dataLog: Log file open failed. ", String(rtc));
         dropDead();
+      }
+
+      // Initialize the IotaLogRecord accums in case no context.
+
+      for(int i=0; i<MAXINPUTS; i++){
+        logRecord->accum1[i] = 0.0;
+        logRecord->accum2[i] = 0.0;
       }
 
       // If it's not a new log, get the last entry.
@@ -73,6 +81,7 @@
         if(_input){
           inputChannel[i]->ageBuckets(timeNow);
           accum1Then[i] = inputChannel[i]->dataBucket.accum1;
+          accum2Then[i] = inputChannel[i]->dataBucket.accum2;
         }
       }
       timeThen = timeNow;
@@ -109,12 +118,16 @@
           IotaInputChannel* _input = inputChannel[i];
           if(_input){
             _input->ageBuckets(timeNow);
-            logRecord->channel[i].accum1 += _input->dataBucket.accum1 - accum1Then[i];
-            if(logRecord->channel[i].accum1 != logRecord->channel[i].accum1) logRecord->channel[i].accum1 = 0;
+            logRecord->accum1[i] += _input->dataBucket.accum1 - accum1Then[i];
+            if(logRecord->accum1[i] != logRecord->accum1[i]) logRecord->accum1[i] = 0;
             accum1Then[i] = _input->dataBucket.accum1;
+            logRecord->accum2[i] += _input->dataBucket.accum2 - accum2Then[i];
+            if(logRecord->accum2[i] != logRecord->accum2[i]) logRecord->accum2[i] = 0;
+            accum2Then[i] = _input->dataBucket.accum2;
           }
           else {
             accum1Then[i] = 0;
+            accum2Then[i] = 0;
           }
         }
         timeThen = timeNow;

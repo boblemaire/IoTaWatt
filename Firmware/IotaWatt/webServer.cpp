@@ -305,9 +305,11 @@ void handleStatus(){
         else if(inputChannel[i]->_type == channelTypePower){
           if(statBucket[i].watts > -2 && statBucket[i].watts < 2) statBucket[i].watts = 0;
           channelObject.set("Watts",String(statBucket[i].watts,0));
-          if(statBucket[i].watts > 10){
-            channelObject.set("Pf",statBucket[i].pf);
+          double pf = statBucket[i].VA;
+          if(pf != 0){
+            pf = statBucket[i].watts / statBucket[i].VA;
           }
+          channelObject.set("Pf",pf);
           if(inputChannel[i]->_reversed){
             channelObject.set("reversed","true");
           }
