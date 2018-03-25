@@ -109,16 +109,13 @@ int IotaLog::readKey (IotaLogRecord* callerRecord){
 		callerRecord->UNIXtime = key;
 		return 1;
 	}
-	if(key > _lastKey){														// Back to the future
+	if(key >= _lastKey){														// Back to the future
 		readSerial(callerRecord, _lastSerial);
 		callerRecord->UNIXtime = key;
+		if(key = _lastKey) return 0;
 		return 1;
 	}
-	/* 
-	Serial.print("search: ");
-	Serial.print(key);
-	Serial.println();
-	*/
+	//Serial.printf("search %d, highKey %d\r\n", key, _firstKey);
 	uint32_t lowKey = _firstKey;
 	int32_t lowSerial = _firstSerial;
 	uint32_t highKey = _lastKey;
@@ -156,21 +153,7 @@ void IotaLog::searchKey(IotaLogRecord* callerRecord, const uint32_t key, const u
   int32_t floorSerial = max(lowSerial, highSerial - (int32_t)((highKey - key) / _interval));
 	int32_t ceilingSerial = min(highSerial, lowSerial + (int32_t)((key - lowKey) / _interval));
 
-	/* 
-	Serial.print("low: ");
-	Serial.print(lowKey);
-	Serial.print("(");
-	Serial.print(lowSerial);
-	Serial.print("), high: ");
-	Serial.print(highKey);
-	Serial.print("(");
-	Serial.print(highSerial);
-	Serial.print("), floor: ");
-	Serial.print(floorSerial);
-	Serial.print(", ceiling: ");
-	Serial.print(ceilingSerial);
-	Serial.println();
-	*/ 
+	//Serial.printf("low %d(%d), high %d(%d), floor %d, Ceiling %d\r\n", lowKey, lowSerial, highKey, highSerial,floorSerial, ceilingSerial); 
 
   if(ceilingSerial < highSerial || floorSerial == ceilingSerial){
 		readSerial(callerRecord, ceilingSerial);
@@ -189,7 +172,7 @@ void IotaLog::searchKey(IotaLogRecord* callerRecord, const uint32_t key, const u
 		searchKey(callerRecord, key, callerRecord->UNIXtime, callerRecord->serial, highKey, highSerial);
 		return;
   }
-  if((highSerial - lowSerial) <= 1){
+  if((highSerial - lowSerial) <= 1){		
 		readSerial(callerRecord, lowSerial);
 		return;
   }

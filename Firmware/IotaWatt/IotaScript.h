@@ -20,15 +20,17 @@ class Script {
 
     double    run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours); // Run this Script
     void    print();
+    int     precision(){return _dec;}
 
   private:
 
     Script*     _next;      // -> next in list
     char*       _name;      // name associated with this Script
     char*       _units;     // units associated with this Script
+    float*     _constants;  // Constant values referenced in Script
     uint8_t*    _tokens;    // Script tokens
     uint8_t     _accum;     // Accumulators to use in fetching operands
-    float*     _constants;   // Constant values referenced in Script
+    uint8_t     _dec;       // Decimal places to report
     const byte  getInputOp = 32;
     const byte  getConstOp = 64;
     enum        opCodes {

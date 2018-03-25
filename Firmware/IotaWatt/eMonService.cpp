@@ -276,12 +276,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         while(script){
           while(index++ < String(script->name()).toInt()) reqData.write(",null");
           value1 = script->run(lastRecord, logRecord, elapsedHours);
-          if(value1 > -1.0 && value1 < 1){
-            reqData.write(",0");
-          }
-          else {
-            reqData.printf(",%.1f", value1);
-          }
+          reqData.printf(",%.*f", script->precision(), value1);
           script = script->next();
         }
       }

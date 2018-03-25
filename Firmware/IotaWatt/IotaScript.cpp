@@ -11,14 +11,14 @@ Script::Script(JsonObject& JsonScript) {
       _accum = 0;
       var = JsonScript["units"];
       if(var.success()){
-             if(strcmp_ci(var.as<char*>(), "Watts") == 0){_units = charstar("Watts");}
-        else if(strcmp_ci(var.as<char*>(), "Volts") == 0){_units = charstar("Volts");}
-        else if(strcmp_ci(var.as<char*>(), "Amps" ) == 0){_units = charstar("Amps"); _accum = 1;}
-        else if(strcmp_ci(var.as<char*>(), "Hz"   ) == 0){_units = charstar("Hz"); _accum = 1;}
-        else if(strcmp_ci(var.as<char*>(), "pf"   ) == 0){_units = charstar("pf"); _accum = 1;}
-        else if(strcmp_ci(var.as<char*>(), "VA"   ) == 0){_units = charstar("VA"); _accum = 1;}
-        else if(strcmp_ci(var.as<char*>(), "Wh"   ) == 0){_units = charstar("Wh"); _accum = 1;}
-        else if(strcmp_ci(var.as<char*>(), "kWh"  ) == 0){_units = charstar("kWh"); _accum = 1;}  
+             if(strcmp_ci(var.as<char*>(), "Watts") == 0){_units = charstar("Watts"); _dec = 2;}
+        else if(strcmp_ci(var.as<char*>(), "Volts") == 0){_units = charstar("Volts"); _dec = 2;}
+        else if(strcmp_ci(var.as<char*>(), "Amps" ) == 0){_units = charstar("Amps"); _dec=3; _accum = 1;}
+        else if(strcmp_ci(var.as<char*>(), "Hz"   ) == 0){_units = charstar("Hz"); _dec=2; _accum = 1;}
+        else if(strcmp_ci(var.as<char*>(), "pf"   ) == 0){_units = charstar("pf"); _dec=3; _accum = 1;}
+        else if(strcmp_ci(var.as<char*>(), "VA"   ) == 0){_units = charstar("VA"); _dec=2; _accum = 1;}
+        else if(strcmp_ci(var.as<char*>(), "Wh"   ) == 0){_units = charstar("Wh"); _dec=4; _accum = 1;}
+        else if(strcmp_ci(var.as<char*>(), "kWh"  ) == 0){_units = charstar("kWh"); _dec=7; _accum = 1;}  
       }
       var = JsonScript["script"];
       if(var.success()){
@@ -108,6 +108,12 @@ bool    Script::encodeScript(const char* script){
 
 double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours){
         uint8_t* tokens = _tokens;
+        if(strcmp(_units, "Wh") == 0){
+          elapsedHours = 1.0;
+        }
+        else if(strcmp(_units, "kWh") == 0){
+          elapsedHours = 1000.0;
+        }
         double result = runRecursive(&tokens, oldRec, newRec, elapsedHours);
         if(strcmp(_units, "pf") == 0){
           _accum = 0;

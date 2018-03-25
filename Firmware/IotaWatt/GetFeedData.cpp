@@ -209,7 +209,7 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
                 replyData += String(reqPtr->output->run(lastRecord, logRecord, 1000.0), 2);
             }
             else if(reqPtr->queryType == 'O'){
-              replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), 3);
+              replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), reqPtr->output->precision());
             }
             else {
               replyData += "null";
