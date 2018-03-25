@@ -239,7 +239,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       while(script){
         double value = script->run(oldRecord, logRecord, elapsedHours);
         if(value == value){
-          reqData.printf_P(PSTR("%c%s=%.1f"), separator, script->name(), value);
+          reqData.printf_P(PSTR("%c%s=%.*f"), separator, script->name(), script->precision(), value);
           separator = ',';
         }
         script = script->next();
@@ -269,7 +269,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
     case sendPost: {
       trace(T_influx,9);
-     
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
@@ -329,7 +328,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       reqData.flush();
       reqEntries = 0;    
       state = post;
-      return UnixNextPost;
+      return UnixNextPost+1;
     }   
   }
 
