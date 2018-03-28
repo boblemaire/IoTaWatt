@@ -327,7 +327,7 @@ void handleStatus(){
     while(script){
       JsonObject& channelObject = jsonBuffer.createObject();
       channelObject.set("name",script->name());
-      channelObject.set("units",script->units());
+      channelObject.set("units",script->getUnits());
       double value = script->run((IotaLogRecord*)nullptr, &statRecord, 1.0);
       channelObject.set("value",value);
       outputArray.add(channelObject);
@@ -477,7 +477,7 @@ void handleGetFeedList(){
   int outndx = 100;
   while(script){
     if(String(script->name()).indexOf(' ') == -1){
-      String units = String(script->units());
+      String units = String(script->getUnits());
       if(units.equalsIgnoreCase("volts")){
         JsonObject& voltage = jsonBuffer.createObject();
         voltage["id"] = String("OV") + String(script->name());

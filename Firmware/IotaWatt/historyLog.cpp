@@ -70,15 +70,6 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         delete logRecord;
       }
 
-      logRecord = new IotaLogRecord;
-      for(uint32_t key = histLog.lastKey() - histLog.interval() * 20; key <= histLog.lastKey(); key += histLog.interval()){
-        logRecord->UNIXtime = key;
-        histLog.readKey(logRecord);
-        Serial.printf("key %d, time %.6f, power1 %.6f\r\n", key, logRecord->logHours, logRecord->accum1[1]);
-      }
-      delete logRecord;
-
-
       trace(T_history,3); 
       _serviceBlock->priority = priorityLow;
       state = logData;

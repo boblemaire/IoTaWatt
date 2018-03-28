@@ -363,8 +363,8 @@ var scriptEditIndex = -1;
 var scriptEditSave;
 var scriptEditReturn;
 var scriptEditUnits = [];
-var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","pf","VA"];
-var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","pf","VA","Wh","kWh"];
+var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA"];
+var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh"];
 
 /***************************************************************************************************
  *                       Shorthand functions
@@ -1844,7 +1844,7 @@ function statusDisplay(statusMessage){
   statusTable.innerHTML = "";
   for(i in status.outputs){
     addRow();
-    column1.innerHTML += "<strong>" + config.outputs[i].name + ":</strong>";
+    column1.innerHTML += "<strong>" + status.outputs[i].name + ":</strong>";
     var wattNode = document.createElement("font");
     wattNode.innerHTML = status.outputs[i].value.toFixed(unitsPrecision(status.outputs[i].units)) + " " + status.outputs[i].units;
     column3.appendChild(wattNode);
@@ -1870,7 +1870,7 @@ function unitsPrecision(units){
   if(units == "Volts") return 1;
   if(units == "Amps") return 2;
   if(units == "Hz") return 1;
-  if(units == "pf") return 2;
+  if(units == "PF") return 2;
   if(units == "VA") return 1;
   return 1;
 }

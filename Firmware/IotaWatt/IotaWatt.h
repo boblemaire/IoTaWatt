@@ -32,9 +32,9 @@
 #include <ESP8266mDNS.h>
 #include <DNSServer.h>
 #include <WiFiClient.h>
-#include <ESP8266HTTPClient.h>
+//#include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
-#include <ESP8266httpUpdate.h>
+//#include <ESP8266httpUpdate.h>
 #include <ESPAsyncTCP.h>
 #include <asyncHTTPrequest.h>
 
