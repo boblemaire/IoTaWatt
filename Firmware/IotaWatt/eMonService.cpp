@@ -344,14 +344,17 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         if(++retryCount  % 10 == 0){
             msgLog("EmonService: retry count ", retryCount);
         }
-        state = sendPost;
+        UnixLastPost = reqUnixtime - EmonCMSInterval;
+        state = primeLastRecord;
         return UNIXtime() + 1;
       }
       trace(T_Emon,8);
       String response = request->responseText();
       if(! response.startsWith("ok")){
         msgLog("EmonService: response not ok. Retrying.");
-        state = sendPost;
+        Serial.println(response.substring(0,60));
+        UnixLastPost = reqUnixtime - EmonCMSInterval;
+        state = primeLastRecord;
         return UNIXtime() + 1;
       }
       trace(T_Emon,8);

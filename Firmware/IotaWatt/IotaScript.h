@@ -15,22 +15,32 @@ class Script {
     ~Script();
 
     char*   name();     // name associated with this Script
-    char*   units();    // units associated with this Script
-    Script*   next();     // -> next Script in set
+    const char*   getUnits();    // units associated with this Script
+    void    setUnits(const char*);
+    Script* next();     // -> next Script in set
 
-    double    run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours); // Run this Script
+    double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours); // Run this Script
     void    print();
-    int     precision(){return _dec;}
+    int     precision();
 
   private:
 
     Script*     _next;      // -> next in list
     char*       _name;      // name associated with this Script
-    char*       _units;     // units associated with this Script
-    float*     _constants;  // Constant values referenced in Script
+    float*      _constants; // Constant values referenced in Script
     uint8_t*    _tokens;    // Script tokens
-    uint8_t     _accum;     // Accumulators to use in fetching operands
-    uint8_t     _dec;       // Decimal places to report
+    enum        units {
+                    unitsWatts = 0,
+                    unitsVolts = 1,
+                    unitsAmps = 2,
+                    unitsVA = 3,
+                    unitsHz = 4,
+                    unitsWh = 5,
+                    unitskWh = 6,
+                    unitsPF = 7,
+                    unitsNone = 8
+                    } _units;         // Units to be computed              
+    uint8_t     _accum;               // Accumulators to use in fetching operands
     const byte  getInputOp = 32;
     const byte  getConstOp = 64;
     enum        opCodes {
@@ -44,7 +54,7 @@ class Script {
                 opPop   = 7};
     const char* opChars = "=+-*/|()";
 
-    double    runRecursive(uint8_t**, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours);
+    double    runRecursive(uint8_t**, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, char type);
     double    evaluate(double, byte, double);
     bool      encodeScript(const char* script);
 
