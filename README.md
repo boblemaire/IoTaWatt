@@ -16,10 +16,9 @@ IotaWatt is an open-hardware/open-source project to produce an accurate, low-cos
 * Local LAN browser based configuration  
 * Local LAN browser based status display  
 * Local LAN browser based graphing analytic tools  
-* Open Hardware/Software  
-* Manufactured CE hardware available through [OpenEnergyMonitor.org](https://shop.openenergymonitor.com/)  
-* Secure integration with [Emoncms.org](https://emoncms.org/)  
-* Upload to influxDB  
+* Open Hardware/Software 
+* Upload to influxDB   
+* Upload to [Emoncms.org](https://emoncms.org/)  
 * Demo configuration app at [IoTaWatt.com](http://iotawatt.com)  
 
 The software samples input channels at a rate of 35-40 channels per second, recording voltage(V), power(Watts), and energy(kWh) to the local SD card every five seconds.  The Emoncms browser based graphing utility can be used on the local WiFi network to view data or the data can be uploaded to an Emoncms server or an influxDB server. In the event of WiFi or internet service disruptions, the IotaWatt will continue to log locally and bulk update the server when WiFi is restored.
