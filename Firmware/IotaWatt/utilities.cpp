@@ -116,3 +116,85 @@ String base64encode(const uint8_t* in, size_t len){
   return work.readString(work.available());
 }
 
+/**************************************************************************************************
+ * JsonSummary, JsonDetail
+ * 
+ * The config file can be too big to parse into Json dynamically.
+ * JsonSummary produces a summary json file to the depth specified. Objects or arrays at greater 
+ * depth are represented by a JsonArray with the position and condensed (no whitespace) length.
+ * JsonDetail will return the condensed object or array in a char*.
+ * ************************************************************************************************/
+String  JsonSummary(File file, int depth){
+    int     level = -1;
+    char    delim[20];
+    char    _char;
+    bool    string = false;
+    bool    escape = false;
+    int     varBeg = 0;
+    int     varLen = 0;
+    String  JsonOut;
+
+    while(file.available()){
+        _char = file.read();
+        if(escape){
+          varLen++;
+          escape = false;
+        }
+        else {
+            if(isspace(_char)) continue;
+            varLen++;
+            if(string){
+                if(_char == '\"'){
+                    string = false;
+                }
+                else if(_char == '\\'){
+                    escape = true;
+                }
+            }
+            else if(_char == '\"'){
+                string = true;
+            }
+            else if(_char == '{'){
+                delim[++level] = '}';
+                if(level == depth){
+                    varBeg = file.position()-1;
+                    varLen = 0;
+                }
+            }
+            else if(_char == '['){
+                delim[++level] = ']';
+                if(level == depth){
+                    varBeg = file.position()-1;
+                    varLen = 0;
+                }
+            }
+            else if(_char == delim[level]){
+                level--;
+                if(level == depth - 1){
+                    JsonOut += '[';
+                    JsonOut += String(varBeg);
+                    JsonOut += ',';
+                    JsonOut += String(varLen+1);
+                    _char = ']';
+                }
+            }
+        }
+        if(level < depth) JsonOut += _char;
+    }
+    return JsonOut;
+}
+
+char*  JsonDetail(File file, JsonArray& locator){
+    int segLen = locator[1].as<int>();
+    char* string = new char[segLen+1];
+    char _char;
+    file.seek(locator[0].as<int>());
+    for(int i=0; i<segLen;){
+        _char = file.read();
+        if( ! isspace(_char)){
+            string[i++] = _char;
+        }
+    }
+    string[segLen] = 0;
+    return string;
+}

@@ -18,3 +18,6 @@ String bin2hex(const uint8_t* in, size_t len);
 
 void base64encode(xbuf* buf);                       // Convert the contents of an xbuf to base64
 String base64encode(const uint8_t* in, size_t len); // Convert the input buffer to a base64 String
+
+String  JsonSummary(File file, int depth);          // Read a json file and return a summary Json string              
+char*  JsonDetail(File file, JsonArray& locator);   // Read and compress a detail segment of a json file

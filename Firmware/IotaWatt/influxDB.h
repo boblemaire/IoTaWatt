@@ -20,7 +20,7 @@ struct influxTag {
 };
 
 uint32_t influxService(struct serviceBlock* _serviceBlock);
-bool influxConfig(JsonObject& config);
+bool influxConfig(const char*);
 
 extern bool     influxStarted;                    // set true when Service started
 extern bool     influxStop;                       // set true to stop the Service

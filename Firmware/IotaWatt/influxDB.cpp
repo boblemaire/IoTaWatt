@@ -335,7 +335,13 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   return 1;
 }
 
-bool influxConfig(JsonObject& config){
+bool influxConfig(const char* configObj){
+  DynamicJsonBuffer Json;
+  JsonObject& config = Json.parseObject(configObj);
+  if( ! config.success()){
+    msgLog(F("influxService: Json parse failed."));
+    return false;
+  }
   int revision = config["revision"];
   if(revision == influxRevision){
     return true;
@@ -390,5 +396,6 @@ bool influxConfig(JsonObject& config){
     influxStarted = true;
     influxStop = false;
   }
+  return true;
 }
 
