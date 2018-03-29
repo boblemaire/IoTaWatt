@@ -8,14 +8,12 @@ struct phaseTableEntry {
     ~phaseTableEntry(){delete next;}
   }; 
 
-void configInputs(JsonArray& JsonInputs);
+bool configInputs(const char*);
+bool configOutputs(const char*);
 void hashFile(uint8_t* sha, File file);
-uint32_t condensedJsonSize(File JsonFile);
-void condenseJson(char* ConfigBuffer, File JsonFile);
-String old2newScript(JsonArray& script);
-void getTable(void);
 void buildPhaseTable(phaseTableEntry**);
 void phaseTableAdd(phaseTableEntry**, JsonArray&);
+String old2newScript(JsonArray& script);
 
 boolean getConfig(void){
 
@@ -32,40 +30,36 @@ boolean getConfig(void){
     return false;
   }
   hashFile(configSHA256, ConfigFile);
-  int filesize = ConfigFile.size();
-  trace(T_CONFIG,1);
-  char* ConfigBuffer = new char[condensedJsonSize(ConfigFile)+1];
-  trace(T_CONFIG,2);
-  ConfigFile.seek(0);
-  condenseJson(ConfigBuffer, ConfigFile);
-  trace(T_CONFIG,3);
-  ConfigFile.close();
-  // ConfigFile = SD.open(ConfigFileURL, FILE_READ);
-  JsonObject& Config = Json.parseObject(ConfigBuffer);  
-  // ConfigFile.close();
+  String configSummary = JsonSummary(ConfigFile, 1);
+  JsonObject& Config = Json.parseObject(configSummary);
   trace(T_CONFIG,4);
   if (!Config.success()) {
     msgLog(F("Config file parse failed."));
-    delete[] ConfigBuffer;
     return false;
   }
   
   //************************************** Process Config file *********************************
-    
-  JsonObject& device = Config["device"].as<JsonObject&>();
+  char* deviceDetail = JsonDetail(ConfigFile, Config["device"]);
+  JsonObject& device = Json.parseObject(deviceDetail); 
+
+  if(Config.containsKey("update")){
+    updateClass = Config["update"].as<String>();
+  }
+
+  if(Config.containsKey("timezone")){
+    localTimeDiff = Config["timezone"].as<signed int>(); 
+  }
+
+  if(Config.containsKey("logdays")){ 
+    msgLog("Current log overide days: ", currLog.setDays(Config["logdays"].as<int>()));
+  }      
 
   if(device.containsKey("name")){
     deviceName = device["name"].as<String>();
     host = deviceName;
   }
   
-  if(Config.containsKey("timezone")){
-    localTimeDiff = Config["timezone"].as<signed int>(); 
-  }
 
-  if(Config.containsKey("update")){
-    updateClass = Config["update"].as<String>();
-  }
 
   int channels = 21;
   if(device.containsKey("version")){
@@ -139,65 +133,70 @@ boolean getConfig(void){
       inputChannel[i]->_burden = device["burden"][i].as<float>();
     }
   }
-
-        //************************************ Check for dataLog overide **************************
-
-  if(Config.containsKey("logdays")){ 
-    msgLog("Current log overide days: ", currLog.setDays(Config["logdays"].as<int>()));
-  }      
     
         //************************************ Configure input channels ***************************
 
-  trace(T_CONFIG,6);      
-  if(Config.containsKey("inputs")){
-    configInputs(Config["inputs"]);
+  trace(T_CONFIG,6);
+  JsonArray& inputsArray = Config["inputs"]     ;
+  if(inputsArray.success()){
+    char* inputsStr = JsonDetail(ConfigFile, inputsArray);
+    configInputs(inputsStr);
+    delete[] inputsStr;
   }   
      
         // ************************************ configure output channels *************************
 
   trace(T_CONFIG,7);
   delete outputs;
-  JsonVariant var = Config["outputs"];
-  if(var.success()){
-    outputs = new ScriptSet(var.as<JsonArray>()); 
-  }
-      
+  JsonArray& outputsArray = Config["outputs"];
+  if(outputsArray.success()){
+    char* outputsStr = JsonDetail(ConfigFile, outputsArray);
+    configOutputs(outputsStr);
+    delete[] outputsStr;
+  }   
+        
          // ************************************** configure Emoncms **********************************
 
   trace(T_CONFIG,8);
   EmonService((serviceBlock*) nullptr);
-  JsonVariant EmonObj = Config["server"];
-  if(EmonObj.success()){
-    trace(T_CONFIG,8);
-    if( ! EmonConfig(EmonObj)){
-      msgLog(F("Emonservice: Invalid configuration."));
+  JsonArray& EmonArray = Config["server"];
+  if(EmonArray.success()){
+    char* EmonStr = JsonDetail(ConfigFile, EmonArray);
+    if( ! EmonConfig(EmonStr)){
+      msgLog(F("EmonService: Invalid configuration."));
     }
-  }
+    delete[] EmonStr;
+  }   
   else {
     EmonStop = true;
   }
-  trace(T_CONFIG,8);
   
         // ************************************** configure influxDB **********************************
 
+  trace(T_CONFIG,8);
   influxService((serviceBlock*) nullptr);
-  JsonVariant influxObj = Config["influxdb"];
-  if(influxObj.success()){
-    if( ! influxConfig(influxObj)){
+  JsonArray& influxArray = Config["influxdb"];
+  if(influxArray.success()){
+    char* influxStr = JsonDetail(ConfigFile, influxArray);
+    if( ! influxConfig(influxStr)){
       msgLog(F("influxService: Invalid configuration."));
     }
-  }
+    delete[] influxStr;
+  }   
   else {
     influxStop = true;
   }
   
   trace(T_CONFIG,9);
-
-  delete[] ConfigBuffer;
   return true;
 }
 
-void configInputs(JsonArray& JsonInputs){
+bool configInputs(const char* JsonStr){
+  DynamicJsonBuffer Json;
+  JsonArray& JsonInputs = Json.parseArray(JsonStr);
+  if( ! JsonInputs.success()){
+    msgLog(F("Inputs: Json parse failed"));
+  }
   phaseTableEntry* phaseTable = nullptr;
   buildPhaseTable(&phaseTable);
   for(int i=0; i<MIN(maxInputs,JsonInputs.size()); i++) {
@@ -243,7 +242,19 @@ void configInputs(JsonArray& JsonInputs){
     }
   }
   delete phaseTable;
+  return true;
 }
+
+bool configOutputs(const char* JsonStr){
+  DynamicJsonBuffer Json;
+  JsonArray& outputsArray = Json.parseArray(JsonStr);
+  if( ! outputsArray.success()){
+    msgLog(F("Outputs: Json parse failed"));
+    return false;
+  }
+  outputs = new ScriptSet(outputsArray);
+  return true;
+} 
 
 void hashFile(uint8_t* sha, File file){
   SHA256 sha256;
@@ -258,33 +269,6 @@ void hashFile(uint8_t* sha, File file){
   delete[] buff;
   sha256.finalize(sha,32);
   file.seek(0);
-}
-
-uint32_t condensedJsonSize(File JsonFile){
-  uint32_t size = 0;
-  bool inQuote = false;
-  char Json;
-  while(JsonFile.available()){
-    Json = JsonFile.read();
-    if(inQuote || (Json != ' ' && Json != 9 && Json != 10 && Json != 13)){
-      size++;
-    }
-    if(Json == '"') inQuote = !inQuote;
-  }
-  return size;
-}
-
-void condenseJson(char* ConfigBuffer, File JsonFile){
-  char* buffer = ConfigBuffer;
-  bool inQuote = false;
-  char Json;
-   while(JsonFile.available()){
-    Json = JsonFile.read();
-    if(inQuote || (Json != ' ' && Json != 9 && Json != 10 && Json != 13)){
-      *buffer++ = Json;
-    }
-    if(Json == '"') inQuote = !inQuote;
-  }
 }
 
 String old2newScript(JsonArray& script){

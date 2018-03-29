@@ -291,7 +291,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       
       if ((reqEntries < EmonBulkSend) ||
          ((currLog.lastKey() > UnixNextPost) &&
-         (reqData.available() < 2000))) {
+         (reqData.available() < 1000))) {
         return UnixNextPost;
       }
 
@@ -494,7 +494,13 @@ case sendSecure:{
           // EmonConfig - process the configuration Json
           // invoked from getConfig
 
-bool EmonConfig(JsonObject& config){
+bool EmonConfig(const char* configObj){
+  DynamicJsonBuffer Json;
+  JsonObject& config = Json.parseObject(configObj);
+  if( ! config.success()){
+    msgLog(F("EmonService: Json parse failed."));
+    return false;
+  }
   trace(T_EmonConfig,0);
   if(config["type"].as<String>() != "emoncms"){
     EmonStop = true;
