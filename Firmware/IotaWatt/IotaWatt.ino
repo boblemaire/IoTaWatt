@@ -69,7 +69,8 @@
  *   01/23/18 02_02_29 Improved phase correction plus misc. fixes  
  *   02/08/18 02_02_30 Bump version to release with tables.txt filename fixed
  *   03/01/18 02_03_01 AsyncHTTP 
- *   03/20/18 02_03_02 New influDB support, allow multiple upload services 
+ *   03/20/18 02_03_02 New influDB support, allow multiple upload services
+ *   03/29/18 02_03_03 Units computation in calculator, heap management improvements 
  * 
  *****************************************************************************************************/
 
