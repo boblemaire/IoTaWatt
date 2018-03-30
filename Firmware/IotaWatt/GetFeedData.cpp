@@ -185,7 +185,7 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
               replyData += String((logRecord->accum1[channel] - lastRecord->accum1[channel]) / elapsedHours,1);
             }
             else if(reqPtr->queryType == 'E') {
-                replyData += String((logRecord->accum1[channel] / 1000.0),2);              
+                replyData += String((logRecord->accum1[channel] / 1000.0),3);              
             } 
             else {
               replyData += "null";
@@ -206,7 +206,7 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
               replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), 1);
             }
             else if(reqPtr->queryType == 'E'){
-                replyData += String(reqPtr->output->run(lastRecord, logRecord, 1000.0), 2);
+                replyData += String(reqPtr->output->run((IotaLogRecord*) nullptr, logRecord, 1000.0), 3);
             }
             else if(reqPtr->queryType == 'O'){
               replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), reqPtr->output->precision());

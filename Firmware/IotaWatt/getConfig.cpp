@@ -8,6 +8,7 @@ struct phaseTableEntry {
     ~phaseTableEntry(){delete next;}
   }; 
 
+bool configDevice(const char*);
 bool configInputs(const char*);
 bool configOutputs(const char*);
 void hashFile(uint8_t* sha, File file);
@@ -38,10 +39,8 @@ boolean getConfig(void){
     return false;
   }
   
-  //************************************** Process Config file *********************************
-  char* deviceDetail = JsonDetail(ConfigFile, Config["device"]);
-  JsonObject& device = Json.parseObject(deviceDetail); 
-
+  //************************************** Process misc first level stuff **************************
+  
   if(Config.containsKey("update")){
     updateClass = Config["update"].as<String>();
   }
@@ -54,12 +53,86 @@ boolean getConfig(void){
     msgLog("Current log overide days: ", currLog.setDays(Config["logdays"].as<int>()));
   }      
 
+        //************************************ Configure device ***************************
+
+  trace(T_CONFIG,5);
+  JsonArray& deviceArray = Config["device"]     ;
+  if(deviceArray.success()){
+    char* deviceStr = JsonDetail(ConfigFile, deviceArray);
+    configDevice(deviceStr);
+    delete[] deviceStr;
+  }   
+
+        //************************************ Configure input channels ***************************
+
+  trace(T_CONFIG,6);
+  JsonArray& inputsArray = Config["inputs"]     ;
+  if(inputsArray.success()){
+    char* inputsStr = JsonDetail(ConfigFile, inputsArray);
+    configInputs(inputsStr);
+    delete[] inputsStr;
+  }   
+     
+        // ************************************ configure output channels *************************
+
+  trace(T_CONFIG,7);
+  delete outputs;
+  JsonArray& outputsArray = Config["outputs"]     ;
+  if(outputsArray.success()){
+    char* outputsStr = JsonDetail(ConfigFile, outputsArray);
+    configOutputs(outputsStr);
+    delete[] outputsStr;
+  }   
+        
+         // ************************************** configure Emoncms **********************************
+
+  trace(T_CONFIG,8);
+  EmonService((serviceBlock*) nullptr);
+  JsonArray& EmonArray = Config["server"];
+  if(EmonArray.success()){
+    char* EmonStr = JsonDetail(ConfigFile, EmonArray);
+    if( ! EmonConfig(EmonStr)){
+      msgLog(F("EmonService: Invalid configuration."));
+    }
+    delete[] EmonStr;
+  }   
+  else {
+    EmonStop = true;
+  }
+  
+        // ************************************** configure influxDB **********************************
+
+  trace(T_CONFIG,8);
+  influxService((serviceBlock*) nullptr);
+  JsonArray& influxArray = Config["influxdb"];
+  if(influxArray.success()){
+    char* influxStr = JsonDetail(ConfigFile, influxArray);
+    if( ! influxConfig(influxStr)){
+      msgLog(F("influxService: Invalid configuration."));
+    }
+    delete[] influxStr;
+  }   
+  else {
+    influxStop = true;
+  }
+  
+  ConfigFile.close();
+  trace(T_CONFIG,9);
+  return true;
+}                                       // End of getConfig
+
+
+//************************************** configDevice() ********************************************
+bool configDevice(const char* JsonStr){
+  DynamicJsonBuffer Json;
+  JsonObject& device = Json.parseObject(JsonStr);
+  if( ! device.success()){
+    msgLog(F("device: Json parse failed"));
+  }
   if(device.containsKey("name")){
     deviceName = device["name"].as<String>();
     host = deviceName;
   }
-  
-
 
   int channels = 21;
   if(device.containsKey("version")){
@@ -133,69 +206,14 @@ boolean getConfig(void){
       inputChannel[i]->_burden = device["burden"][i].as<float>();
     }
   }
-    
-        //************************************ Configure input channels ***************************
-
-  trace(T_CONFIG,6);
-  JsonArray& inputsArray = Config["inputs"]     ;
-  if(inputsArray.success()){
-    char* inputsStr = JsonDetail(ConfigFile, inputsArray);
-    configInputs(inputsStr);
-    delete[] inputsStr;
-  }   
-     
-        // ************************************ configure output channels *************************
-
-  trace(T_CONFIG,7);
-  delete outputs;
-  JsonArray& outputsArray = Config["outputs"];
-  if(outputsArray.success()){
-    char* outputsStr = JsonDetail(ConfigFile, outputsArray);
-    configOutputs(outputsStr);
-    delete[] outputsStr;
-  }   
-        
-         // ************************************** configure Emoncms **********************************
-
-  trace(T_CONFIG,8);
-  EmonService((serviceBlock*) nullptr);
-  JsonArray& EmonArray = Config["server"];
-  if(EmonArray.success()){
-    char* EmonStr = JsonDetail(ConfigFile, EmonArray);
-    if( ! EmonConfig(EmonStr)){
-      msgLog(F("EmonService: Invalid configuration."));
-    }
-    delete[] EmonStr;
-  }   
-  else {
-    EmonStop = true;
-  }
-  
-        // ************************************** configure influxDB **********************************
-
-  trace(T_CONFIG,8);
-  influxService((serviceBlock*) nullptr);
-  JsonArray& influxArray = Config["influxdb"];
-  if(influxArray.success()){
-    char* influxStr = JsonDetail(ConfigFile, influxArray);
-    if( ! influxConfig(influxStr)){
-      msgLog(F("influxService: Invalid configuration."));
-    }
-    delete[] influxStr;
-  }   
-  else {
-    influxStop = true;
-  }
-  
-  trace(T_CONFIG,9);
-  return true;
 }
 
+//********************************** configInputs ***********************************************
 bool configInputs(const char* JsonStr){
   DynamicJsonBuffer Json;
-  JsonArray& JsonInputs = Json.parseArray(JsonStr);
+  JsonVariant JsonInputs = Json.parse(JsonStr);
   if( ! JsonInputs.success()){
-    msgLog(F("Inputs: Json parse failed"));
+    msgLog(F("inputs: Json parse failed"));
   }
   phaseTableEntry* phaseTable = nullptr;
   buildPhaseTable(&phaseTable);
@@ -245,17 +263,19 @@ bool configInputs(const char* JsonStr){
   return true;
 }
 
+//********************************** configOutputs ***********************************************
 bool configOutputs(const char* JsonStr){
   DynamicJsonBuffer Json;
   JsonArray& outputsArray = Json.parseArray(JsonStr);
   if( ! outputsArray.success()){
-    msgLog(F("Outputs: Json parse failed"));
+    msgLog(F("outputs: Json parse failed"));
     return false;
   }
   outputs = new ScriptSet(outputsArray);
   return true;
 } 
 
+//********************************** hashFile() ***********************************************
 void hashFile(uint8_t* sha, File file){
   SHA256 sha256;
   int buffSize = 256;
@@ -271,6 +291,7 @@ void hashFile(uint8_t* sha, File file){
   file.seek(0);
 }
 
+//********************************** old2newScript ***********************************************
 String old2newScript(JsonArray& script){
   String newScript = "";
   for(int i=0; i<script.size(); i++){
@@ -296,6 +317,7 @@ String old2newScript(JsonArray& script){
   return newScript;
 }
 
+//********************************** buildPhaseTable ***********************************************
 void buildPhaseTable(phaseTableEntry** phaseTable){
   DynamicJsonBuffer Json;              
   File TableFile;

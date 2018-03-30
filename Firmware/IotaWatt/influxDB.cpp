@@ -145,6 +145,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           }
         }
       }
+      msgLog("influxService: start posting after ", UnixLastPost);        
       trace(T_influx,6);
       state = getLastRecord;
       return 1;
@@ -152,7 +153,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
     case getLastRecord: {
       trace(T_influx,7);
-      msgLog("influxService: start posting after ", UnixLastPost);        
       if( ! oldRecord){
         oldRecord = new IotaLogRecord;
       }
@@ -185,16 +185,16 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(WiFi.status() != WL_CONNECTED) {
         return UNIXtime() + 1; 
       }
-
-          // If we are current,
-          // Anticipate next posting at next regular interval and break to reschedule.
  
-      if(currLog.lastKey() < UnixNextPost){ 
-        UnixNextPost = UNIXtime() + influxDBInterval - (UNIXtime() % influxDBInterval);
-        return UnixNextPost;
-      } 
-      
-          // Not current.  Read the next log record.
+          // Determine when the next post should occur and wait if needed.
+          // Careful here - arithmetic is unsigned.
+
+      uint32_t nextBulkPost = UnixNextPost + ((influxBulkSend > reqEntries) ? influxBulkSend - reqEntries : 0) * influxDBInterval;
+      if(currLog.lastKey() < nextBulkPost){
+        return nextBulkPost;
+      }
+
+          // Read the next log record.
 
       if( ! logRecord){
         logRecord = new IotaLogRecord;            
@@ -328,7 +328,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       reqData.flush();
       reqEntries = 0;    
       state = post;
-      return UnixNextPost+1;
+      return UnixNextPost + influxBulkSend ? 1 : 0;
     }   
   }
 
