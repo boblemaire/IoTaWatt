@@ -206,15 +206,15 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 1;
       }
 
-          // If we are current,
-          // Anticipate next posting at next regular interval and break to reschedule.
- 
-      if(currLog.lastKey() < UnixNextPost){ 
-        UnixNextPost = UNIXtime() + EmonCMSInterval - (UNIXtime() % EmonCMSInterval);
-        return UnixNextPost;
-      } 
+          // Determine when the next post should occur and wait if needed.
+          // Careful here - arithmetic is unsigned.
+
+      uint32_t nextBulkPost = UnixNextPost + ((EmonBulkSend > reqEntries) ? EmonBulkSend - reqEntries : 0) * EmonCMSInterval;
+      if(currLog.lastKey() < nextBulkPost){
+        return nextBulkPost;
+      }
       
-          // Not current.  Read the next log record.
+          // Read the next log record.
           
       trace(T_Emon,6);
       if( ! logRecord){
@@ -364,7 +364,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       reqData.flush();
       reqEntries = 0;    
       state = post;
-      return UnixNextPost;
+      return UnixNextPost + EmonBulkSend ? 1 : 0;
     }
 
 case sendSecure:{
@@ -484,7 +484,7 @@ case sendSecure:{
       retryCount = 0;
       reqEntries = 0;    
       state = post;
-      return UnixNextPost;
+      return UnixNextPost + EmonBulkSend ? 1 : 0;
     }
   }
   return 1;   

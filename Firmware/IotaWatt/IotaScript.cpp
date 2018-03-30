@@ -136,6 +136,14 @@ bool    Script::encodeScript(const char* script){
         _tokens[tokenCount] = 0;
 }
 
+double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units overideUnits){
+        units defaultUnits = _units;
+        _units = overideUnits;
+        double result = run(oldRec, newRec, elapsedHours);
+        _units = defaultUnits;
+        return result;
+}
+
 double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours){
         uint8_t* tokens = _tokens;
         double result, var, watts;

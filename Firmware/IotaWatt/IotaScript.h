@@ -5,6 +5,18 @@
 #include <ArduinoJson.h>
 #include "iotalog.h"
 
+enum        units {
+            unitsWatts = 0,
+            unitsVolts = 1,
+            unitsAmps = 2,
+            unitsVA = 3,
+            unitsHz = 4,
+            unitsWh = 5,
+            unitskWh = 6,
+            unitsPF = 7,
+            unitsNone = 8
+            };         // Units to be computed   
+
 class Script {
 
   friend class ScriptSet;
@@ -20,6 +32,7 @@ class Script {
     Script* next();     // -> next Script in set
 
     double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours); // Run this Script
+    double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units); // Run w/overide units
     void    print();
     int     precision();
 
@@ -29,17 +42,7 @@ class Script {
     char*       _name;      // name associated with this Script
     float*      _constants; // Constant values referenced in Script
     uint8_t*    _tokens;    // Script tokens
-    enum        units {
-                    unitsWatts = 0,
-                    unitsVolts = 1,
-                    unitsAmps = 2,
-                    unitsVA = 3,
-                    unitsHz = 4,
-                    unitsWh = 5,
-                    unitskWh = 6,
-                    unitsPF = 7,
-                    unitsNone = 8
-                    } _units;         // Units to be computed              
+    units       _units;     // Units to be computed              
     uint8_t     _accum;               // Accumulators to use in fetching operands
     const byte  getInputOp = 32;
     const byte  getConstOp = 64;
