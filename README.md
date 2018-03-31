@@ -1,6 +1,8 @@
 ### IotaWatt 4.8
 
-See the [WiKi](https://github.com/boblemaire/IoTaWatt/wiki) for detailed information concerning installation and use of IoTaWatt.
+See the [WiKi](https://github.com/boblemaire/IoTaWatt/wiki) for detailed information concerning installation and use of IoTaWatt. 
+
+IoTaWatt forum is [here](https://community.iotawatt.com/)
 
 ![IotaWatt version 4.8](http://iotawatt.com/Images/IoTaWatt_new_case.JPG)
 
