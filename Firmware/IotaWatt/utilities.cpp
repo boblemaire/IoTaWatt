@@ -141,7 +141,6 @@ String  JsonSummary(File file, int depth){
           escape = false;
         }
         else {
-            if(isspace(_char)) continue;
             varLen++;
             if(string){
                 if(_char == '\"'){
@@ -151,6 +150,10 @@ String  JsonSummary(File file, int depth){
                     escape = true;
                 }
             }
+            else if(isspace(_char)){
+                varLen--;
+                continue;
+            } 
             else if(_char == '\"'){
                 string = true;
             }
@@ -185,16 +188,31 @@ String  JsonSummary(File file, int depth){
 }
 
 char*  JsonDetail(File file, JsonArray& locator){
+    bool    string = false;
+    bool    escape = false;
     int segLen = locator[1].as<int>();
-    char* string = new char[segLen+1];
+    char* out = new char[segLen+1];
     char _char;
     file.seek(locator[0].as<int>());
     for(int i=0; i<segLen;){
         _char = file.read();
-        if( ! isspace(_char)){
-            string[i++] = _char;
+        if( ! string && isspace(_char)) continue;
+        if(escape){
+            escape = false;
         }
+        else if(string){
+            if(_char == '\"'){
+                string = false;
+            }
+            else if(_char == '\\'){
+                escape = true;
+            }
+        }
+        else if(_char == '\"'){
+            string = true;
+        }
+        out [i++] = _char;
     }
-    string[segLen] = 0;
-    return string;
+    out[segLen] = 0;
+    return out;
 }
