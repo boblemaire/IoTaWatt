@@ -213,7 +213,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // Determine when the next post should occur and wait if needed.
           // Careful here - arithmetic is unsigned.
 
-      uint32_t nextBulkPost = UnixNextPost + ((EmonBulkSend > reqEntries) ? EmonBulkSend - reqEntries : 0) * EmonCMSInterval;
+      uint32_t nextBulkPost = UnixNextPost + ((EmonBulkSend > reqEntries) ? EmonBulkSend - reqEntries - 1 : 0) * EmonCMSInterval;
       if(currLog.lastKey() < nextBulkPost){
         return nextBulkPost;
       }

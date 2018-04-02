@@ -197,7 +197,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           // Determine when the next post should occur and wait if needed.
           // Careful here - arithmetic is unsigned.
 
-      uint32_t nextBulkPost = UnixNextPost + ((influxBulkSend > reqEntries) ? influxBulkSend - reqEntries : 0) * influxDBInterval;
+      uint32_t nextBulkPost = UnixNextPost + ((influxBulkSend > reqEntries) ? influxBulkSend - reqEntries - 1 : 0) * influxDBInterval;
       if(currLog.lastKey() < nextBulkPost){
         return nextBulkPost;
       }
@@ -296,7 +296,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         Serial.println(msg);
         Serial.println(reqData.peekString(reqData.available()));
       }
-      Serial.printf("ms: %d, time: %d\r\n", millis(), UnixNextPost);
       trace(T_influx,9);
       request->open("POST", URL.c_str());
       trace(T_influx,9);
