@@ -151,7 +151,12 @@ boolean serverAvailable = true;   // Set false when asynchronous handler active 
 boolean wifiConnected = false;
 uint8_t configSHA256[32];         // Hash of config file last time read or written
 
-      // ****************************** Timing and time data *************************
+      // ************************** HTTP concurrent request semaphore *************************
+
+int16_t  HTTPrequestMax = 2;      // Maximum number of concurrent HTTP requests        
+int16_t  HTTPrequestFree = 2;     // Request semaphore 
+
+      // ****************************** Timing and time data **********************************
 
 int      localTimeDiff = 0;                  // Hours from UTC 
 uint32_t programStartTime = 0;               // Time program started (UnixTime)

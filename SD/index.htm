@@ -616,9 +616,12 @@ function refreshInputEdit(){
   }
   else {
     for(i in tables.CT){
+      option = document.createElement("option");
+      option.text = tables.CT[i].model;
+      if(tables.CT[i].mfg !== undefined){
+        option.title = tables.CT[i].mfg;
+      }
       if(tables.CT[i].type == "C" && config.device.burden[inputEditChannel] > 0){
-        option = document.createElement("option");
-        option.text = tables.CT[i].model;
         inputModel.add(option);
         if(inputEditObject.model == option.text){
           option.selected = true;
@@ -628,8 +631,6 @@ function refreshInputEdit(){
         }
       }
       else if(tables.CT[i].type == "V" && config.device.burden[inputEditChannel] == 0){
-        option = document.createElement("option");
-        option.text = tables.CT[i].model;
         inputModel.add(option);
         if(inputEditObject.model == option.text){
           option.selected = true;

@@ -204,23 +204,26 @@ extern boolean  serverAvailable;          // Set false when asynchronous handler
 extern boolean  wifiConnected;
 extern uint8_t  configSHA256[32];         // Hash of config file
 
+extern int16_t  HTTPrequestMax;           // Maximum concurrent HTTP requests
+extern int16_t  HTTPrequestFree;          // Request semaphore
+
       // ****************************** Timing and time data *************************
 #define  SEVENTY_YEAR_SECONDS 2208988800UL
 extern int      localTimeDiff;
-extern uint32_t programStartTime;;               // Time program started (UnixTime)
-extern uint32_t timeRefNTP;  // Last time from NTP server (NTPtime)
+extern uint32_t programStartTime;;             // Time program started (UnixTime)
+extern uint32_t timeRefNTP;                    // Last time from NTP server (NTPtime)
 extern uint32_t timeRefMs;                     // Internal MS clock corresponding to timeRefNTP
-extern uint32_t timeSynchInterval;           // Interval (sec) to roll NTP forward and try to refresh
+extern uint32_t timeSynchInterval;             // Interval (sec) to roll NTP forward and try to refresh
 extern uint32_t EmonCMSInterval;               // Interval (sec) to invoke EmonCMS
 extern uint32_t influxDBInterval;              // Interval (sec) to invoke inflexDB
 extern uint32_t statServiceInterval;           // Interval (sec) to invoke statService
-extern uint32_t updaterServiceInterval;     // Interval (sec) to check for software updates
+extern uint32_t updaterServiceInterval;        // Interval (sec) to check for software updates
 
 extern bool     hasRTC;
 extern bool     RTCrunning;
 
-extern char     ledColor[12];                         // Pattern to display led, each char is 500ms color - R, G, Blank
-extern uint8_t  ledCount;                             // Current index into cycle
+extern char     ledColor[12];                   // Pattern to display led, each char is 500ms color - R, G, Blank
+extern uint8_t  ledCount;                       // Current index into cycle
 
       // ****************************** Firmware update ****************************
 extern String   updateURL;

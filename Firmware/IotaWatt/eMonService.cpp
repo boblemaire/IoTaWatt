@@ -107,14 +107,18 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
 
     case getLastPostTime: {
       trace(T_Emon,3);
-      if( ! WiFi.isConnected()){
+      if(! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
+      if( ! HTTPrequestFree){
+        return UNIXtime() + 1;
+      }
+      HTTPrequestFree--;
       if( ! request){
         request = new asyncHTTPrequest;
       }
       String URL = EmonURL + ":" + String(EmonPort) + EmonURI + "/input/get?node=" + String(node);
-      request->setTimeout(1);
+      request->setTimeout (1);
       request->setDebug(false);
       trace(T_Emon,3);
       request->open("GET", URL.c_str());
@@ -131,7 +135,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(request->readyState() != 4){
         return UNIXtime() + 1; 
       }
-
+      HTTPrequestFree++;
       trace(T_Emon,4);
       if(request->responseHTTPcode() != 200){
         msgLog("EmonService: get input list failed, code: ", request->responseHTTPcode());
@@ -312,6 +316,10 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
+      if( ! HTTPrequestFree){
+        return UNIXtime() + 1;
+      }
+      HTTPrequestFree--;
       if( ! request){
         request = new asyncHTTPrequest;
       }
@@ -339,6 +347,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(request->readyState() != 4){
         return 1; 
       }
+      HTTPrequestFree++;
       trace(T_Emon,8);
       if(request->responseHTTPcode() != 200){
         if(++retryCount  % 10 == 0){
@@ -372,6 +381,10 @@ case sendSecure:{
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
+      if( ! HTTPrequestFree){
+        return UNIXtime() + 1;
+      }
+      HTTPrequestFree--;
       if( ! request) {
         request = new asyncHTTPrequest;
       }
@@ -458,6 +471,7 @@ case sendSecure:{
       if(request->readyState() != 4){
         return 1; 
       }
+      HTTPrequestFree++;
       reqData.flush();
       trace(T_Emon,11);
       if(request->responseHTTPcode() != 200){

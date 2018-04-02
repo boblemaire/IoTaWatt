@@ -87,6 +87,13 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
  
     case queryLast:{
       trace(T_influx,4);
+      if( ! WiFi.isConnected()){
+        return UNIXtime() + 1;
+      }
+      if( ! HTTPrequestFree){
+        return UNIXtime() + 1;
+      }
+      HTTPrequestFree--;
       if( ! request){
         request = new asyncHTTPrequest;
       }
@@ -112,6 +119,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(request->readyState() != 4){
         return 1; 
       }
+      HTTPrequestFree++;
       String response = request->responseText(); 
       int HTTPcode = request->responseHTTPcode();
       delete request;
@@ -272,6 +280,10 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
+      if( ! HTTPrequestFree){
+        return UNIXtime() + 1;
+      }
+      HTTPrequestFree--;
       if( ! request){
         request = new asyncHTTPrequest;
       }
@@ -308,6 +320,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(request->readyState() != 4){
         return 1; 
       }
+      HTTPrequestFree++;
       trace(T_influx,10);
       if(request->responseHTTPcode() != 204){
         if(++retryCount < 10){

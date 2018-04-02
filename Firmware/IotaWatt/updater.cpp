@@ -30,7 +30,13 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       if(updateClass == "NONE"){
         break;
       }
-
+      if( ! WiFi.isConnected()){
+        return UNIXtime() + 1;
+      }
+      if( ! HTTPrequestFree){
+        return UNIXtime() + 1;
+      }
+      HTTPrequestFree--;
       request = new asyncHTTPrequest;
       request->setDebug(false);
       if( ! request->open("GET", (updateURL + updatePath).c_str())){
@@ -53,6 +59,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       if(request->readyState() != 4){
         return UNIXtime() + 1;
       }
+      HTTPrequestFree++;
       if(request->responseHTTPcode() != 200 || request->available() != 8){
         msgLog(F("checkUpdate: Invalid response from server."));
         delete request;
@@ -87,6 +94,16 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         state = getVersion;
         break;
       }
+      if( ! WiFi.isConnected()){
+        return UNIXtime() + 1;
+      }
+
+        // for download, hog all requests.
+
+      if(HTTPrequestFree != HTTPrequestMax){
+        return UNIXtime() + 1;
+      }
+      HTTPrequestFree = 0;
       request = new asyncHTTPrequest;
       String URL = updateURL + "/firmware/bin/" + updateVersion + ".bin";
       request->setDebug(false);
@@ -109,11 +126,13 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       if(request->readyState() != 4){
         return 1;
       }
+      HTTPrequestFree = HTTPrequestMax;
       size_t fileSize = releaseFile.size();
       releaseFile.close();
       if(request->responseHTTPcode() != 200){
         msgLog("Updater: Download failed HTTPcode ", request->responseHTTPcode());
         delete request;
+        deleteRecursive("download");
         state = getVersion;
         break;
       }
