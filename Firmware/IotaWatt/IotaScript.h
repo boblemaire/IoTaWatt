@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "iotalog.h"
+#include "IotaLog.h"
 
 enum        units {
             unitsWatts = 0,
