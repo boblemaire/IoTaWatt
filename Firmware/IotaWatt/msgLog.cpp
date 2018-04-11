@@ -22,11 +22,9 @@ void msgLog(const char* segment1,const  char* segment2,const  char* segment3){
   static boolean restart = true;
   String msg = "";
   uint32_t _NTPtime = NTPtime();
-  DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
   
   if(RTCrunning){
-    msg = String(now.month()) + '/' + String(now.day()) + '/' + String(now.year()%100) + ' ' + 
-          timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second()) + ' ';
+    msg = dateString(UNIXtime());
   } else {
     msg += "No clock yet: ";
   }

@@ -28,6 +28,8 @@ extern bool     influxInitialize;                 // Initialize or reinitialize
 extern String   influxURL;
 extern uint16_t influxBulkSend;
 extern uint16_t influxPort;
+extern uint32_t influxBeginPosting;               // time to begin posting new dataset
+extern uint32_t influxLastPost;                   // Timestamp of last cuccessful post
 extern String   influxDataBase;
 extern char*    influxMeasurement;
 extern char*    influxUser;

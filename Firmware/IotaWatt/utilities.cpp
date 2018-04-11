@@ -216,3 +216,11 @@ char*  JsonDetail(File file, JsonArray& locator){
     out[segLen] = 0;
     return out;
 }
+
+
+String dateString(uint32_t UNIXtime){
+    DateTime now = DateTime(UNIXtime + (localTimeDiff * 3600));
+  
+    return String(now.month()) + '/' + String(now.day()) + '/' + String(now.year()%100) + ' ' + 
+          timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second()) + ' ';
+}

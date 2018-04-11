@@ -336,6 +336,14 @@ void handleStatus(){
     root["outputs"] = outputArray;
   }
 
+  if(server.hasArg("influx")){
+    trace(T_WEB,17);
+    JsonObject& influx = jsonBuffer.createObject();
+    influx.set("running",influxStarted);
+    influx.set("lastpost",influxLastPost);  
+    root["influx"] = influx;
+  }
+
   if(server.hasArg("datalogs")){
     trace(T_WEB,17);
     JsonObject& datalogs = jsonBuffer.createObject();
