@@ -140,7 +140,8 @@ extern traceUnion traceEntry;
 #define T_uploadGraph 13 
 #define T_history 14
 #define T_base64 15        // base 64 encode
-#define T_EmonConfig 16    // Emon configuration                  
+#define T_EmonConfig 16    // Emon configuration
+#define T_influxConfig 17  // influx configuration                  
 
       // ADC descriptors
 

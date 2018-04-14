@@ -21,3 +21,5 @@ String base64encode(const uint8_t* in, size_t len); // Convert the input buffer 
 
 String  JsonSummary(File file, int depth);          // Read a json file and return a summary Json string              
 char*  JsonDetail(File file, JsonArray& locator);   // Read and compress a detail segment of a json file
+
+String dateString(uint32_t UNIXtime);               // Convert unixtime to a data/time string

@@ -265,6 +265,7 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
       delete lastRecord;
       state = Setup;
       serverAvailable = true;
+      HTTPrequestFree++;
       return 0;                                       // Done for now, return without scheduling.
     }
   }

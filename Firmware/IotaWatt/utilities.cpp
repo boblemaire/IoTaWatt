@@ -19,6 +19,7 @@ int strcmp_ci(const char* str1, const char* str2){
  * allocate a char* array, copy the argument data to it, and return the pointer. 
  * ************************************************************************************************/
 char* charstar(const char* str){
+  if( ! str) return nullptr;
   char* ptr = new char[strlen(str)+1];
   strcpy(ptr, str);
   return ptr;
@@ -89,7 +90,7 @@ void base64encode(xbuf* buf){
     buf->write(out, 4);
     supply -= 3;
   }
-  trace(T_base64,0);
+  trace(T_base64,1);
   if(supply > 0){
     in[0] = in[1] = in[2] = 0;
     buf->read(in,supply);
@@ -215,4 +216,12 @@ char*  JsonDetail(File file, JsonArray& locator){
     }
     out[segLen] = 0;
     return out;
+}
+
+
+String dateString(uint32_t UNIXtime){
+    DateTime now = DateTime(UNIXtime + (localTimeDiff * 3600));
+  
+    return String(now.month()) + '/' + String(now.day()) + '/' + String(now.year()%100) + ' ' + 
+          timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second()) + ' ';
 }

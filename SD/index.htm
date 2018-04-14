@@ -153,9 +153,9 @@
       <table width="80%">
         <tr><th>tag key</th><th> </th><th>tag value</th></tr>
         <tr>
-          <td><input id="influxTagKey" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="influxTagCheck()"></td>
+          <td><input id="influxTagKey" oninput="influxTagCheck()"></td>
           <td>=</td>
-          <td><input id="influxTagValue" pattern="[a-zA-Z0-9_]{1,}" oninput="influxTagCheck()"></td>
+          <td><input id="influxTagValue" oninput="influxTagCheck()" title="enter a string or variable ($name, $units..)."></td>
         </tr>
       </table>
       
@@ -166,6 +166,7 @@
       and is referenced to determine the time of last measurement during restart recovery. 
       In that way, an IoTaWatt can maintain context and continuity where multiple data
       sources are writing to a single database.</p>
+      <p>Tag-values can be a fixed string, or one of the variables $device, $name, $units</p>
       <p>
         <button class="actionDelete" id="influxTagDelete">delete</button>
         <button class="actionCancel" id="influxTagCancel" onclick="influxTagCancel()">cancel</button>
@@ -198,9 +199,10 @@
           </table>
           <table id="statusTable"></table>
         </div>
+      <button id="tabinflux" class="groupTab" onclick="toggleDisplay('statusInfluxDiv')")>InfluxDB</button>
+        <div id="statusInfluxDiv" class="statusDiv" style="display: none;"></div>
       <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
-        <div id="statusLogsDiv" class="statusDiv" style="display: none;">
-        </div>
+        <div id="statusLogsDiv" class="statusDiv" style="display: none;"></div>
     </div> <!-- divStatus -->
   
     <!--*************************************************************************************************
@@ -1602,30 +1604,60 @@ function editInfluxdb(){
   var dbInput = addTableRow(serverTable, "database:", "serverDb", "input", 16);
   dbInput.value = config.influxdb.database;
   dbInput.setAttribute("oninput","config.influxdb.database = this.value; checkInfluxdb();");
-  dbInput.pattern = "[A-Za-z0-9_]+";
+  dbInput.pattern = "^[^'\"\\s]*$";
   
-  var MeasInput = addTableRow(serverTable, "measurement:", "serverMeas", "input", 16);
-  MeasInput.value = config.influxdb.measurement;
-  MeasInput.setAttribute("oninput","config.influxdb.measurement = this.value; checkInfluxdb();");
-  MeasInput.pattern = "[A-Za-z0-9_]+";
+  var RetpInput = addTableRow(serverTable, "retention policy", "serverRetp", "input", 16);
+  RetpInput.setAttribute("oninput","config.influxdb.retp = this.value; checkInfluxdb();");
+  RetpInput.pattern = "^[^'\"\\s]*$";
+  if(config.influxdb.retp !== undefined){
+    RetpInput.value = config.influxdb.retp;
+  } else {
+    RetpInput.value = "";
+  }
+  RetpInput.placeholder = "optional";
   
   if(config.influxdb.user === undefined) config.influxdb.user = "";
-  var userInput = addTableRow(serverTable, "(opt) username:", "serverUser", "input", 16);
+  var userInput = addTableRow(serverTable, "username:", "serverUser", "input", 16);
   userInput.value = config.influxdb.user;
   userInput.setAttribute("oninput","config.influxdb.user = this.value; checkInfluxdb();");
-  userInput.pattern = "[a-zA-Z]{1}[a-zA-Z0-9_]*";
+  userInput.pattern = "^[^'\"\\s]*$";
+  userInput.placeholder = "optional";
 
   if(config.influxdb.pwd === undefined) config.influxdb.pwd = "";
-  var pwdInput = addTableRow(serverTable, "(opt) password:", "serverPwd", "input", 16);
+  var pwdInput = addTableRow(serverTable, "password:", "serverPwd", "input", 16);
   pwdInput.value = config.influxdb.pwd;
   pwdInput.setAttribute("oninput","config.influxdb.pwd = this.value; checkInfluxdb();"); 
-  pwdInput.pattern = "[A-Za-z0-9_!$/%&#]*";
+  pwdInput.pattern = "^[^'\"\\s]*$";
+  pwdInput.type = "password";
+  pwdInput.placeholder = "optional";
+  
+  var begdateInput = addTableRow(serverTable, "upload history from:", "serverBegd", "input", 16);
+  begdateInput.setAttribute("oninput",
+    "config.influxdb.begdate = new Date(this.value).getTime()/1000 - config.timezone*3600; checkInfluxdb();");
+  begdateInput.value =  toInputDate(config.influxdb.begdate + config.timezone*3600);
+  begdateInput.type = "date";
+  
+  if(config.influxdb.measurement === undefined) config.influxdb.measurement = "";
+  var measInput = addTableRow(serverTable, "measurement", "serverMeas", "input", 16);
+  measInput.setAttribute("oninput","config.influxdb.measurement = this.value; checkInfluxdb();");
+  measInput.value = config.influxdb.measurement;
+  measInput.pattern = "^[^'\"\\s]*$";
+  measInput.placeholder = "default is $name";
+  measInput.title = "enter a string or $name, $units, if not specified $name will be used.";
+  
+  if(config.influxdb.fieldkey === undefined) config.influxdb.fieldkey = "";
+  var fkeyInput = addTableRow(serverTable, "field-key", "serverFkey", "input", 16);
+  fkeyInput.setAttribute("oninput","config.influxdb.fieldkey = this.value; checkInfluxdb();");
+  fkeyInput.value = config.influxdb.fieldkey;
+  fkeyInput.pattern = "^[^'\"\\s]*$";
+  fkeyInput.placeholder = "default is 'value'";
+  fkeyInput.title = "enter a string or $name, $units. if not specified, 'value' will be used.";
   
   EbyId("divInfluxTagSet").style.display = "inline";
   buildTagSet();
   
   EbyId("divServerOutputs").style.display = "inline";
-  EbyId("serverOutputsHeader").innerHTML = "field set";
+  EbyId("serverOutputsHeader").innerHTML = "measurements";
 
   EbyId("calcName").title="Name must be valid influxDB field name";
   EbyId("calcName").pattern="^[0-9a-zA-Z_$-/\.\+]+$";
@@ -1644,15 +1676,30 @@ function editInfluxdb(){
   checkInfluxdb();
 }
 
+function toInputDate(unixtime){
+  var date = new Date(unixtime * 1000);
+  var month = date.getMonth()+1;
+  var day = date.getDate()+1;
+  return date.getFullYear() + '-' + (month < 10 ? '0' : '') + month.toString() + '-' + (day < 10 ? '0' : '') + day.toString();
+}
+
 function checkInfluxdb(){
   var complete = true;
+  if(config.influxdb.retp == "") config.influxdb.retp = undefined;
+  if(config.influxdb.user == "") config.influxdb.user = undefined;
+  if(config.influxdb.pwd == "") config.influxdb.pwd = undefined;
+  if(config.influxdb.measurement == "") config.influxdb.measurement = undefined;
+  if(config.influxdb.fieldkey == "") config.influxdb.fieldkey = undefined;
   if( ! validateInput("serverPost")) complete = false;
   if( ! validateInput("serverBulk")) complete = false;
   if( ! validateInput("serverURL", true, "not a valid url")) complete = false;
   if( ! validateInput("serverDb", true, "alphanumeric")) complete = false;
-  if( ! validateInput("serverMeas", true, "alphanumeric")) complete = false;
-  if( ! validateInput("serverUser", config.influxdb.pwd != "", "username is alphanumeric")) complete = false;
-  if( ! validateInput("serverPwd", config.influxdb.user != "", "password is alphanumeric + _!$/%&#")) complete = false;
+  if( ! validateInput("serverRetp", false, "invalid string")) complete = false;
+  if( ! validateInput("serverUser", config.influxdb.pwd !== undefined, "invalid string")) complete = false;
+  if( ! validateInput("serverPwd", config.influxdb.user !== undefined, "invalid string")) complete = false;
+  if( ! validateInput("serverMeas",false, "invalid string")) complete = false;
+  if( ! validateInput("serverFkey", false, "invalid string")) complete = false;
+  if( ! validateInput("serverBegd", false)) complete = false;
   if(config.influxdb.outputs.length == 0) complete = false;
   EbyId("serverSave").style.display = complete ? "inline" : "none";
 }
@@ -1706,7 +1753,9 @@ function influxTagEdit(index){
   EbyId("influxTagDelete").style.display = "inline";
   EbyId("influxTagSave").style.display = "inline";
   EbyId("influxTagKey").value = config.influxdb.tagset[index].key;
+  EbyId("influxTagKey").pattern = "^[^'\"\\s]*$";
   EbyId("influxTagValue").value = config.influxdb.tagset[index].value;
+  EbyId("influxTagValue").pattern = "^[^'\"\\s]*$";
   currentBodyPush("divInfluxTag");
 }
 
@@ -1715,7 +1764,9 @@ function influxTagAdd(index){
   EbyId("influxTagDelete").style.display = "none";
   EbyId("influxTagSave").style.display = "none";
   EbyId("influxTagKey").value = "";
+  EbyId("influxTagKey").pattern = "^[^'\"\\s]*$";
   EbyId("influxTagValue").value = "";
+  EbyId("influxTagValue").pattern = "^[^'\"\\s]*$";
   currentBodyPush("divInfluxTag");
 }
 
@@ -1743,15 +1794,28 @@ function influxTagSave(index){
 
 function influxTagCheck(){
   var complete = true;
-  if( ! validateInput("influxTagKey", true, "key is alpha numeric")) complete = false;
-  if( ! validateInput("influxTagValue", true, "invalid character")) complete = false;
+  if( ! validateInput("influxTagKey", true, "invalid string")) complete = false;
+  if( ! validateInput("influxTagValue", true, "invalid string")) complete = false;
   EbyId("influxTagSave").style.display = complete ? "inline" : "none";
+}
+
+function influxToggle(){
+  if(config.influxdb.stop !== undefined){
+    config.influxdb.stop = ! config.influxdb.stop;
+  }
+  else {
+    config.influxdb.stop = true;
+    
+  }
+  config.influxdb.revision++;
+  uploadConfig();
 }
 
 /***********************************************************************************************
  *                        Setup and run status display
  * *******************************************************************************************/
 function statusBegin(){
+  EbyId("tabinflux").style.display = config.influxdb !== undefined ? "inline" : "none";
   currentBodyPush("divStatus");
   getStatus = true;
   statusGet();
@@ -1768,7 +1832,7 @@ function statusGet(){
       statusDisplay(xmlHttp.responseText);
     }
   }
-  xmlHttp.open("GET","/status?state=yes&inputs=yes&outputs=yes&stats=yes&datalogs=yes", true);
+  xmlHttp.open("GET","/status?state=yes&inputs=yes&outputs=yes&stats=yes&datalogs=yes&influx=yes", true);
   xmlHttp.send(null);
 }
 
@@ -1800,6 +1864,17 @@ function statusDisplay(statusMessage){
     logs.appendChild(document.createElement("br"));
     logs.appendChild(document.createTextNode("History Log from: " + formatDateTime(status.datalogs.histlog.firstkey) + " to: " + formatDateTime(status.datalogs.histlog.lastkey)));
   }
+  
+  var influxDiv = EbyId("statusInfluxDiv");
+  influxDiv.innerHTML = "";
+  if(status.influx !== undefined){
+    var button = document.createElement("button");
+    button.style = "configButton";
+    button.innerHTML = status.influx.running ? "Stop" : "Start";
+    button.setAttribute("onclick","influxToggle()");
+    influxDiv.appendChild(button);
+    influxDiv.appendChild(document.createTextNode((status.influx.running ? " Running" : " Stopped") + ".  Last update " + formatDateTime(status.influx.lastpost)));
+  } 
   
   statusTable = EbyId("inputStatusTable");
   statusTable.innerHTML = "";

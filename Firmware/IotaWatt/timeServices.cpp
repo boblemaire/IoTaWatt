@@ -136,7 +136,8 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
         msgLog(F("timeSync: No time update in last 24 hours."));
         lastNTPupdate = UNIXtime();
       }
-      if(WiFi.isConnected()){
+      if(WiFi.isConnected() && HTTPrequestFree){
+        HTTPrequestFree--;
         IPAddress timeServerIP;
         startTime = millis();
         if(WiFi.hostByName(ntpServerName, timeServerIP) == 1){    // get a random server from the pool
@@ -159,6 +160,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
         ntpPacket packet;
         udp->read((uint8_t*)&packet,sizeof(ntpPacket));
         udp->stop();
+        HTTPrequestFree++;
         delete udp;
         udp = nullptr;
         timeRefNTP = littleEndian(packet.trans_ts_sec);
@@ -169,6 +171,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
       }
       else if(millis() - startTime > 3000){
         udp->stop();
+        HTTPrequestFree++;
         state = getNTPtime;
         return UNIXtime() + RTCrunning ? 60 : 0;
       }
