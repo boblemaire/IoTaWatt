@@ -32,7 +32,7 @@ void loop()
   yield();
   ESP.wdtFeed();
   trace(T_LOOP,3);
-  if(serverAvailable){
+  if(serverAvailable && HTTPrequestFree){
     server.handleClient();
     trace(T_LOOP,4);
     yield();

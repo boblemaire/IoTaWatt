@@ -69,16 +69,16 @@ bool loadFromSdCard(String path){
      }
 
   if(path.endsWith(".src")) path = path.substring(0, path.lastIndexOf("."));
-  else if(path.endsWith(".htm")) dataType = "text/html";
-  else if(path.endsWith(".css")) dataType = "text/css";
-  else if(path.endsWith(".js"))  dataType = "application/javascript";
-  else if(path.endsWith(".png")) dataType = "image/png";
-  else if(path.endsWith(".gif")) dataType = "image/gif";
-  else if(path.endsWith(".jpg")) dataType = "image/jpeg";
-  else if(path.endsWith(".ico")) dataType = "image/x-icon";
-  else if(path.endsWith(".xml")) dataType = "text/xml";
-  else if(path.endsWith(".pdf")) dataType = "application/pdf";
-  else if(path.endsWith(".zip")) dataType = "application/zip";
+  else if(path.endsWith(".htm")) dataType = F("text/html");
+  else if(path.endsWith(".css")) dataType = F("text/css");
+  else if(path.endsWith(".js"))  dataType = F("application/javascript");
+  else if(path.endsWith(".png")) dataType = F("image/png");
+  else if(path.endsWith(".gif")) dataType = F("image/gif");
+  else if(path.endsWith(".jpg")) dataType = F("image/jpeg");
+  else if(path.endsWith(".ico")) dataType = F("image/x-icon");
+  else if(path.endsWith(".xml")) dataType = F("text/xml");
+  else if(path.endsWith(".pdf")) dataType = F("application/pdf");
+  else if(path.endsWith(".zip")) dataType = F("application/zip");
 
   File dataFile = SD.open(path.c_str());
   if(dataFile.isDirectory()){
@@ -90,7 +90,7 @@ bool loadFromSdCard(String path){
   if (!dataFile)
     return false;
     
-  if (server.hasArg("download")) dataType = "application/octet-stream";
+  if (server.hasArg("download")) dataType = F("application/octet-stream");
 
   if(server.hasArg("textpos")){
     sendMsgFile(dataFile, server.arg("textpos").toInt());
@@ -103,8 +103,7 @@ bool loadFromSdCard(String path){
     }
     size_t sent = server.streamFile(dataFile, dataType);
     if ( sent != dataFile.size()) {
-      Serial.printf("less data than expected. file %s, sent %d, expected %d\r\n", dataFile.name(), sent, dataFile.size());
-      msgLog(F("Server: Sent less data than expected!"));
+      Serial.printf_P(PSTR("Server: sent less data than expected. file %s, sent %d, expected %d\r\n"), dataFile.name(), sent, dataFile.size());
     }
   }
   dataFile.close();
@@ -139,7 +138,7 @@ void handleFileUpload(){
       if(uploadSHA){
         uploadSHA->update(upload.buf, upload.currentSize);
       }
-      DBG_OUTPUT_PORT.print("Upload: WRITE, Bytes: "); DBG_OUTPUT_PORT.println(upload.currentSize);
+      // DBG_OUTPUT_PORT.print("Upload: WRITE, Bytes: "); DBG_OUTPUT_PORT.println(upload.currentSize);
     }
     
   } else if(upload.status == UPLOAD_FILE_END){
@@ -259,7 +258,7 @@ void handleNotFound(){
   message += ", URI: ";
   message += server.uri();
   server.send(404, "text/plain", message);
-  Serial.println(message);
+  // Serial.println(message);
 }
 
 /************************************************************************************************
@@ -276,19 +275,19 @@ void handleStatus(){
   if(server.hasArg("stats")){
     trace(T_WEB,14);
     JsonObject& stats = jsonBuffer.createObject();
-    stats.set("cyclerate", samplesPerCycle);
+    stats.set(F("cyclerate"), samplesPerCycle);
     trace(T_WEB,14);
-    stats.set("chanrate",cycleSampleRate);
+    stats.set(F("chanrate"),cycleSampleRate);
     trace(T_WEB,14);
-    stats.set("runseconds", UNIXtime()-programStartTime);
+    stats.set(F("runseconds"), UNIXtime()-programStartTime);
     trace(T_WEB,14);
-    stats.set("stack",ESP.getFreeHeap());
+    stats.set(F("stack"),ESP.getFreeHeap());
     trace(T_WEB,14);
-    stats.set("version",IOTAWATT_VERSION);
+    stats.set(F("version"),IOTAWATT_VERSION);
     trace(T_WEB,14);
-    stats.set("frequency",frequency);
+    stats.set(F("frequency"),frequency);
     trace(T_WEB,14);
-    root.set("stats",stats);
+    root.set(F("stats"),stats);
   }
   
   if(server.hasArg("inputs")){
@@ -297,21 +296,21 @@ void handleStatus(){
     for(int i=0; i<maxInputs; i++){
       if(inputChannel[i]->isActive()){
         JsonObject& channelObject = jsonBuffer.createObject();
-        channelObject.set("channel",inputChannel[i]->_channel);
+        channelObject.set(F("channel"),inputChannel[i]->_channel);
         if(inputChannel[i]->_type == channelTypeVoltage){
-          channelObject.set("Vrms",statRecord.accum1[i]);
-          channelObject.set("Hz",statRecord.accum2[i]);
+          channelObject.set(F("Vrms"),statRecord.accum1[i]);
+          channelObject.set(F("Hz"),statRecord.accum2[i]);
         }
         else if(inputChannel[i]->_type == channelTypePower){
           if(statRecord.accum1[i] > -2 && statRecord.accum1[i] < 2) statRecord.accum1[i] = 0;
-          channelObject.set("Watts",String(statRecord.accum1[i],0));
+          channelObject.set(F("Watts"),String(statRecord.accum1[i],0));
           double pf = statRecord.accum2[i];
           if(pf != 0){
             pf = statRecord.accum1[i] / pf;
           }
           channelObject.set("Pf",pf);
           if(inputChannel[i]->_reversed){
-            channelObject.set("reversed","true");
+            channelObject.set(F("reversed"),true);
           }
         }
         channelArray.add(channelObject);
@@ -326,10 +325,10 @@ void handleStatus(){
     Script* script = outputs->first();
     while(script){
       JsonObject& channelObject = jsonBuffer.createObject();
-      channelObject.set("name",script->name());
-      channelObject.set("units",script->getUnits());
+      channelObject.set(F("name"),script->name());
+      channelObject.set(F("units"),script->getUnits());
       double value = script->run((IotaLogRecord*)nullptr, &statRecord, 1.0);
-      channelObject.set("value",value);
+      channelObject.set(F("value"),value);
       outputArray.add(channelObject);
       script = script->next();
     }
@@ -339,8 +338,8 @@ void handleStatus(){
   if(server.hasArg("influx")){
     trace(T_WEB,17);
     JsonObject& influx = jsonBuffer.createObject();
-    influx.set("running",influxStarted);
-    influx.set("lastpost",influxLastPost);  
+    influx.set(F("running"),influxStarted);
+    influx.set(F("lastpost"),influxLastPost);  
     root["influx"] = influx;
   }
 
@@ -348,20 +347,20 @@ void handleStatus(){
     trace(T_WEB,17);
     JsonObject& datalogs = jsonBuffer.createObject();
     JsonObject& currlog = jsonBuffer.createObject();
-    currlog.set("firstkey",currLog.firstKey());
-    currlog.set("lastkey",currLog.lastKey());
-    currlog.set("size",currLog.fileSize());
-    currlog.set("interval",currLog.interval());
+    currlog.set(F("firstkey"),currLog.firstKey());
+    currlog.set(F("lastkey"),currLog.lastKey());
+    currlog.set(F("size"),currLog.fileSize());
+    currlog.set(F("interval"),currLog.interval());
     //currlog.set("wrap",currLog._wrap ? true : false);
-    datalogs.set("currlog",currlog);
+    datalogs.set(F("currlog"),currlog);
     JsonObject& histlog = jsonBuffer.createObject();
-    histlog.set("firstkey",histLog.firstKey());
-    histlog.set("lastkey",histLog.lastKey());
-    histlog.set("size",histLog.fileSize());
-    histlog.set("interval",histLog.interval());
+    histlog.set(F("firstkey"),histLog.firstKey());
+    histlog.set(F("lastkey"),histLog.lastKey());
+    histlog.set(F("size"),histLog.fileSize());
+    histlog.set(F("interval"),histLog.interval());
     //histlog.set("wrap",histLog._wrap ? true : false);
-    datalogs.set("histlog",histlog);
-    root.set("datalogs",datalogs);
+    datalogs.set(F("histlog"),histlog);
+    root.set(F("datalogs"),datalogs);
   }
 
   String response = "";
@@ -449,7 +448,7 @@ void handleCommand(){
     }
     
   }
-  server.send(400, "text/json", "Unrecognized request");
+  server.send(400, F("text/json"), F("Unrecognized request"));
 }
 
 void handleGetFeedList(){ 
@@ -461,7 +460,7 @@ void handleGetFeedList(){
       if(inputChannel[i]->_type == channelTypeVoltage){
         JsonObject& voltage = jsonBuffer.createObject();
         voltage["id"] = String("IV") + String(inputChannel[i]->_name);
-        voltage["tag"] = "Voltage";
+        voltage["tag"] = F("Voltage");
         voltage["name"] = inputChannel[i]->_name;
         array.add(voltage);
       } 
@@ -469,12 +468,12 @@ void handleGetFeedList(){
         if(inputChannel[i]->_type == channelTypePower){
         JsonObject& power = jsonBuffer.createObject();
         power["id"] = String("IP") + String(inputChannel[i]->_name);
-        power["tag"] = "Power";
+        power["tag"] = F("Power");
         power["name"] = inputChannel[i]->_name;
         array.add(power);
         JsonObject& energy = jsonBuffer.createObject();
         energy["id"] = String("IE") + String(inputChannel[i]->_name);
-        energy["tag"] = "Energy";
+        energy["tag"] = F("Energy");
         energy["name"] = inputChannel[i]->_name;
         array.add(energy);
       }
@@ -489,7 +488,7 @@ void handleGetFeedList(){
       if(units.equalsIgnoreCase("volts")){
         JsonObject& voltage = jsonBuffer.createObject();
         voltage["id"] = String("OV") + String(script->name());
-        voltage["tag"] = "Voltage";
+        voltage["tag"] = F("Voltage");
         voltage["name"] = script->name();
         array.add(voltage);
       } 
@@ -497,19 +496,19 @@ void handleGetFeedList(){
         
         JsonObject& power = jsonBuffer.createObject();
         power["id"] = String("OP") + String(script->name());
-        power["tag"] = "Power";
+        power["tag"] = F("Power");
         power["name"] = script->name();
         array.add(power);
         JsonObject& energy = jsonBuffer.createObject();
         energy["id"] = String("OE") + String(script->name());
-        energy["tag"] = "Energy";
+        energy["tag"] = F("Energy");
         energy["name"] = script->name();
         array.add(energy);
       }
       else {
         JsonObject& other = jsonBuffer.createObject();
         other["id"] = String("OO") + String(script->name());
-        other["tag"] = "Outputs";
+        other["tag"] = F("Outputs");
         other["name"] = script->name();
         array.add(other);
       }
@@ -524,6 +523,7 @@ void handleGetFeedList(){
 
 void handleGetFeedData(){
   serverAvailable = false;
+  HTTPrequestFree--;
   NewService(getFeedData);
   return;
 }

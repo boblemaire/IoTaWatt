@@ -101,6 +101,7 @@
 
       timeNext = logRecord->UNIXtime;
       state = logData;
+      _serviceBlock->priority = priorityHigh;
       break;
     }
  

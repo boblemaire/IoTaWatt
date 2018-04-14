@@ -21,6 +21,7 @@ struct influxTag {
 
 uint32_t influxService(struct serviceBlock* _serviceBlock);
 bool influxConfig(const char*);
+String influxVarStr(const char*, Script*);
 
 extern bool     influxStarted;                    // set true when Service started
 extern bool     influxStop;                       // set true to stop the Service
@@ -31,7 +32,6 @@ extern uint16_t influxPort;
 extern uint32_t influxBeginPosting;               // time to begin posting new dataset
 extern uint32_t influxLastPost;                   // Timestamp of last cuccessful post
 extern String   influxDataBase;
-extern char*    influxMeasurement;
 extern char*    influxUser;
 extern char*    influxPwd;
 extern influxTag* influxTagSet;  
