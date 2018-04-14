@@ -87,7 +87,6 @@ boolean getConfig(void){
          // ************************************** configure Emoncms **********************************
 
   trace(T_CONFIG,8);
-  EmonService((serviceBlock*) nullptr);
   JsonArray& EmonArray = Config["server"];
   if(EmonArray.success()){
     char* EmonStr = JsonDetail(ConfigFile, EmonArray);
@@ -103,7 +102,6 @@ boolean getConfig(void){
         // ************************************** configure influxDB **********************************
 
   trace(T_CONFIG,8);
-  influxService((serviceBlock*) nullptr);
   JsonArray& influxArray = Config["influxdb"];
   if(influxArray.success()){
     char* influxStr = JsonDetail(ConfigFile, influxArray);
