@@ -72,6 +72,7 @@
  *   03/20/18 02_03_02 New influDB support, allow multiple upload services
  *   03/29/18 02_03_03 Units computation in calculator, heap management improvements
  *   03/30/18 02_03_04 Punchlist, fix memory loak in getConfig, build server payload at bulk maturation
+ *   04/15/18 02_03_05 Rework influxDB support with variables and double buffering 
  * 
  *****************************************************************************************************/
 
