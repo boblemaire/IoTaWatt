@@ -99,6 +99,12 @@ void setup()
   msgLog("Reset reason: ",(const char*)ESP.getResetReason().c_str());
   logTrace();
   msgLog("ESP8266 ChipID:",ESP.getChipId());
+  msgLog("Sdk Version ", ESP.getSdkVersion());
+
+  // ****************************************** Flush the trace ************************************
+
+  traceEntry.seq = 0;
+  for(int i=0; i<32; i++) trace(0,0);
 
 //************************************* Process Config file *****************************************
   
