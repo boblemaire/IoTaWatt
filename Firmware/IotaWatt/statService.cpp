@@ -10,12 +10,13 @@
 uint32_t statService(struct serviceBlock* _serviceBlock) { 
   static boolean started = false;
   static uint32_t timeThen = millis();        
-  static float  damping = .25;
   static double accum1Then[MAXINPUTS];
   static double accum2Then[MAXINPUTS];
   uint32_t timeNow = millis();
 
+  trace(T_stats, 0);
   if(!started){
+    trace(T_stats, 1);
     msgLog(F("statService: started."));
     started = true;
     for(int i=0; i<maxInputs; i++){
@@ -30,25 +31,25 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
 
   for(int i=0; i<maxInputs; i++){
+    trace(T_stats, 2);
     inputChannel[i]->ageBuckets(timeNow);
     double newValue = (inputChannel[i]->dataBucket.accum1 - accum1Then[i]) / elapsedHrs;
-    if(abs(statRecord.accum1[i] - newValue) / abs(statRecord.accum1[i]) < 0.02){
-      statRecord.accum1[i] = damping * statRecord.accum1[i] + (1.0 - damping) * newValue;
+    float damping = .25;
+    if((newValue / statRecord.accum1[i]) < .98 || (newValue / statRecord.accum1[i]) > 1.02){
+      damping = 0.0;
     }
-    else statRecord.accum1[i] = newValue;
+    statRecord.accum1[i] = damping * statRecord.accum1[i] + (1.0 - damping) * newValue;
     newValue = (inputChannel[i]->dataBucket.accum2 - accum2Then[i]) / elapsedHrs;
-    if(abs(statRecord.accum2[i] - newValue) / abs(statRecord.accum2[i]) < 0.02){
-      statRecord.accum2[i] = damping * statRecord.accum2[i] + (1.0 - damping) * newValue;
-    }
-    else statRecord.accum2[i] = newValue;
+    statRecord.accum2[i] = damping * statRecord.accum2[i] + (1.0 - damping) * newValue;
+    trace(T_stats, 3);
     accum1Then[i] = inputChannel[i]->dataBucket.accum1;
     accum2Then[i] = inputChannel[i]->dataBucket.accum2;
   }
-  
-  cycleSampleRate = damping * cycleSampleRate + (1.0 - damping) * float(cycleSamples * 1000) / float((uint32_t)(timeNow - timeThen));
+  trace(T_stats, 4);
+  cycleSampleRate = .25 * cycleSampleRate + (1.0 - .25) * float(cycleSamples * 1000) / float((uint32_t)(timeNow - timeThen));
   cycleSamples = 0;
   timeThen = timeNow;
-  
+  trace(T_stats, 5);
   return ((uint32_t)UNIXtime() + statServiceInterval);
 }
 

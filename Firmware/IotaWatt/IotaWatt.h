@@ -141,7 +141,8 @@ extern traceUnion traceEntry;
 #define T_history 14
 #define T_base64 15        // base 64 encode
 #define T_EmonConfig 16    // Emon configuration
-#define T_influxConfig 17  // influx configuration                  
+#define T_influxConfig 17  // influx configuration 
+#define T_stats 18         // Stat service                      
 
       // ADC descriptors
 
@@ -242,7 +243,7 @@ extern int16_t Isample [MAX_SAMPLES];
       // ************************ Declare global functions
 void      setup();
 void      loop();
-void      trace(const uint8_t module, const uint8_t id);
+void      trace(const uint8_t module, const uint8_t id); 
 void      logTrace(void);
 
 void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*));

@@ -324,11 +324,16 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
+      if(ESP.getFreeHeap() < 10000){
+        return UNIXtime() + 1;
+      }
       if( ! HTTPrequestFree){
         return 1;
       }
       HTTPrequestFree--;
-      request = new asyncHTTPrequest;
+      if( ! request){
+        request = new asyncHTTPrequest;
+      }
       String URL = influxURL + ":" + String(influxPort) + "/write?precision=s&db=" + influxDataBase;
       if(influxRetention){
         URL.concat("&rp=");
@@ -337,6 +342,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       request->setTimeout(3);
       request->setDebug(false);
       if(request->debug()){
+        Serial.println(ESP.getFreeHeap()); 
         DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
         String msg = timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second());
         Serial.println(msg);
@@ -346,6 +352,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       request->open("POST", URL.c_str());
       trace(T_influx,8);
       request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
+      request->setReqHeader("Connection","close");
       trace(T_influx,8);
       if(influxUser && influxPwd){
         xbuf xb;

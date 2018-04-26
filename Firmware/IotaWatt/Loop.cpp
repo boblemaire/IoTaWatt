@@ -55,7 +55,7 @@ void loop()
     } else {
       delete thisBlock;    
     }
-  }
+  } 
 }
 
 /*****************************************************************************************************
@@ -135,8 +135,7 @@ void AddService(struct serviceBlock* newBlock){
  *  RTC_USER_MEM area.  After a restart, the 32 most recent entries are logged, oldest to most rent, 
  *  using logTrace.
  *************************************************************************************************/
-
-inline void trace(const uint8_t module, const uint8_t id){
+void trace(const uint8_t module, const uint8_t id){
   traceEntry.seq++;
   traceEntry.mod = module;
   traceEntry.id = id;
@@ -144,12 +143,14 @@ inline void trace(const uint8_t module, const uint8_t id){
 }
 
 void logTrace(void){
-  uint16_t _counter = READ_PERI_REG(RTC_USER_MEM + 96) >> 16;
-  int i = 1;
-  while(((uint16_t)++_counter) == (READ_PERI_REG(RTC_USER_MEM + 96 + (i%32)) >> 16)) i++;
+  traceEntry.traceWord = READ_PERI_REG(RTC_USER_MEM + 96);
+  uint16_t _counter = traceEntry.seq;
+  int i = 0;
+  do {
+    traceEntry.traceWord = READ_PERI_REG(RTC_USER_MEM + 96 + (++i%32));
+  } while(++_counter == traceEntry.seq);
   String line = "Trace: ";
   for(int j=0; j<32; j++){
-    traceUnion traceEntry;
     traceEntry.traceWord = READ_PERI_REG(RTC_USER_MEM + 96 + ((j+i)%32));
     line += ' ' + String(traceEntry.mod) + ':' + String(traceEntry.id) + ',';
   }
