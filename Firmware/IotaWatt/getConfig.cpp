@@ -27,7 +27,7 @@ boolean getConfig(void){
   trace(T_CONFIG,0);
   ConfigFile = SD.open(ConfigFileURL, FILE_READ);
   if(!ConfigFile) {
-    msgLog(F("Config file open failed."));
+    log("Config file open failed.");
     return false;
   }
   hashFile(configSHA256, ConfigFile);
@@ -35,14 +35,15 @@ boolean getConfig(void){
   JsonObject& Config = Json.parseObject(configSummary);
   trace(T_CONFIG,4);
   if (!Config.success()) {
-    msgLog(F("Config file parse failed."));
+    log("Config file parse failed.");
     return false;
   }
   
   //************************************** Process misc first level stuff **************************
   
   if(Config.containsKey("update")){
-    updateClass = Config["update"].as<String>();
+    delete[] updateClass;
+    updateClass = charstar(Config["update"].as<char*>());
   }
 
   if(Config.containsKey("timezone")){
@@ -50,7 +51,7 @@ boolean getConfig(void){
   }
 
   if(Config.containsKey("logdays")){ 
-    msgLog("Current log overide days: ", currLog.setDays(Config["logdays"].as<int>()));
+    log("Current log overide days: %d", currLog.setDays(Config["logdays"].as<int>()));
   }      
 
         //************************************ Configure device ***************************
@@ -64,7 +65,6 @@ boolean getConfig(void){
   }   
 
         //************************************ Configure input channels ***************************
-
   trace(T_CONFIG,6);
   JsonArray& inputsArray = Config["inputs"]     ;
   if(inputsArray.success()){
@@ -74,7 +74,6 @@ boolean getConfig(void){
   }   
      
         // ************************************ configure output channels *************************
-
   trace(T_CONFIG,7);
   delete outputs;
   JsonArray& outputsArray = Config["outputs"]     ;
@@ -91,7 +90,7 @@ boolean getConfig(void){
   if(EmonArray.success()){
     char* EmonStr = JsonDetail(ConfigFile, EmonArray);
     if( ! EmonConfig(EmonStr)){
-      msgLog(F("EmonService: Invalid configuration."));
+      log("EmonService: Invalid configuration.");
     }
     delete[] EmonStr;
   }   
@@ -100,13 +99,12 @@ boolean getConfig(void){
   }
   
         // ************************************** configure influxDB **********************************
-
   trace(T_CONFIG,8);
   JsonArray& influxArray = Config["influxdb"];
   if(influxArray.success()){
     char* influxStr = JsonDetail(ConfigFile, influxArray);
     if( ! influxConfig(influxStr)){
-      msgLog(F("influxService: Invalid configuration."));
+      log("influxService: Invalid configuration.");
     }
     delete[] influxStr;
   }   
@@ -125,18 +123,21 @@ bool configDevice(const char* JsonStr){
   DynamicJsonBuffer Json;
   JsonObject& device = Json.parseObject(JsonStr);
   if( ! device.success()){
-    msgLog(F("device: Json parse failed"));
+    log("device: Json parse failed");
   }
   if(device.containsKey("name")){
-    deviceName = device["name"].as<String>();
+    deviceName = charstar(device["name"].as<char*>());
     host = deviceName;
+  }
+  else {
+    deviceName = charstar(F("IotaWatt"));
   }
 
   int channels = 21;
   if(device.containsKey("version")){
     deviceVersion = device["version"].as<unsigned int>();
     if(deviceVersion < 3){
-      msgLog(F("Device version no longer supported."));
+      log("Device version no longer supported.");
       dropDead();
     }
   } 
@@ -211,7 +212,7 @@ bool configInputs(const char* JsonStr){
   DynamicJsonBuffer Json;
   JsonVariant JsonInputs = Json.parse(JsonStr);
   if( ! JsonInputs.success()){
-    msgLog(F("inputs: Json parse failed"));
+    log("inputs: Json parse failed");
   }
   phaseTableEntry* phaseTable = nullptr;
   buildPhaseTable(&phaseTable);
@@ -219,7 +220,7 @@ bool configInputs(const char* JsonStr){
     if(JsonInputs[i].is<JsonObject>()){
       JsonObject& input = JsonInputs[i].as<JsonObject&>();
       if(i != input["channel"].as<int>()){
-        msgLog("Config input channel mismatch: ", i);
+        log("Config input channel mismatch: %d", i);
         continue;
       }
       delete inputChannel[i]->_name;
@@ -251,7 +252,9 @@ bool configInputs(const char* JsonStr){
           inputChannel[i]->_signed = true;
         }
       }  
-      else msgLog("unsupported input type: ", type);
+      else{
+        log("unsupported input type: %s", type.c_str());
+      } 
     }
     else {
       inputChannel[i]->reset();
@@ -266,7 +269,7 @@ bool configOutputs(const char* JsonStr){
   DynamicJsonBuffer Json;
   JsonArray& outputsArray = Json.parseArray(JsonStr);
   if( ! outputsArray.success()){
-    msgLog(F("outputs: Json parse failed"));
+    log("outputs: Json parse failed");
     return false;
   }
   outputs = new ScriptSet(outputsArray);

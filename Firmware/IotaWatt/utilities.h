@@ -23,3 +23,4 @@ String  JsonSummary(File file, int depth);          // Read a json file and retu
 char*  JsonDetail(File file, JsonArray& locator);   // Read and compress a detail segment of a json file
 
 String dateString(uint32_t UNIXtime);               // Convert unixtime to a data/time string
+String timeString(int value);                       // Convert time to String(HH:MM:SS)

@@ -80,7 +80,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       EmonStop = false;
       EmonStarted = false;
       EmonRevision = -1;
-      msgLog("EmonService: stopped.");
+      log("EmonService: stopped.");
       return 0;
     }
     EmonRestart = false;
@@ -98,9 +98,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(!currLog.isOpen()){
         return UNIXtime() + 5;
       }
-      msgLog("EmonService: started.", 
-       "url: " + EmonURL + ":" + String(EmonPort) + EmonURI + ", node: " + String(node) + ", post interval: " + 
-       String(EmonCMSInterval) + (EmonSend == EmonSendGET ? ", unsecure GET" : ", encrypted POST"));
+      log("EmonService: started. url:%s:%d%s,node:%s,interval:%d,%s", EmonURL.c_str(), EmonPort, EmonURI.c_str(), 
+           node.c_str(), EmonCMSInterval, (EmonSend == EmonSendGET ? " unsecure GET" : " encrypted POST"));
       EmonStarted = true;
       state = getLastPostTime; 
     }
@@ -138,7 +137,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       HTTPrequestFree++;
       trace(T_Emon,4);
       if(request->responseHTTPcode() != 200){
-        msgLog("EmonService: get input list failed, code: ", request->responseHTTPcode());
+        log("EmonService: get input list failed, code: %d", request->responseHTTPcode());
         state = getLastPostTime;
         return UNIXtime() + 5;
       }
@@ -148,7 +147,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       delete request;
       request = nullptr;
       if (response.startsWith("\"Node does not exist\"")){
-        msgLog(F("EmonService: Node doesn't yet exist, starting posting now."));
+        log("EmonService: Node doesn't yet exist, starting posting now.");
         UnixLastPost = UNIXtime();
         UnixLastPost -= UnixLastPost % EmonCMSInterval;
       }
@@ -167,7 +166,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           UnixLastPost = currLog.firstKey();
         }
       }
-      msgLog("EmonService: Start posting at ", UnixLastPost);
+      log("EmonService: Start posting at %s", dateString(UnixLastPost + EmonCMSInterval).c_str());
       state = primeLastRecord;
       return 1;
     }
@@ -319,6 +318,12 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if( ! HTTPrequestFree){
         return UNIXtime() + 1;
       }
+
+              // Temporary pause code until lwip 2 is fixed for "time Wait" problem.
+
+      if(ESP.getFreeHeap() < 15000){
+        return UNIXtime() + 1;
+      }
       HTTPrequestFree--;
       if( ! request){
         request = new asyncHTTPrequest;
@@ -351,7 +356,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       trace(T_Emon,8);
       if(request->responseHTTPcode() != 200){
         if(++retryCount  % 10 == 0){
-            msgLog("EmonService: retry count ", retryCount);
+            log("EmonService: retry count %d", retryCount);
         }
         UnixLastPost = reqUnixtime - EmonCMSInterval;
         state = primeLastRecord;
@@ -360,7 +365,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       trace(T_Emon,8);
       String response = request->responseText();
       if(! response.startsWith("ok")){
-        msgLog("EmonService: response not ok. Retrying.");
+        log("EmonService: response not ok. Retrying.");
         Serial.println(response.substring(0,60));
         UnixLastPost = reqUnixtime - EmonCMSInterval;
         state = primeLastRecord;
@@ -382,6 +387,12 @@ case sendSecure:{
         return UNIXtime() + 1;
       }
       if( ! HTTPrequestFree){
+        return UNIXtime() + 1;
+      }
+
+              // Temporary pause code until lwip 2 is fixed for "time Wait" problem.
+
+      if(ESP.getFreeHeap() < 15000){
         return UNIXtime() + 1;
       }
       HTTPrequestFree--;
@@ -476,7 +487,7 @@ case sendSecure:{
       trace(T_Emon,11);
       if(request->responseHTTPcode() != 200){
         if(++retryCount  % 10 == 0){
-            msgLog("EmonService: retry count ", retryCount);
+            log("EmonService: retry count %d", retryCount);
         }
         UnixLastPost = reqUnixtime - EmonCMSInterval;
         state = primeLastRecord;
@@ -485,7 +496,7 @@ case sendSecure:{
       trace(T_Emon,11);
       String response = request->responseText();
       if(! response.startsWith(base64Sha)){
-        msgLog("EmonService: Invalid response, Retrying.");
+        log("EmonService: Invalid response, Retrying.");
         Serial.println(base64Sha);
         Serial.println(response);
         UnixLastPost = reqUnixtime - EmonCMSInterval;
@@ -512,7 +523,7 @@ bool EmonConfig(const char* configObj){
   DynamicJsonBuffer Json;
   JsonObject& config = Json.parseObject(configObj);
   if( ! config.success()){
-    msgLog(F("EmonService: Json parse failed."));
+    log("EmonService: Json parse failed.");
     return false;
   }
   trace(T_EmonConfig,0);

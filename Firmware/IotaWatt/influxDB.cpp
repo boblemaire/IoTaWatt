@@ -74,8 +74,8 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(!currLog.isOpen()){                  
         return UNIXtime() + 5;
       }
-      msgLog("influxDB: started.", "url: " + influxURL + ",port=" + String(influxPort) + ",db=" + influxDataBase + 
-      ",post interval: " + String(influxDBInterval));
+      log("influxDB: started.", "url: %s:%d,db: %s,interval: %d", influxURL.c_str(), influxPort,
+              influxDataBase.c_str(), influxDBInterval); 
       state = queryLastPostTime;
       _serviceBlock->priority = priorityLow;
       return 1;
@@ -146,7 +146,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       delete request;
       request = nullptr;
       if(HTTPcode != 200){
-        msgLog("influxDB: last entry query failed: ", HTTPcode);
+        log("influxDB: last entry query failed: %d", HTTPcode);
         influxStop = true;
         state = post;
         return 1;
@@ -171,7 +171,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         influxLastPost = UNIXtime();
         influxLastPost -= influxLastPost % influxDBInterval;
       }
-      msgLog("influxDB: Start posting from ", dateString(influxLastPost + influxDBInterval));
+      log("influxDB: Start posting from %s", dateString(influxLastPost + influxDBInterval).c_str());
       state = getLastRecord;
       return 1;
     }
@@ -205,7 +205,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         trace(T_influx,9);
         if(request->responseHTTPcode() != 204){
           if(++retryCount == 10){
-            msgLog("influxDB: Post Failed: ", request->responseHTTPcode());
+            log("influxDB: Post Failed: %d", request->responseHTTPcode());
           }
           delete request;
           request = nullptr; 
@@ -231,7 +231,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(influxStop) {
         if(request) return 1;
         trace(T_influx,71);
-        msgLog("influxDB: Stopped. Last post ", dateString(influxLastPost));
+        log("influxDB: Stopped. Last post %s", dateString(influxLastPost).c_str());
         influxStarted = false;
         trace(T_influx,72);    
         state = initialize;
@@ -312,7 +312,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
             // If there's no request pending and we have bulksend entries,
             // set to post.
 
-      if( ! request && reqEntries >= influxBulkSend && HTTPrequestFree){
+      if(( ! request && HTTPrequestFree) && (reqEntries >= influxBulkSend || reqData.available() >= reqDataLimit)){
         state = sendPost;
       }
       return 1;
@@ -324,7 +324,10 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
-      if(ESP.getFreeHeap() < 10000){
+
+              // Temporary pause code until lwip 2 is fixed for "time Wait" problem.
+
+      if(ESP.getFreeHeap() < 15000){
         return UNIXtime() + 1;
       }
       if( ! HTTPrequestFree){
@@ -381,7 +384,7 @@ bool influxConfig(const char* configObj){
   JsonObject& config = Json.parseObject(configObj);
   trace(T_influxConfig,0);
   if( ! config.success()){
-    msgLog(F("influxDB: Json parse failed."));
+    log("influxDB: Json parse failed.");
     return false;
   }
   int revision = config["revision"];

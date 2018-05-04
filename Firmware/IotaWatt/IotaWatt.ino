@@ -85,15 +85,14 @@ IotaLog currLog(5,400);                     // current data log  (1.1 years)
 IotaLog histLog(60,4000);                   // history data log  (11 years)  
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
+messageLog msglog;
 
       // Define filename Strings of system files.          
 
-String deviceName = "IotaWatt";             
-String IotaLogFile = "/IotaWatt/IotaLog";
-String historyLogFile = "/IotaWatt/histLog";
-String IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
-String EmonPostLogFile = "/iotawatt/Emonlog.log";
-String influxPostLogFile = "/iotawatt/influxdb.log";
+char* deviceName;             
+const char* IotaLogFile = "/IotaWatt/IotaLog";
+const char* historyLogFile = "/IotaWatt/histLog";
+const char* IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
 const char* ntpServerName = "pool.ntp.org";
 
                        
@@ -177,13 +176,15 @@ uint8_t  ledCount;                           // Current index into cycle
 
       // ****************************** Firmware update ****************************
       
-String   updateURL = "iotawatt.com";
-String   updatePath = "/firmware/iotaupdt.php";
-String   updateClass = "NONE";              // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
-uint8_t  publicKey[32] = {0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
-                         0xcc, 0x2c, 0xea, 0x2e, 0x88, 0x9c, 0xe0, 0xea,
-                         0x3f, 0x20, 0x5a, 0x78, 0x22, 0x0c, 0xbc, 0x78,
-                         0x2b, 0xe6, 0x28, 0x5a, 0x21, 0x9c, 0xb7, 0xf3}; 
+const char* updateURL = "iotawatt.com";
+const char* updatePath = "/firmware/iotaupdt.php";
+char*    updateClass = nullptr;              // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
+const uint8_t publicKey[32] PROGMEM = {
+                        0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
+                        0xcc, 0x2c, 0xea, 0x2e, 0x88, 0x9c, 0xe0, 0xea,
+                        0x3f, 0x20, 0x5a, 0x78, 0x22, 0x0c, 0xbc, 0x78,
+                        0x2b, 0xe6, 0x28, 0x5a, 0x21, 0x9c, 0xb7, 0xf3
+                        }; 
 
       // ************************ ADC sample pairs ************************************
  

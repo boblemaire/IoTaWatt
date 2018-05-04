@@ -7,14 +7,14 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
   if(WiFi.status() == WL_CONNECTED){
     if(!wifiConnected){
       wifiConnected = true;
-      String msg = "WiFi connected. SSID: " + WiFi.SSID() + ", IP: " + WiFi.localIP().toString();
-      msgLog(msg);
+      String ip = WiFi.localIP().toString();
+      log("WiFi connected. SSID: %s, IP: %s", WiFi.SSID().c_str(), ip.c_str());
     }
   }
   else {
     if(wifiConnected){
       wifiConnected = false;
-      msgLog(F("WiFi disconnected."));
+      log("WiFi disconnected.");
     }
   }
   return UNIXtime() + 1;  

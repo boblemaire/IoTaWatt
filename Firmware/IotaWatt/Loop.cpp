@@ -149,11 +149,11 @@ void logTrace(void){
   do {
     traceEntry.traceWord = READ_PERI_REG(RTC_USER_MEM + 96 + (++i%32));
   } while(++_counter == traceEntry.seq);
-  String line = "Trace: ";
+  String line = "";
   for(int j=0; j<32; j++){
     traceEntry.traceWord = READ_PERI_REG(RTC_USER_MEM + 96 + ((j+i)%32));
     line += ' ' + String(traceEntry.mod) + ':' + String(traceEntry.id) + ',';
   }
   line.remove(line.length()-1);  
-  msgLog(line);
+  log("Trace: %s", line.c_str());
 }
