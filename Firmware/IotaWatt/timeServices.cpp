@@ -126,14 +126,14 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   switch(state){
 
     case start: { 
-      msgLog(F("timeSync: service started."));
+      log("timeSync: service started.");
       lastNTPupdate = UNIXtime();  
       state = getNTPtime;    
     }
 
     case getNTPtime: {
       if(UNIXtime() - lastNTPupdate > 86400UL){ 
-        msgLog(F("timeSync: No time update in last 24 hours."));
+        log("timeSync: No time update in last 24 hours.");
         lastNTPupdate = UNIXtime();
       }
       if(WiFi.isConnected() && HTTPrequestFree){
@@ -150,6 +150,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
           state = waitNTPtime;
           return 1;
         }
+        else HTTPrequestFree++;
       }
       return UNIXtime() + RTCrunning ? 60 : 0;
       break;
@@ -182,15 +183,25 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
       if( ! RTCrunning) {
         programStartTime = UNIXtime();
         rtc.adjust(UNIXtime());
-        msgLog(F("timeSync: RTC initalized to NTP time"));
+        log("timeSync: RTC initalized to NTP time");
       }
       else {
         int32_t timeDiff = UNIXtime() - rtc.now().unixtime();
         if(timeDiff < -1 || timeDiff > 1){
-          msgLog("timeSync: adjusting RTC by ", String(timeDiff));
+          log("timeSync: adjusting RTC by %d", timeDiff);
           rtc.adjust(UNIXtime());
         }
       }
+      
+          // The ms clock will rollover after ~49 days.  To be on the safe side,
+          // restart the ESP after about 42 days to reset the ms clock.
+
+      if(millis() > 3628800000UL) {
+        log("timeSync: Six week routine restart.");
+        ESP.restart();
+      }
+
+
       state = getNTPtime;
       return UNIXtime() + timeSynchInterval;  
     }

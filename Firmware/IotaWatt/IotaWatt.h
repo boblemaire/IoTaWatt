@@ -56,13 +56,14 @@
 #include <SHA256.h>
 #include <Ed25519.h>
 
+#include "messageLog.h"
 #include "utilities.h"
-#include "msgLog.h"
 #include "webServer.h"
 #include "updater.h"
 #include "samplePower.h"
 #include "influxDB.h"
 #include "Emonservice.h"
+
 
       // Declare instances of major classes
 
@@ -74,19 +75,18 @@ extern IotaLog currLog;
 extern IotaLog histLog;
 extern RTC_PCF8523 rtc;
 extern Ticker ticker;
+extern messageLog msglog;
 
 #define MS_PER_HOUR   3600000UL
 #define SEVENTY_YEAR_SECONDS  2208988800UL
 
       // Declare filename Strings of system files.
 
-extern String deviceName;
-extern String IotaLogFile;
-extern String historyLogFile;
-extern String IotaMsgLog;
-extern String EmonPostLogFile;
-extern String influxPostLogFile;
-extern const char* ntpServerName;
+extern char* deviceName;
+extern const char* IotaLogFile;
+extern const char* historyLogFile;
+extern const char* IotaMsgLog;
+extern const char*  ntpServerName;
 extern uint16_t deviceVersion;
 
         // Define the hardware pins
@@ -228,10 +228,10 @@ extern char     ledColor[12];                   // Pattern to display led, each 
 extern uint8_t  ledCount;                       // Current index into cycle
 
       // ****************************** Firmware update ****************************
-extern String   updateURL;
-extern String   updatePath;
-extern String   updateClass;            // NONE, MAJOR, MINOR, BETA, ALPHA, TEST
-extern uint8_t  publicKey[32];
+extern const char*    updateURL;
+extern const char*    updatePath;
+extern char*          updateClass;            // NONE, MAJOR, MINOR, BETA, ALPHA, TEST
+extern const uint8_t  publicKey[32];
 
       // ************************ ADC sample pairs ************************************
 

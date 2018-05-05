@@ -17,7 +17,7 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   trace(T_stats, 0);
   if(!started){
     trace(T_stats, 1);
-    msgLog(F("statService: started."));
+    log("statService: started.");
     started = true;
     for(int i=0; i<maxInputs; i++){
       accum1Then[i] = inputChannel[i]->dataBucket.accum1;
@@ -34,7 +34,7 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
     trace(T_stats, 2);
     inputChannel[i]->ageBuckets(timeNow);
     double newValue = (inputChannel[i]->dataBucket.accum1 - accum1Then[i]) / elapsedHrs;
-    float damping = .25;
+    float damping = .75;
     if((newValue / statRecord.accum1[i]) < .98 || (newValue / statRecord.accum1[i]) > 1.02){
       damping = 0.0;
     }

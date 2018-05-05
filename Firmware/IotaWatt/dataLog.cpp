@@ -35,12 +35,12 @@
 
     case initialize: {
 
-      msgLog(F("dataLog: service started."));
+      log("dataLog: service started.");
 
       // Initialize the IotaLog class
       
-      if(int rtc = currLog.begin((char*)IotaLogFile.c_str())){
-        msgLog("dataLog: Log file open failed. ", String(rtc));
+      if(int rtc = currLog.begin(IotaLogFile)){
+        log("dataLog: Log file open failed. %d", rtc);
         dropDead();
       }
 
@@ -54,16 +54,16 @@
       // If it's not a new log, get the last entry.
       
       if(currLog.fileSize() == 0){
-        if(histLog.begin((char*)historyLogFile.c_str()) == 0 && histLog.fileSize() > 0){
+        if(histLog.begin(historyLogFile) == 0 && histLog.fileSize() > 0){
           logRecord->UNIXtime = histLog.lastKey();
           histLog.readKey(logRecord);
-          msgLog("dataLog: Last history entry:", logRecord->UNIXtime);
+          log("dataLog: Last history entry: %d", logRecord->UNIXtime);
         }
       }
       else {
         logRecord->UNIXtime = currLog.lastKey();
         currLog.readKey(logRecord);
-        msgLog("dataLog: Last log entry:", currLog.lastKey());
+        log("dataLog: Last log entry: %d", currLog.lastKey());
       }
 
       state = checkClock;

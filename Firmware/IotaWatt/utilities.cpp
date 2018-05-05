@@ -18,6 +18,13 @@ int strcmp_ci(const char* str1, const char* str2){
 /**************************************************************************************************
  * allocate a char* array, copy the argument data to it, and return the pointer. 
  * ************************************************************************************************/
+char* charstar(const __FlashStringHelper * str){
+  if( ! str) return nullptr;
+  char* ptr = new char[strlen_P((PGM_P)str)];
+  strcpy_P(ptr, (PGM_P)str);
+  return ptr;
+}
+
 char* charstar(const char* str){
   if( ! str) return nullptr;
   char* ptr = new char[strlen(str)+1];
@@ -76,7 +83,9 @@ String bin2hex(const uint8_t* in, size_t len){
  * Convert the contents of an xbuf to base64
  * ************************************************************************************************/
 void base64encode(xbuf* buf){
-  const char* base64codes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  PGM_P codes = PSTR("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");  
+  char* base64codes = new char[65];
+  strcpy_P(base64codes, codes);
   size_t supply = buf->available();
   uint8_t in[3];
   uint8_t out[4];
@@ -106,6 +115,7 @@ void base64encode(xbuf* buf){
     }
     buf->write(out, 4);
   }
+  delete[] base64codes;
 }
 
 String base64encode(const uint8_t* in, size_t len){
@@ -224,4 +234,9 @@ String dateString(uint32_t UNIXtime){
   
     return String(now.month()) + '/' + String(now.day()) + '/' + String(now.year()%100) + ' ' + 
           timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second()) + ' ';
+}
+
+String timeString(int value){
+  if(value < 10) return String("0") + String(value);
+  return String(value);
 }

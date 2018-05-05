@@ -40,20 +40,20 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
          return UNIXtime() + histLog.interval(); 
       }
 
-      msgLog(F("historyLog: service started."));
+      log("historyLog: service started.");
 
         // Initialize the historyLog class
      
       trace(T_history,2);   
-      if(int rtc = histLog.begin((char*)historyLogFile.c_str())){
-        msgLog("historyLog: Log file open failed. ", String(rtc));
+      if(int rtc = histLog.begin(historyLogFile)){
+        log("historyLog: Log file open failed: %d", rtc);
         dropDead();
       }
       
         // If it's not a new log, get the last entry.
      
       if(histLog.firstKey() != 0){    
-        msgLog("historyLog: Last log entry:", histLog.lastKey());
+        log("historyLog: Last log entry %d", histLog.lastKey());
       }
 
         // New history log, start with first even increment in IotaLog     
@@ -64,7 +64,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         if(logRecord->UNIXtime % histLog.interval()){
             logRecord->UNIXtime += histLog.interval() - (logRecord->UNIXtime % histLog.interval());
         }
-        msgLog("historyLog: first entry:", logRecord->UNIXtime);
+        log("historyLog: first entry", logRecord->UNIXtime);
         currLog.readKey(logRecord);
         histLog.write(logRecord);
         delete logRecord;
@@ -92,7 +92,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         logRecord->UNIXtime += histLog.interval();
       }
       else if(currLog.readKey(logRecord)){
-        msgLog(F("historyLog: primary log file read failure. Service suspended."));
+        log("historyLog: primary log file read failure. Service suspended.");
         delete logRecord;
         return 0;
       }

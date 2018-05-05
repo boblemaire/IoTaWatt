@@ -21,13 +21,13 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   switch(state){
 
     case initialize: {
-      msgLog(F("Updater: started."));
+      log("Updater: started.");
       state = getVersion;
       return 1;
     }
 
     case getVersion: {
-      if(updateClass == "NONE"){
+      if( ! updateClass) {
         break;
       }
       if( ! WiFi.isConnected()){
@@ -39,15 +39,19 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       HTTPrequestFree--;
       request = new asyncHTTPrequest;
       request->setDebug(false);
-      if( ! request->open("GET", (updateURL + updatePath).c_str())){
+      String URL = String(updateURL) + updatePath;
+      if( ! request->open("GET", URL.c_str())){
+        HTTPrequestFree++;
         break;
       }
       request->setTimeout(10);
       request->setReqHeader("USER_AGENT","IotaWatt");
       request->setReqHeader("X_STA_MAC", WiFi.macAddress().c_str());
-      request->setReqHeader("X-UPDATE-CLASS", updateClass.c_str());
+      request->setReqHeader("X-UPDATE-CLASS", updateClass);
       request->setReqHeader("X_CURRENT_VERSION", IOTAWATT_VERSION);
       if( ! request->send()){
+        request->abort();
+        HTTPrequestFree++;
         break;
       }
       state = waitVersion;
@@ -61,7 +65,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       }
       HTTPrequestFree++;
       if(request->responseHTTPcode() != 200 || request->available() != 8){
-        msgLog(F("checkUpdate: Invalid response from server."));
+        log("checkUpdate: Invalid response from server.");
         delete request;
         state = getVersion;
         break;
@@ -72,24 +76,23 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         state = getVersion;
         return UNIXtime() + updaterServiceInterval;
       }
-      String msg = "Update from " + String(IOTAWATT_VERSION) + " to " + updateVersion;
-      msgLog("Updater: ", msg);
+      log("Updater: Update from %s to %s", IOTAWATT_VERSION, updateVersion.c_str());
       state = download;
       return 1;
     }
 
     case download: {
-      msgLog("Updater: download ", updateVersion);
+      log("Updater: download %s", updateVersion.c_str());
       deleteRecursive("download");
       if( ! SD.mkdir("download")){
-        msgLog(F("Cannot create download directory"));
+        log("Cannot create download directory");
         state = getVersion;
         break;
       }
       String filePath = "download/" + updateVersion + ".bin";
       releaseFile = SD.open(filePath.c_str(), FILE_WRITE);
       if(! releaseFile){
-        msgLog(F("Updater: Cannot create download file."));
+        log("Updater: Cannot create download file.");
         deleteRecursive("download");
         state = getVersion;
         break;
@@ -105,7 +108,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       }
       HTTPrequestFree = 0;
       request = new asyncHTTPrequest;
-      String URL = updateURL + "/firmware/bin/" + updateVersion + ".bin";
+      String URL = String(updateURL) + "/firmware/bin/" + updateVersion + ".bin";
       request->setDebug(false);
       request->open("GET", URL.c_str());
       request->setTimeout(5);
@@ -130,15 +133,13 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       size_t fileSize = releaseFile.size();
       releaseFile.close();
       if(request->responseHTTPcode() != 200){
-        msgLog("Updater: Download failed HTTPcode ", request->responseHTTPcode());
+        log("Updater: Download failed HTTPcode %s", request->responseHTTPcode());
         delete request;
         deleteRecursive("download");
         state = getVersion;
         break;
       }
-      String msg = String(request->elapsedTime()).c_str();
-      msg += "ms, size " + String(fileSize);
-      msgLog("Updater: Release downloaded ", msg);
+      log("Updater: Release downloaded %dms, size %d", request->elapsedTime(), fileSize);
       delete request;
       state = install;
       
@@ -148,7 +149,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     case install: {
       if(unpackUpdate(updateVersion)){
         if(installUpdate(updateVersion)){
-          msgLog (F("Firmware updated, restarting."));
+          log ("Firmware updated, restarting.");
           delay(500);
           ESP.restart();
         }
@@ -211,7 +212,7 @@ bool unpackUpdate(String version){
     binarySize -= sizeof(headers.updtHeader);
     if((memcmp(headers.updtHeader.IotaWatt, "IotaWatt", 8) != 0) ||
        (memcmp(headers.updtHeader.release, version.c_str(), 8) != 0)) {
-      msgLog("Update file header invalid.",headers.updtHeader.IotaWatt,headers.updtHeader.release);
+      log("Update file header invalid. %s %s",headers.updtHeader.IotaWatt,headers.updtHeader.release);
       releaseFile.close();
       return false;
     }
@@ -220,7 +221,7 @@ bool unpackUpdate(String version){
 
   deleteRecursive(String(version));
   if( ! SD.mkdir(version.c_str())){
-    msgLog(F("Cannot create update directory"));
+    log("Cannot create update directory");
     releaseFile.close();
     return false;
   }
@@ -231,7 +232,7 @@ bool unpackUpdate(String version){
     sha256.update(headers.header,sizeof(headers.fileHeader));
     binarySize -= sizeof(headers.fileHeader);
     if(memcmp(headers.fileHeader.file,"FILE",4) != 0) {
-      msgLog(F("Update file format error."));
+      log("Update file format error.");
       releaseFile.close();
       return false;
     }
@@ -245,7 +246,7 @@ bool unpackUpdate(String version){
     uint32_t fileSize = headers.fileHeader.len;
     File outFile = SD.open((char*)filePath.c_str(), FILE_WRITE);
     if( ! outFile){
-      msgLog("Update: unable to create file: ", filePath);
+      log("Update: unable to create file: %s", filePath.c_str());
       releaseFile.close();
       return false;
     }
@@ -280,18 +281,22 @@ bool unpackUpdate(String version){
   uint8_t sha[32];
   sha256.finalize(sha,32);
   if(releaseFile.available() != 64){
-    msgLog(F("Updater: Update rejected, no signature."));
+    log("Updater: Update rejected, no signature.");
     releaseFile.close();
     return false;
   }
   releaseFile.read(signature, 64);
   releaseFile.close();
   
-  if(! Ed25519::verify(signature, publicKey, sha, 32)){
-    msgLog(F("Updater: Signature does not verify."));
+  uint8_t* key = new uint8_t[32];
+  memcpy_P(key, publicKey, 32);
+  if(! Ed25519::verify(signature, key, sha, 32)){
+    log("Updater: Signature does not verify.");
+    delete[] key;
     return false;
   }
-  msgLog(F("Updater: Update downloaded and signature verified"));
+  delete[] key;
+  log("Updater: Update downloaded and signature verified");
   return binaryFound;
 }
 
@@ -326,11 +331,11 @@ bool installUpdate(String version){
   update.setMD5((char*)buff);
   delete[] buff;
   if( ! update.end()){
-    msgLog("Updater: update end failed. ", update.getError());
+    log("Updater: update end failed. %d", update.getError());
     return false; 
   }
   SD.remove((char*)inPath.c_str());
-  msgLog("Updater: firmware upgraded to version ", version);
+  log("Updater: firmware upgraded to version %s", version.c_str());
   return true;
 }
 
@@ -350,12 +355,12 @@ bool copyUpdate(String version){
     SD.remove((char*)version.c_str());
     return false;
   }
-  msgLog("Updater: Installing update files for version ", version);
+  log("Updater: Installing update files for version %s", version.c_str());
   int buffSize = 512;
   uint8_t* buff = new uint8_t [buffSize];
   File inFile;
   while(inFile = updtDir.openNextFile()){
-    msgLog("Updater: Installing ", inFile.name());
+    log("Updater: Installing %s", inFile.name());
     SD.remove(inFile.name());
     File outFile = SD.open(inFile.name(), FILE_WRITE);
     uint32_t fileSize = inFile.size();
@@ -369,7 +374,7 @@ bool copyUpdate(String version){
     outFile.close();
   }
   delete[] buff;
-  msgLog("Updater: Installation complete.");
+  log("Updater: Installation complete.");
   deleteRecursive(version);
   return true;
 }

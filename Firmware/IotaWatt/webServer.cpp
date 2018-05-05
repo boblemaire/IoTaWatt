@@ -389,7 +389,7 @@ void handleCommand(){
   if(server.hasArg("restart")) {
     trace(T_WEB,3); 
     server.send(200, "text/plain", "ok");
-    msgLog(F("Restart command received."));
+    log("Restart command received.");
     delay(500);
     ESP.restart();
   }
@@ -421,7 +421,7 @@ void handleCommand(){
   if(server.hasArg("disconnect")) {
     trace(T_WEB,6); 
     server.send(200, "text/plain", "ok");
-    msgLog(F("Disconnect command received."));
+    log("Disconnect command received.");
     WiFi.disconnect(false);
     return;
   }
@@ -429,20 +429,20 @@ void handleCommand(){
     trace(T_WEB,21); 
     server.send(200, "text/plain", "ok");
     if(server.arg("deletelog") == "current"){
-      msgLog(F("delete current log command received."));
+      log("delete current log command received.");
       currLog.end();
       delay(1000);
-      deleteRecursive(IotaLogFile + ".log");
-      deleteRecursive(IotaLogFile + ".ndx");
+      deleteRecursive(String(IotaLogFile) + ".log");
+      deleteRecursive(String(IotaLogFile) + ".ndx");
       ESP.restart();
     }
     if(server.arg("deletelog") == "history"){
       trace(T_WEB,21); 
       server.send(200, "text/plain", "ok");
-      msgLog(F("delete history log command received."));
+      log("delete history log command received.");
       histLog.end();
-      deleteRecursive(historyLogFile + ".log");
-      deleteRecursive(historyLogFile + ".ndx");
+      deleteRecursive(String(historyLogFile) + ".log");
+      deleteRecursive(String(historyLogFile) + ".ndx");
       delay(1000);
       ESP.restart();
     }
@@ -553,7 +553,7 @@ void handleGetConfig(){
   if(server.hasArg("update")){
     if(server.arg("update") == "restart"){
       server.send(200, "text/plain", "OK");
-      msgLog(F("Restart command received."));
+      log("Restart command received.");
       delay(500);
       ESP.restart();
     }
