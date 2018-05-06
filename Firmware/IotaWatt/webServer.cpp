@@ -50,18 +50,22 @@
   ----------------------------------------------------------------------------------------------------------------
 */
 
+const char P_txtPlain[] PROGMEM = "txt/plain";
+const char P_appJson[]  PROGMEM = "application/json";
+const char P_txtJson[]  PROGMEM = "txt/json";
+
 void returnOK() {
-  server.send(200, "text/plain", "");
+  server.send(200, P_txtPlain, "");
 }
 
 void returnFail(String msg) {
-  server.send(500, "text/plain", msg + "\r\n");
+  server.send(500, P_txtPlain, msg + "\r\n");
 }
 
 bool loadFromSdCard(String path){
   trace(T_WEB,13);
   if( ! path.startsWith("/")) path = '/' + path;
-  String dataType = "text/plain";
+  String dataType = P_txtPlain;
   if(path.endsWith("/")) path += "index.htm";
   if(path == "/edit" ||
      path == "/graph"){
@@ -117,9 +121,9 @@ void handleFileUpload(){
   if(upload.status == UPLOAD_FILE_START){
     if(upload.filename.equalsIgnoreCase("config.txt") ||
         upload.filename.equalsIgnoreCase("/config.txt")){ 
-      if(server.hasArg("configSHA256")){
-        if(server.arg("configSHA256") != base64encode(configSHA256, 32)){
-          server.send(409, "text/plain", "Config not current");
+      if(server.hasArg(F("configSHA256"))){
+        if(server.arg(F("configSHA256")) != base64encode(configSHA256, 32)){
+          server.send(409, P_txtPlain, "Config not current");
           return;
         }
       }
@@ -245,7 +249,7 @@ void printDirectory() {
   }  
   String response = "";
   array.printTo(response);
-  server.send(200, "application/json", response);
+  server.send(200, P_appJson, response);
   dir.close();
 }
 
@@ -257,7 +261,7 @@ void handleNotFound(){
   message += (server.method() == HTTP_GET)?"GET":"POST";
   message += ", URI: ";
   message += server.uri();
-  server.send(404, "text/plain", message);
+  server.send(404, P_txtPlain, message);
   // Serial.println(message);
 }
 
@@ -272,7 +276,7 @@ void handleStatus(){
   DynamicJsonBuffer jsonBuffer;
   JsonObject& root = jsonBuffer.createObject(); 
   
-  if(server.hasArg("stats")){
+  if(server.hasArg(F("stats"))){
     trace(T_WEB,14);
     JsonObject& stats = jsonBuffer.createObject();
     stats.set(F("cyclerate"), samplesPerCycle);
@@ -290,7 +294,7 @@ void handleStatus(){
     root.set(F("stats"),stats);
   }
   
-  if(server.hasArg("inputs")){
+  if(server.hasArg(F("inputs"))){
     trace(T_WEB,15);
     JsonArray& channelArray = jsonBuffer.createArray();
     for(int i=0; i<maxInputs; i++){
@@ -319,7 +323,7 @@ void handleStatus(){
     root["inputs"] = channelArray;
   }
 
-  if(server.hasArg("outputs")){
+  if(server.hasArg(F("outputs"))){
     trace(T_WEB,16);
     JsonArray& outputArray = jsonBuffer.createArray();
     Script* script = outputs->first();
@@ -335,7 +339,7 @@ void handleStatus(){
     root["outputs"] = outputArray;
   }
 
-  if(server.hasArg("influx")){
+  if(server.hasArg(F("influx"))){
     trace(T_WEB,17);
     JsonObject& influx = jsonBuffer.createObject();
     influx.set(F("running"),influxStarted);
@@ -343,7 +347,7 @@ void handleStatus(){
     root["influx"] = influx;
   }
 
-  if(server.hasArg("datalogs")){
+  if(server.hasArg(F("datalogs"))){
     trace(T_WEB,17);
     JsonObject& datalogs = jsonBuffer.createObject();
     JsonObject& currlog = jsonBuffer.createObject();
@@ -365,70 +369,70 @@ void handleStatus(){
 
   String response = "";
   root.printTo(response);
-  server.send(200, "text/json", response);  
+  server.send(200, P_txtJson, response);  
 }
 
 void handleVcal(){
   trace(T_WEB,1); 
-  if( ! (server.hasArg("channel") && server.hasArg("cal"))){
-    server.send(400, "text/json", "Missing parameters");
+  if( ! (server.hasArg(F("channel")) && server.hasArg("cal"))){
+    server.send(400, P_txtJson, F("Missing parameters"));
     return;
   }
   DynamicJsonBuffer jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
-  int channel = server.arg("channel").toInt();
+  int channel = server.arg(F("channel")).toInt();
   float Vrms = sampleVoltage(channel, server.arg("cal").toFloat());
   root.set("vrms",Vrms);
   String response = "";
   root.printTo(response);
-  server.send(200, "text/json", response);  
+  server.send(200, P_txtJson, response);  
 }
 
 void handleCommand(){
   trace(T_WEB,2); 
-  if(server.hasArg("restart")) {
+  if(server.hasArg(F("restart"))) {
     trace(T_WEB,3); 
     server.send(200, "text/plain", "ok");
     log("Restart command received.");
     delay(500);
     ESP.restart();
   }
-  if(server.hasArg("vtphase")){
+  if(server.hasArg(F("vtphase"))){
     trace(T_WEB,4); 
     uint16_t chan = server.arg("vtphase").toInt();
     int refChan = 0;
-    if(server.hasArg("refchan")){
-      refChan = server.arg("refchan").toInt();
+    if(server.hasArg(F("refchan"))){
+      refChan = server.arg(F("refchan")).toInt();
     }
     uint16_t shift = 60;
-    if(server.hasArg("shift")){
-      shift = server.arg("shift").toInt();
+    if(server.hasArg(F("shift"))){
+      shift = server.arg(F("shift")).toInt();
     }
-    server.send(200, "text/plain", samplePhase(refChan, chan, shift));
+    server.send(200, P_txtPlain, samplePhase(refChan, chan, shift));
     return; 
   }
-  if(server.hasArg("sample")){
+  if(server.hasArg(F("sample"))){
     trace(T_WEB,5); 
-    uint16_t chan = server.arg("sample").toInt();
+    uint16_t chan = server.arg(F("sample")).toInt();
     samplePower(chan,0);
     String response = String(samples) + "\n\r";
     for(int i=0; i<samples; i++){
       response += String(Vsample[i]) + "," + String(Isample[i]) + "\r\n";
     }
-    server.send(200, "text/plain", response);
+    server.send(200, P_txtPlain, response);
     return; 
   }
-  if(server.hasArg("disconnect")) {
+  if(server.hasArg(F("disconnect"))) {
     trace(T_WEB,6); 
-    server.send(200, "text/plain", "ok");
+    server.send(200, P_txtPlain, "ok");
     log("Disconnect command received.");
     WiFi.disconnect(false);
     return;
   }
-  if(server.hasArg("deletelog")) {
+  if(server.hasArg(F("deletelog"))) {
     trace(T_WEB,21); 
     server.send(200, "text/plain", "ok");
-    if(server.arg("deletelog") == "current"){
+    if(server.arg(F("deletelog")) == "current"){
       log("delete current log command received.");
       currLog.end();
       delay(1000);
@@ -436,9 +440,9 @@ void handleCommand(){
       deleteRecursive(String(IotaLogFile) + ".ndx");
       ESP.restart();
     }
-    if(server.arg("deletelog") == "history"){
+    if(server.arg(F("deletelog")) == "history"){
       trace(T_WEB,21); 
-      server.send(200, "text/plain", "ok");
+      server.send(200, P_txtPlain, "ok");
       log("delete history log command received.");
       histLog.end();
       deleteRecursive(String(historyLogFile) + ".log");
@@ -448,7 +452,7 @@ void handleCommand(){
     }
     
   }
-  server.send(400, F("text/json"), F("Unrecognized request"));
+  server.send(400, P_txtJson, F("Unrecognized request"));
 }
 
 void handleGetFeedList(){ 
@@ -518,7 +522,7 @@ void handleGetFeedList(){
   
   String response;
   array.printTo(response);
-  server.send(200,"application/json",response);
+  server.send(200, P_appJson,response);
 }
 
 void handleGetFeedData(){
@@ -543,25 +547,25 @@ void sendMsgFile(File &dataFile, int32_t relPos){
     }
     absPos = dataFile.position();
     server.setContentLength(dataFile.size() - absPos);
-    server.send(200, "text/plain", "");
+    server.send(200, P_txtPlain, "");
     WiFiClient _client = server.client();
     _client.write(dataFile);
 }
 
 void handleGetConfig(){
   trace(T_WEB,8); 
-  if(server.hasArg("update")){
-    if(server.arg("update") == "restart"){
-      server.send(200, "text/plain", "OK");
+  if(server.hasArg(F("update"))){
+    if(server.arg(F("update")) == "restart"){
+      server.send(200, F("text/plain"), "OK");
       log("Restart command received.");
       delay(500);
       ESP.restart();
     }
-    else if(server.arg("update") == "reload"){
+    else if(server.arg(F("update")) == "reload"){
       getConfig(); 
-      server.send(200, "text/plain", "OK");
+      server.send(200, P_txtPlain, "OK");
       return;  
     }
   }
-  server.send(400, "text/plain", "Bad Request.");
+  server.send(400, P_txtPlain, "Bad Request.");
 }
