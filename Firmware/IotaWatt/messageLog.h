@@ -15,6 +15,7 @@ class messageLog: public Print {
 
         File        msgFile;
         bool        newMsg;
+        bool        restart;
         uint8_t*    buf;
         uint8_t     bufLen;
         uint8_t     bufPos;

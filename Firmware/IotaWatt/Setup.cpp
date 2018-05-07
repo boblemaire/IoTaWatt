@@ -15,8 +15,8 @@ void setup()
    
   Serial.begin(115200);
   delay(250);
-  Serial.println(F("\r\n\n\n** Restart **\r\n\n"));
-  Serial.println(F("Serial Initialized"));
+  //Serial.println(F("\r\n\n\n** Restart **\r\n\n"));
+  //Serial.println(F("Serial Initialized"));
   
   //*************************************** Start SPI *************************************************
     
@@ -34,7 +34,7 @@ void setup()
   
   SPI.begin();
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
-  log("SPI started.");
+  Serial.println("\r\nSPI started.");
    
   //*************************************** Initialize the SD card ************************************
 
@@ -47,8 +47,8 @@ void setup()
     endLedCycle();
     digitalWrite(greenLed,HIGH); 
   }
-  log("SD initialized.");
   hasSD = true;
+  log("SD initialized.");
 
   //*************************************** Check RTC   *****************************
 

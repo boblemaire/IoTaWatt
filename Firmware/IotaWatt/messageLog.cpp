@@ -4,6 +4,7 @@
                 :bufPos(0)
                 ,bufLen(60)
                 ,newMsg(true)
+                ,restart(true)
                 {}
 
 void        messageLog::endMsg(){
@@ -24,6 +25,10 @@ size_t      messageLog::write(const uint8_t byte){
                     newMsg = false;
                     buf = new uint8_t[bufLen];
                     bufPos = 0;
+                    if(restart){
+                        restart = false;
+                        this->printf_P("\r\n** Restart **\r\n\n");
+                    }
                     if(RTCrunning){
                         DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
                         this->printf_P(PSTR("%d/%02d/%02d %02d:%02d:%02d "),

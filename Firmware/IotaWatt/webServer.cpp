@@ -50,9 +50,9 @@
   ----------------------------------------------------------------------------------------------------------------
 */
 
-const char P_txtPlain[] PROGMEM = "txt/plain";
+const char P_txtPlain[] PROGMEM = "text/plain";
 const char P_appJson[]  PROGMEM = "application/json";
-const char P_txtJson[]  PROGMEM = "txt/json";
+const char P_txtJson[]  PROGMEM = "text/json";
 
 void returnOK() {
   server.send(200, P_txtPlain, "");
