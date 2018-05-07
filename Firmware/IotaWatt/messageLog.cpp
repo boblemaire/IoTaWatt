@@ -48,11 +48,6 @@ size_t      messageLog::write(const uint8_t byte){
                     }
                     bufPos = 0;
                 }
-                /*
-                if(restart){
-                    restart = false;
-                    this->print(F("\r\n\n** restart **\r\n\n"));
-                }*/
                 buf[bufPos++] = byte;
                 return 1;
             }
