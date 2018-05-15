@@ -54,6 +54,45 @@ const char P_txtPlain[] PROGMEM = "text/plain";
 const char P_appJson[]  PROGMEM = "application/json";
 const char P_txtJson[]  PROGMEM = "text/json";
 
+    /* handleRequest - basic gatekeeper to administrate authorization */
+
+void handleRequest(){
+  String uri = server.uri();
+  if(uri.equals("/") || uri.equals("/index.htm") || uri.equals("/cnfstyle.css")){
+    if(! loadFromSdCard(uri)){
+      returnFail("");
+    }
+  }
+  /*
+  if( ! server.authenticate("admin","admin")){
+    server.requestAuthentication(BASIC_AUTH);
+    return;
+  }
+  */
+  if(serverOn(F("/status"),HTTP_GET, handleStatus)) return;
+  if(serverOn(F("/vcal"),HTTP_GET, handleVcal)) return;
+  if(serverOn(F("/command"), HTTP_GET, handleCommand)) return;
+  if(serverOn(F("/list"), HTTP_GET, printDirectory)) return;
+  if(serverOn(F("/config"), HTTP_GET, handleGetConfig)) return;
+  if(serverOn(F("/edit"), HTTP_DELETE, handleDelete)) return;
+  if(serverOn(F("/edit"), HTTP_PUT, handleCreate)) return;
+  if(serverOn(F("/feed/list.json"), HTTP_GET, handleGetFeedList)) return;
+  if(serverOn(F("/feed/data.json"), HTTP_GET, handleGetFeedData)) return;
+  if(serverOn(F("/graph/create"),HTTP_POST, handleGraphCreate)) return;
+  if(serverOn(F("/graph/update"),HTTP_POST, handleGraphCreate)) return;
+  if(serverOn(F("/graph/delete"),HTTP_POST, handleGraphDelete)) return;
+  if(serverOn(F("/graph/getall"), HTTP_GET, handleGraphGetall)) return;
+  handleNotFound();   
+}
+
+bool serverOn(const __FlashStringHelper* uri, HTTPMethod method, genericHandler fn){
+  if(strcmp_P(server.uri().c_str(),(PGM_P)uri) == 0 && server.method() == method){
+    fn();
+    return true;
+  }
+  return false;
+}
+
 void returnOK() {
   server.send(200, P_txtPlain, "");
 }
@@ -116,6 +155,12 @@ bool loadFromSdCard(String path){
 
 void handleFileUpload(){
   trace(T_WEB,11);
+  /*
+  if( ! server.authenticate("admin","admin")){
+    server.requestAuthentication(BASIC_AUTH);
+    return;
+  }
+  */
   if(server.uri() != "/edit") return;
   HTTPUpload& upload = server.upload();
   if(upload.status == UPLOAD_FILE_START){
