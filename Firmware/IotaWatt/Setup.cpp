@@ -153,24 +153,9 @@ void setup()
    
  //*************************************** Start the web server ****************************
 
-  server.on(F("/status"),HTTP_GET, handleStatus);
-  server.on(F("/vcal"),HTTP_GET, handleVcal);
-  server.on(F("/command"), HTTP_GET, handleCommand);
-  server.on(F("/list"), HTTP_GET, printDirectory);
-  server.on(F("/config"), HTTP_GET, handleGetConfig);
-  server.on(F("/edit"), HTTP_DELETE, handleDelete);
-  server.on(F("/edit"), HTTP_PUT, handleCreate);
-  server.on(F("/edit"), HTTP_POST, returnOK, handleFileUpload);
-  server.on(F("/feed/list.json"), handleGetFeedList);
-  server.on(F("/feed/data.json"), handleGetFeedData);
-  server.on(F("/graph/create"),HTTP_POST, handleGraphCreate);
-  server.on(F("/graph/update"),HTTP_POST, handleGraphCreate);
-  server.on(F("/graph/delete"),HTTP_POST, handleGraphDelete);
-  server.on(F("/graph/getall"), handleGraphGetall);
-  server.onNotFound(handleNotFound);
-
   SdFile::dateTimeCallback(dateTime);
-
+  server.on(F("/edit"), HTTP_POST, returnOK,  handleFileUpload);
+  server.onNotFound(handleRequest);
   server.begin();
   log("HTTP server started");
   WiFi.mode(WIFI_STA);
