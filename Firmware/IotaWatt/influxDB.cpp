@@ -49,7 +49,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static asyncHTTPrequest* request = nullptr;   // -> instance of asyncHTTPrequest
   static uint32_t postFirstTime = UNIXtime();   // First measurement in outstanding post request
   static uint32_t postLastTime = UNIXtime();    // Last measurement in outstanding post request
-  static size_t reqDataLimit = 2000;            // transaction yellow light size
+  static size_t reqDataLimit = 4000;            // transaction yellow light size
 
 
   trace(T_influx,0);                            // Announce entry
@@ -100,9 +100,10 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
           // Create a new request
 
-      if( ! request){
-        request = new asyncHTTPrequest;
+      if(request){
+        delete request;
       }
+      request = new asyncHTTPrequest;
       String URL = influxURL + ":" + String(influxPort) + "/query";
       request->setTimeout(5);
       request->setDebug(false);
@@ -213,8 +214,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           return 1;
         }
         trace(T_influx,9);
-        delete request;
-        request = nullptr;
         retryCount = 0;
         influxLastPost = lastRequestTime; 
         state = post;
@@ -229,7 +228,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           // If stop requested, do it now.
 
       if(influxStop) {
-        if(request) return 1;
+        if(request && request->readyState() < 4) return 1;
         trace(T_influx,71);
         log("influxDB: Stopped. Last post %s", dateString(influxLastPost).c_str());
         influxStarted = false;
@@ -241,11 +240,12 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         logRecord = nullptr;
         delete request;
         request = nullptr;
+        reqData.flush();
         influxRevision = -1;
         return 0;
       }
 
-      if(request && reqData.available() > reqDataLimit){
+      if(request && request->readyState() < 4 && reqData.available() > reqDataLimit){
         return 1; 
       }  
 
@@ -311,8 +311,8 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
             // If there's no request pending and we have bulksend entries,
             // set to post.
-
-      if(( ! request && HTTPrequestFree) && (reqEntries >= influxBulkSend || reqData.available() >= reqDataLimit)){
+      if((( ! request || request->readyState() == 4) && HTTPrequestFree) && 
+          (reqEntries >= influxBulkSend || reqData.available() >= reqDataLimit)){
         state = sendPost;
       }
       return 1;
@@ -325,7 +325,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 1;
       }
 
-              // Temporary pause code until lwip 2 is fixed for "time Wait" problem.
+              // Make sure there's enough memory
 
       if(ESP.getFreeHeap() < 15000){
         return UNIXtime() + 1;
@@ -355,7 +355,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       request->open("POST", URL.c_str());
       trace(T_influx,8);
       request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
-      request->setReqHeader("Connection","close");
       trace(T_influx,8);
       if(influxUser && influxPwd){
         xbuf xb;
