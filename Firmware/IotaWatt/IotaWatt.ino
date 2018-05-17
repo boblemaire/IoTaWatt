@@ -73,6 +73,7 @@
  *   03/29/18 02_03_03 Units computation in calculator, heap management improvements
  *   03/30/18 02_03_04 Punchlist, fix memory loak in getConfig, build server payload at bulk maturation
  *   04/15/18 02_03_05 Rework influxDB support with variables and double buffering 
+ *   05/16/18 02_03_06 Reimpliment messagelog, upgrade to 2.4.1 core and lwip 2
  * 
  *****************************************************************************************************/
 
