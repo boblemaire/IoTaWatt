@@ -1800,12 +1800,11 @@ function influxTagCheck(){
 }
 
 function influxToggle(){
-  if(config.influxdb.stop !== undefined){
-    config.influxdb.stop = ! config.influxdb.stop;
+  if(config.influxdb.stop === undefined){
+    config.influxdb.stop = true;
   }
   else {
-    config.influxdb.stop = true;
-    
+    config.influxdb.stop = undefined;
   }
   config.influxdb.revision++;
   uploadConfig();

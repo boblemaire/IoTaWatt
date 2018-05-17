@@ -54,21 +54,26 @@ const char P_txtPlain[] PROGMEM = "text/plain";
 const char P_appJson[]  PROGMEM = "application/json";
 const char P_txtJson[]  PROGMEM = "text/json";
 
+bool authenticate(const char* user){
+  return true;
+  if(server.authenticate(user,"admin")) return true;
+  Serial.println(server.header("Authorization"));
+  server.requestAuthentication(DIGEST_AUTH, "IoTaWatt-Login", "Invalid login");
+  return false;
+}
+
     /* handleRequest - basic gatekeeper to administrate authorization */
 
 void handleRequest(){
   String uri = server.uri();
-  if(uri.equals("/") || uri.equals("/index.htm") || uri.equals("/cnfstyle.css")){
+  if(uri.equals("/") || uri.equals("/index.htm") || uri.equals("/cnfstyle.css")|| uri.equals("/tables.txt")){
     if(! loadFromSdCard(uri)){
       returnFail("");
     }
   }
-  /*
-  if( ! server.authenticate("admin","admin")){
-    server.requestAuthentication(BASIC_AUTH);
-    return;
-  }
-  */
+  
+  if( ! authenticate("admin")) return;
+    
   if(serverOn(F("/status"),HTTP_GET, handleStatus)) return;
   if(serverOn(F("/vcal"),HTTP_GET, handleVcal)) return;
   if(serverOn(F("/command"), HTTP_GET, handleCommand)) return;
@@ -155,12 +160,8 @@ bool loadFromSdCard(String path){
 
 void handleFileUpload(){
   trace(T_WEB,11);
-  /*
-  if( ! server.authenticate("admin","admin")){
-    server.requestAuthentication(BASIC_AUTH);
-    return;
-  }
-  */
+  if( ! authenticate("admin")) return;
+    
   if(server.uri() != "/edit") return;
   HTTPUpload& upload = server.upload();
   if(upload.status == UPLOAD_FILE_START){

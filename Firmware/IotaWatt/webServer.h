@@ -4,6 +4,7 @@
  typedef std::function<void(void)> genericHandler;
 
 void handleRequest();
+bool authenticate(const char*);
 bool serverOn(const __FlashStringHelper* uri, HTTPMethod method, genericHandler fn);
 void returnOK();
 void returnFail(String msg);
