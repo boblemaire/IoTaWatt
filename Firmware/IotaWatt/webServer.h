@@ -1,11 +1,13 @@
 #ifndef webServer_h
 #define webServer_h
+#include "auth.h"
+#include "libb64/cdecode.h"
 
  typedef std::function<void(void)> genericHandler;
 
 void handleRequest();
-bool authenticate(const char*);
-bool serverOn(const __FlashStringHelper* uri, HTTPMethod method, genericHandler fn);
+bool authenticate(authLevel);
+bool serverOn(authLevel level, const __FlashStringHelper* uri, HTTPMethod method, genericHandler fn);
 void returnOK();
 void returnFail(String msg);
 bool loadFromSdCard(String path);
@@ -26,6 +28,7 @@ void handleGraphGetall();
 void handleGraphDelete();
 void sendMsgFile(File &dataFile, int32_t relPos);
 void handleGetConfig();
+void handlePasswords();
 void sendChunked(String response);
 
 #endif

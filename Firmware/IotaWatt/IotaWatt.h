@@ -19,7 +19,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.  
    
 ***********************************************************************************/
-#define IOTAWATT_VERSION "02_03_05"
+#define IOTAWATT_VERSION "02_03_06"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -63,6 +63,7 @@
 #include "samplePower.h"
 #include "influxDB.h"
 #include "Emonservice.h"
+#include "auth.h"
 
 
       // Declare instances of major classes
@@ -208,6 +209,15 @@ extern uint8_t  configSHA256[32];         // Hash of config file
 
 extern int16_t  HTTPrequestMax;           // Maximum concurrent HTTP requests
 extern int16_t  HTTPrequestFree;          // Request semaphore
+
+extern String   _snonce;                  // Store noance and opaque for future comparison
+extern String   _sopaque;
+extern String   _srealm;                  // Store the Auth realm between Calls
+
+extern uint8_t*   adminH1;                // H1 digest md5("admin":"admin":password) 
+extern uint8_t*   userH1;                 // H1 digest md5("user":"user":password) 
+extern authSession* authSessions;         // authSessions list head; 
+extern uint16_t   authTimeout;            // Timeout interval of authSession in seconds;   
 
       // ****************************** Timing and time data *************************
 #define  SEVENTY_YEAR_SECONDS 2208988800UL

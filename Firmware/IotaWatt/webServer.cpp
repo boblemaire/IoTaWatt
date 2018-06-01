@@ -54,11 +54,9 @@ const char P_txtPlain[] PROGMEM = "text/plain";
 const char P_appJson[]  PROGMEM = "application/json";
 const char P_txtJson[]  PROGMEM = "text/json";
 
-bool authenticate(const char* user){
-  return true;
-  if(server.authenticate(user,"admin")) return true;
-  Serial.println(server.header("Authorization"));
-  server.requestAuthentication(DIGEST_AUTH, "IoTaWatt-Login", "Invalid login");
+bool authenticate(authLevel level){
+  if(auth(level)) return true;
+  requestAuth();
   return false;
 }
 
@@ -66,32 +64,37 @@ bool authenticate(const char* user){
 
 void handleRequest(){
   String uri = server.uri();
-  if(uri.equals("/") || uri.equals("/index.htm") || uri.equals("/cnfstyle.css")|| uri.equals("/tables.txt")){
-    if(! loadFromSdCard(uri)){
-      returnFail("");
-    }
+      
+  if(serverOn(authAdmin, F("/status"),HTTP_GET, handleStatus)) return;
+  if(serverOn(authAdmin, F("/vcal"),HTTP_GET, handleVcal)) return;
+  if(serverOn(authAdmin, F("/command"), HTTP_GET, handleCommand)) return;
+  if(serverOn(authUser, F("/list"), HTTP_GET, printDirectory)) return;
+  if(serverOn(authAdmin, F("/config"), HTTP_GET, handleGetConfig)) return;
+  if(serverOn(authAdmin, F("/edit"), HTTP_DELETE, handleDelete)) return;
+  if(serverOn(authAdmin, F("/edit"), HTTP_PUT, handleCreate)) return;
+  if(serverOn(authUser, F("/feed/list.json"), HTTP_GET, handleGetFeedList)) return;
+  if(serverOn(authUser, F("/feed/data.json"), HTTP_GET, handleGetFeedData)) return;
+  if(serverOn(authAdmin, F("/graph/create"),HTTP_POST, handleGraphCreate)) return;
+  if(serverOn(authAdmin, F("/graph/update"),HTTP_POST, handleGraphCreate)) return;
+  if(serverOn(authAdmin, F("/graph/delete"),HTTP_POST, handleGraphDelete)) return;
+  if(serverOn(authUser, F("/graph/getall"), HTTP_GET, handleGraphGetall)) return;
+  if(serverOn(authAdmin, F("/auth"), HTTP_POST, handlePasswords)) return;
+
+  if(loadFromSdCard(uri)){
+    return;
   }
   
-  if( ! authenticate("admin")) return;
-    
-  if(serverOn(F("/status"),HTTP_GET, handleStatus)) return;
-  if(serverOn(F("/vcal"),HTTP_GET, handleVcal)) return;
-  if(serverOn(F("/command"), HTTP_GET, handleCommand)) return;
-  if(serverOn(F("/list"), HTTP_GET, printDirectory)) return;
-  if(serverOn(F("/config"), HTTP_GET, handleGetConfig)) return;
-  if(serverOn(F("/edit"), HTTP_DELETE, handleDelete)) return;
-  if(serverOn(F("/edit"), HTTP_PUT, handleCreate)) return;
-  if(serverOn(F("/feed/list.json"), HTTP_GET, handleGetFeedList)) return;
-  if(serverOn(F("/feed/data.json"), HTTP_GET, handleGetFeedData)) return;
-  if(serverOn(F("/graph/create"),HTTP_POST, handleGraphCreate)) return;
-  if(serverOn(F("/graph/update"),HTTP_POST, handleGraphCreate)) return;
-  if(serverOn(F("/graph/delete"),HTTP_POST, handleGraphDelete)) return;
-  if(serverOn(F("/graph/getall"), HTTP_GET, handleGraphGetall)) return;
-  handleNotFound();   
+  trace(T_WEB,12); 
+  String message = "Not found: ";
+  message += (server.method() == HTTP_GET)?"GET":"POST";
+  message += ", URI: ";
+  message += server.uri();
+  server.send(404, P_txtPlain, message);
 }
 
-bool serverOn(const __FlashStringHelper* uri, HTTPMethod method, genericHandler fn){
+bool serverOn(authLevel level, const __FlashStringHelper* uri, HTTPMethod method, genericHandler fn){
   if(strcmp_P(server.uri().c_str(),(PGM_P)uri) == 0 && server.method() == method){
+    if( ! authenticate(level)) return true;
     fn();
     return true;
   }
@@ -111,11 +114,10 @@ bool loadFromSdCard(String path){
   if( ! path.startsWith("/")) path = '/' + path;
   String dataType = P_txtPlain;
   if(path.endsWith("/")) path += "index.htm";
-  if(path == "/edit" ||
-     path == "/graph"){
-      path += ".htm";
-     }
-
+  if(path == "/edit" || path == "/graph"){
+    path += ".htm";
+  }
+  
   if(path.endsWith(".src")) path = path.substring(0, path.lastIndexOf("."));
   else if(path.endsWith(".htm")) dataType = F("text/html");
   else if(path.endsWith(".css")) dataType = F("text/css");
@@ -135,9 +137,20 @@ bool loadFromSdCard(String path){
     dataFile = SD.open(path.c_str());
   }
 
-  if (!dataFile)
+  if (!dataFile){
     return false;
-    
+  }
+
+          // If reading user directory,
+          // authenticate as user
+          // otherwise require admin.
+
+  authLevel level = authAdmin;
+  if(path.startsWith("/user/")){
+    level = authUser;
+  }
+  if( ! authenticate(level)) return true;
+
   if (server.hasArg("download")) dataType = F("application/octet-stream");
 
   if(server.hasArg("textpos")){
@@ -160,11 +173,12 @@ bool loadFromSdCard(String path){
 
 void handleFileUpload(){
   trace(T_WEB,11);
-  if( ! authenticate("admin")) return;
+  
     
   if(server.uri() != "/edit") return;
   HTTPUpload& upload = server.upload();
   if(upload.status == UPLOAD_FILE_START){
+    if( ! authenticate(authAdmin)) return;
     if(upload.filename.equalsIgnoreCase("config.txt") ||
         upload.filename.equalsIgnoreCase("/config.txt")){ 
       if(server.hasArg(F("configSHA256"))){
@@ -299,23 +313,65 @@ void printDirectory() {
   dir.close();
 }
 
-void handleNotFound(){
-  trace(T_WEB,12); 
-  // String serverURI = server.uri();
-  if(loadFromSdCard(server.uri())) return;
-  String message = "Not found: ";
-  message += (server.method() == HTTP_GET)?"GET":"POST";
-  message += ", URI: ";
-  message += server.uri();
-  server.send(404, P_txtPlain, message);
-  // Serial.println(message);
-}
-
 /************************************************************************************************
  * 
  * Following handlers added to WebServer for IotaWatt specific requests
  * 
  **********************************************************************************************/
+
+void handlePasswords(){
+  trace(T_WEB,21);
+  Serial.print("/auth ");
+  int len = server.arg("plain").length();
+  char* buff = new char[(len + 2) * 3 / 4];
+  len = base64_decode_chars(server.arg("plain").c_str(), len, buff);
+  buff[len] = 0;
+  String body = buff;
+  delete[] buff;
+  Serial.println(body);
+  DynamicJsonBuffer Json;
+  JsonObject& request = Json.parseObject(body);
+  if( ! request.success()){
+    server.send(400, P_txtPlain, "Json parse failed.");
+    return;
+  }
+  if(adminH1){
+    String testH1 = calcH1("admin", AUTH_REALM, request["oldadmin"].as<char*>());
+    if( adminH1 && ! testH1.equals(bin2hex(adminH1,16))){
+      server.send(400, P_txtPlain, "Current admin password invalid.");
+      return;
+    }
+  }
+  
+  if(request.containsKey("newadmin")){
+    delete[] adminH1;
+    adminH1 = nullptr;
+    delete[] userH1;
+    userH1 = nullptr;
+    String newAdmin = request["newadmin"].as<char*>();
+    if(newAdmin.length()){
+      String newAdminH1 = calcH1("admin", AUTH_REALM, request["newadmin"].as<char*>());
+      adminH1 = new uint8_t[16];
+      hex2bin(adminH1, newAdminH1.c_str(), 16);
+    } 
+  } 
+  if(request.containsKey("newuser")){
+    String newAdmin = request["newuser"].as<char*>();
+    if(newAdmin.length()){
+      String newUserH1 = calcH1("user", AUTH_REALM, request["newuser"].as<char*>());
+      userH1 = new uint8_t[16];
+      hex2bin(userH1, newUserH1.c_str(), 16);
+    } 
+  }
+  if(authSavePwds()){
+    server.send(200, P_txtPlain, "Passwords reset.");
+    Serial.println("passwords saved");
+  } else {
+    Serial.println("passwords not saved");
+    server.send(400, P_txtPlain, "Error saving passwords.");
+  } 
+  return;
+}
 
 void handleStatus(){
   trace(T_WEB,0); 
@@ -411,6 +467,14 @@ void handleStatus(){
     //histlog.set("wrap",histLog._wrap ? true : false);
     datalogs.set(F("histlog"),histlog);
     root.set(F("datalogs"),datalogs);
+  }
+
+  if(server.hasArg(F("passwords"))){
+    trace(T_WEB,18);
+    JsonObject& passwords = jsonBuffer.createObject();
+    passwords.set(F("admin"),adminH1 != nullptr);
+    passwords.set(F("user"),userH1 != nullptr);  
+    root["passwords"] = passwords;
   }
 
   String response = "";

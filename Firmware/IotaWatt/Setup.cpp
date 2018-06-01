@@ -111,6 +111,10 @@ void setup()
   log("Local time zone: %d", localTimeDiff);
   log("device name: %s, version: %d", deviceName, deviceVersion);
 
+//************************************* Load passwords *******************************************
+
+authLoadPwds();  
+
 //*************************************** Start the WiFi  connection *****************************
   
   WiFi.setAutoConnect(true);

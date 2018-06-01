@@ -151,6 +151,16 @@ boolean serverAvailable = true;   // Set false when asynchronous handler active 
 boolean wifiConnected = false;
 uint8_t configSHA256[32];         // Hash of config file last time read or written
 
+String           _snonce;                 // Store noance and opaque for future comparison
+String           _sopaque;
+String           _srealm;                 // Store the Auth realm between Calls
+
+uint8_t*          adminH1 = nullptr;      // H1 digest md5("admin":"admin":password) 
+uint8_t*          userH1 = nullptr;       // H1 digest md5("user":"user":password)
+authSession*      authSessions = nullptr; // authSessions list head;
+uint16_t          authTimeout = 600;      // Timeout interval of authSession in seconds;   
+ 
+
       // ************************** HTTP concurrent request semaphore *************************
 
 int16_t  HTTPrequestMax = 2;      // Maximum number of concurrent HTTP requests        
