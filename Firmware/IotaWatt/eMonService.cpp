@@ -372,8 +372,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 1;
       }
       trace(T_Emon,8);
-      delete request;
-      request = nullptr;
+      //delete request;
+      //request = nullptr;
       retryCount = 0;
       reqData.flush();
       reqEntries = 0;    
@@ -504,8 +504,8 @@ case sendSecure:{
         return UNIXtime() + 1;
       }
       trace(T_Emon,11);
-      delete request;
-      request = nullptr;
+      //delete request;
+      //request = nullptr;
       retryCount = 0;
       reqEntries = 0;    
       state = post;

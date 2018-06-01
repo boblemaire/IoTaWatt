@@ -79,6 +79,13 @@ String bin2hex(const uint8_t* in, size_t len){
   return out;
 }
 
+void   hex2bin(uint8_t* out, const char* in, size_t len){
+    String hexchars = "0123456789abcdef";
+    for(int i=0; i<len; i++){
+        out[i] = hexchars.indexOf(in[i*2]) * 16 + hexchars.indexOf(in[i*2+1]);
+    }
+}
+
 /**************************************************************************************************
  * Convert the contents of an xbuf to base64
  * ************************************************************************************************/
