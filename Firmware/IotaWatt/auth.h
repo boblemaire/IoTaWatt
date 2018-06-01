@@ -1,7 +1,5 @@
 #pragma once
 
-#define AUTH_REALM "IoTaWatt"
-
 struct authSession {
     authSession*    next;
     IPAddress       IP;
@@ -22,7 +20,6 @@ void requestAuth();
 String extractParam(String& authReq,const String& param,const char delimit = '"');
 authSession* newAuthSession();
 authSession* getAuthSession(const char* nonce, const char* nc);
-void  createAdminH1();
 void  getNonce(uint8_t* nonce);
 String  authSetPwdH1(const char* username, String password);
 String  authGetPwdH1(const char* username);

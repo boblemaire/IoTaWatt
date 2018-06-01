@@ -13,17 +13,13 @@ bool auth(authLevel level){
     return true;
   }
   if(level == authNone){
-      Serial.println("\r\nNew Auth Request None");  
       return true;  
     } 
   if(server.hasHeader(FPSTR(AUTHORIZATION_HEADER))) {
     String authReq = server.header(FPSTR(AUTHORIZATION_HEADER));
     if(level == authNone){
-      Serial.println("\r\nNew Auth Request None");  
       return true;  
     } 
-    Serial.printf("\r\nNew Auth Request %s:", level == authAdmin ? "admin " : "user ");
-    Serial.println(authReq);
     
     if(authReq.startsWith(F("Digest"))) {
       authReq = authReq.substring(7);
@@ -49,13 +45,11 @@ bool auth(authLevel level){
 
       authSession* session = getAuthSession(_nonce.c_str(), _nc.c_str());
       if(! session){
-          Serial.println("no authSession");
           return false;
       }
 
       String _H1 = bin2hex(adminH1, 16); 
       if(_username.equals("user")){
-          Serial.println("checking user");
           _H1 = bin2hex(userH1, 16);
       }
             
@@ -87,7 +81,6 @@ bool auth(authLevel level){
       if(_response == _responsecheck){
         session->lastUsed = UNIXtime();  
         authReq = "";
-        Serial.println("authorized");
         return true;
       } 
     }
@@ -98,9 +91,10 @@ bool auth(authLevel level){
 
 void requestAuth() {
   authSession* auth = newAuthSession();
-  String authHeader = String("Digest realm=\"IoTaWatt\", qop=\"auth\", nonce=\"") + bin2hex(auth->nonce, 16) + "\"";
+  String authHeader = String("Digest realm=\"");
+  authHeader += deviceName; 
+  authHeader += "\", qop=\"auth\", nonce=\"" + bin2hex(auth->nonce, 16) + "\"";
   server.sendHeader(String(FPSTR(WWW_Authenticate)), authHeader);
-  Serial.printf("Auth Request: %s, uri: %s\r\n", authHeader.c_str(), server.uri().c_str());
   using namespace mime;
   server.send(401, String(FPSTR(mimeTable[html].mimeType)), F("IoTaWatt-Login"));
 }
@@ -162,7 +156,7 @@ authSession* getAuthSession(const char* nonce, const char* nc){
 
 void  getNonce(uint8_t* nonce){
     uint32_t* word = (uint32_t*)nonce;
-    word[0] = UNIXtime();
+    word[0] = RANDOM_REG32;
     word[1] = RANDOM_REG32;
     word[2] = RANDOM_REG32;
     word[3] = RANDOM_REG32;
@@ -173,18 +167,11 @@ String  authSetPwdH1(const char* username, String password){
     md5.begin();
     md5.add(username);
     md5.add(":");
-    md5.add(AUTH_REALM);
+    md5.add(deviceName);
     md5.add(":");
     md5.add(password);  
     md5.calculate();
     String H1 = md5.toString();
-}
-
-void  createAdminH1(){
-    adminH1 = new uint8_t[16];
-    userH1 = new uint8_t[16];
-    hex2bin(adminH1,calcH1("admin", AUTH_REALM, "admin").c_str(), 16);
-    hex2bin(userH1,calcH1("user", AUTH_REALM, "user").c_str(), 16);
 }
 
 String calcH1(const char* username, const char* realm, const char* password){

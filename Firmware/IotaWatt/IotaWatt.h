@@ -242,6 +242,8 @@ extern const char*    updateURL;
 extern const char*    updatePath;
 extern char*          updateClass;            // NONE, MAJOR, MINOR, BETA, ALPHA, TEST
 extern const uint8_t  publicKey[32];
+extern const char     hexcodes_P[];
+extern const char     base64codes_P[];  
 
       // ************************ ADC sample pairs ************************************
 

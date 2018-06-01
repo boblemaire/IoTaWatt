@@ -16,30 +16,45 @@
     <table id="bigIdeasTable">
       <tr>
         <td class="dropdown">
-          <button class="mainMenuButton buttonUp dropbtn">Setup</button>
+          <button class="mainMenuButton buttonUp dropbtn"
+              title="Select setup category">Setup</button>
           <span class="dropContent">
-            <button class="mainMenuButton" onclick="mainMenuButton(this,configDevice)">Device</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,configInputs)">Inputs</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,configOutputs)">Outputs</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,buildWebServer)">Web Server</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,configDevice)"
+                title="Specify device name, time-zone, and auto-update class">Device</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,configInputs)"
+                title="Specify the VTs and CTs that are used">Inputs</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,configOutputs)"
+                title="Define output values for status display and local graphs">Outputs</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,configBurden)"
+                title="Set new values if stock resistors are modified/removed">Burden Resistors</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,setPasswords)"
+                title="Set/Reset optional access passwords">Passwords</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,buildWebServer)"
+                title="Specify data export to external servers">Web Server</button>
           </span>
         </td>
-        <td width="50%"><button class="mainMenuButton" onclick="mainMenuButton(this,statusBegin)">Status</button></td>
+        <td width="50%"><button class="mainMenuButton" onclick="mainMenuButton(this,statusBegin)"
+            title="Display current measurements, outputs and device status">Status</button></td>
       </tr>
       <tr>
         <td class="dropdown">
-          <button class="mainMenuButton buttonUp dropbtn">Tools</button>
+          <button class="mainMenuButton buttonUp dropbtn"
+              title="Select from the following tools">Tools</button>
           <span class="dropContent">
-            <button class="mainMenuButton" onclick="mainMenuButton(this,loadEdit)">File Manager and Editor</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,showMsgs)">Message Log</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsRestart)">Restart</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,loadEdit)"
+                title="manage and edit files on the SDcard">File Manager and Editor</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,showMsgs)"
+                title="View recent entries in the message log">Message Log</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsRestart)"
+                title="Restart the IoTaWatt">Restart</button>
        <!-- <button class="mainMenuButton" onclick="mainMenuButton(this,toolsDatalogs)">Datalogs</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsWiFi)">WIFi</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsUpdate)">Software Update</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsPhase)">Phase Measurement</button> -->
           </span>
         </td>
-        <td width="50%"><button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph)">Graphs</button></td>
+        <td width="50%"><button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph)"
+            title="Graphically visualize and compare accumulated data">Graphs</button></td>
       </tr>
     </table>
   </div>
@@ -62,16 +77,50 @@
       <h3>Configure IoTaWatt Device</h3>
       <table id="deviceTable"></table>
       <p>
-        <button id="actionBurden" onclick="configBurden()">Configure Burden Resistors</button>
-      </p>
-      <p>
         <button class="actionCancel" id="deviceCancel" onclick="deviceCancel()">cancel</button>
         <button class="actionSave" id="deviceSave" onclick="deviceSave()">save</button>
       </p>
     </div> 
     
+                  <!-- *************** Password configuration ******************-->  
+        
+    <div id="setPasswords" class="body color_body" style="display: none">
+      <h3>Configure Optional IoTaWatt Passwords</h3>
+      <p>
+        The initial configuration places no restrictions on who can modify or otherwise access the device.
+      If the device is in a home and connected to a well protected WiFi LAN, that may be adequate to protect
+      the integrity of the device and privacy of the data collected.  If the LAN does not provide suitable protection,
+      or there is a need to provide port-forward passthough to the internet, access control is recommended.
+      </p><p>
+        IoTaWatt supports two levels of authorization using digest password authorization. This isn't the most secure method
+        of authorization, nor is it the least.  Given the limitations of an IoT device, you may find it is a reasonable balance
+        between exposure and data value.
+      </p><p>
+        To enable authorization, specify an Admin password.  Once there is an admin password, all configuration and access,
+        except for User level acess described below, will require the password to initiate the session.  Be sure to
+        carefully note the password that you set, as IoTaWatt does not store the actual value and it cannot be recovered. There is a
+        procedure to remove the Admin password, but it involves physically removing the SDcard.
+      </p><p>
+        The optional User level password is effectively a <i>read only</i> password for use by apps that visualize data. 
+      The User password does not allow access to the configuration or SD file system, except for a special /user/ directory
+      </p>
+      <table id="pwdTable"></table>
+      <p>
+        <button class="actionCancel" id="pwdCancel" onclick="pwdCancel()">cancel</button>
+        <button class="actionSave" id="pwdSave" onclick="pwdSave()">save</button>
+        <button class="actionSave" id="pwdCheck" onclick="pwdValidate()">Validate Current Password</button>
+      </p>
+    </div> 
+    
+                  <!-- *************** Burden configuration ******************--> 
+    
     <div id="configBurden" class="body color_body" style="display: none">
       <h3>Specify on-board burden resistors</h3>
+      <p>Burden resistors are internal components that allow IoTaWatt to convert the input current to a voltage that can be measured.
+      The factory supplied burden values were selected to work best with the range of CTs that can be connected and most users will 
+      never have a need to modify them or the corresponding values in this menu.</p>
+      <p>For the benefit of advanced users that have a need to remove or change the factory resistors, this menu has been provided
+      so that a changed value can be specified and IoTaWatt can calculate the correct current using the new value.</p>
       <table id="burdenTable"></table>
       <p>
         <button class="actionCancel" id="burdenCancel" onclick="burdenCancel()">cancel</button>
@@ -199,7 +248,7 @@
           </table>
           <table id="statusTable"></table>
         </div>
-      <button id="tabinflux" class="groupTab" onclick="toggleDisplay('statusInfluxDiv')")>InfluxDB</button>
+      <button id="tabinflux" class="groupTab" onclick="toggleDisplay('statusInfluxDiv')">InfluxDB</button>
         <div id="statusInfluxDiv" class="statusDiv" style="display: none;"></div>
       <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
         <div id="statusLogsDiv" class="statusDiv" style="display: none;"></div>
@@ -281,7 +330,7 @@
           <h3  style="text-align:center">Configure Output</h3>
           <table><tr><th width="30%"></th><th></th></tr>
             <tr><td class="calcField"><strong>Name:</strong></td><td><input id="calcName" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="refreshCalcDisplay()" title="invalid name"></td></tr>
-            <tr><td class="calcField"><strong>Units:</strong></td><td><select id="calcUnits" oninput="refreshCalcDisplay()"></td>
+            <tr><td class="calcField"><strong>Units:</strong></td><td><select id="calcUnits" oninput="refreshCalcDisplay()"></select></td>
             </tr>
           </table>
         </form>
@@ -372,6 +421,103 @@ var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh"];
  *                       Shorthand functions
 * ************************************************************************************************/
 function EbyId(id) {return document.getElementById(id)};
+
+/***************************************************************************************************
+ *                       setPasswords
+* ************************************************************************************************/
+var authReq = {};
+function setPasswords() {
+  editing = true;
+  authReq = {};
+  EbyId("pwdTable").innerHTML = "Checking for existing password";
+  currentBodyPush("setPasswords");
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var response = JSON.parse(xmlHttp.responseText);
+      if(response.passwords.admin){
+        EbyId("pwdTable").innerHTML = "";
+        var oldAdmin = addTableRow(pwdTable, "Current Admin password", "oldAdminPwd", "input", 16);
+        oldAdmin.setAttribute("onblur","pwdValidate();");
+        oldAdmin.title = "Required to proceed";
+        EbyId("pwdCheck").style.display = "inline";
+      } else {
+        EbyId("pwdCheck").style.display = "none";
+        pwdValid();
+      }
+    }
+  }
+  xmlHttp.open("GET","/status?passwords=yes", true);
+  xmlHttp.send(null);
+  
+  EbyId("pwdSave").style.display = "none";
+}
+  
+function pwdValidate(){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4) {
+      if(this.status == 200) {
+        pwdValid();
+      } else {
+        alert("Not current password");
+      }
+    }
+  }
+  xmlHttp.open("POST","/auth");
+  var oldAdmin = EbyId("oldAdminPwd");
+  authReq.oldadmin = oldAdmin.value;
+  xmlHttp.send(btoa(JSON.stringify(authReq)));
+}
+
+function pwdValid(){
+  EbyId("pwdTable").innerHTML = "";
+  EbyId("pwdCheck").style.display = "none";
+  var newPwd = addTableRow(pwdTable, "new Admin password", "newAdminPwd", "input", 16);
+  newPwd.pattern = "^[A-Za-z0-9_!%@#]{0,16}";
+  newPwd.title = "1-16 characters, blank to reset";
+  newPwd.setAttribute("oninput","pwdCheck();");
+  newPwd = addTableRow(pwdTable, "new User password", "newUserPwd", "input", 16);
+  newPwd.pattern = "^[A-Za-z0-9_!%@#]{0,16}";
+  newPwd.title = "1-16 characters, blank to reset";
+  newPwd.setAttribute("oninput","pwdCheck();");
+  pwdCheck();
+}
+
+function pwdCheck(){
+  var complete = true;
+  if( ! validateInput("newAdminPwd", false, "not a valid password")) complete = false;
+  if( ! validateInput("newUserPwd", false, "not a valid password")) complete = false;
+  if(complete){
+    EbyId("pwdSave").style.display = "inline";
+  }
+}
+
+function pwdCancel(){
+  editing = false;
+  currentBodyPop();
+}
+
+function pwdSave(){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4) {
+      if(this.status == 200) {
+        editing = false;
+        currentBodyPop();
+        return;
+      } else {
+        alert("update failed");
+      }
+    }
+  }
+  xmlHttp.open("POST","/auth");
+  var newAdmin = EbyId("newAdminPwd");
+  authReq.newadmin = newAdmin.value;
+  var newUser = EbyId("newUserPwd");
+  authReq.newuser = newUser.value;
+  xmlHttp.send(btoa(JSON.stringify(authReq)));
+}
 
 /***************************************************************************************************
  *                       Tools
@@ -1219,15 +1365,23 @@ function calVTsave(obj){
 /********************************************************************************************
  *                                    Configure Device
  * ******************************************************************************************/
-
 function configDevice(){
   currentBodyPush("configDevice");
   originalName = config.device.name;
   timezone = config.timezone;
-  buildDevice();
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var response = JSON.parse(xmlHttp.responseText);
+      buildDevice(response.passwords.admin);
+    }
+  }
+  xmlHttp.open("GET","/status?passwords=yes", true);
+  xmlHttp.send(null);
+  
 }
 
-function buildDevice(){
+function buildDevice(passwordSet){
   var updateClasses = ["NONE", "MAJOR", "MINOR", "BETA", "ALPHA"];
   var deviceTable = EbyId("deviceTable");
   deviceTable.innerHTML = "";
@@ -1238,6 +1392,10 @@ function buildDevice(){
   deviceName.value = config.device.name;
   deviceName.setAttribute("oninput","config.device.name = this.value.trim(); checkDevice();");
   deviceName.pattern = "[a-zA-Z]{1}[0-9a-zA-Z]{3,7}";
+  if(passwordSet){
+    deviceName.disabled = true;
+    deviceName.title = "Passwords must be disabled to modify device name.";
+  } 
   
   var deviceTimezone = addTableRow(deviceTable, "Time Zone:","deviceTimezone", "input", 3);
   deviceTimezone.value = config.timezone;
@@ -1256,6 +1414,21 @@ function buildDevice(){
     deviceUpdate.add(option);
   }
   deviceUpdate.setAttribute("onchange","config.update = this.value; checkDevice();");
+  
+  var deviceAdmin = addTableRow(deviceTable, "Admin password", "deviceAdmin", "button");
+  deviceAdmin.innerHTML = passwords.admin ? "Set/Reset" : "Set";
+  //deviceAdmin.setAttribute("onclick","config.influxdb.pwd = this.value; checkInfluxdb();"); 
+  //deviceAdmin.pattern = "^[^'\"\\s]*$";
+  //deviceAdmin.type = "password";
+  //deviceAdmin.placeholder = "optional";
+  //deviceAdmin.setAttribute("onchange","changeAdmin(this.value); checkDevice();");
+  if(passwords.admin){
+    var deviceUser = addTableRow(deviceTable, "User password", "deviceUser", "button");
+  }
+}
+
+function changeAdmin(newPassword){
+  alert("Admin password will be changed to: \"" + newPassword + "\" when you save.");
 }
 
 function checkDevice(){
@@ -1604,11 +1777,11 @@ function editInfluxdb(){
   var dbInput = addTableRow(serverTable, "database:", "serverDb", "input", 16);
   dbInput.value = config.influxdb.database;
   dbInput.setAttribute("oninput","config.influxdb.database = this.value; checkInfluxdb();");
-  dbInput.pattern = "^[^'\"\\s]*$";
+  dbInput.pattern = "^[A-Za-z0-9_]*$";
   
   var RetpInput = addTableRow(serverTable, "retention policy", "serverRetp", "input", 16);
   RetpInput.setAttribute("oninput","config.influxdb.retp = this.value; checkInfluxdb();");
-  RetpInput.pattern = "^[^'\"\\s]*$";
+  RetpInput.pattern = "^[A-Za-z0-9_]*$";
   if(config.influxdb.retp !== undefined){
     RetpInput.value = config.influxdb.retp;
   } else {
@@ -1620,14 +1793,14 @@ function editInfluxdb(){
   var userInput = addTableRow(serverTable, "username:", "serverUser", "input", 16);
   userInput.value = config.influxdb.user;
   userInput.setAttribute("oninput","config.influxdb.user = this.value; checkInfluxdb();");
-  userInput.pattern = "^[^'\"\\s]*$";
+  userInput.pattern = "^[A-Za-z0-9@_]*$";
   userInput.placeholder = "optional";
 
   if(config.influxdb.pwd === undefined) config.influxdb.pwd = "";
   var pwdInput = addTableRow(serverTable, "password:", "serverPwd", "input", 16);
   pwdInput.value = config.influxdb.pwd;
   pwdInput.setAttribute("oninput","config.influxdb.pwd = this.value; checkInfluxdb();"); 
-  pwdInput.pattern = "^[^'\"\\s]*$";
+  pwdInput.pattern = "^[A-Za-z0-9_!%@#]{0,16}";
   pwdInput.type = "password";
   pwdInput.placeholder = "optional";
   
@@ -1800,11 +1973,12 @@ function influxTagCheck(){
 }
 
 function influxToggle(){
-  if(config.influxdb.stop === undefined){
-    config.influxdb.stop = true;
+  if(config.influxdb.stop !== undefined){
+    config.influxdb.stop = ! config.influxdb.stop;
   }
   else {
-    config.influxdb.stop = undefined;
+    config.influxdb.stop = true;
+    
   }
   config.influxdb.revision++;
   uploadConfig();
