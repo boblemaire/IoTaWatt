@@ -196,6 +196,9 @@ const uint8_t publicKey[32] PROGMEM = {
                         0x2b, 0xe6, 0x28, 0x5a, 0x21, 0x9c, 0xb7, 0xf3
                         }; 
 
+const char hexcodes_P[] PROGMEM = "0123456789abcdef";
+const char base64codes_P[] PROGMEM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";  
+
       // ************************ ADC sample pairs ************************************
  
 int16_t   samples = 0;                              // Number of samples taken in last sampling

@@ -321,14 +321,12 @@ void printDirectory() {
 
 void handlePasswords(){
   trace(T_WEB,21);
-  Serial.print("/auth ");
   int len = server.arg("plain").length();
   char* buff = new char[(len + 2) * 3 / 4];
   len = base64_decode_chars(server.arg("plain").c_str(), len, buff);
   buff[len] = 0;
   String body = buff;
   delete[] buff;
-  Serial.println(body);
   DynamicJsonBuffer Json;
   JsonObject& request = Json.parseObject(body);
   if( ! request.success()){
@@ -336,7 +334,7 @@ void handlePasswords(){
     return;
   }
   if(adminH1){
-    String testH1 = calcH1("admin", AUTH_REALM, request["oldadmin"].as<char*>());
+    String testH1 = calcH1("admin", deviceName, request["oldadmin"].as<char*>());
     if( adminH1 && ! testH1.equals(bin2hex(adminH1,16))){
       server.send(400, P_txtPlain, "Current admin password invalid.");
       return;
@@ -350,25 +348,27 @@ void handlePasswords(){
     userH1 = nullptr;
     String newAdmin = request["newadmin"].as<char*>();
     if(newAdmin.length()){
-      String newAdminH1 = calcH1("admin", AUTH_REALM, request["newadmin"].as<char*>());
+      String newAdminH1 = calcH1("admin", deviceName, request["newadmin"].as<char*>());
       adminH1 = new uint8_t[16];
       hex2bin(adminH1, newAdminH1.c_str(), 16);
     } 
-  } 
-  if(request.containsKey("newuser")){
-    String newAdmin = request["newuser"].as<char*>();
-    if(newAdmin.length()){
-      String newUserH1 = calcH1("user", AUTH_REALM, request["newuser"].as<char*>());
-      userH1 = new uint8_t[16];
-      hex2bin(userH1, newUserH1.c_str(), 16);
+    if(request.containsKey("newuser")){
+      String newAdmin = request["newuser"].as<char*>();
+      if(newAdmin.length()){
+        String newUserH1 = calcH1("user", deviceName, request["newuser"].as<char*>());
+        userH1 = new uint8_t[16];
+        hex2bin(userH1, newUserH1.c_str(), 16);
+      } 
+    }
+    if(authSavePwds()){
+      server.send(200, P_txtPlain, "Passwords reset.");
+      log("New passwords saved.");
+    } else {
+      server.send(400, P_txtPlain, "Error saving passwords.");
+      log("Password save failed.");
     } 
-  }
-  if(authSavePwds()){
-    server.send(200, P_txtPlain, "Passwords reset.");
-    Serial.println("passwords saved");
   } else {
-    Serial.println("passwords not saved");
-    server.send(400, P_txtPlain, "Error saving passwords.");
+    server.send(200, P_txtPlain, "");
   } 
   return;
 }

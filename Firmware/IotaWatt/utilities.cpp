@@ -59,28 +59,29 @@ String hashName(const char* name){
  * Convert the input to a String of hex digits.
  * ************************************************************************************************/
 String formatHex(uint32_t data){
-  const char* hexDigits = "0123456789ABCDEF";
-  String str = "00000000";
+  String str;
   uint32_t _data = data;
   for(int i=7; i>=0; i--){
-    str[i] = hexDigits[_data % 16];
+    str[i] = pgm_read_byte(hexcodes_P + (_data % 16));
     _data /= 16;
   }
   return str;
 }
 
 String bin2hex(const uint8_t* in, size_t len){
-  static const char* hexcodes = "0123456789abcdef";
-  String out = "";
+  char* hexcodes = new char[17];
+  strcpy_P(hexcodes, hexcodes_P);
+  String out;
   for(int i=0; i<len; i++){
     out += hexcodes[*in >> 4];
     out += hexcodes[*in++ & 0x0f];
   }
+  delete[] hexcodes;
   return out;
 }
 
 void   hex2bin(uint8_t* out, const char* in, size_t len){
-    String hexchars = "0123456789abcdef";
+    String hexchars(FPSTR(hexcodes_P));
     for(int i=0; i<len; i++){
         out[i] = hexchars.indexOf(in[i*2]) * 16 + hexchars.indexOf(in[i*2+1]);
     }
@@ -90,9 +91,8 @@ void   hex2bin(uint8_t* out, const char* in, size_t len){
  * Convert the contents of an xbuf to base64
  * ************************************************************************************************/
 void base64encode(xbuf* buf){
-  PGM_P codes = PSTR("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");  
   char* base64codes = new char[65];
-  strcpy_P(base64codes, codes);
+  strcpy_P(base64codes, base64codes_P);
   size_t supply = buf->available();
   uint8_t in[3];
   uint8_t out[4];
