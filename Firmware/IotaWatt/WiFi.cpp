@@ -1,5 +1,14 @@
 #include "IotaWatt.h"
 
+struct tcp_pcb {
+  uint32_t ip_pcba;
+  uint32_t ip_pcbb;
+  uint32_t ip_pcbc;
+  tcp_pcb* next;
+};
+extern struct tcp_pcb* tcp_tw_pcbs;
+extern "C" void tcp_abort(struct tcp_pcb* pcb);
+
 uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
   static uint32_t lastDisconnect = millis();          // Time of last disconnect
   const uint32_t disconnectRestart = 2;               // Restart ESP if disconnected this many hours  
@@ -23,5 +32,21 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
       ESP.restart();
     }
   }
+
+      // Temporary addition of time-wait limit code from me-no-dev's fix.
+      // Will remove when fix is in general release.
+
+  uint32_t twCount = 0;
+  tcp_pcb* tmp = tcp_tw_pcbs;
+  if(tmp){
+    while(tmp->next){
+      if(twCount > 5){
+        tcp_abort(tmp->next);
+      } else {
+        tmp = tmp->next;
+        twCount++;
+      }      
+    }
+  } 
   return UNIXtime() + 1;  
 }
