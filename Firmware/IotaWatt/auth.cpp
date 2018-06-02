@@ -9,18 +9,12 @@ static const char qop_authquote[] PROGMEM = "qop=\"auth\"";
 static const char WWW_Authenticate[] PROGMEM = "WWW-Authenticate";
 
 bool auth(authLevel level){
-  if(!adminH1){
+  if(!adminH1 || level == authNone || (!userH1 && level == authUser)){
     return true;
   }
-  if(level == authNone){
-      return true;  
-    } 
   if(server.hasHeader(FPSTR(AUTHORIZATION_HEADER))) {
     String authReq = server.header(FPSTR(AUTHORIZATION_HEADER));
-    if(level == authNone){
-      return true;  
-    } 
-    
+        
     if(authReq.startsWith(F("Digest"))) {
       authReq = authReq.substring(7);
            
