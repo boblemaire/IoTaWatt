@@ -84,13 +84,12 @@ bool auth(authLevel level){
 }
 
 void requestAuth() {
+  char authHeader[100];
   authSession* auth = newAuthSession();
-  String authHeader = String("Digest realm=\"");
-  authHeader += deviceName; 
-  authHeader += "\", qop=\"auth\", nonce=\"" + bin2hex(auth->nonce, 16) + "\"";
+  sprintf_P(authHeader,PSTR("Digest realm=\"%s\",qop=\"auth\",nonce=\"%s\""), deviceName, bin2hex(auth->nonce,16).c_str());
   server.sendHeader(String(FPSTR(WWW_Authenticate)), authHeader);
   using namespace mime;
-  server.send(401, String(FPSTR(mimeTable[html].mimeType)), F("IoTaWatt-Login"));
+  server.send(401, F("text/html"), F("IoTaWatt-Login"));
 }
 
 String extractParam(String& authReq, const String& param, const char delimit){
@@ -155,18 +154,6 @@ void  getNonce(uint8_t* nonce){
     word[2] = RANDOM_REG32;
     word[3] = RANDOM_REG32;
 }  
-
-String  authSetPwdH1(const char* username, String password){
-    MD5Builder md5;
-    md5.begin();
-    md5.add(username);
-    md5.add(":");
-    md5.add(deviceName);
-    md5.add(":");
-    md5.add(password);  
-    md5.calculate();
-    String H1 = md5.toString();
-}
 
 String calcH1(const char* username, const char* realm, const char* password){
   MD5Builder md5;
