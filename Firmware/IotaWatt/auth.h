@@ -21,8 +21,6 @@ String extractParam(String& authReq,const String& param,const char delimit = '"'
 authSession* newAuthSession();
 authSession* getAuthSession(const char* nonce, const char* nc);
 void  getNonce(uint8_t* nonce);
-String  authSetPwdH1(const char* username, String password);
-String  authGetPwdH1(const char* username);
 String calcH1(const char* username, const char* realm, const char* password);
 bool    authSavePwds();
 void    authLoadPwds();

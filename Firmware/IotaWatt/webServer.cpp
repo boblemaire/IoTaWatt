@@ -336,7 +336,7 @@ void handlePasswords(){
   if(adminH1){
     String testH1 = calcH1("admin", deviceName, request["oldadmin"].as<char*>());
     if( adminH1 && ! testH1.equals(bin2hex(adminH1,16))){
-      server.send(400, P_txtPlain, "Current admin password invalid.");
+      server.send(400, P_txtPlain, F("Current admin password invalid."));
       return;
     }
   }
@@ -361,10 +361,10 @@ void handlePasswords(){
       } 
     }
     if(authSavePwds()){
-      server.send(200, P_txtPlain, "Passwords reset.");
+      server.send(200, P_txtPlain, F("Passwords reset."));
       log("New passwords saved.");
     } else {
-      server.send(400, P_txtPlain, "Error saving passwords.");
+      server.send(400, P_txtPlain, F("Error saving passwords."));
       log("Password save failed.");
     } 
   } else {
