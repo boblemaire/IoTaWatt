@@ -40,7 +40,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static IotaLogRecord* oldRecord = nullptr;
   static uint32_t lastRequestTime = 0;          // Time of last measurement in last or current request
   static uint32_t lastBufferTime = 0;           // Time of last measurement reqData buffer
-  // Extern       influxLastPost                // Time of last measurement acknowledged by influx
   static uint32_t UnixNextPost = UNIXtime();    // Next measurement to be posted
   static xbuf reqData;                          // Current request buffer
   static uint32_t reqUnixtime = 0;              // First measurement in current reqData buffer
@@ -77,7 +76,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       log("influxDB: started.", "url: %s:%d,db: %s,interval: %d", influxURL.c_str(), influxPort,
               influxDataBase.c_str(), influxDBInterval); 
       state = queryLastPostTime;
-      _serviceBlock->priority = priorityLow;
+      //_serviceBlock->priority = priorityLow;
       return 1;
     }
  
@@ -139,7 +138,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
       trace(T_influx,5); 
       if(request->readyState() != 4){
-        return 1; 
+        return UNIXtime() + 1; 
       }
       HTTPrequestFree++;
       String response = request->responseText();
@@ -241,9 +240,11 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         delete request;
         request = nullptr;
         reqData.flush();
-        influxRevision = -1;
         return 0;
       }
+
+          // If there is an outstanding request and buffer is full, just return.
+
 
       if(request && request->readyState() < 4 && reqData.available() > reqDataLimit){
         return 1; 
@@ -311,11 +312,12 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
             // If there's no request pending and we have bulksend entries,
             // set to post.
+
       if((( ! request || request->readyState() == 4) && HTTPrequestFree) && 
           (reqEntries >= influxBulkSend || reqData.available() >= reqDataLimit)){
         state = sendPost;
       }
-      return 1;
+      return (UnixNextPost > UNIXtime()) ? UNIXtime() + 1 : 1;
     }
 
     case sendPost: {

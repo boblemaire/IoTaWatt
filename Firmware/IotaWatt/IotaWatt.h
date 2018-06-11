@@ -210,10 +210,6 @@ extern uint8_t  configSHA256[32];         // Hash of config file
 extern int16_t  HTTPrequestMax;           // Maximum concurrent HTTP requests
 extern int16_t  HTTPrequestFree;          // Request semaphore
 
-extern String   _snonce;                  // Store noance and opaque for future comparison
-extern String   _sopaque;
-extern String   _srealm;                  // Store the Auth realm between Calls
-
 extern uint8_t*   adminH1;                // H1 digest md5("admin":"admin":password) 
 extern uint8_t*   userH1;                 // H1 digest md5("user":"user":password) 
 extern authSession* authSessions;         // authSessions list head; 

@@ -449,6 +449,14 @@ void handleStatus(){
     root["influx"] = influx;
   }
 
+  if(server.hasArg(F("emon"))){
+    trace(T_WEB,22);
+    JsonObject& emon = jsonBuffer.createObject();
+    emon.set(F("running"),EmonStarted);
+    emon.set(F("lastpost"),EmonLastPost);  
+    root["emon"] = emon;
+  }
+
   if(server.hasArg(F("datalogs"))){
     trace(T_WEB,17);
     JsonObject& datalogs = jsonBuffer.createObject();
