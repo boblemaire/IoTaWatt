@@ -88,7 +88,6 @@ void requestAuth() {
   authSession* auth = newAuthSession();
   sprintf_P(authHeader,PSTR("Digest realm=\"%s\",qop=\"auth\",nonce=\"%s\""), deviceName, bin2hex(auth->nonce,16).c_str());
   server.sendHeader(String(FPSTR(WWW_Authenticate)), authHeader);
-  using namespace mime;
   server.send(401, F("text/html"), F("IoTaWatt-Login"));
 }
 

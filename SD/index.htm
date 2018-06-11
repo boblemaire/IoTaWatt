@@ -250,6 +250,8 @@
         </div>
       <button id="tabinflux" class="groupTab" onclick="toggleDisplay('statusInfluxDiv')">InfluxDB</button>
         <div id="statusInfluxDiv" class="statusDiv" style="display: none;"></div>
+      <button id="tabEmon" class="groupTab" onclick="toggleDisplay('statusEmonDiv')">Emoncms</button>
+        <div id="statusEmonDiv" class="statusDiv" style="display: none;"></div>
       <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
         <div id="statusLogsDiv" class="statusDiv" style="display: none;"></div>
     </div> <!-- divStatus -->
@@ -1623,7 +1625,7 @@ function editEmoncms(){
   
   var nodeInput = addTableRow(serverTable, "Node:", "serverNode", "input", 8);
   nodeInput.value = config.server.node;
-  nodeInput.onchange = "config.server.node = this.value; checkEmoncms();";
+  nodeInput.setAttribute("onchange","config.server.node = this.value; checkEmoncms();")
   nodeInput.style = "width: 80px;";
   
   var postInput =   addTableRow(serverTable, "post interval(sec): ", "serverPost", "input", 3);
@@ -1645,6 +1647,12 @@ function editEmoncms(){
   bulksendInput.max = 60;
   bulksendInput.step = 1;
   bulksendInput.title = "Send multiple entries in a single HTTP transaction";
+  
+  var begdateInput = addTableRow(serverTable, "upload history from:", "serverBegd", "input", 16);
+  begdateInput.setAttribute("oninput",
+    "config.server.begdate = new Date(this.value).getTime()/1000 - config.timezone*3600; checkEmoncms();");
+  begdateInput.value =  toInputDate(config.server.begdate + config.timezone*3600);
+  begdateInput.type = "date";
   
   var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 32);
   urlInput.value = config.server.url
@@ -1695,6 +1703,7 @@ function checkEmoncms(){
                  validateInput("serverURL") &&
                  validateInput("serverKey") &&
                  validateInput("serverUser") &&
+                 validateInput("serverBegd") &&
                  (config.server.apikey != "");
   EbyId("serverSave").style.display = complete ? "inline" : "none";
 }
@@ -1718,6 +1727,18 @@ function validateInput(id, required=false, msg=undefined){
     return false;
   }
   return true;
+}
+
+function emonToggle(){
+  if(config.server.stop !== undefined){
+    config.server.stop = ! config.server.stop;
+  }
+  else {
+    config.server.stop = true;
+    
+  }
+  config.server.revision++;
+  uploadConfig();
 }
 
 /***********************************************************************************************
@@ -1989,6 +2010,7 @@ function influxToggle(){
  * *******************************************************************************************/
 function statusBegin(){
   EbyId("tabinflux").style.display = config.influxdb !== undefined ? "inline" : "none";
+  EbyId("tabEmon").style.display = config.server !== undefined ? "inline" : "none";
   currentBodyPush("divStatus");
   getStatus = true;
   statusGet();
@@ -2005,7 +2027,7 @@ function statusGet(){
       statusDisplay(xmlHttp.responseText);
     }
   }
-  xmlHttp.open("GET","/status?state=yes&inputs=yes&outputs=yes&stats=yes&datalogs=yes&influx=yes", true);
+  xmlHttp.open("GET","/status?state=yes&inputs=yes&outputs=yes&stats=yes&datalogs=yes&influx=yes&emon=yes", true);
   xmlHttp.send(null);
 }
 
@@ -2047,6 +2069,17 @@ function statusDisplay(statusMessage){
     button.setAttribute("onclick","influxToggle()");
     influxDiv.appendChild(button);
     influxDiv.appendChild(document.createTextNode((status.influx.running ? " Running" : " Stopped") + ".  Last update " + formatDateTime(status.influx.lastpost)));
+  } 
+  
+  var emonDiv = EbyId("statusEmonDiv");
+  emonDiv.innerHTML = "";
+  if(status.emon !== undefined){
+    var button = document.createElement("button");
+    button.style = "configButton";
+    button.innerHTML = status.emon.running ? "Stop" : "Start";
+    button.setAttribute("onclick","emonToggle()");
+    emonDiv.appendChild(button);
+    emonDiv.appendChild(document.createTextNode((status.emon.running ? " Running" : " Stopped") + ".  Last update " + formatDateTime(status.emon.lastpost)));
   } 
   
   statusTable = EbyId("inputStatusTable");

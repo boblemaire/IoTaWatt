@@ -118,7 +118,7 @@ authLoadPwds();
 //*************************************** Start the WiFi  connection *****************************
   
   WiFi.setAutoConnect(true);
-  WiFi.hostname(host);
+  WiFi.hostname();
   WiFi.begin();
   uint32_t autoConnectTimeout = millis() + 3000UL;
   while(WiFi.status() != WL_CONNECTED){

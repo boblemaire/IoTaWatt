@@ -4,6 +4,7 @@
   {"model":"generic240V","type":"U","cal":23.00,"phase":2.0},
   {"model":"Ideal 77DB-06-09(UK)","cal":20.69,"phase":1.78},
   {"model":"Ideal 77DE-06-09(EU)","cal":19.26,"phase":1.78},
+  {"model":"TDC DA-10-09(USA)","cal":11.20,"phase":2.53},
   {"model":"Ideal 77DA-10-09-MI(USA)","cal":11.06,"phase":1.43},
   {"model":"Jameco/100061","cal":11.68,"phase":4.51},
   {"model":"Jameco/102234","cal":11.43,"phase":3.26},

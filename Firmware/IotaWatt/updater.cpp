@@ -65,7 +65,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       }
       HTTPrequestFree++;
       if(request->responseHTTPcode() != 200 || request->available() != 8){
-        log("checkUpdate: Invalid response from server.");
+        log("Updater: Invalid response from server. HTTPcode: %d", request->responseHTTPcode());
         delete request;
         state = getVersion;
         break;
