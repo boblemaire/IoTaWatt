@@ -63,8 +63,8 @@ boolean getConfig(void){
     configDevice(deviceStr);
     delete[] deviceStr;
   }   
-
         //************************************ Configure input channels ***************************
+
   trace(T_CONFIG,6);
   JsonArray& inputsArray = Config["inputs"]     ;
   if(inputsArray.success()){
@@ -72,7 +72,6 @@ boolean getConfig(void){
     configInputs(inputsStr);
     delete[] inputsStr;
   }   
-     
         // ************************************ configure output channels *************************
   trace(T_CONFIG,7);
   delete outputs;
@@ -82,7 +81,6 @@ boolean getConfig(void){
     configOutputs(outputsStr);
     delete[] outputsStr;
   }   
-        
          // ************************************** configure Emoncms **********************************
 
   trace(T_CONFIG,8);
@@ -97,7 +95,6 @@ boolean getConfig(void){
   else {
     EmonStop = true;
   }
-  
         // ************************************** configure influxDB **********************************
   trace(T_CONFIG,8);
   JsonArray& influxArray = Config["influxdb"];
@@ -125,9 +122,9 @@ bool configDevice(const char* JsonStr){
   if( ! device.success()){
     log("device: Json parse failed");
   }
+  delete[] deviceName;
   if(device.containsKey("name")){
     deviceName = charstar(device["name"].as<char*>());
-    host = deviceName;
   }
   else {
     deviceName = charstar(F("IotaWatt"));

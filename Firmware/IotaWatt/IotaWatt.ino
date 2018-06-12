@@ -145,7 +145,6 @@ IotaLogRecord statRecord;                 // Maintained by statService with real
 
 #define DBG_OUTPUT_PORT Serial
 ESP8266WebServer server(80);
-String  host = "IotaWatt";
 bool    hasSD = false;
 File    uploadFile;
 SHA256* uploadSHA;

@@ -71,7 +71,6 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
       }
 
       trace(T_history,3); 
-      _serviceBlock->priority = priorityLow;
       state = logData;
       break;
     } 

@@ -17,10 +17,10 @@ char*     influxPwd = nullptr;
 char*     influxRetention = nullptr;
 char*     influxMeasurement = nullptr;
 char*     influxFieldKey = nullptr; 
+char*     influxURL = nullptr;
+char*     influxDataBase = nullptr;
 influxTag* influxTagSet = nullptr;  
 ScriptSet* influxOutputs;      
-String    influxURL = "";
-String    influxDataBase = "";
 
 uint32_t influxService(struct serviceBlock* _serviceBlock){
 
@@ -73,10 +73,9 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(!currLog.isOpen()){                  
         return UNIXtime() + 5;
       }
-      log("influxDB: started.", "url: %s:%d,db: %s,interval: %d", influxURL.c_str(), influxPort,
-              influxDataBase.c_str(), influxDBInterval); 
+      log("influxDB: started.", "url: %s:%d,db: %s,interval: %d", influxURL, influxPort,
+              influxDataBase, influxDBInterval); 
       state = queryLastPostTime;
-      //_serviceBlock->priority = priorityLow;
       return 1;
     }
  
@@ -103,10 +102,13 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         delete request;
       }
       request = new asyncHTTPrequest;
-      String URL = influxURL + ":" + String(influxPort) + "/query";
       request->setTimeout(5);
       request->setDebug(false);
-      request->open("POST", URL.c_str());
+      {
+        char URL[100];
+        sprintf_P(URL, PSTR("%s:%d/query"),influxURL,influxPort);
+        request->open("POST", URL);
+      }
       if(influxUser && influxPwd){
         xbuf xb;
         xb.printf("%s:%s", influxUser, influxPwd);
@@ -118,7 +120,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       trace(T_influx,4);
       reqData.flush();
       request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
-      reqData.printf_P(PSTR("db=%s&epoch=s&q=select *::field from /.*/"), influxDataBase.c_str());
+      reqData.printf_P(PSTR("db=%s&epoch=s&q=select *::field from /.*/"), influxDataBase);
       if(influxTagSet){
         reqData.printf_P(PSTR(" where %s = \'%s\'"), influxTagSet->key, influxVarStr(influxTagSet->value, influxOutputs->first()).c_str());
       }
@@ -240,6 +242,24 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         delete request;
         request = nullptr;
         reqData.flush();
+        delete[] influxUser;
+        influxUser = nullptr;
+        delete[] influxPwd;
+        influxPwd = nullptr; 
+        delete[] influxRetention;
+        influxRetention = nullptr;
+        delete[] influxMeasurement;
+        influxMeasurement = nullptr;
+        delete[] influxFieldKey;
+        influxFieldKey = nullptr; 
+        delete[] influxURL;
+        influxURL = nullptr;
+        delete[] influxDataBase;
+        influxDataBase = nullptr;
+        delete influxTagSet;
+        influxTagSet = nullptr;  
+        delete influxTagSet;
+        influxOutputs;      
         return 0;
       }
 
@@ -248,7 +268,13 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
       if(request && request->readyState() < 4 && reqData.available() > reqDataLimit){
         return 1; 
-      }  
+      } 
+
+          // If not enough entries for bulk-send, come back in one second;
+
+      if(((currLog.lastKey() - influxLastPost) / influxDBInterval + reqEntries) < influxBulkSend){
+        return UNIXtime() + 1;
+      } 
 
           // If buffer isn't full,
           // add another measurement.
@@ -339,11 +365,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if( ! request){
         request = new asyncHTTPrequest;
       }
-      String URL = influxURL + ":" + String(influxPort) + "/write?precision=s&db=" + influxDataBase;
-      if(influxRetention){
-        URL.concat("&rp=");
-        URL.concat(influxRetention);
-      }
       request->setTimeout(3);
       request->setDebug(false);
       if(request->debug()){
@@ -354,7 +375,15 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         Serial.println(reqData.peekString(reqData.available()));
       }
       trace(T_influx,8);
-      request->open("POST", URL.c_str());
+      {
+        char URL[128];
+        size_t len = sprintf_P(URL, PSTR("%s:%d/write?precision=s&db=%s"), influxURL, influxPort, influxDataBase);
+        if(influxRetention){
+          sprintf(URL+len,"&rp=%s", influxRetention);
+        }
+        Serial.println(URL);
+        request->open("POST", URL);
+      }
       trace(T_influx,8);
       request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
       trace(T_influx,8);
@@ -404,19 +433,22 @@ bool influxConfig(const char* configObj){
     influxRestart = true;
   }
   trace(T_influxConfig,3);
-  influxURL = config.get<String>("url");
-  if(influxURL.startsWith("http")){
-    influxURL.remove(0,4);
-    if(influxURL.startsWith("s"))influxURL.remove(0,1);
-    if(influxURL.startsWith(":"))influxURL.remove(0,1);
-    while(influxURL.startsWith("/")) influxURL.remove(0,1);
+  String URL = config.get<String>("url");
+  if(URL.startsWith("http")){
+    URL.remove(0,4);
+    if(URL.startsWith("s"))URL.remove(0,1);
+    if(URL.startsWith(":"))URL.remove(0,1);
+    while(URL.startsWith("/")) URL.remove(0,1);
   }  
-  if(influxURL.indexOf(":") > 0){
-    influxPort = influxURL.substring(influxURL.indexOf(":")+1).toInt();
-    influxURL.remove(influxURL.indexOf(":"));
+  if(URL.indexOf(":") > 0){
+    influxPort = URL.substring(URL.indexOf(":")+1).toInt();
+    URL.remove(URL.indexOf(":"));
   }
+  delete[] influxURL;
+  influxURL = charstar(URL.c_str());
   trace(T_influxConfig,4);
-  influxDataBase = config.get<String>("database");
+  delete[] influxDataBase;
+  influxDataBase = charstar(config.get<char*>("database"));
   influxDBInterval = config.get<unsigned int>("postInterval");
   influxBulkSend = config.get<unsigned int>("bulksend");
   trace(T_influxConfig,5);
@@ -459,6 +491,7 @@ bool influxConfig(const char* configObj){
   }
 
   delete influxOutputs;
+  influxOutputs = nullptr;
   JsonVariant var = config["outputs"];
   if(var.success()){
     trace(T_influxConfig,9);
