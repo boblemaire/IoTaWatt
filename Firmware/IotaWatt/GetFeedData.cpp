@@ -149,7 +149,6 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
       replyData = "[";
       UnixTime = startUnixTime;
       state = process;
-      _serviceBlock->priority = priorityLow;
       return 1;
     }
   

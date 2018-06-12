@@ -103,7 +103,6 @@ void setup()
   for(int i=0; i<32; i++) trace(0,0);
 
 //************************************* Process Config file *****************************************
-  
   if(!getConfig()) {
     log("Configuration failed");
     dropDead();
@@ -149,10 +148,10 @@ authLoadPwds();
     
   //*************************************** Start the local DNS service ****************************
 
-  if (MDNS.begin(host.c_str())) {
+  if (MDNS.begin(deviceName)) {
       MDNS.addService("http", "tcp", 80);
       log("MDNS responder started");
-      log("You can now connect to http://%s.local", host.c_str());
+      log("You can now connect to http://%s.local", deviceName);
   }
    
  //*************************************** Start the web server ****************************

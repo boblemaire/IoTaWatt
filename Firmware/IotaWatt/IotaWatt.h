@@ -199,7 +199,6 @@ extern ScriptSet* outputs;
       // ****************************** SDWebServer stuff ****************************
 
 #define DBG_OUTPUT_PORT Serial
-extern String   host;
 extern bool     hasSD;
 extern File     uploadFile;
 extern SHA256*  uploadSHA;  

@@ -89,7 +89,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       EmonStarted = true;
       EmonLastPost = EmonBeginPosting;
       state = queryLastGet;
-      //_serviceBlock->priority = priorityLow;
       return 1; 
     }
 
@@ -185,7 +184,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       UnixNextPost = EmonLastPost + EmonCMSInterval - (EmonLastPost % EmonCMSInterval);
         
             // Advance state.
-            // Set task priority low so that datalog will run before this.
 
       reqData.flush();
       reqEntries = 0;
@@ -222,6 +220,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         emonNode = nullptr;
         delete[] EmonUsername;
         EmonUsername = nullptr;
+        delete emonOutputs;
+        emonOutputs = nullptr;
         return 0;  
       }
 
