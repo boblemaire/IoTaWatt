@@ -12,52 +12,73 @@ int IotaLog::begin (const char* path ){
   String logPath = String(path) + ".log";
   ndxPath = String(path) + ".ndx";
   if(!SD.exists((char*)logPath.c_str())){
-	if(logPath.lastIndexOf('/') > 0){
-	  String  dir = logPath.substring(0,logPath.lastIndexOf('/'));
-	  if( ! SD.mkdir((char*)dir.c_str())){
-		Serial.print("mkdir failed: ");
-		Serial.println(dir);
-		return 2;
-	  }
-	}
-	IotaFile = SD.open((char*)logPath.c_str(), FILE_WRITE);
-	if(!IotaFile){
-	  return 2;
-	}
-	IotaFile.close();
-	SD.remove(ndxPath);
-	File ndxFile = SD.open((char*)ndxPath.c_str(), FILE_WRITE);
-	ndxFile.close();
+		if(logPath.lastIndexOf('/') > 0){
+			String  dir = logPath.substring(0,logPath.lastIndexOf('/'));
+			if( ! SD.mkdir((char*)dir.c_str())){
+			Serial.print("mkdir failed: ");
+			Serial.println(dir);
+			return 2;
+			}
+		}
+		IotaFile = SD.open((char*)logPath.c_str(), FILE_WRITE);
+		if(!IotaFile){
+			return 2;
+		}
+		IotaFile.close();
+		SD.remove(ndxPath);
+		File ndxFile = SD.open((char*)ndxPath.c_str(), FILE_WRITE);
+		ndxFile.close();
   }
   IotaFile = SD.open((char*)logPath.c_str(), FILE_WRITE);
-  if(!IotaFile){
-	return 2;
+	if(!IotaFile){
+		return 2;
   }
   
   _fileSize = IotaFile.size();
 
   if(_fileSize){
-	IotaFile.seek(0);
-	IotaFile.read(&record, sizeof(record));
-	_firstKey = record.UNIXtime;
-	_firstSerial = record.serial;
-	IotaFile.seek(_fileSize - sizeof(IotaLogRecord));
-	IotaFile.read(&record, sizeof(record));
-	_lastKey = record.UNIXtime;
-	_lastSerial = record.serial;
-	_entries = _fileSize / sizeof(IotaLogRecord);
+		IotaFile.seek(0);
+		IotaFile.read(&record, sizeof(record));
+		_firstKey = record.UNIXtime;
+		_firstSerial = record.serial;
+		IotaFile.seek(_fileSize - sizeof(IotaLogRecord));
+		IotaFile.read(&record, sizeof(record));
+		_lastKey = record.UNIXtime;
+		_lastSerial = record.serial;
+		_entries = _fileSize / sizeof(IotaLogRecord);
   }
 
+					// If file has not wrapped and serials are off,
+					// manufacture new n and n-1 records from n-2.
+
+	if(_entries >= 3 &&	_lastSerial - _firstSerial + 1 != _entries &&
+		 _firstSerial != _lastSerial + 1){
+		IotaLogRecord* record = new IotaLogRecord;	 
+		IotaFile.seek(_fileSize - sizeof(IotaLogRecord) * 3);
+		IotaFile.read((char*)record, sizeof(IotaLogRecord));
+		if(record->serial - _firstSerial + 3 == _entries){
+			record->UNIXtime += _interval;
+			record->serial++;
+			IotaFile.write((char*)record, sizeof(record)); 
+			record->UNIXtime += _interval;
+			record->serial++;
+			IotaFile.write((char*)record, sizeof(record));
+			_lastKey = record->UNIXtime;
+			_lastSerial = record->serial; 
+		}
+		delete record;
+	}
+
   if(_firstKey > _lastKey){
-	_wrap = findWrap(0,_firstKey, _fileSize - sizeof(IotaLogRecord), _lastKey);
-	IotaFile.seek(_wrap);
-	IotaFile.read(&record, sizeof(record));
-	_firstKey = record.UNIXtime;
-	_firstSerial = record.serial;
-	IotaFile.seek(_wrap - sizeof(IotaLogRecord));
-	IotaFile.read(&record, sizeof(record));
-	_lastKey = record.UNIXtime;
-	_lastSerial = record.serial;
+		_wrap = findWrap(0,_firstKey, _fileSize - sizeof(IotaLogRecord), _lastKey);
+		IotaFile.seek(_wrap);
+		IotaFile.read(&record, sizeof(record));
+		_firstKey = record.UNIXtime;
+		_firstSerial = record.serial;
+		IotaFile.seek(_wrap - sizeof(IotaLogRecord));
+		IotaFile.read(&record, sizeof(record));
+		_lastKey = record.UNIXtime;
+		_lastSerial = record.serial;
   }
 
   _lastReadKey = _firstKey;
@@ -65,11 +86,11 @@ int IotaLog::begin (const char* path ){
   _maxFileSize = max(_fileSize, _maxFileSize);
   
   if(((int32_t) _lastSerial - _firstSerial + 1) != _entries){
-	Serial.println("Datalog inconsistent: size:");
-	Serial.print("filesize:");
-	Serial.println(_fileSize);
-	dumpFile();
-	IotaFile.close();
+		Serial.println("Datalog inconsistent: size:");
+		Serial.print("filesize:");
+		Serial.println(_fileSize);
+		dumpFile();
+		IotaFile.close();
 	}
 	
 	for(int i=0; i<_cacheSize; i++){
@@ -87,7 +108,7 @@ uint32_t IotaLog::findWrap(uint32_t highPos, uint32_t highKey, uint32_t lowPos, 
   } record;
   
   if((lowPos - highPos) == sizeof(IotaLogRecord)) {
-	return lowPos;
+		return lowPos;
   }
   uint32_t midPos = (highPos + lowPos) / 2;
   midPos += midPos % sizeof(IotaLogRecord);
@@ -95,7 +116,7 @@ uint32_t IotaLog::findWrap(uint32_t highPos, uint32_t highKey, uint32_t lowPos, 
   IotaFile.read(&record, sizeof(record));
   uint32_t midKey = record.UNIXtime;
   if(midKey > highKey){
-	return findWrap(midPos, midKey, lowPos, lowKey);
+		return findWrap(midPos, midKey, lowPos, lowKey);
   }
   return findWrap(highPos, highKey, midPos, midKey);
 }
