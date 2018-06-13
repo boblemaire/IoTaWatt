@@ -113,9 +113,9 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       request->open("GET", URL.c_str());
       request->setTimeout(5);
       request->onData([](void* arg, asyncHTTPrequest* request, size_t available){
-        uint8_t *buf = new uint8_t[512];
+        uint8_t *buf = new uint8_t[1040];
         while(request->available()){
-          size_t read = request->responseRead(buf, 512);
+          size_t read = request->responseRead(buf, 1040);
           releaseFile.write(buf, read);
         }
         delete[] buf;
