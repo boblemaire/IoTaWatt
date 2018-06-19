@@ -244,10 +244,8 @@ bool configInputs(const char* JsonStr){
       }
       else if (type == "CT"){
         inputChannel[i]->_type = channelTypePower;
-        inputChannel[i]->_vchannel = input["vchan"].as<int>();     
-        if(input.containsKey("signed")){
-          inputChannel[i]->_signed = true;
-        }
+        inputChannel[i]->_vchannel = input["vchan"].as<int>();
+        inputChannel[i]->_signed = input["signed"] | false;
       }  
       else{
         log("unsupported input type: %s", type.c_str());
