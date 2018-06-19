@@ -173,7 +173,7 @@ double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsed
             break;
 
           case unitsHz:
-            result = runRecursive(&tokens, oldRec, newRec, elapsedHours, '2'); 
+            result = runRecursive(&tokens, oldRec, newRec, elapsedHours, 'H'); 
             break;
 
           case unitsPF:
@@ -225,6 +225,7 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
               // Type 2 retrieves accum2
               // Type R computes var as sqrt(VA^2 - W^2)
               // Type A computes Amps as VA / V
+              // Type H retrieves Hz for associated voltage channel
 
           if(*token & getInputOp){
             if(type == '1'){
@@ -242,6 +243,10 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
               double VA = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0)) / elapsedHours;
               int vchannel = inputChannel[*token % 32]->_vchannel;
               operand = VA / ((newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0.0)) / elapsedHours) ;
+            }
+            else if(type == 'H'){
+              int vchannel = inputChannel[*token % 32]->_vchannel;
+              operand = (newRec->accum2[vchannel] - (oldRec ? oldRec->accum2[vchannel] : 0.0)) / elapsedHours;
             }
             else operand = 0.0;
             if(operand != operand) operand = 0;

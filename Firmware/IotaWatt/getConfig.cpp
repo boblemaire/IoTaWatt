@@ -241,6 +241,7 @@ bool configInputs(const char* JsonStr){
       }
       if(type == "VT") {
         inputChannel[i]->_type = channelTypeVoltage;
+        inputChannel[i]->_vchannel = i;
       }
       else if (type == "CT"){
         inputChannel[i]->_type = channelTypePower;
