@@ -8,11 +8,12 @@ bool   unpackUpdate(String updateVersion);
  * 
  *************************************************************************************************/
 uint32_t updater(struct serviceBlock* _serviceBlock) {
-  enum states {initialize, getVersion, waitVersion, download, waitDownload, install};
+  enum states {initialize, getVersion, waitVersion, createFile, download, waitDownload, install};
   static states state = initialize;
   static asyncHTTPrequest* request;
   static String updateVersion;
   static File releaseFile;
+  static bool upToDate = false;
 
   if( ! WiFi.isConnected()){
     return UNIXtime() + 1;
@@ -27,13 +28,11 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
 
     case getVersion: {
-      if( ! updateClass) {
+      if( ! updateClass || strcmp(updateClass, "NONE") == 0) {
+        log("Updater: No auto-update");
         break;
       }
-      if( ! WiFi.isConnected()){
-        return UNIXtime() + 1;
-      }
-      if( ! HTTPrequestFree){
+      if( ! WiFi.isConnected() || ! HTTPrequestFree){
         return UNIXtime() + 1;
       }
       HTTPrequestFree--;
@@ -65,23 +64,31 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       }
       HTTPrequestFree++;
       if(request->responseHTTPcode() != 200 || request->available() != 8){
-        log("Updater: Invalid response from server. HTTPcode: %d", request->responseHTTPcode());
+        int responseCode = request->responseHTTPcode();
         delete request;
+        log("Updater: Invalid response from server. HTTPcode: %d", responseCode);
         state = getVersion;
+        if(responseCode == -4){
+          return UNIXtime()+3;
+        }
         break;
       }
       updateVersion = request->responseText();
       delete request;
       if(strcmp(updateVersion.c_str(), IOTAWATT_VERSION) == 0){
+        if( ! upToDate){
+          log("updater: Auto-update is current for class %s.", updateClass);
+          upToDate = true;
+        }
         state = getVersion;
         return UNIXtime() + updaterServiceInterval;
       }
       log("Updater: Update from %s to %s", IOTAWATT_VERSION, updateVersion.c_str());
-      state = download;
+      state = createFile;
       return 1;
     }
 
-    case download: {
+    case createFile: {
       log("Updater: download %s", updateVersion.c_str());
       deleteRecursive("download");
       if( ! SD.mkdir("download")){
@@ -97,13 +104,12 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         state = getVersion;
         break;
       }
-      if( ! WiFi.isConnected()){
-        return UNIXtime() + 1;
-      }
-
-        // for download, hog all requests.
-
-      if(HTTPrequestFree != HTTPrequestMax){
+      state = download;
+      return 1;
+    }
+      
+    case download: {  
+      if( ! WiFi.isConnected() || HTTPrequestFree != HTTPrequestMax){
         return UNIXtime() + 1;
       }
       HTTPrequestFree = 0;
@@ -113,9 +119,9 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       request->open("GET", URL.c_str());
       request->setTimeout(5);
       request->onData([](void* arg, asyncHTTPrequest* request, size_t available){
-        uint8_t *buf = new uint8_t[1040];
+        uint8_t *buf = new uint8_t[500];
         while(request->available()){
-          size_t read = request->responseRead(buf, 1040);
+          size_t read = request->responseRead(buf, 500);
           releaseFile.write(buf, read);
         }
         delete[] buf;
@@ -148,6 +154,8 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
 
     case install: {
       if(unpackUpdate(updateVersion)){
+        state = getVersion;
+        return 1;
         if(installUpdate(updateVersion)){
           log ("Firmware updated, restarting.");
           delay(500);
@@ -157,7 +165,6 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       state = getVersion;
     }
   }
-
   return UNIXtime() + updaterServiceInterval;
 }
 
