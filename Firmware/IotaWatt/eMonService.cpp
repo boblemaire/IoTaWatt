@@ -87,6 +87,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       log("EmonService: started. url:%s:%d%s,node:%s,interval:%d,%s", EmonURL, EmonPort, EmonURI, 
            emonNode, EmonCMSInterval, (EmonSend == EmonSendGET ? " unsecure GET" : " encrypted POST"));
       EmonStarted = true;
+      retryCount = 0;
       EmonLastPost = EmonBeginPosting;
       state = queryLastGet;
       return 1; 
@@ -134,7 +135,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         if(retryCount == 10){
           log("EmonService: get input list failing, code: %d", request->responseHTTPcode());
         }
-        return UNIXtime() + 60;
+        return UNIXtime() + 30;
       }
 
       trace(T_Emon,4);    

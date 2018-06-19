@@ -131,8 +131,8 @@ void samplePower(int channel, int overSample){
         // If watts is negative and the channel is not explicitely signed, reverse it (backward CT).
         // If we do reverse it, and it's significant, mark it as such for reporting in the status API.
 
+  Ichannel->_reversed = false;
   if( ! Ichannel->_signed){
-    Ichannel->_reversed = false;
     if(_watts < 0){
       _watts = -_watts;
       if(_watts > 5){
