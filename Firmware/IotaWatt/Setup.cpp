@@ -128,8 +128,7 @@ authLoadPwds();
       String ssid = "iota" + String(ESP.getChipId());
       String pwd = deviceName;
       log("Connecting with WiFiManager.");
-
-      wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
+      wifiManager.autoConnect(ssid.c_str(), deviceName);
       endLedCycle();
       while(WiFi.status() != WL_CONNECTED && RTCrunning == false){
         log("RTC not running, waiting for WiFi.");
