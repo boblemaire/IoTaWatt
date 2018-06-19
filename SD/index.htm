@@ -248,10 +248,14 @@
           </table>
           <table id="statusTable"></table>
         </div>
-      <button id="tabinflux" class="groupTab" onclick="toggleDisplay('statusInfluxDiv')">InfluxDB</button>
-        <div id="statusInfluxDiv" class="statusDiv" style="display: none;"></div>
-      <button id="tabEmon" class="groupTab" onclick="toggleDisplay('statusEmonDiv')">Emoncms</button>
-        <div id="statusEmonDiv" class="statusDiv" style="display: none;"></div>
+      <div id="tabinflux" style="display:none;">
+        <button class="groupTab" onclick="toggleDisplay('statusInfluxDiv')">InfluxDB</button>
+        <p id="statusInfluxDiv" class="statusDiv" style="display: none;"></p>
+      </div>
+      <div id="tabEmon" style="display: none;">
+        <button class="groupTab" onclick="toggleDisplay('statusEmonDiv')">Emoncms</button>
+        <p id="statusEmonDiv" class="statusDiv" style="display: none;"></p>
+      </div>
       <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
         <div id="statusLogsDiv" class="statusDiv" style="display: none;"></div>
     </div> <!-- divStatus -->
@@ -1416,17 +1420,6 @@ function buildDevice(passwordSet){
     deviceUpdate.add(option);
   }
   deviceUpdate.setAttribute("onchange","config.update = this.value; checkDevice();");
-  
-  var deviceAdmin = addTableRow(deviceTable, "Admin password", "deviceAdmin", "button");
-  deviceAdmin.innerHTML = passwords.admin ? "Set/Reset" : "Set";
-  //deviceAdmin.setAttribute("onclick","config.influxdb.pwd = this.value; checkInfluxdb();"); 
-  //deviceAdmin.pattern = "^[^'\"\\s]*$";
-  //deviceAdmin.type = "password";
-  //deviceAdmin.placeholder = "optional";
-  //deviceAdmin.setAttribute("onchange","changeAdmin(this.value); checkDevice();");
-  if(passwords.admin){
-    var deviceUser = addTableRow(deviceTable, "User password", "deviceUser", "button");
-  }
 }
 
 function changeAdmin(newPassword){
@@ -2010,7 +2003,7 @@ function influxToggle(){
  * *******************************************************************************************/
 function statusBegin(){
   EbyId("tabinflux").style.display = config.influxdb !== undefined ? "inline" : "none";
-  EbyId("tabEmon").style.display = config.server !== undefined ? "inline" : "none";
+  EbyId("tabEmon").style.display = (config.server !== undefined && config.server.type == "emoncms") ? "inline" : "none";
   currentBodyPush("divStatus");
   getStatus = true;
   statusGet();
