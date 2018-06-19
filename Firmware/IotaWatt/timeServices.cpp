@@ -64,7 +64,10 @@ uint32_t littleEndian(uint32_t);
       ntpPacket packet;
       udp.begin(ntpPort);
       IPAddress timeServerIP;
-      WiFi.hostByName(ntpServerName, timeServerIP);       // get a random server from the pool
+      int dnsRetry = 0;
+      while(WiFi.hostByName(ntpServerName, timeServerIP) != 1){   // get a random server from the pool
+        if(++dnsRetry > 3) return 0;
+      }
       udp.beginPacket(timeServerIP, 123);
       udp.write((uint8_t*)&packet, sizeof(ntpPacket));                  // send an NTP packet to a time server
       udp.endPacket();
@@ -128,7 +131,8 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     case start: { 
       log("timeSync: service started.");
       lastNTPupdate = UNIXtime();  
-      state = getNTPtime;    
+      state = getNTPtime;
+      return UNIXtime() + 60;    
     }
 
     case getNTPtime: {
