@@ -149,6 +149,9 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       request = nullptr;
       if(HTTPcode != 200){
         log("influxDB: last entry query failed: %d", HTTPcode);
+        if(HTTPcode > 204){
+          Serial.print(response);
+        }
         influxStop = true;
         state = post;
         return 1;
@@ -381,7 +384,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         if(influxRetention){
           sprintf(URL+len,"&rp=%s", influxRetention);
         }
-        Serial.println(URL);
         request->open("POST", URL);
       }
       trace(T_influx,8);
