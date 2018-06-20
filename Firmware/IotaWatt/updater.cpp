@@ -8,12 +8,14 @@ bool   unpackUpdate(String updateVersion);
  * 
  *************************************************************************************************/
 uint32_t updater(struct serviceBlock* _serviceBlock) {
-  enum states {initialize, getVersion, waitVersion, createFile, download, waitDownload, install};
+  enum states {initialize, checkAutoUpdate, getVersion, waitVersion, createFile, download, waitDownload, install};
   static states state = initialize;
   static asyncHTTPrequest* request;
   static String updateVersion;
   static File releaseFile;
   static bool upToDate = false;
+  static char* _updateClass = nullptr;
+  static uint32_t lastVersionCheck = 0;
 
   if( ! WiFi.isConnected()){
     return UNIXtime() + 1;
@@ -22,16 +24,29 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   switch(state){
 
     case initialize: {
-      log("Updater: started.");
-      state = getVersion;
+      log("Updater: service started. Auto-update class is %s", updateClass);
+      _updateClass = charstar(updateClass);
+      state = checkAutoUpdate;
       return 1;
     }
 
-    case getVersion: {
-      if( ! updateClass || strcmp(updateClass, "NONE") == 0) {
-        log("Updater: No auto-update");
-        break;
+    case checkAutoUpdate: {
+      if(strcmp(updateClass, _updateClass) != 0){
+        delete[] _updateClass;
+        _updateClass = charstar(updateClass);
+        log("Updater: Auto-update class changed to %s", _updateClass);
+        state = getVersion;
+        return 1;
       }
+      else if (strcmp(_updateClass, "NONE") != 0 && millis() - lastVersionCheck > updaterServiceInterval){
+        lastVersionCheck = millis();
+        state = getVersion;
+        return 1;
+      }
+      return UNIXtime() + 15;
+    }
+
+    case getVersion: {
       if( ! WiFi.isConnected() || ! HTTPrequestFree){
         return UNIXtime() + 1;
       }
@@ -71,7 +86,10 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         if(responseCode == -4){
           return UNIXtime()+3;
         }
-        break;
+        else if(responseCode == 403){
+          state = checkAutoUpdate;
+          return 1;
+        }
       }
       updateVersion = request->responseText();
       delete request;
@@ -80,7 +98,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
           log("updater: Auto-update is current for class %s.", updateClass);
           upToDate = true;
         }
-        state = getVersion;
+        state = checkAutoUpdate;
         return UNIXtime() + updaterServiceInterval;
       }
       log("Updater: Update from %s to %s", IOTAWATT_VERSION, updateVersion.c_str());
@@ -93,7 +111,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       deleteRecursive("download");
       if( ! SD.mkdir("download")){
         log("Cannot create download directory");
-        state = getVersion;
+        state = checkAutoUpdate;
         break;
       }
       String filePath = "download/" + updateVersion + ".bin";
@@ -101,7 +119,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       if(! releaseFile){
         log("Updater: Cannot create download file.");
         deleteRecursive("download");
-        state = getVersion;
+        state = checkAutoUpdate;
         break;
       }
       state = download;
@@ -154,18 +172,16 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
 
     case install: {
       if(unpackUpdate(updateVersion)){
-        state = getVersion;
-        return 1;
         if(installUpdate(updateVersion)){
           log ("Firmware updated, restarting.");
           delay(500);
           ESP.restart();
         }
       }
-      state = getVersion;
+      state = checkAutoUpdate;
     }
   }
-  return UNIXtime() + updaterServiceInterval;
+  return UNIXtime() + 1;
 }
 
 /**************************************************************************************************

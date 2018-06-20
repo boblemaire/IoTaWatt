@@ -41,14 +41,10 @@ boolean getConfig(void){
   
   //************************************** Process misc first level stuff **************************
   
-  if(Config.containsKey("update")){
-    delete[] updateClass;
-    updateClass = charstar(Config["update"].as<char*>());
-  }
+  delete[] updateClass;
+  updateClass = charstar(Config["update"] | "NONE");
 
-  if(Config.containsKey("timezone")){
-    localTimeDiff = Config["timezone"].as<signed int>(); 
-  }
+  localTimeDiff = Config["timezone"].as<signed int>() | 0;; 
 
   if(Config.containsKey("logdays")){ 
     log("Current log overide days: %d", currLog.setDays(Config["logdays"].as<int>()));
