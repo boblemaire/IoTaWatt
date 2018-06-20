@@ -53,7 +53,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         // If it's not a new log, get the last entry.
      
       if(histLog.firstKey() != 0){    
-        log("historyLog: Last log entry %d", histLog.lastKey());
+        log("historyLog: Last log entry %s", dateString(histLog.lastKey()).c_str());
       }
 
         // New history log, start with first even increment in IotaLog     

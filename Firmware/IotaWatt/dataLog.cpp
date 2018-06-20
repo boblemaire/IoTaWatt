@@ -63,7 +63,7 @@
       else {
         logRecord->UNIXtime = currLog.lastKey();
         currLog.readKey(logRecord);
-        log("dataLog: Last log entry: %d", currLog.lastKey());
+        log("dataLog: Last log entry %s", dateString(currLog.lastKey()).c_str());
       }
 
       state = checkClock;
