@@ -110,30 +110,26 @@ bool    Script::encodeScript(const char* script){
         }
         _tokens = new uint8_t[tokenCount + 1];
         _constants = new float[constCount];
-        int j = 0;      
-        for(int i=0; i<tokenCount; i++){
+        int j = 0;
+        int i = 0;     
+        while(script[j]){
           if(script[j] == '@'){
-            int n = script[++j] - '0';
-            while(isDigit(script[++j])) n = n * 10 + (script[j] - '0');
-            _tokens[i] = getInputOp + n;
+            char* endptr;
+            int n = strtol(&script[j+1], &endptr, 10);
+            j = endptr - script;
+            _tokens[i++] = getInputOp + n;
           } 
           else if (script[j] == '#'){
-            _tokens[i] = getConstOp + --constCount;
-            String number;
-            while(isDigit(script[++j]) || script[j] == '.') number += script[j];
-            _constants[constCount] = number.toFloat();
+            _tokens[i++] = getConstOp + --constCount;
+            char* endptr;
+            _constants[constCount] = strtof(&script[j+1], &endptr);
+            j = endptr - script;
           }
           else {
-            for(int k=0; k<strlen(opChars); ++k){
-              if(script[j] == opChars[k]){
-                _tokens[i] = k;
-                break;
-              }
-            }
-            j++;
-          }   
+            _tokens[i++] = strchr(opChars, script[j++]) - opChars;
+          }
         }
-        _tokens[tokenCount] = 0;
+        _tokens[i] = 0;
 }
 
 double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units overideUnits){
