@@ -35,6 +35,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         delete[] _updateClass;
         _updateClass = charstar(updateClass);
         log("Updater: Auto-update class changed to %s", _updateClass);
+        lastVersionCheck = 0;
         state = getVersion;
         return 1;
       }
