@@ -366,39 +366,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       return 1;
     } 
 
-    case waitPost: {
-      trace(T_Emon,8);
-      if(request->readyState() != 4){
-        return 1; 
-      }
-      HTTPrequestFree++;
-      trace(T_Emon,8);
-      if(request->responseHTTPcode() != 200){
-        if(++retryCount  % 10 == 0){
-            log("EmonService: retry count %d", retryCount);
-        }
-        EmonLastPost = lastRequestTime;
-        state = getLastRecord;
-        return UNIXtime() + 1;
-      }
-      trace(T_Emon,8);
-      String response = request->responseText();
-      if(! response.startsWith("ok")){
-        log("EmonService: response not ok. Retrying.");
-        Serial.println(response.substring(0,60));
-        EmonLastPost = reqUnixtime - EmonCMSInterval;
-        state = getLastRecord;
-        return UNIXtime() + 1;
-      }
-      trace(T_Emon,8);
-      retryCount = 0;
-      reqData.flush();
-      reqEntries = 0;
-      EmonLastPost = lastRequestTime;    
-      state = post;
-      return 1;
-    }
-
 case sendSecure:{
       trace(T_Emon,9);
       if( ! WiFi.isConnected()){
@@ -494,11 +461,11 @@ case sendSecure:{
       trace(T_Emon,10);
       request->send(&reqData, reqData.available());
       reqData.flush();
-      state = waitSecure;
+      state = waitPost;
       return 1;
     } 
 
-    case waitSecure: {
+    case waitPost: {
       trace(T_Emon,11);
       if(request->readyState() != 4){
         return 1; 
@@ -507,26 +474,28 @@ case sendSecure:{
       reqData.flush();
       trace(T_Emon,11);
       if(request->responseHTTPcode() != 200){
-        if(++retryCount  % 10 == 0){
-            log("EmonService: retry count %d", retryCount);
+        if(++retryCount == 3){
+            log("EmonService: HTTP response %d, retrying.", request->responseHTTPcode());
         }
         EmonLastPost = lastRequestTime;
         state = getLastRecord;
-        return UNIXtime() + 1;
+        return UNIXtime() + retryCount / 10;
       }
       trace(T_Emon,11);
       String response = request->responseText();
-      if(! response.startsWith(base64Sha)){
-        log("EmonService: Invalid response, Retrying.");
-        Serial.println(base64Sha);
-        Serial.println(response);
+      if((EmonSend == EmonSendGET && ! response.startsWith("ok")) ||
+        (EmonSend == EmonSendPOSTsecure && ! response.startsWith(base64Sha))){
+        if(++retryCount == 3){
+          log("EmonService: Invalid response, retrying.");
+        }
         EmonLastPost = reqUnixtime - EmonCMSInterval;
         state = getLastRecord;
-        return UNIXtime() + 1;
+        return UNIXtime() + retryCount / 10;
       }
       trace(T_Emon,11);
-      //delete request;
-      //request = nullptr;
+      if(retryCount >= 3){
+        log("EmonService: Retry successful after %d attempts.", retryCount);
+      }
       retryCount = 0;
       reqEntries = 0;
       EmonLastPost = lastRequestTime;     
