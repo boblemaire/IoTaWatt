@@ -501,7 +501,7 @@ bool influxConfig(const char* configObj){
   }
   if( ! influxStarted) {
     trace(T_influxConfig,10);
-    NewService(influxService);
+    NewService(influxService, T_influx);
     influxStarted = true;
   }
   return true;

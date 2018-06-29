@@ -595,7 +595,7 @@ bool EmonConfig(const char* configObj){
   trace(T_EmonConfig,5);
   if( ! EmonStarted) {
     trace(T_EmonConfig,6);
-    NewService(EmonService);
+    NewService(EmonService, T_Emon);
     EmonStarted = true;
   }
   trace(T_EmonConfig,7);

@@ -109,9 +109,10 @@ extern uint8_t ADC_selectPin[2];            // indexable reference for ADC selec
 union traceUnion {
       uint32_t    traceWord;
       struct {
-            uint16_t    seq;
+            uint8_t     seq;
             uint8_t     mod;
             uint8_t     id;
+            uint8_t     det;
       };
 };
 
@@ -143,7 +144,10 @@ extern traceUnion traceEntry;
 #define T_base64 15        // base 64 encode
 #define T_EmonConfig 16    // Emon configuration
 #define T_influxConfig 17  // influx configuration 
-#define T_stats 18         // Stat service                      
+#define T_stats 18         // Stat service 
+#define T_datalog 19       // datalog service
+#define T_timeSync 20      // timeSync service 
+#define T_WiFi 21          // WiFi service                               
 
       // ADC descriptors
 
@@ -159,9 +163,10 @@ enum priorities: byte {priorityLow=3, priorityMed=2, priorityHigh=1};
 struct serviceBlock {                  // Scheduler/Dispatcher list item (see comments in Loop)
   serviceBlock* next;                  // Next serviceBlock in list
   uint32_t callTime;                   // Time (in NTP seconds) to dispatch
-  priorities priority;                 // All things equal tie breaker
   uint32_t (*service)(serviceBlock*);  // the SERVICE
-  serviceBlock(){next=NULL; callTime=0; priority=priorityMed; service=NULL;}
+  priorities priority;                 // All things equal tie breaker
+  uint8_t   taskID;
+  serviceBlock(){next=NULL; callTime=0; priority=priorityMed; service=NULL; taskID=0;}
 };
 
 extern serviceBlock* serviceQueue;     // Head of ordered list of services
@@ -250,10 +255,10 @@ extern int16_t Isample [MAX_SAMPLES];
       // ************************ Declare global functions
 void      setup();
 void      loop();
-void      trace(const uint8_t module, const uint8_t id); 
+void      trace(const uint8_t module, const uint8_t id, const uint8_t det=0); 
 void      logTrace(void);
 
-void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*));
+void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*), const uint8_t taskID=0);
 void      AddService(struct serviceBlock*);
 uint32_t  dataLog(struct serviceBlock*);
 uint32_t  historyLog(struct serviceBlock*);

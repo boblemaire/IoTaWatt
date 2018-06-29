@@ -164,12 +164,12 @@ authLoadPwds();
   
  //*************************************** Start the logging services *********************************
    
-  NewService(dataLog);
-  NewService(statService);
-  NewService(timeSync);
-  NewService(WiFiService);
-  NewService(updater);
-  NewService(historyLog);
+  NewService(dataLog, T_datalog);
+  NewService(statService, T_stats);
+  NewService(timeSync, T_timeSync);
+  NewService(WiFiService, T_WiFi);
+  NewService(updater, T_UPDATE);
+  NewService(historyLog, T_history);
   
 }  // setup()
 /***************************************** End of Setup **********************************************/
