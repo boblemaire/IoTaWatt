@@ -14,8 +14,9 @@ bool auth(authLevel level){
   }
   if(server.hasHeader(FPSTR(AUTHORIZATION_HEADER))) {
     String authReq = server.header(FPSTR(AUTHORIZATION_HEADER));
+    authReq.toLowerCase();
         
-    if(authReq.startsWith(F("Digest"))) {
+    if(authReq.startsWith(F("digest"))) {
       authReq = authReq.substring(7);
            
       // extracting required parameters for RFC 2069 simpler Digest
@@ -208,5 +209,15 @@ void authLoadPwds(){
     hex2bin(userH1, buf, 16);
   }
   pwdsFile.close();
+}
+
+int     authCount(){
+  int count = 0;
+  authSession* session = (authSession*)&authSessions;
+  while(session->next){
+    count++;
+    session = session->next;
+  }
+  return count;     
 }
 
