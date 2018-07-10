@@ -30,11 +30,9 @@ bool auth(authLevel level){
       String _cnonce   = extractParam(authReq, F("cnonce=\""));
 
       if((!_realm.length()) || (!_nonce.length()) || (!_uri.length()) || (!_response.length()) || (!_cnonce.length())) {
-        authReq = "";
         return false;
       }
       if(level == authAdmin && !_username.equals("admin"))  {
-          authReq = "";
           return false;
       }
 
@@ -75,11 +73,9 @@ bool auth(authLevel level){
       String _responsecheck = md5.toString();
       if(_response == _responsecheck){
         session->lastUsed = UNIXtime();  
-        authReq = "";
         return true;
-      } 
+      }
     }
-    authReq = "";
   }
   return false;
 }

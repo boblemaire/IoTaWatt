@@ -156,8 +156,11 @@ authLoadPwds();
  //*************************************** Start the web server ****************************
 
   SdFile::dateTimeCallback(dateTime);
-  server.on(F("/edit"), HTTP_POST, returnOK,  handleFileUpload);
+  server.on(F("/edit"), HTTP_POST, returnOK, handleFileUpload);
   server.onNotFound(handleRequest);
+  const char * headerkeys[] = {"X-configSHA256"};
+  size_t headerkeyssize = sizeof(headerkeys)/sizeof(char*);
+  server.collectHeaders(headerkeys, headerkeyssize );
   server.begin();
   log("HTTP server started");
   WiFi.mode(WIFI_STA);

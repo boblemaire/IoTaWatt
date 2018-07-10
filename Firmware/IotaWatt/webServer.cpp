@@ -55,7 +55,9 @@ const char P_appJson[]  PROGMEM = "application/json";
 const char P_txtJson[]  PROGMEM = "text/json";
 
 bool authenticate(authLevel level){
-  if(auth(level)) return true;
+  if(auth(level)){
+    return true;
+  } 
   requestAuth();
   return false;
 }
@@ -173,16 +175,14 @@ bool loadFromSdCard(String path){
 
 void handleFileUpload(){
   trace(T_WEB,11);
-  
-    
   if(server.uri() != "/edit") return;
   HTTPUpload& upload = server.upload();
   if(upload.status == UPLOAD_FILE_START){
     if( ! authenticate(authAdmin)) return;
     if(upload.filename.equalsIgnoreCase("config.txt") ||
-        upload.filename.equalsIgnoreCase("/config.txt")){ 
-      if(server.hasArg(F("configSHA256"))){
-        if(server.arg(F("configSHA256")) != base64encode(configSHA256, 32)){
+        upload.filename.equalsIgnoreCase("/config.txt")){
+      if(server.hasHeader(F("X-configSHA256"))){
+        if(server.header(F("X-configSHA256")) != base64encode(configSHA256, 32)){
           server.send(409, P_txtPlain, "Config not current");
           return;
         }
@@ -216,6 +216,7 @@ void handleFileUpload(){
         server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
       }
     }
+    returnOK();
   }
 }
 
