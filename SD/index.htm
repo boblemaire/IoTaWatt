@@ -2390,13 +2390,11 @@ function writeFile(fileString, url, responseHandler){
   var formData = new FormData();
   var blob = new Blob([fileString], {type: 'plain/text'},  url);
   formData.append("file", blob, url);
-  var URI = "";
-  if(url == configFileURL){
-    URI += "?configSHA256=" + configSHA256;
-  }
-  URI = "/edit" + URI;
+  var URI = "/edit";
   xmlHttp.open("POST", URI);
-  
+  if(url == configFileURL){
+    xmlHttp.setRequestHeader("X-configSHA256", configSHA256);
+  }
   xmlHttp.send(formData);
 }
 
