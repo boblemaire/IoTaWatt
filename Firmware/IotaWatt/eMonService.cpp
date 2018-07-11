@@ -335,12 +335,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if( ! HTTPrequestFree){
         return UNIXtime() + 1;
       }
-
-              // Temporary pause code until lwip 2 is fixed for "time Wait" problem.
-
-      if(ESP.getFreeHeap() < 15000){
-        return UNIXtime() + 1;
-      }
       HTTPrequestFree--;
       if( ! request){
         request = new asyncHTTPrequest;

@@ -356,11 +356,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 1;
       }
 
-              // Make sure there's enough memory
-
-      if(ESP.getFreeHeap() < 15000){
-        return UNIXtime() + 1;
-      }
       if( ! HTTPrequestFree){
         return 1;
       }
