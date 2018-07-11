@@ -33,6 +33,12 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
     }
   }
 
+  if(ESP.getFreeHeap() < 9000){
+    log("Heap memory has degraded below safe minimum, restarting.");
+    delay(500);
+    ESP.restart();
+  }
+
       // Temporary addition of time-wait limit code from me-no-dev's fix.
       // Will remove when fix is in general release.
 
@@ -47,6 +53,7 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
         twCount++;
       }      
     }
-  } 
+  }
+ 
   return UNIXtime() + 1;  
 }
