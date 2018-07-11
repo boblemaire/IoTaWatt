@@ -10,7 +10,7 @@ bool   unpackUpdate(String updateVersion);
 uint32_t updater(struct serviceBlock* _serviceBlock) {
   enum states {initialize, checkAutoUpdate, getVersion, waitVersion, createFile, download, waitDownload, install};
   static states state = initialize;
-  static asyncHTTPrequest* request;
+  static asyncHTTPrequest* request = nullptr;
   static String updateVersion;
   static File releaseFile;
   static bool upToDate = false;
@@ -36,6 +36,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         _updateClass = charstar(updateClass);
         log("Updater: Auto-update class changed to %s", _updateClass);
         lastVersionCheck = 0;
+        upToDate = false;
         state = getVersion;
         return 1;
       }
@@ -44,7 +45,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         state = getVersion;
         return 1;
       }
-      return UNIXtime() + 15;
+      return UNIXtime() + 7;
     }
 
     case getVersion: {
@@ -52,7 +53,9 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         return UNIXtime() + 1;
       }
       HTTPrequestFree--;
-      request = new asyncHTTPrequest;
+      if( ! request){
+        request = new asyncHTTPrequest;
+      }
       request->setDebug(false);
       String URL = String(updateURL) + updatePath;
       if( ! request->open("GET", URL.c_str())){
@@ -71,7 +74,6 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       }
       state = waitVersion;
       return 1;
-      
     }
 
     case waitVersion: {
@@ -82,6 +84,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       if(request->responseHTTPcode() != 200 || request->available() != 8){
         int responseCode = request->responseHTTPcode();
         delete request;
+        request = nullptr;
         log("Updater: Invalid response from server. HTTPcode: %d", responseCode);
         state = getVersion;
         if(responseCode == -4){
@@ -94,13 +97,14 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       }
       updateVersion = request->responseText();
       delete request;
+      request = nullptr;
       if(strcmp(updateVersion.c_str(), IOTAWATT_VERSION) == 0){
         if( ! upToDate){
-          log("updater: Auto-update is current for class %s.", updateClass);
+          log("Updater: Auto-update is current for class %s.", updateClass);
           upToDate = true;
         }
         state = checkAutoUpdate;
-        return UNIXtime() + updaterServiceInterval;
+        return 1;
       }
       log("Updater: Update from %s to %s", IOTAWATT_VERSION, updateVersion.c_str());
       state = createFile;
@@ -132,7 +136,9 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         return UNIXtime() + 1;
       }
       HTTPrequestFree = 0;
-      request = new asyncHTTPrequest;
+      if( ! request){
+        request = new asyncHTTPrequest;
+      }
       String URL = String(updateURL) + "/firmware/bin/" + updateVersion + ".bin";
       request->setDebug(false);
       request->open("GET", URL.c_str());
@@ -160,14 +166,15 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       if(request->responseHTTPcode() != 200){
         log("Updater: Download failed HTTPcode %s", request->responseHTTPcode());
         delete request;
+        request = nullptr;
         deleteRecursive("download");
         state = getVersion;
         break;
       }
       log("Updater: Release downloaded %dms, size %d", request->elapsedTime(), fileSize);
       delete request;
+      request = nullptr;
       state = install;
-      
       return 1;
     }
 
