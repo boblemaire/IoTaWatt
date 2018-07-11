@@ -152,13 +152,15 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         delete[] buf;
         });
       request->send();
-      state = waitDownload;
-      return UNIXtime() + 1;
-    }
 
-    case waitDownload: {
-      if(request->readyState() != 4){
-        return 1;
+          // Writing to the SD in async handler can cause problems. If we return
+          // and keep sampling, the onData handler could interupt another service
+          // in the middle of SDcard work.  So we will go synchronous here and wait
+          // for the entire update blob to be transfered and written to SD.
+          // Takes about 5-10 seconds.
+
+      while(request->readyState() != 4){
+        yield();
       }
       HTTPrequestFree = HTTPrequestMax;
       size_t fileSize = releaseFile.size();
