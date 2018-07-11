@@ -216,7 +216,6 @@ void handleFileUpload(){
         server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
       }
     }
-    returnOK();
   }
 }
 
