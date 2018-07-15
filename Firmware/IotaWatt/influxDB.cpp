@@ -4,6 +4,7 @@
 bool      influxStarted = false;                    // True when Service started
 bool      influxStop = false;                       // Stop the influx service
 bool      influxRestart = true;                     // Restart the influx service
+bool      influxLogHeap = false;                    // Post a heap size measurement (diag)
 uint32_t  influxLastPost = 0;                       // Last acknowledge post for status report
 
     // Configuration settings
@@ -344,6 +345,15 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
       if((( ! request || request->readyState() == 4) && HTTPrequestFree) && 
           (reqEntries >= influxBulkSend || reqData.available() >= reqDataLimit)){
+        if(influxLogHeap){
+          reqData.printf_P(PSTR("heap"));
+          influxTag* tag = influxTagSet;
+          if(tag){
+            Script* script = influxOutputs->first();
+            reqData.printf_P(PSTR(",%s=%s"), tag->key, influxVarStr(tag->value, script).c_str());
+          }
+          reqData.printf_P(PSTR(" value=%d %d\n"), ESP.getFreeHeap(), UNIXtime());
+        }    
         state = sendPost;
       }
       return (UnixNextPost > UNIXtime()) ? UNIXtime() + 1 : 1;
@@ -429,6 +439,7 @@ bool influxConfig(const char* configObj){
     trace(T_influxConfig,2);
     influxRestart = true;
   }
+  influxLogHeap = config["heap"].as<bool>();
   trace(T_influxConfig,3);
   String URL = config.get<String>("url");
   if(URL.startsWith("http")){
