@@ -14,6 +14,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   static String updateVersion;
   static File releaseFile;
   static bool upToDate = false;
+  static int checkResponse = 0;
   static char* _updateClass = nullptr;
   static uint32_t lastVersionCheck = 0;
 
@@ -85,16 +86,18 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         int responseCode = request->responseHTTPcode();
         delete request;
         request = nullptr;
-        log("Updater: Invalid response from server. HTTPcode: %d", responseCode);
+        if( responseCode != checkResponse){
+          log("Updater: Invalid response from server. HTTPcode: %d", responseCode);
+        }
+        checkResponse = responseCode;
         state = getVersion;
-        if(responseCode == -4){
-          return UNIXtime()+3;
+        state = checkAutoUpdate;
+        if(responseCode == 403){
+          lastVersionCheck = millis();
         }
-        else if(responseCode == 403){
-          state = checkAutoUpdate;
-          return 1;
-        }
+        return UNIXtime() + 11 ;
       }
+      checkResponse = 0;
       updateVersion = request->responseText();
       delete request;
       request = nullptr;
