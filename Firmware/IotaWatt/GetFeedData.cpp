@@ -12,26 +12,15 @@
  *  this SERVICE returns with code 0 to cause it's serviceBlock to be deleted.  When a new /feed/data
  *  request comes in, the web server handler will reshedule this SERVICE with NewService.
  * 
+ *  The process time per dispatch is determined to try to balance sampling with response time.
+ *  When a new request is soon after another, the process time is decreased to maintain
+ *  sampling at the expense of response time.
+ * 
  **************************************************************************************************/
 
 uint32_t getFeedData(struct serviceBlock* _serviceBlock){
   // trace T_GFD
-  enum   states {Initialize, Setup, process};
- 
-  static states state = Initialize;
-  static IotaLogRecord* logRecord;
-  static IotaLogRecord* lastRecord;
-  static char*    bufr;
-  static double   elapsedHours;
-  static uint32_t bufrSize = 0;
-  static uint32_t bufrPos = 0;
-  static uint32_t startUnixTime;
-  static uint32_t endUnixTime;
-  static uint32_t intervalSeconds;
-  static bool     modeRequest;
-  static uint32_t UnixTime;
-  static String   replyData = "";
-  
+
   struct req {
     req* next;
     int channel;
@@ -39,16 +28,35 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
     Script* output;
     req(){next=nullptr; channel=0; queryType=' '; output=nullptr;};
     ~req(){delete next;};
-  } static reqRoot;
-     
+  }; 
+
+  static IotaLogRecord* logRecord = nullptr;
+  static IotaLogRecord* lastRecord = nullptr;
+  static String*  replyData = nullptr;
+  static char*    bufr = nullptr;
+  static req*     reqRoot = nullptr;
+  static uint32_t startUnixTime;
+  static uint32_t endUnixTime;
+  static uint32_t intervalSeconds;
+  static uint32_t UnixTime;
+  static uint32_t lastReqTime = 0;
+  static uint32_t processInterval;
+  static uint32_t startTime;
+  static size_t   bufrSize = 0;
+  static size_t   bufrPos = 0;
+  static bool     modeRequest;
+  enum   states   {setup, process} static state = setup;
+       
   switch (state) {
-    case Initialize: {
-      state = Setup;
-      return 1;
-    }
-  
-    case Setup: {
+    
+    case setup: {
       trace(T_GFD,0);
+      startTime = millis();
+      processInterval = 3000 / (uint32_t)(frequency + 0.1);
+      if((millis() - lastReqTime) > 10000){
+        processInterval = 6000 / (uint32_t)(frequency + 0.1);
+      }
+      lastReqTime = millis();
 
         // Validate the request parameters
       
@@ -72,7 +80,7 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
          (endUnixTime < startUnixTime) ||
          ((endUnixTime - startUnixTime) / intervalSeconds > 2000)) {
         server.send(400, "text/plain", "Invalid request");
-        state = Setup;
+        state = setup;
         serverAvailable = true;
         return 0;    
       }
@@ -80,8 +88,8 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
           // Parse the ID parm into a list.
       
       String idParm = server.arg("id");
-      reqRoot.next = nullptr;
-      req* reqPtr = &reqRoot;
+      if( ! reqRoot) reqRoot = new req;
+      req* reqPtr = reqRoot;
       int i = 0;
       if(idParm.startsWith("[")){
         idParm[idParm.length()-1] = ',';
@@ -120,8 +128,8 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
         }
       }
           
-      logRecord = new IotaLogRecord;
-      lastRecord = new IotaLogRecord;
+      if( ! logRecord) logRecord = new IotaLogRecord;
+      if( ! lastRecord) lastRecord = new IotaLogRecord;
      
       if(startUnixTime >= histLog.firstKey()){   
         lastRecord->UNIXtime = startUnixTime - intervalSeconds;
@@ -135,9 +143,17 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
           // relatively short response elements with String
           // and copy them to this larger buffer.
 
-      bufrSize = ESP.getFreeHeap() / 2;
-      if(bufrSize > 4096) bufrSize = 4096;
-      bufr = new char [bufrSize];
+      if( ! replyData){
+        replyData = new String();
+      }
+      else {
+        *replyData = "";
+      }
+      if( ! bufr){
+        bufrSize = ESP.getFreeHeap() / 2;
+        if(bufrSize > 4096) bufrSize = 4096;
+        bufr = new char [bufrSize];
+      }
 
           // Setup buffer to do it "chunky-style"
       
@@ -146,15 +162,13 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
       bufrPos = 5;
       server.setContentLength(CONTENT_LENGTH_UNKNOWN);
       server.send(200,"application/json","");
-      replyData = "[";
+      *replyData= "[";
       UnixTime = startUnixTime;
       state = process;
-      return 1;
     }
   
     case process: {
       trace(T_GFD,1);
-      uint32_t exitTime = nextCrossMs + 5000 / frequency;              // Take an additional half cycle
       SPI.beginTransaction(SPISettings(SPI_FULL_SPEED, MSBFIRST, SPI_MODE0));
 
           // Loop to generate entries
@@ -164,13 +178,13 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
         logRecord->UNIXtime = UnixTime;
         logReadKey(logRecord);
         trace(T_GFD,2);
-        replyData += '[';  //  + String(UnixTime) + "000,";
-        elapsedHours = logRecord->logHours - lastRecord->logHours;
-        req* reqPtr = &reqRoot;
+        *replyData+= '[';  //  + String(UnixTime) + "000,";
+        double elapsedHours = logRecord->logHours - lastRecord->logHours;
+        req* reqPtr = reqRoot;
         while((reqPtr = reqPtr->next) != nullptr){
           int channel = reqPtr->channel;
           if(rtc || logRecord->logHours == lastRecord->logHours){
-            replyData +=  "null";
+            *replyData +=  "null";
           }
   
             // input channel
@@ -178,16 +192,16 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
           else if(channel >= 0){
             trace(T_GFD,3);       
             if(reqPtr->queryType == 'V') {
-              replyData += String((logRecord->accum1[channel] - lastRecord->accum1[channel]) / elapsedHours,1);
+              *replyData += String((logRecord->accum1[channel] - lastRecord->accum1[channel]) / elapsedHours,1);
             } 
             else if(reqPtr->queryType == 'P') {
-              replyData += String((logRecord->accum1[channel] - lastRecord->accum1[channel]) / elapsedHours,1);
+              *replyData += String((logRecord->accum1[channel] - lastRecord->accum1[channel]) / elapsedHours,1);
             }
             else if(reqPtr->queryType == 'E') {
-                replyData += String((logRecord->accum1[channel] / 1000.0),3);              
+                *replyData += String((logRecord->accum1[channel] / 1000.0),3);              
             } 
             else {
-              replyData += "null";
+              *replyData += "null";
             } 
           }
   
@@ -196,32 +210,32 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
           else {
             trace(T_GFD,4);
             if(reqPtr->output == nullptr){
-              replyData += "null";
+              *replyData += "null";
             }
             else if(reqPtr->queryType == 'V'){
-              replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), 1);
+              *replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), 1);
             }
             else if(reqPtr->queryType == 'P'){
-              replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), 1);
+              *replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), 1);
             }
             else if(reqPtr->queryType == 'E'){
-                replyData += String(reqPtr->output->run((IotaLogRecord*) nullptr, logRecord, 1000.0), 3);
+                *replyData += String(reqPtr->output->run((IotaLogRecord*) nullptr, logRecord, 1000.0), 3);
             }
             else if(reqPtr->queryType == 'O'){
-              replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), reqPtr->output->precision());
+              *replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), reqPtr->output->precision());
             }
             else {
-              replyData += "null";
+              *replyData += "null";
             }
           }
-          if(replyData.endsWith("NaN")){
-            replyData.remove(replyData.length()-3);
-            replyData += "null";
+          if(replyData->endsWith("NaN")){
+            replyData->remove(replyData->length()-3);
+            *replyData += "null";
           }
-          replyData += ',';
+          *replyData += ',';
         } 
            
-        replyData.setCharAt(replyData.length()-1,']');
+        replyData->setCharAt(replyData->length()-1,']');
         IotaLogRecord* swapRecord = lastRecord;
         lastRecord = logRecord;
         logRecord = swapRecord;
@@ -230,39 +244,47 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
             // When buffer is full, send a chunk.
         
         trace(T_GFD,5);
-        if((bufrSize - bufrPos - 5) < replyData.length()){
+        if((bufrSize - bufrPos - 5) < replyData->length()){
           trace(T_GFD,6);
           sendChunk(bufr, bufrPos);
           bufrPos = 5;
         }
 
             // Copy this element into the buffer
-        
-        for(int i = 0; i < replyData.length(); i++) {
-          bufr[bufrPos++] = replyData[i];  
+
+        strcpy(bufr+bufrPos, replyData->c_str());
+        bufrPos += replyData->length();    
+        *replyData = ',';
+
+        if(millis() >= (nextCrossMs + processInterval)){
+          return 1;
         }
-        replyData = ',';
       }
       trace(T_GFD,7);
 
           // All entries generated, terminate Json and send.
       
-      replyData.setCharAt(replyData.length()-1,']');
-      for(int i = 0; i < replyData.length(); i++) {
-        bufr[bufrPos++] = replyData[i];  
-      }
+      replyData->setCharAt(replyData->length()-1,']');
+      strcpy(bufr+bufrPos, replyData->c_str());
+      bufrPos += replyData->length();    
       sendChunk(bufr, bufrPos); 
 
           // Send terminating zero chunk, clean up and exit.
       
       sendChunk(bufr, 5); 
       trace(T_GFD,7);
-      replyData = "";
-      delete reqRoot.next;
+      *replyData = "";
+      delete reqRoot;
+      reqRoot = nullptr;
       delete[] bufr;
+      bufr = nullptr;
       delete logRecord;
+      logRecord = nullptr;
       delete lastRecord;
-      state = Setup;
+      lastRecord = nullptr;
+      delete replyData;
+      replyData = nullptr;
+      state = setup;
       serverAvailable = true;
       HTTPrequestFree++;
       return 0;                                       // Done for now, return without scheduling.
