@@ -48,6 +48,12 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   trace(T_stats, 4);
   cycleSampleRate = .25 * cycleSampleRate + (1.0 - .25) * float(cycleSamples * 1000) / float((uint32_t)(timeNow - timeThen));
   cycleSamples = 0;
+  if(heapMsPeriod > 300000){
+    heapMs = 0.0;
+    heapMsPeriod = 0;
+  }
+  heapMs += ESP.getFreeHeap() * (timeNow - timeThen);
+  heapMsPeriod += timeNow - timeThen;
   timeThen = timeNow;
   trace(T_stats, 5);
   return ((uint32_t)UNIXtime() + statServiceInterval);

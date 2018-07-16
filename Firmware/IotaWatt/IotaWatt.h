@@ -195,6 +195,8 @@ extern float   frequency;                             // Split the difference to
 extern float   samplesPerCycle;                       // Here as well
 extern float   cycleSampleRate;
 extern int16_t cycleSamples;
+extern float   heapMs;
+extern uint32_t heapMsPeriod;
 extern IotaLogRecord statRecord;
 
       // ****************************** list of output channels **********************

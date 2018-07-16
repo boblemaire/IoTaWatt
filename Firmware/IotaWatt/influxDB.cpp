@@ -345,16 +345,18 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
       if((( ! request || request->readyState() == 4) && HTTPrequestFree) && 
           (reqEntries >= influxBulkSend || reqData.available() >= reqDataLimit)){
-        if(influxLogHeap){
+        state = sendPost;
+        if(influxLogHeap && heapMsPeriod != 0){
           reqData.printf_P(PSTR("heap"));
           influxTag* tag = influxTagSet;
           if(tag){
             Script* script = influxOutputs->first();
             reqData.printf_P(PSTR(",%s=%s"), tag->key, influxVarStr(tag->value, script).c_str());
           }
-          reqData.printf_P(PSTR(" value=%d %d\n"), ESP.getFreeHeap(), UNIXtime());
-        }    
-        state = sendPost;
+          reqData.printf_P(PSTR(" value=%d %d\n"), (uint32_t)heapMs / heapMsPeriod, UNIXtime());
+          heapMs = 0.0;
+          heapMsPeriod = 0;
+        }       
       }
       return (UnixNextPost > UNIXtime()) ? UNIXtime() + 1 : 1;
     }
