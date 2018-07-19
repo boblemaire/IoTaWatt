@@ -3,6 +3,10 @@
 #include "auth.h"
 #include "libb64/cdecode.h"
 
+extern const char txtPlain_P[];
+extern const char appJson_P[];
+extern const char txtJson_P[];
+
  typedef std::function<void(void)> genericHandler;
 
 void handleRequest();

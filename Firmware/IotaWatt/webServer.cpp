@@ -50,9 +50,9 @@
   ----------------------------------------------------------------------------------------------------------------
 */
 
-const char P_txtPlain[] PROGMEM = "text/plain";
-const char P_appJson[]  PROGMEM = "application/json";
-const char P_txtJson[]  PROGMEM = "text/json";
+const char txtPlain_P[] PROGMEM = "text/plain";
+const char appJson_P[]  PROGMEM = "application/json";
+const char txtJson_P[]  PROGMEM = "text/json";
 
 bool authenticate(authLevel level){
   if(auth(level)){
@@ -91,7 +91,7 @@ void handleRequest(){
   message += (server.method() == HTTP_GET)?"GET":"POST";
   message += ", URI: ";
   message += server.uri();
-  server.send(404, P_txtPlain, message);
+  server.send(404, txtPlain_P, message);
 }
 
 bool serverOn(authLevel level, const __FlashStringHelper* uri, HTTPMethod method, genericHandler fn){
@@ -104,17 +104,17 @@ bool serverOn(authLevel level, const __FlashStringHelper* uri, HTTPMethod method
 }
 
 void returnOK() {
-  server.send(200, P_txtPlain, "");
+  server.send(200, txtPlain_P, "");
 }
 
 void returnFail(String msg) {
-  server.send(500, P_txtPlain, msg + "\r\n");
+  server.send(500, txtPlain_P, msg + "\r\n");
 }
 
 bool loadFromSdCard(String path){
   trace(T_WEB,13);
   if( ! path.startsWith("/")) path = '/' + path;
-  String dataType = P_txtPlain;
+  String dataType = txtPlain_P;
   if(path.endsWith("/")) path += "index.htm";
   if(path == "/edit" || path == "/graph"){
     path += ".htm";
@@ -157,7 +157,6 @@ bool loadFromSdCard(String path){
 
   if(server.hasArg("textpos")){
     sendMsgFile(dataFile, server.arg("textpos").toInt());
-    return true;
   }
 
   else {
@@ -183,7 +182,7 @@ void handleFileUpload(){
         upload.filename.equalsIgnoreCase("/config.txt")){
       if(server.hasHeader(F("X-configSHA256"))){
         if(server.header(F("X-configSHA256")) != base64encode(configSHA256, 32)){
-          server.send(409, P_txtPlain, "Config not current");
+          server.send(409, txtPlain_P, "Config not current");
           return;
         }
       }
@@ -309,7 +308,7 @@ void printDirectory() {
   }  
   String response = "";
   array.printTo(response);
-  server.send(200, P_appJson, response);
+  server.send(200, appJson_P, response);
   dir.close();
 }
 
@@ -330,13 +329,13 @@ void handlePasswords(){
   DynamicJsonBuffer Json;
   JsonObject& request = Json.parseObject(body);
   if( ! request.success()){
-    server.send(400, P_txtPlain, "Json parse failed.");
+    server.send(400, txtPlain_P, "Json parse failed.");
     return;
   }
   if(adminH1){
     String testH1 = calcH1("admin", deviceName, request["oldadmin"].as<char*>());
     if( adminH1 && ! testH1.equals(bin2hex(adminH1,16))){
-      server.send(400, P_txtPlain, F("Current admin password invalid."));
+      server.send(400, txtPlain_P, F("Current admin password invalid."));
       return;
     }
   }
@@ -361,14 +360,14 @@ void handlePasswords(){
       } 
     }
     if(authSavePwds()){
-      server.send(200, P_txtPlain, F("Passwords reset."));
+      server.send(200, txtPlain_P, F("Passwords reset."));
       log("New passwords saved.");
     } else {
-      server.send(400, P_txtPlain, F("Error saving passwords."));
+      server.send(400, txtPlain_P, F("Error saving passwords."));
       log("Password save failed.");
     } 
   } else {
-    server.send(200, P_txtPlain, "");
+    server.send(200, txtPlain_P, "");
   } 
   return;
 }
@@ -487,13 +486,13 @@ void handleStatus(){
 
   String response = "";
   root.printTo(response);
-  server.send(200, P_txtJson, response);  
+  server.send(200, txtJson_P, response);  
 }
 
 void handleVcal(){
   trace(T_WEB,1); 
   if( ! (server.hasArg(F("channel")) && server.hasArg("cal"))){
-    server.send(400, P_txtJson, F("Missing parameters"));
+    server.send(400, txtJson_P, F("Missing parameters"));
     return;
   }
   DynamicJsonBuffer jsonBuffer;
@@ -503,7 +502,7 @@ void handleVcal(){
   root.set("vrms",Vrms);
   String response = "";
   root.printTo(response);
-  server.send(200, P_txtJson, response);  
+  server.send(200, txtJson_P, response);  
 }
 
 void handleCommand(){
@@ -526,7 +525,7 @@ void handleCommand(){
     if(server.hasArg(F("shift"))){
       shift = server.arg(F("shift")).toInt();
     }
-    server.send(200, P_txtPlain, samplePhase(refChan, chan, shift));
+    server.send(200, txtPlain_P, samplePhase(refChan, chan, shift));
     return; 
   }
   if(server.hasArg(F("sample"))){
@@ -537,12 +536,12 @@ void handleCommand(){
     for(int i=0; i<samples; i++){
       response += String(Vsample[i]) + "," + String(Isample[i]) + "\r\n";
     }
-    server.send(200, P_txtPlain, response);
+    server.send(200, txtPlain_P, response);
     return; 
   }
   if(server.hasArg(F("disconnect"))) {
     trace(T_WEB,6); 
-    server.send(200, P_txtPlain, "ok");
+    server.send(200, txtPlain_P, "ok");
     log("Disconnect command received.");
     WiFi.disconnect(false);
     return;
@@ -560,7 +559,7 @@ void handleCommand(){
     }
     if(server.arg(F("deletelog")) == "history"){
       trace(T_WEB,21); 
-      server.send(200, P_txtPlain, "ok");
+      server.send(200, txtPlain_P, "ok");
       log("delete history log command received.");
       histLog.end();
       deleteRecursive(String(historyLogFile) + ".log");
@@ -570,7 +569,7 @@ void handleCommand(){
     }
     
   }
-  server.send(400, P_txtJson, F("Unrecognized request"));
+  server.send(400, txtJson_P, F("Unrecognized request"));
 }
 
 void handleGetFeedList(){ 
@@ -640,7 +639,7 @@ void handleGetFeedList(){
   
   String response;
   array.printTo(response);
-  server.send(200, P_appJson,response);
+  server.send(200, appJson_P,response);
 }
 
 void handleGetFeedData(){
@@ -665,7 +664,7 @@ void sendMsgFile(File &dataFile, int32_t relPos){
     }
     absPos = dataFile.position();
     server.setContentLength(dataFile.size() - absPos);
-    server.send(200, P_txtPlain, "");
+    server.send(200, txtPlain_P, "");
     WiFiClient _client = server.client();
     _client.write(dataFile);
 }
@@ -681,9 +680,9 @@ void handleGetConfig(){
     }
     else if(server.arg(F("update")) == "reload"){
       getConfig(); 
-      server.send(200, P_txtPlain, "OK");
+      server.send(200, txtPlain_P, "OK");
       return;  
     }
   }
-  server.send(400, P_txtPlain, "Bad Request.");
+  server.send(400, txtPlain_P, "Bad Request.");
 }
