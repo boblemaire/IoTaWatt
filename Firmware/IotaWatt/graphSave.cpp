@@ -50,12 +50,10 @@ void handleGraphDelete(){
 void handleGraphGetall(){
   File directory = SD.open(graphDir);
   File graphFile;
-  if( !(directory) || !(directory.isDirectory())){
-    server.send(200, appJson_P, "[]");
-    return;
-  }
-  if( !(graphFile = directory.openNextFile())){
-    directory.close();
+  if( !(directory) || !(directory.isDirectory()) || !(graphFile = directory.openNextFile())){
+    if(directory){
+      directory.close();
+    }
     server.send(200, appJson_P, "[]");
     return;
   }
