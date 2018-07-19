@@ -32,8 +32,8 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
 
   static IotaLogRecord* logRecord = nullptr;
   static IotaLogRecord* lastRecord = nullptr;
+  static size_t   replySize = 4000;
   static String*  replyData = nullptr;
-  static char*    bufr = nullptr;
   static req*     reqRoot = nullptr;
   static uint32_t startUnixTime;
   static uint32_t endUnixTime;
@@ -42,8 +42,6 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
   static uint32_t lastReqTime = 0;
   static uint32_t processInterval;
   static uint32_t startTime;
-  static size_t   bufrSize = 0;
-  static size_t   bufrPos = 0;
   static bool     modeRequest;
   enum   states   {setup, process} static state = setup;
        
@@ -149,17 +147,10 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
       else {
         *replyData = "";
       }
-      if( ! bufr){
-        bufrSize = ESP.getFreeHeap() / 2;
-        if(bufrSize > 4096) bufrSize = 4096;
-        bufr = new char [bufrSize];
-      }
-
+      replyData->reserve(replySize);
+      
           // Setup buffer to do it "chunky-style"
       
-      bufr[3] = '\r';
-      bufr[4] = '\n'; 
-      bufrPos = 5;
       server.setContentLength(CONTENT_LENGTH_UNKNOWN);
       server.send(200,"application/json","");
       *replyData= "[";
@@ -244,17 +235,12 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
             // When buffer is full, send a chunk.
         
         trace(T_GFD,5);
-        if((bufrSize - bufrPos - 5) < replyData->length()){
-          trace(T_GFD,6);
-          sendChunk(bufr, bufrPos);
-          bufrPos = 5;
+        if(replyData->length() > (replySize - 100)){
+          server.sendContent(*replyData);
+          replyData->remove(0);
         }
-
-            // Copy this element into the buffer
-
-        strcpy(bufr+bufrPos, replyData->c_str());
-        bufrPos += replyData->length();    
-        *replyData = ',';
+        
+        *replyData += ',';
 
         if(millis() >= (nextCrossMs + processInterval)){
           return 1;
@@ -265,19 +251,17 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
           // All entries generated, terminate Json and send.
       
       replyData->setCharAt(replyData->length()-1,']');
-      strcpy(bufr+bufrPos, replyData->c_str());
-      bufrPos += replyData->length();    
-      sendChunk(bufr, bufrPos); 
-
+      server.sendContent(*replyData);
+      
           // Send terminating zero chunk, clean up and exit.
       
-      sendChunk(bufr, 5); 
+      replyData->remove(0);
+      server.sendContent(*replyData);
+      server.client().stop();
       trace(T_GFD,7);
       *replyData = "";
       delete reqRoot;
       reqRoot = nullptr;
-      delete[] bufr;
-      bufr = nullptr;
       delete logRecord;
       logRecord = nullptr;
       delete lastRecord;
@@ -291,22 +275,3 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
     }
   }
 }
-
-void sendChunk(char* bufr, uint32_t bufrPos){
-  trace(T_GFD,9);
-  const char* hexDigit = "0123456789ABCDEF";
-  int _len = bufrPos - 5;
-  bufr[0] = hexDigit[_len/256];
-  bufr[1] = hexDigit[(_len/16) % 16];
-  bufr[2] = hexDigit[_len % 16]; 
-  bufr[bufrPos] = '\r';
-  bufr[bufrPos+1] = '\n';
-  bufr[bufrPos+2] = 0;
-  //server.sendContent(bufr);                         pre 02_02_22 send command
-  //   New ESP8266/Arduino core does chunked under the hood.
-  //   Would need to strip out chunk header and footer and then sendContent would
-  //   convert bufr to a String and bracket with chunk header and footer writes.
-  //   Since already have the chunked headers and footers in the bufr, just write it
-  //   to the WiFiClient and avoid conversion to String and related heap requirements.
-  server.client().write(bufr, bufrPos+2);
-} 
