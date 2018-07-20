@@ -81,6 +81,7 @@ void handleRequest(){
   if(serverOn(authAdmin, F("/graph/delete"),HTTP_POST, handleGraphDelete)) return;
   if(serverOn(authUser, F("/graph/getall"), HTTP_GET, handleGraphGetall)) return;
   if(serverOn(authAdmin, F("/auth"), HTTP_POST, handlePasswords)) return;
+  if(serverOn(authUser, F("/nullreq"), HTTP_GET, returnOK)) return;
 
   if(loadFromSdCard(uri)){
     return;
