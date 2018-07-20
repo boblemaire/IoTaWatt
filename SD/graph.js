@@ -498,7 +498,16 @@ function graph_reload() {
                 graph_draw();
             }
             reloading = false;
-            if(reload) graph_reload();
+            if(reload){
+              graph_reload();
+            } else {
+              $.ajax({                                      
+              url: path+"/nullreq",
+              async: true,
+              dataType: "json",
+              success: function(result) {}
+              });
+            }
         }
     });
     
