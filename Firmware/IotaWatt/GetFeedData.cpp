@@ -16,9 +16,25 @@
  *  When a new request is soon after another, the process time is decreased to maintain
  *  sampling at the expense of response time.
  * 
+ *  ********NOTE*******
+ *  7/22/2018 Made this a direct call from webserver so entire transaction is handled without
+ *  returning to allow sampling. This seems to eliminate memory leak problems with sending the
+ *  response data after essentially ending the transaction by returning from the initial webserver call.
+ *  Improves query response times, but stops sampling for about 1.3-1.5sec for a typical graph request.
+ * 
+ *  Stopping sampling doesn't mean power is not logged.  It only means that changes to power
+ *  during that period will not be measured. 
+ * 
+ *  Other solutions that can be explored in the future might be:
+ * 
+ *  1) sample power directly from within the webserver handler (ugh).
+ *  2) determine what is not being cleaned up and find a way to do so. Suspect it's 
+ *     request headers as the problem is more severe when digest auth headers are collected.
+ *  3) Try using asyncwebserver.
+ *   
  **************************************************************************************************/
 
-uint32_t getFeedData(struct serviceBlock* _serviceBlock){
+uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
   // trace T_GFD
 
   struct req {
@@ -243,7 +259,7 @@ uint32_t getFeedData(struct serviceBlock* _serviceBlock){
         *replyData += ',';
 
         if(millis() >= (nextCrossMs + processInterval)){
-          return 1;
+          // return 1;
         }
       }
       trace(T_GFD,7);

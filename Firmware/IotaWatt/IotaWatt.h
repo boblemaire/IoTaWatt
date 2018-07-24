@@ -270,7 +270,7 @@ uint32_t  influxService(struct serviceBlock*);
 uint32_t  timeSync(struct serviceBlock*);
 uint32_t  updater(struct serviceBlock*);
 uint32_t  WiFiService(struct serviceBlock*);
-uint32_t  getFeedData(struct serviceBlock*);
+uint32_t  getFeedData(); //(struct serviceBlock*);
 
 uint32_t  logReadKey(IotaLogRecord* callerRecord);
 

@@ -646,7 +646,8 @@ void handleGetFeedList(){
 void handleGetFeedData(){
   serverAvailable = false;
   HTTPrequestFree--;
-  NewService(getFeedData, T_GFD);
+  getFeedData();
+  // NewService(getFeedData, T_GFD);  See notes in getFeedData
   return;
 }
 
