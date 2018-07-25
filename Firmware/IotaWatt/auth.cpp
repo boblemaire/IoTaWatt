@@ -99,7 +99,6 @@ authSession* newAuthSession(){
     authSession* session = (authSession*) &authSessions;
     while(session->next){
         if(session->next->IP == server.client().remoteIP() && 
-           UNIXtime() - session->next->lastUsed > 10 &&
            session->next->nc > 0 ){
             authSession* oldSession = session->next;
             session->next = oldSession->next;
@@ -117,11 +116,10 @@ authSession* newAuthSession(){
 }
 
 authSession* getAuthSession(const char* nonce, const char* nc){
-    uint8_t _nonce[16];
-    uint32_t _nc;
+    if(!authSessions || strlen(nonce) != 32 || strlen(nc) == 0) return nullptr;
     authSession* session = (authSession*)&authSessions;
     while(session->next){
-        if((session->next->lastUsed + authTimeout) < UNIXtime()){
+        if((session->next->lastUsed + 60) < UNIXtime()){
             authSession* expSession = session->next;
             session->next = expSession->next;
             delete expSession;
@@ -129,7 +127,8 @@ authSession* getAuthSession(const char* nonce, const char* nc){
             session = session->next;
         }
     }
-    if(!authSessions || strlen(nonce) != 32 || strlen(nc) == 0) return nullptr;
+    uint8_t _nonce[16];
+    uint32_t _nc;
     hex2bin(_nonce, nonce, 16);
     _nc = strtol(nc, nullptr, 16);
     session = authSessions;
