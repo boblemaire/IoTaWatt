@@ -41,8 +41,8 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         state = getVersion;
         return 1;
       }
-      else if (strcmp(_updateClass, "NONE") != 0 && millis() - lastVersionCheck > updaterServiceInterval){
-        lastVersionCheck = millis();
+      else if (strcmp(_updateClass, "NONE") != 0 && UNIXtime() - lastVersionCheck > updaterServiceInterval){
+        lastVersionCheck = UNIXtime();
         state = getVersion;
         return 1;
       }
@@ -93,7 +93,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         state = getVersion;
         state = checkAutoUpdate;
         if(responseCode == 403){
-          lastVersionCheck = millis();
+          lastVersionCheck = UNIXtime();
         }
         return UNIXtime() + 11 ;
       }
