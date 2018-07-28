@@ -42,6 +42,12 @@ size_t      messageLog::write(const uint8_t byte){
                 if(bufPos >= bufLen) {
                     Serial.write(buf, bufPos);
                     msgFile = SD.open(IotaMsgLog,FILE_WRITE);
+                    if(! msgFile){
+                        String msgDir = IotaMsgLog;
+                        msgDir.remove(msgDir.indexOf('/',1));
+                        SD.mkdir(msgDir.c_str());
+                        msgFile = SD.open(IotaMsgLog,FILE_WRITE);
+                    }
                     if(msgFile) {
                         msgFile.write(buf, bufPos);
                         msgFile.close();
