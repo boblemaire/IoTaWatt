@@ -39,6 +39,10 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
     ESP.restart();
   }
 
+      // Purge any timed out authorization sessions.
+
+  purgeAuthSessions();
+
       // Temporary addition of time-wait limit code from me-no-dev's fix.
       // Will remove when fix is in general release.
   /*

@@ -117,21 +117,12 @@ authSession* newAuthSession(){
 
 authSession* getAuthSession(const char* nonce, const char* nc){
     if(!authSessions || strlen(nonce) != 32 || strlen(nc) == 0) return nullptr;
-    authSession* session = (authSession*)&authSessions;
-    while(session->next){
-        if((session->next->lastUsed + 60) < UNIXtime()){
-            authSession* expSession = session->next;
-            session->next = expSession->next;
-            delete expSession;
-        } else {
-            session = session->next;
-        }
-    }
+    purgeAuthSessions();
     uint8_t _nonce[16];
     uint32_t _nc;
     hex2bin(_nonce, nonce, 16);
     _nc = strtol(nc, nullptr, 16);
-    session = authSessions;
+    authSession* session = authSessions;
     while(session){
         if(memcmp(session->nonce, _nonce, 16) == 0  && session->nc < _nc){
             session->nc = _nc;
@@ -140,6 +131,19 @@ authSession* getAuthSession(const char* nonce, const char* nc){
         session = session->next;
     }
     return nullptr;
+}
+
+void  purgeAuthSessions(){
+    authSession* session = (authSession*)&authSessions;
+    while(session->next){
+        if((session->next->lastUsed + 600) < UNIXtime()){
+            authSession* expSession = session->next;
+            session->next = expSession->next;
+            delete expSession;
+        } else {
+            session = session->next;
+        }
+    }
 }
 
 void  getNonce(uint8_t* nonce){
