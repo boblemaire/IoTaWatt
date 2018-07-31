@@ -33,7 +33,7 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
     }
   }
 
-  if(ESP.getFreeHeap() < 9000){
+  if(ESP.getFreeHeap() < 10000){
     log("Heap memory has degraded below safe minimum, restarting.");
     delay(500);
     ESP.restart();
