@@ -33,7 +33,7 @@
  *  3) Try using asyncwebserver.
  *   
  **************************************************************************************************/
-
+void sendFeedData(char* buf, size_t bufPos);
 uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
   // trace T_GFD
 
@@ -48,7 +48,9 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
 
   static IotaLogRecord* logRecord = nullptr;
   static IotaLogRecord* lastRecord = nullptr;
-  static size_t   replySize = 4000;
+  static size_t   chunkSize = 1000;
+  static char* buf = nullptr;
+  static size_t bufPos = 0;
   static String*  replyData = nullptr;
   static req*     reqRoot = nullptr;
   static uint32_t startUnixTime;
@@ -142,8 +144,8 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
         }
       }
           
-      if( ! logRecord) logRecord = new IotaLogRecord;
-      if( ! lastRecord) lastRecord = new IotaLogRecord;
+      logRecord = new IotaLogRecord;
+      lastRecord = new IotaLogRecord;
      
       if(startUnixTime >= histLog.firstKey()){   
         lastRecord->UNIXtime = startUnixTime - intervalSeconds;
@@ -157,13 +159,9 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
           // relatively short response elements with String
           // and copy them to this larger buffer.
 
-      if( ! replyData){
-        replyData = new String();
-      }
-      else {
-        *replyData = "";
-      }
-      replyData->reserve(replySize);
+      buf = new char[chunkSize+8];
+      bufPos = 6;
+      replyData = new String();
       
           // Setup buffer to do it "chunky-style"
       
@@ -176,7 +174,6 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
   
     case process: {
       trace(T_GFD,1);
-      SPI.beginTransaction(SPISettings(SPI_FULL_SPEED, MSBFIRST, SPI_MODE0));
 
           // Loop to generate entries
       
@@ -185,7 +182,7 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
         logRecord->UNIXtime = UnixTime;
         logReadKey(logRecord);
         trace(T_GFD,2);
-        *replyData+= '[';  //  + String(UnixTime) + "000,";
+        *replyData += '[';  //  + String(UnixTime) + "000,";
         double elapsedHours = logRecord->logHours - lastRecord->logHours;
         req* reqPtr = reqRoot;
         while((reqPtr = reqPtr->next) != nullptr){
@@ -248,46 +245,58 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
         logRecord = swapRecord;
         UnixTime += intervalSeconds;
 
-            // When buffer is full, send a chunk.
-        
+            // If not enough room in buffer for this segment, 
+            // Write the buffer chunk.
+
+        if((bufPos + replyData->length()) > (chunkSize - 3)){
+          sendFeedData(buf, bufPos);
+          bufPos = 6;
+        }    
+
+            // Add this segment to buf.
+
         trace(T_GFD,5);
-        if(replyData->length() > (replySize - 100)){
-          server.sendContent(*replyData);
-          replyData->remove(0);
-        }
+        memcpy(buf + bufPos, replyData->c_str(), replyData->length());
+        bufPos += replyData->length();
+        replyData->remove(0);
         
         *replyData += ',';
-
-        if(millis() >= (nextCrossMs + processInterval)){
-          // return 1;
-        }
       }
       trace(T_GFD,7);
 
           // All entries generated, terminate Json and send.
       
       replyData->setCharAt(replyData->length()-1,']');
-      server.sendContent(*replyData);
+      memcpy(buf + bufPos, replyData->c_str(), replyData->length());
+      bufPos += replyData->length();
+      sendFeedData(buf, bufPos);
+
+      replyData = nullptr;
       
-          // Send terminating zero chunk, clean up and exit.
+          // Send terminating zero chunk, clean up and exit.    
       
-      replyData->remove(0);
-      server.sendContent(*replyData);
+      sendFeedData(buf, 6);
       server.client().stop();
       trace(T_GFD,7);
-      *replyData = "";
+      delete[] buf;
+      buf = nullptr;
       delete reqRoot;
       reqRoot = nullptr;
       delete logRecord;
       logRecord = nullptr;
       delete lastRecord;
       lastRecord = nullptr;
-      delete replyData;
-      replyData = nullptr;
       state = setup;
       serverAvailable = true;
       HTTPrequestFree++;
       return 0;                                       // Done for now, return without scheduling.
     }
   }
+}
+
+void sendFeedData(char* buf, size_t bufPos){
+  sprintf(buf,"%04x\r",bufPos-6);
+  *(buf+5) = '\n';
+  memcpy(buf+bufPos,"\r\n",2);
+  server.client().write(buf,bufPos+2);
 }
