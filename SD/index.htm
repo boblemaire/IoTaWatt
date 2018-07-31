@@ -1375,19 +1375,22 @@ function configDevice(){
   currentBodyPush("configDevice");
   originalName = config.device.name;
   timezone = config.timezone;
+  buildDevice();
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       var response = JSON.parse(xmlHttp.responseText);
-      buildDevice(response.passwords.admin);
+      if(response.passwords.admin){
+        EbyId("deviceName").disabled = true;
+        EbyId("deviceName").title = "Passwords must be disabled to modify device name.";
+      }
     }
   }
   xmlHttp.open("GET","/status?passwords=yes", true);
   xmlHttp.send(null);
-  
 }
 
-function buildDevice(passwordSet){
+function buildDevice(){
   var updateClasses = ["NONE", "MAJOR", "MINOR", "BETA", "ALPHA"];
   var deviceTable = EbyId("deviceTable");
   deviceTable.innerHTML = "";
@@ -1398,11 +1401,7 @@ function buildDevice(passwordSet){
   deviceName.value = config.device.name;
   deviceName.setAttribute("oninput","config.device.name = this.value.trim(); checkDevice();");
   deviceName.pattern = "[a-zA-Z]{1}[0-9a-zA-Z]{3,7}";
-  if(passwordSet){
-    deviceName.disabled = true;
-    deviceName.title = "Passwords must be disabled to modify device name.";
-  } 
-  
+
   var deviceTimezone = addTableRow(deviceTable, "Time Zone:","deviceTimezone", "input", 3);
   deviceTimezone.value = config.timezone;
   deviceTimezone.setAttribute("onchange","config.timezone = this.value; checkDevice();");
