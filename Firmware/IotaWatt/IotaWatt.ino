@@ -77,7 +77,8 @@
  *   06/03/18 02_03_07 Add web server authorization, temp time-wait fix
  *   06/20/18 02_03_08 Use lwip 2 "high bandwidth", misc fixes   
  *   07/11/18 02_03_09 Lastest asyngHTTPrequest, Issue#166, improve auth&trace  
- *   07/25/18 02_03_10 run getFeedData in handler, auth session changes, use staging core                                   
+ *   07/25/18 02_03_10 run getFeedData in handler, auth session changes, use staging core 
+ *   07/31/18 02_03_11 Minor changes for general release                                  
  * 
  *****************************************************************************************************/
 
