@@ -5,6 +5,7 @@
   {"model":"Ideal 77DB-06-09(UK)","cal":20.69,"phase":1.78},
   {"model":"Ideal 77DE-06-09(EU)","cal":19.26,"phase":1.78},
   {"model":"Ideal 77DA-10-09-MI(USA)","cal":11.06,"phase":1.43},
+  {"model":"TDC DA-10-09","cal":11.23,"phase":2.66},	
   {"model":"Jameco/100061","cal":11.68,"phase":4.51},
   {"model":"Jameco/102234","cal":11.43,"phase":3.26},
   {"model":"Jameco/2227444","cal":11.51,"phase":1.95},
