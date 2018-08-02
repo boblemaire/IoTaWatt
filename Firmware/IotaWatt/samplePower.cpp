@@ -403,8 +403,9 @@ int readADC(uint8_t channel){
 float sampleVoltage(uint8_t Vchan, float Vcal){
   IotaInputChannel* Vchannel = inputChannel[Vchan];
   uint32_t sumVsq = 0;
+  int retries = 0;
   while(int rtc = sampleCycle(Vchannel, Vchannel, 1, 0)){
-    if(rtc == 2){
+    if(rtc == 2 || retries++ > 3){
       return 0.0;
     }
   }
