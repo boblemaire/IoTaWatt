@@ -232,7 +232,7 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
               *replyData += "null";
             }
           }
-          if(replyData->endsWith("NaN")){
+          if(replyData->endsWith("NaN") || replyData->endsWith("inf")){
             replyData->remove(replyData->length()-3);
             *replyData += "null";
           }
@@ -276,7 +276,6 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
           // Send terminating zero chunk, clean up and exit.    
       
       sendFeedData(buf, 6);
-      server.client().stop();
       trace(T_GFD,7);
       delete[] buf;
       buf = nullptr;
