@@ -1,5 +1,7 @@
 #include "IotaWatt.h"
 uint32_t littleEndian(uint32_t);
+#define NTP2018 (1514796044UL + SEVENTY_YEAR_SECONDS)
+#define NTP2028 (1830328844UL + SEVENTY_YEAR_SECONDS)
 
 #define ntpPort 2390 
   struct ntpPacket {  /* courtesy Eugene Ma */
@@ -120,11 +122,14 @@ uint32_t MillisAtUNIXtime(uint32_t UnixTime){
  *******************************************************************************************/
  
 uint32_t timeSync(struct serviceBlock* _serviceBlock) {
-  enum states {start, getNTPtime, waitNTPtime, setRTC};
+  enum states {start, getNTPtime, waitNTPtime};
   static states state = start;
   static WiFiUDP* udp = nullptr;;
   static uint32_t startTime;
   static uint32_t lastNTPupdate = 0;
+  static uint32_t origin_sec = 0;
+  static uint32_t origin_frac = 0;
+  static bool noUpdateMsg = true;
  
   switch(state){
 
@@ -132,10 +137,21 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
       log("timeSync: service started.");
       lastNTPupdate = UNIXtime();  
       state = getNTPtime;
-      return UNIXtime() + 60;    
+      return UNIXtime() + RTCrunning ? 60 : 1;   
     }
 
     case getNTPtime: {
+      
+          // The ms clock will rollover after ~49 days.  To be on the safe side,
+          // restart the ESP after about 42 days to reset the ms clock.
+
+      if(millis() > 3628800000UL) {
+        log("timeSync: Six week routine restart.");
+        ESP.restart();
+      }
+
+          // Send an SNTP request.
+
       if(UNIXtime() - lastNTPupdate > 86400UL){ 
         log("timeSync: No time update in last 24 hours.");
         lastNTPupdate = UNIXtime();
@@ -147,6 +163,8 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
         if(WiFi.hostByName(ntpServerName, timeServerIP) == 1){    // get a random server from the pool
           if( ! udp) udp = new WiFiUDP;
           ntpPacket packet;
+          packet.trans_ts_sec = littleEndian(origin_sec = millis() / 1000);
+          packet.trans_ts_frac = littleEndian(origin_frac = (millis() % 1000) * 4294967UL);
           udp->begin(ntpPort);
           udp->beginPacket(timeServerIP, 123);
           udp->write((uint8_t*)&packet, sizeof(ntpPacket));        // send an NTP packet to a time server
@@ -163,16 +181,44 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     case waitNTPtime: {
       if(udp->parsePacket()){
         ntpPacket packet;
-        udp->read((uint8_t*)&packet,sizeof(ntpPacket));
+        size_t packetSize = udp->read((uint8_t*)&packet,sizeof(ntpPacket));
         udp->stop();
         HTTPrequestFree++;
         delete udp;
         udp = nullptr;
-        timeRefNTP = littleEndian(packet.trans_ts_sec);
-        timeRefMs = millis();
-        lastNTPupdate = UNIXtime();
-        state = setRTC;
-        return 1;
+        if(packetSize < sizeof(ntpPacket)){
+          Serial.printf("packet too small: %d vs %d\r\n", packetSize, sizeof(ntpPacket));
+        }
+
+        packet.origin_ts_sec = littleEndian(packet.origin_ts_sec);
+        packet.origin_ts_frac = littleEndian(packet.origin_ts_frac);
+        packet.recv_ts_sec = littleEndian(packet.recv_ts_sec);
+        packet.recv_ts_frac = littleEndian(packet.recv_ts_frac);
+        packet.trans_ts_sec = littleEndian(packet.trans_ts_sec);
+        packet.trans_ts_frac = littleEndian(packet.trans_ts_frac);
+        if(packet.origin_ts_sec != origin_sec || packet.origin_ts_frac != origin_frac ||
+           packet.trans_ts_sec < NTP2018 || packet.trans_ts_sec > NTP2028){
+          Serial.println("invalid NTP packet");
+          state = getNTPtime;
+          return UNIXtime() + RTCrunning ? 60 : 15;
+        }
+
+        if( ! RTCrunning) {
+          programStartTime = UNIXtime();
+          rtc.adjust(UNIXtime());
+          log("timeSync: RTC initalized to NTP time");
+        } else {
+          timeRefNTP = packet.trans_ts_sec;
+          timeRefMs = millis();
+          lastNTPupdate = UNIXtime();
+          int32_t timeDiff = UNIXtime() - rtc.now().unixtime();
+          if(timeDiff < -1 || timeDiff > 1){
+            log("timeSync: adjusting RTC by %d", timeDiff);
+            rtc.adjust(UNIXtime());
+          }
+        }
+        state = getNTPtime;
+        return UNIXtime() + timeSynchInterval;  
       }
       else if(millis() - startTime > 3000){
         udp->stop();
@@ -180,35 +226,8 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
         state = getNTPtime;
         return UNIXtime() + RTCrunning ? 60 : 0;
       }
-      return 1;
     }
-
-    case setRTC: {
-      if( ! RTCrunning) {
-        programStartTime = UNIXtime();
-        rtc.adjust(UNIXtime());
-        log("timeSync: RTC initalized to NTP time");
-      }
-      else {
-        int32_t timeDiff = UNIXtime() - rtc.now().unixtime();
-        if(timeDiff < -1 || timeDiff > 1){
-          log("timeSync: adjusting RTC by %d", timeDiff);
-          rtc.adjust(UNIXtime());
-        }
-      }
-      
-          // The ms clock will rollover after ~49 days.  To be on the safe side,
-          // restart the ESP after about 42 days to reset the ms clock.
-
-      if(millis() > 3628800000UL) {
-        log("timeSync: Six week routine restart.");
-        ESP.restart();
-      }
-
-
-      state = getNTPtime;
-      return UNIXtime() + timeSynchInterval;  
-    }
+    return 1;
   }    
 }
 
@@ -250,13 +269,4 @@ String formatHMS(uint32_t epoch) {
     if ( (epoch % 60) < 10 ) result += "0";
     result += String(epoch % 60);
     return result;
-  }
-
-  
-
-  
-        
-   
-    
-  
-
+}
