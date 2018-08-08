@@ -33,6 +33,5 @@ void handleGraphDelete();
 void sendMsgFile(File &dataFile, int32_t relPos);
 void handleGetConfig();
 void handlePasswords();
-void sendChunked(String response);
 
 #endif

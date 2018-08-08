@@ -33,7 +33,7 @@
  *  3) Try using asyncwebserver.
  *   
  **************************************************************************************************/
-void sendFeedData(char* buf, size_t bufPos);
+
 uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
   // trace T_GFD
 
@@ -48,7 +48,7 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
 
   static IotaLogRecord* logRecord = nullptr;
   static IotaLogRecord* lastRecord = nullptr;
-  static size_t   chunkSize = 1000;
+  static size_t   chunkSize = 1600;
   static char* buf = nullptr;
   static size_t bufPos = 0;
   static String*  replyData = nullptr;
@@ -249,7 +249,7 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
             // Write the buffer chunk.
 
         if((bufPos + replyData->length()) > (chunkSize - 3)){
-          sendFeedData(buf, bufPos);
+          sendChunk(buf, bufPos);
           bufPos = 6;
         }    
 
@@ -269,13 +269,15 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
       replyData->setCharAt(replyData->length()-1,']');
       memcpy(buf + bufPos, replyData->c_str(), replyData->length());
       bufPos += replyData->length();
-      sendFeedData(buf, bufPos);
+      sendChunk(buf, bufPos);
 
+      delete replyData;
       replyData = nullptr;
       
           // Send terminating zero chunk, clean up and exit.    
       
-      sendFeedData(buf, 6);
+      sendChunk(buf, 6);
+      server.client().stop();
       trace(T_GFD,7);
       delete[] buf;
       buf = nullptr;
@@ -287,15 +289,7 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
       lastRecord = nullptr;
       state = setup;
       serverAvailable = true;
-      HTTPrequestFree++;
       return 0;                                       // Done for now, return without scheduling.
     }
   }
-}
-
-void sendFeedData(char* buf, size_t bufPos){
-  sprintf(buf,"%04x\r",bufPos-6);
-  *(buf+5) = '\n';
-  memcpy(buf+bufPos,"\r\n",2);
-  server.client().write(buf,bufPos+2);
 }

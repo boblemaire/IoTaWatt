@@ -290,6 +290,8 @@ String    timeString(int value);
 
 boolean   getConfig(void);
 
-void      sendChunk(char* bufr, uint32_t bufrPos);
+size_t    sendChunk(char* buf, size_t bufPos);
+
+void getSamples();
 
 #endif

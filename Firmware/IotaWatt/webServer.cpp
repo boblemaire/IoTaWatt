@@ -533,11 +533,14 @@ void handleCommand(){
     trace(T_WEB,5); 
     uint16_t chan = server.arg(F("sample")).toInt();
     samplePower(chan,0);
+    /*
     String response = String(samples) + "\n\r";
     for(int i=0; i<samples; i++){
       response += String(Vsample[i]) + "," + String(Isample[i]) + "\r\n";
     }
-    server.send(200, txtPlain_P, response);
+    server.send(200, txtPlain_P, response);*/
+    getSamples();
+
     return; 
   }
   if(server.hasArg(F("disconnect"))) {
@@ -606,7 +609,7 @@ void handleGetFeedList(){
   int outndx = 100;
   while(script){
     if(String(script->name()).indexOf(' ') == -1){
-      String units = String(script->getUnits());
+      String units = script->getUnits();
       if(units.equalsIgnoreCase("volts")){
         JsonObject& voltage = jsonBuffer.createObject();
         voltage["id"] = String("OV") + String(script->name());
@@ -615,7 +618,6 @@ void handleGetFeedList(){
         array.add(voltage);
       } 
       else if(units.equalsIgnoreCase("watts")) {
-        
         JsonObject& power = jsonBuffer.createObject();
         power["id"] = String("OP") + String(script->name());
         power["tag"] = F("Power");
@@ -645,9 +647,7 @@ void handleGetFeedList(){
 
 void handleGetFeedData(){
   serverAvailable = false;
-  HTTPrequestFree--;
   getFeedData();
-  // NewService(getFeedData, T_GFD);  See notes in getFeedData
   return;
 }
 
@@ -687,4 +687,18 @@ void handleGetConfig(){
     }
   }
   server.send(400, txtPlain_P, "Bad Request.");
+}
+
+        // Seems to work better when sending chunk as a single write
+        // including chunk header, body, and footer (\r\n).
+        // This function accepts a char* buffer and length to send.
+        // Buffer must have 6 bytes free at start for header and
+        // must be long enough to add two byte footer.
+        // bufPos is end of body (chunksize+6).
+
+size_t sendChunk(char* buf, size_t bufPos){
+  sprintf(buf,"%04x\r",bufPos-6);
+  *(buf+5) = '\n';
+  memcpy(buf+bufPos,"\r\n",2);
+  return server.client().write(buf,bufPos+2);
 }
