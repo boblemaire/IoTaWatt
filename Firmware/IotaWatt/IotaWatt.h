@@ -19,7 +19,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.  
    
 ***********************************************************************************/
-#define IOTAWATT_VERSION "02_03_11"
+#define IOTAWATT_VERSION "02_03_12"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -32,9 +32,7 @@
 #include <ESP8266mDNS.h>
 #include <DNSServer.h>
 #include <WiFiClient.h>
-//#include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
-//#include <ESP8266httpUpdate.h>
 #include <ESPAsyncTCP.h>
 #include <asyncHTTPrequest.h>
 
