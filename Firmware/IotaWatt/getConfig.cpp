@@ -67,7 +67,7 @@ boolean getConfig(void){
     char* inputsStr = JsonDetail(ConfigFile, inputsArray);
     configInputs(inputsStr);
     delete[] inputsStr;
-  }   
+  }  
         // ************************************ configure output channels *************************
   trace(T_CONFIG,7);
   delete outputs;

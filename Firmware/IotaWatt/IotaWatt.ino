@@ -121,7 +121,6 @@ traceUnion traceEntry;
        
 uint32_t lastCrossMs = 0;             // Timestamp at last zero crossing (ms) (set in samplePower)
 uint32_t nextCrossMs = 0;             // Time just before next zero crossing (ms) (computed in Loop)
-uint32_t nextChannel = 0;             // Next channel to sample (maintained in Loop)
 
       // Various queues and lists of resources.
 

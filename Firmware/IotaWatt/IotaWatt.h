@@ -156,7 +156,6 @@ extern traceUnion traceEntry;
 
 extern uint32_t lastCrossMs;           // Timestamp at last zero crossing (ms) (set in samplePower)
 extern uint32_t nextCrossMs;           // Time just before next zero crossing (ms) (computed in Loop)
-extern uint32_t nextChannel;           // Next channel to sample (maintained in Loop)
 
 enum priorities: byte {priorityLow=3, priorityMed=2, priorityHigh=1};
 

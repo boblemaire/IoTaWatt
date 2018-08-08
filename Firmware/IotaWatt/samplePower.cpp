@@ -7,6 +7,11 @@
 void samplePower(int channel, int overSample){
   static uint32_t trapTime = 0;
   uint32_t timeNow = millis();
+
+  trace(T_POWER,0,channel);
+  if( ! inputChannel[channel]->isActive()){
+    return;
+  }
   
       // If it's a voltage channel, use voltage only sample, update and return.
 
