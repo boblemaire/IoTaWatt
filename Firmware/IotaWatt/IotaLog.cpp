@@ -10,8 +10,10 @@ struct {
 int IotaLog::begin (const char* path ){
   if(IotaFile) return 0;	
   String logPath = String(path) + ".log";
+	_path = new char[logPath.length()+1];
+	strcpy(_path, logPath.c_str());
   ndxPath = String(path) + ".ndx";
-  if(!SD.exists((char*)logPath.c_str())){
+  if(!SD.exists(_path)){
 		if(logPath.lastIndexOf('/') > 0){
 			String  dir = logPath.substring(0,logPath.lastIndexOf('/'));
 			if( ! SD.mkdir((char*)dir.c_str())){
@@ -20,7 +22,7 @@ int IotaLog::begin (const char* path ){
 			return 2;
 			}
 		}
-		IotaFile = SD.open((char*)logPath.c_str(), FILE_WRITE);
+		IotaFile = SD.open(_path, FILE_WRITE);
 		if(!IotaFile){
 			return 2;
 		}
@@ -29,7 +31,7 @@ int IotaLog::begin (const char* path ){
 		File ndxFile = SD.open((char*)ndxPath.c_str(), FILE_WRITE);
 		ndxFile.close();
   }
-  IotaFile = SD.open((char*)logPath.c_str(), FILE_WRITE);
+  IotaFile = SD.open(_path, FILE_READ);
 	if(!IotaFile){
 		return 2;
   }
@@ -53,7 +55,9 @@ int IotaLog::begin (const char* path ){
 
 	if(_entries >= 3 &&	_lastSerial - _firstSerial + 1 != _entries &&
 		 _firstSerial != _lastSerial + 1){
-		IotaLogRecord* record = new IotaLogRecord;	 
+		IotaLogRecord* record = new IotaLogRecord;
+		IotaFile.close();
+		IotaFile = SD.open(_path, FILE_WRITE);	 
 		IotaFile.seek(_fileSize - sizeof(IotaLogRecord) * 3);
 		IotaFile.read((char*)record, sizeof(IotaLogRecord));
 		if(record->serial - _firstSerial + 3 == _entries){
@@ -66,6 +70,8 @@ int IotaLog::begin (const char* path ){
 			_lastKey = record->UNIXtime;
 			_lastSerial = record->serial; 
 		}
+		IotaFile.close();
+		IotaFile = SD.open(_path, FILE_READ);	 
 		delete record;
 	}
 
@@ -262,6 +268,8 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 		return 1;
   }
   callerRecord->serial = ++_lastSerial;
+	IotaFile.close();
+	IotaFile = SD.open(_path, FILE_WRITE);	 
   if(_wrap || _fileSize >= _maxFileSize){
 		//Serial.print("seeking: "); Serial.println(_wrap);
 		IotaFile.seek(_wrap);
@@ -274,7 +282,8 @@ int IotaLog::write (IotaLogRecord* callerRecord){
   }
   //Serial.println("Writing");
   IotaFile.write((char*)callerRecord, sizeof(IotaLogRecord));
-  IotaFile.flush();
+  IotaFile.close();
+	IotaFile = SD.open(_path, FILE_READ);	 
 
 		  // For backward compatability during transition, 
 		  // keep up the index file.

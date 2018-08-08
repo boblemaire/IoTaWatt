@@ -34,6 +34,7 @@ class IotaLog
   public:
 
 	IotaLog(int interval=5, uint32_t days = 365) {
+    _path = nullptr;
 		_interval = interval;
 		_recordSize = sizeof(IotaLogRecord);
     _fileSize = 0;
@@ -55,6 +56,7 @@ class IotaLog
 	
 	~IotaLog(){
     IotaFile.close();
+    delete[] _path;
     delete[] _cacheKey;
     delete[] _cacheSerial;
 	}
@@ -83,7 +85,7 @@ class IotaLog
 	File 	 IotaFile;
 	String    ndxPath;						            // For backward compatibility during transition
 
-     
+    char*    _path;                         // file pathname
     uint16_t _interval;	                    // Posting interval to log. Currently tested only using 5.
     uint16_t _recordSize;      	  		      // Size of a log record
     uint32_t _fileSize;                     // Size of file in bytes
