@@ -17,7 +17,10 @@ void samplePower(int channel, int overSample){
 
   trace(T_POWER,0);
   if(inputChannel[channel]->_type == channelTypeVoltage){
-    inputChannel[channel]->setVoltage(sampleVoltage(channel, inputChannel[channel]->_calibration));                                                                        
+    float VRMS = sampleVoltage(channel, inputChannel[channel]->_calibration);
+    if(VRMS >= 0.0){
+      inputChannel[channel]->setVoltage(VRMS);                                                                        
+    }
     return;
   }
 
@@ -410,8 +413,11 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
   uint32_t sumVsq = 0;
   int retries = 0;
   while(int rtc = sampleCycle(Vchannel, Vchannel, 1, 0)){
-    if(rtc == 2 || retries++ > 3){
+    if(rtc == 2){
       return 0.0;
+    }
+    if(retries ++ > 3){
+      return -1.0;
     }
   }
   for(int i=0; i<samples; i++){  
