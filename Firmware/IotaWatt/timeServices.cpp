@@ -174,9 +174,11 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   if(presDiff != prevDiff){
     prevDiff = presDiff; 
     prevIP = timeServerIP;
+    return UNIXtime() + (RTCrunning ? 60 : 0);
   }
   if(prevDiff){
     if(prevIP == timeServerIP){
+      return UNIXtime() + (RTCrunning ? 60 : 0);
     }
     //log("IPs: %s, %s, prevDiff: %d", prevIP.toString().c_str(), timeServerIP.toString().c_str(), prevDiff);
     //log("packet sec: %u, frac: %u",packet.trans_ts_sec, packet.trans_ts_frac);
