@@ -877,8 +877,10 @@ function refreshInputEdit(){
   }
   
   if(inputEditObject.type == "CT"){
+    
     inputNeg = addTableRow(table, "", "inputNeg", "input");
     inputNeg.parentNode.appendChild(document.createTextNode("Allow negative power value"));
+    addInfo(inputNeg, "Use on mains when solar or wind can export power.");
     inputNeg.setAttribute("type","checkbox");
     inputNeg.setAttribute("onchange","inputEditObject.signed = this.checked; refreshInputEdit();");
     if(inputEditObject.signed != undefined && inputEditObject.signed){
@@ -888,8 +890,30 @@ function refreshInputEdit(){
       inputEditObject.signed = undefined;
     }
     
+    inputDouble = addTableRow(table, "", "inputMult", "input");
+    inputDouble.parentNode.appendChild(document.createTextNode("Double"));
+    addInfo(inputDouble, "Double measured power.  Use with balanced 240V circuit with CT on one conductor.");
+    inputDouble.setAttribute("type","checkbox");
+    inputDouble.setAttribute("onchange","inputEditObject.double = this.checked; refreshInputEdit();");
+    if(inputEditObject.double != undefined && inputEditObject.double){
+      inputDouble.checked = true;
+    } else {
+      inputEditObject.double = undefined;
+    }
+    
     EbyId("inputEditDelete").style.display = (config.inputs[inputEditChannel] == null) ? "none" : "inline";
   }
+  
+  inputReverse = addTableRow(table, "", "inputReverse", "input");
+    inputReverse.parentNode.appendChild(document.createTextNode("Reverse"));
+    addInfo(inputReverse, inputEditObject.type == "CT" ? "Same as reversing CT on conductor" : "Same as reversing VT in socket");
+    inputReverse.setAttribute("type","checkbox");
+    inputReverse.setAttribute("onchange","inputEditObject.reverse = this.checked; refreshInputEdit();");
+    if(inputEditObject.reverse != undefined && inputEditObject.reverse){
+      inputReverse.checked = true;
+    } else {
+      inputEditObject.reverse = undefined;
+    }
 
   if(inputEditObject.type == "VT"){
     EbyId("inputEditDelete").style.display = 
@@ -903,6 +927,13 @@ function refreshInputEdit(){
   }
 
   EbyId("inputEditSave").style.display = complete ? "inline" : "none";
+}
+
+function addInfo(element, title){
+  infoSymbol = document.createElement("span");
+  infoSymbol.innerHTML = " &#128712";
+  infoSymbol.title = title;
+  element.parentNode.appendChild(infoSymbol);
 }
 
 function inputEditNewModel(obj){
@@ -2101,8 +2132,8 @@ function statusDisplay(statusMessage){
       if(status.inputs[i].Watts < 0){
           wattNode.setAttribute("color","DarkGreen");
       }
-      if(status.inputs[i].Watts >= 60){
-        var pf = status.inputs[i].Pf;
+      if(Math.abs(status.inputs[i].Watts) >= 60){
+        var pf = Math.abs(status.inputs[i].Pf);
         var pfNode = document.createElement("font");
         pfNode.innerHTML = ", pf:" + "&nbsp;" + pf.toFixed(2);
         column3.appendChild(pfNode);

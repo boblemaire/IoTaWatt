@@ -103,6 +103,9 @@ void samplePower(int channel, int overSample){
   const uint16_t maxOffset = ADC_RANGE / 2 + ADC_RANGE / 200;
 
   trace(T_POWER,4);
+  if(Vchannel->_reverse){
+    sumV = -sumV;
+  }
   if(sumV >= 0) sumV += samples / 2; 
   else sumV -= samples / 2;
   int16_t offsetV = Vchannel->_offset + sumV / samples;
@@ -110,6 +113,9 @@ void samplePower(int channel, int overSample){
   if(offsetV > maxOffset) offsetV = maxOffset;
   Vchannel->_offset = offsetV;
   
+  if(Ichannel->_reverse){
+    sumI = -sumI;
+  }
   if(sumI >= 0) sumI += samples / 2;
   else sumI -= samples / 2;
   int16_t offsetI = Ichannel->_offset + sumI / samples;
@@ -134,6 +140,11 @@ void samplePower(int channel, int overSample){
   _Irms = Iratio * sqrt((double)(sumIsq / samples));
   _watts = Vratio * Iratio * (double)(sumP / samples);
   _VA = _Vrms * _Irms;
+
+  if(Ichannel->_double){
+    _watts *= 2.0;
+    _VA *= 2.0;
+  }
   
 
         // If watts is negative and the channel is not explicitely signed, reverse it (backward CT).
@@ -227,6 +238,9 @@ void samplePower(int channel, int overSample){
   byte ADC_VselectPin = ADC_selectPin[inputChannel[Vchan]->_addr >> 3];
   uint32_t ADC_IselectMask = 1 << ADC_IselectPin;             // Mask for hardware chip select (pins 0-15)
   uint32_t ADC_VselectMask = 1 << ADC_VselectPin;
+
+  bool Vreverse = inputChannel[Vchan]->_reverse;
+  bool Ireverse = inputChannel[Ichan]->_reverse;
   
   SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
  
@@ -322,8 +336,7 @@ void samplePower(int channel, int overSample){
               // extract the rawI from the SPI hardware buffer and adjust with offset.
  
         rawI = (word(*fifoPtr8 & 0x01, *(fifoPtr8+1)) << 3) + (*(fifoPtr8+2) >> 5) - offsetI;
-   
-       
+               
         // Finish up loop cycle by checking for zero crossing.
         // Crossing is defined by voltage changing signs  (Xor) and crossGuard negative.
 
@@ -355,6 +368,15 @@ void samplePower(int channel, int overSample){
   *IsamplePtr = (rawI + lastI) >> 1;
    
   trace(T_SAMP,8);
+
+  VsamplePtr = Vsample;
+  IsamplePtr = Isample; 
+  if(Vreverse | Ireverse){
+    for(int i=0; i<samples; i++){
+      if(Vreverse) *(VsamplePtr++) = - *VsamplePtr;
+      if(Ireverse) *(IsamplePtr++) = - *IsamplePtr;
+    }
+  }
 
   if(samples < ((lastCrossUs - firstCrossUs) * 381 / 10000)){
     Serial.print(F("Low sample count "));

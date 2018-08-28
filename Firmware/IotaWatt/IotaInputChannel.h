@@ -52,6 +52,8 @@ class IotaInputChannel {
 	  bool		     _active;	
     bool         _reversed;                   // True if negative power in being made positive (reversed CT)
     bool         _signed;                     // True if channel should not be reversed when negative (net metered main)
+    bool         _reverse;                    // Reverse ADC input from CT (emulate physical reverse)
+    bool         _double;                     // Double power (120/240V single CT)
     
     IotaInputChannel(uint8_t channel)
     :_name(nullptr)
@@ -68,6 +70,8 @@ class IotaInputChannel {
 	  ,_active(false)
     ,_reversed(false)
     ,_signed(false)
+    ,_reverse(false)
+    ,_double(false)
    {}
 	~IotaInputChannel(){
 		
@@ -85,6 +89,8 @@ class IotaInputChannel {
 	  _active = false;
     _reversed = false;
     _signed = false;
+    _reverse = false;
+    _double = false;
 	}
 	
     void ageBuckets(uint32_t timeNow) {
