@@ -58,8 +58,6 @@ void samplePower(int channel, int overSample){
       
   int16_t rawV;
   int16_t rawI;  
-  int32_t sumV = 0;
-  int32_t sumI = 0;
   double sumP = 0;
   double sumVsq = 0;
   double sumIsq = 0;  
@@ -88,40 +86,12 @@ void samplePower(int channel, int overSample){
     rawI = *IsamplePtr;
     rawV = Vsample[Vindex]; 
     rawV += int(stepFraction * (Vsample[Vindex + 1] - Vsample[Vindex]));
-    sumV += rawV;
     sumVsq += rawV * rawV;
-    sumI += rawI;
     sumIsq += rawI * rawI;
     sumP += rawV * rawI;      
     IsamplePtr++;
     Vindex = ++Vindex % samples;
   }
-  
-        // Adjust the offset values assuming symmetric waves but within limits otherwise.
- 
-  const uint16_t minOffset = ADC_RANGE / 2 - ADC_RANGE / 200;    // Allow +/- .5% variation
-  const uint16_t maxOffset = ADC_RANGE / 2 + ADC_RANGE / 200;
-
-  trace(T_POWER,4);
-  if(Vchannel->_reverse){
-    sumV = -sumV;
-  }
-  if(sumV >= 0) sumV += samples / 2; 
-  else sumV -= samples / 2;
-  int16_t offsetV = Vchannel->_offset + sumV / samples;
-  if(offsetV < minOffset) offsetV = minOffset;
-  if(offsetV > maxOffset) offsetV = maxOffset;
-  Vchannel->_offset = offsetV;
-  
-  if(Ichannel->_reverse){
-    sumI = -sumI;
-  }
-  if(sumI >= 0) sumI += samples / 2;
-  else sumI -= samples / 2;
-  int16_t offsetI = Ichannel->_offset + sumI / samples;
-  if(offsetI < minOffset) offsetI = minOffset;
-  if(offsetI > maxOffset) offsetI = maxOffset;
-  Ichannel->_offset = offsetI;
     
         // Voltage calibration is the ratio of line voltage to voltage presented at the input.
         // Input voltage is further attenuated with voltage dividing resistors (Vadj_3).
@@ -369,21 +339,50 @@ void samplePower(int channel, int overSample){
    
   trace(T_SAMP,8);
 
+          // Process raw samples.
+          // Add them to check the offset.
+          // Reverse if required.
+
   VsamplePtr = Vsample;
-  IsamplePtr = Isample; 
-  if(Vreverse | Ireverse){
-    for(int i=0; i<samples; i++){
-      if(Vreverse) *(VsamplePtr++) = - *VsamplePtr;
-      if(Ireverse) *(IsamplePtr++) = - *IsamplePtr;
-    }
+  IsamplePtr = Isample;
+  int32_t sumI = 0;
+  int32_t sumV = 0;
+  for(int i=0; i<samples; i++){
+    sumV += *VsamplePtr;
+    sumI += *IsamplePtr;
+    if(Vreverse) *VsamplePtr = - *VsamplePtr;
+    if(Ireverse) *IsamplePtr = - *IsamplePtr;
+    VsamplePtr++;
+    IsamplePtr++;
   }
 
+        // Adjust the offset values assuming symmetric waves but within limits otherwise.
+ 
+  const uint16_t minOffset = ADC_RANGE / 2 - ADC_RANGE / 200;    // Allow +/- .5% variation
+  const uint16_t maxOffset = ADC_RANGE / 2 + ADC_RANGE / 200;
+
+  trace(T_SAMP,9);
+
+  if(sumV >= 0) sumV += samples / 2; 
+  else sumV -= samples / 2;
+  offsetV = Vchannel->_offset + sumV / samples;
+  if(offsetV < minOffset) offsetV = minOffset;
+  if(offsetV > maxOffset) offsetV = maxOffset;
+  Vchannel->_offset = offsetV;
+  
+  if(sumI >= 0) sumI += samples / 2;
+  else sumI -= samples / 2;
+  offsetI = Ichannel->_offset + sumI / samples;
+  if(offsetI < minOffset) offsetI = minOffset;
+  if(offsetI > maxOffset) offsetI = maxOffset;
+  Ichannel->_offset = offsetI; 
+  
   if(samples < ((lastCrossUs - firstCrossUs) * 381 / 10000)){
     Serial.print(F("Low sample count "));
     Serial.println(samples);
     return 1;
   }
-  if(abs(samples - (midCrossSamples * 2)) > 3){
+  if(abs(samples - (midCrossSamples * 2)) > 10){
     return 1;
   }
             // Update damped frequency.
@@ -509,7 +508,7 @@ String samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
   double sumVsq = 0;
   double sumIsq = 0;
   double sumVI = 0;
-  float  sumSamples;
+  double sumSamples;
 
   for(int i=0; i<4; i++){
     uint32_t startTime = millis();
@@ -526,9 +525,9 @@ String samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
     sumSamples += samples;
   }
 
-  double Vrms = sqrt(sumVsq / (double)samples);
-  double Irms = sqrt(sumIsq / (double)samples);
-  double VI = sumVI / (double)samples;
+  double Vrms = sqrt(sumVsq / sumSamples);
+  double Irms = sqrt(sumIsq / sumSamples);
+  double VI = sumVI / sumSamples;
   float phaseDiff = (double)57.29578 * acos(VI / (Vrms * Irms)) - 0.055;  // 0.055 is shift introduced in sampling timing
 
   String response = "Sample phase lead\r\n\r\nChannel: " + String(Ichan) + "\r\n";
@@ -541,5 +540,4 @@ String samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
   
   return response;
 }
-
-
+ 
