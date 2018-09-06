@@ -672,6 +672,12 @@ function configInputs(){
       nameColumn.innerHTML += "<strong>" + config.inputs[i].name + "</strong>";
       newColumn.innerHTML = "<small><strong>" + config.inputs[i].type + "</strong>";
       newColumn.innerHTML += ", <strong>" + config.inputs[i].model + "</strong>";
+      if(config.inputs[i].double){
+        newColumn.innerHTML += "(x2)";
+      }
+      if(config.inputs[i].reverse){
+        newColumn.innerHTML += "&#8634";
+      }
       newColumn.innerHTML += ", cal:<strong>" + Number(config.inputs[i].cal).toFixed(2) + "</strong>";
       newColumn.innerHTML += ", lead:<strong>" + Number(config.inputs[i].phase).toFixed(2) + "&#176</strong>";
       if(config.inputs[i].vchan !== undefined){
@@ -680,6 +686,7 @@ function configInputs(){
           newColumn.innerHTML += ", Vref:<strong>" + config.inputs[i].vchan + "</strong>";
         }
       }
+      
       if(config.derive3ph){
         var phase = (config.inputs[i].vphase === undefined) ? vphaseNames[0] : vphaseNames[config.inputs[i].vphase/120];
         newColumn.innerHTML += ", phase:<strong>" + phase + "</strong>";
