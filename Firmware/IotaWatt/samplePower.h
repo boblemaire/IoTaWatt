@@ -2,7 +2,7 @@
 #define samplePower_h
 
 void    samplePower(int channel, int overSample);
-int     sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles, int overSamples);
+int     sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles = 1);
 float   getAref(int channel);
 int     readADC(uint8_t channel);
 float   sampleVoltage(uint8_t Vchan, float Vcal);

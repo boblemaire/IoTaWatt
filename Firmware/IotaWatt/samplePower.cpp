@@ -48,7 +48,7 @@ void samplePower(int channel, int overSample){
         // Invoke high speed sample collection.
         // If it fails, return.
  
-  if(int rtc = sampleCycle(Vchannel, Ichannel, 1, 0)) {
+  if(int rtc = sampleCycle(Vchannel, Ichannel)) {
     trace(T_POWER,2);
     if(rtc == 2){
       Ichannel->setPower(0.0, 0.0);
@@ -169,7 +169,7 @@ void samplePower(int channel, int overSample){
   *   
   ****************************************************************************************************/
   
-  int sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles, int overSamples){
+  int sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int cycles){
 
   int Vchan = Vchannel->_channel;
   int Ichan = Ichannel->_channel;
@@ -326,13 +326,12 @@ void samplePower(int channel, int overSample){
             lastCrossUs = micros();                     // To compute frequency
             lastCrossMs = millis();                     // For main loop dispatcher to estimate when next crossing is imminent
             lastCrossSamples = samples;
-            crossGuard = overSamples + 1;
           }
           else {
             midCrossSamples = samples;                               
           }
         }   
-  } while(crossCount < crossLimit || crossGuard > 0); 
+  } while(crossCount < crossLimit); 
 
   *VsamplePtr = rawV;                                       
   *IsamplePtr = (rawI + lastI) >> 1;
@@ -377,12 +376,15 @@ void samplePower(int channel, int overSample){
   if(offsetI > maxOffset) offsetI = maxOffset;
   Ichannel->_offset = offsetI; 
   
-  if(samples < ((lastCrossUs - firstCrossUs) * 381 / 10000)){
+  if(samples < ((lastCrossUs - firstCrossUs) * 380 / 10000)){
     Serial.print(F("Low sample count "));
     Serial.println(samples);
     return 1;
   }
   if(abs(samples - (midCrossSamples * 2)) > 10){
+    DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
+    Serial.printf_P(PSTR("%d/%02d/%02d %02d:%02d:%02d sample imbalance: %d - %d = %d\r\n"), now.month(), now.day(), now.year()%100,
+    now.hour(), now.minute(), now.second(), midCrossSamples, samples-midCrossSamples, abs(samples - (midCrossSamples * 2)));
     return 1;
   }
             // Update damped frequency.
@@ -433,7 +435,7 @@ float sampleVoltage(uint8_t Vchan, float Vcal){
   IotaInputChannel* Vchannel = inputChannel[Vchan];
   uint32_t sumVsq = 0;
   int retries = 0;
-  while(int rtc = sampleCycle(Vchannel, Vchannel, 1, 0)){
+  while(int rtc = sampleCycle(Vchannel, Vchannel)){
     if(rtc == 2){
       return 0.0;
     }
@@ -512,7 +514,7 @@ String samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
 
   for(int i=0; i<4; i++){
     uint32_t startTime = millis();
-    while (sampleCycle(Vchannel, Ichannel, cycles, Ishift)){
+    while (sampleCycle(Vchannel, Ichannel, cycles)){
       if(millis()-startTime > 75){
         return String("Unable to sample");
       }
