@@ -311,22 +311,20 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         Script* script = influxOutputs->first();
         trace(T_influx,7);
         while(script){
-          reqData.write(influxVarStr(influxMeasurement, script));
-          if(influxTagSet){
-            trace(T_influx,71);
-            influxTag* tag = influxTagSet;
-            while(tag){
-              reqData.printf_P(PSTR(",%s=%s"), tag->key, influxVarStr(tag->value, script).c_str());
-              tag = tag->next;
-            }
-          }
-          char separator = ' ';
           double value = script->run(oldRecord, logRecord, elapsedHours);
           if(value == value){
-            reqData.printf_P(PSTR("%c%s=%.*f"), separator,influxVarStr(influxFieldKey, script).c_str(), script->precision(), value);
-            separator = ',';
+            reqData.write(influxVarStr(influxMeasurement, script));
+            if(influxTagSet){
+              trace(T_influx,71);
+              influxTag* tag = influxTagSet;
+              while(tag){
+                reqData.printf_P(PSTR(",%s=%s"), tag->key, influxVarStr(tag->value, script).c_str());
+                tag = tag->next;
+              }
+            }
+            reqData.printf_P(PSTR(" %s=%.*f"), influxVarStr(influxFieldKey, script).c_str(), script->precision(), value);
+            reqData.printf(" %d\n", UnixNextPost);
           }
-          reqData.printf(" %d\n", UnixNextPost);
           script = script->next();
         }
         trace(T_influx,7);
