@@ -80,7 +80,8 @@
  *   07/25/18 02_03_10 run getFeedData in handler, auth session changes, use staging core 
  *   07/31/18 02_03_11 Minor changes for general release 
  *   08/08/18 02_03_12 Finally fix memory leak?
- *   08/11/18 02_03_13 Back to 2.4.1 core, overhaul timeservice, fix zero voltage, add RSSI for WiFi                                 
+ *   08/11/18 02_03_13 Back to 2.4.1 core, overhaul timeservice, fix zero voltage, add RSSI for WiFi 
+ *   09/08/18 02_03_14 Add reverse and double to inputs, modify sampleCycle                                 
  * 
  *****************************************************************************************************/
 
