@@ -34,6 +34,10 @@
   switch(state){
 
     case initialize: {
+      
+            // If clock is not running, return
+
+      if( ! RTCrunning) break;
 
       log("dataLog: service started.");
 
@@ -85,10 +89,6 @@
         }
       }
       timeThen = timeNow;
-
-            // If clock is not running, return
-
-      if( ! RTCrunning) break;
 
       // If it's been a long time since last entry, skip ahead.
       
