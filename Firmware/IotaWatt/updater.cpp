@@ -397,6 +397,10 @@ bool copyUpdate(String version){
   File inFile;
   while(inFile = updtDir.openNextFile()){
     log("Updater: Installing %s", inFile.name());
+    if(strcmp_ci(inFile.name(),"config.txt") == 0 && SD.exists(inFile.name())){
+      inFile.close();
+      continue;
+    }
     SD.remove(inFile.name());
     File outFile = SD.open(inFile.name(), FILE_WRITE);
     uint32_t fileSize = inFile.size();
