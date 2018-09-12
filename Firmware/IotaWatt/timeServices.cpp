@@ -79,6 +79,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   uint32_t origin_frac = 0;
   IPAddress timeServerIP;
 
+  trace(T_timeSync , 0);
   if( ! started){
     log("timeSync: service started.");
     lastNTPupdate = UNIXtime();
@@ -88,6 +89,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
           // The ms clock will rollover after ~49 days.  To be on the safe side,
           // restart the ESP after about 42 days to reset the ms clock.
 
+  trace(T_timeSync , 1);
   if(millis() > 3628800000UL) {
     log("timeSync: Six week routine restart.");
     ESP.restart();
@@ -95,6 +97,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
           // Log if no time update for 24 hours.
 
+  trace(T_timeSync , 2);
   if(UNIXtime() - lastNTPupdate > 86400UL){ 
     log("timeSync: No time update in last 24 hours.");
     lastNTPupdate = UNIXtime();
@@ -102,8 +105,11 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
         // Send an SNTP request.
 
+  trace(T_timeSync , 3);
   if(WiFi.isConnected()){
+    trace(T_timeSync , 31);
     if(WiFi.hostByName(ntpServerName, timeServerIP) == 1){    // get a random server from the pool
+      trace(T_timeSync , 32);
       ntpPacket packet;
       sendMillis = millis();
       packet.trans_ts_sec = origin_sec = sendMillis / 1000;
@@ -114,6 +120,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
       udp.endPacket();
     } 
     else {
+      trace(T_timeSync , 33);
       return UNIXtime() + RTCrunning ? 60 : 0;
     }
   }
@@ -121,8 +128,10 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
         // Poll for completion
         // This is a blocking event, so limit to three seconds.
 
+  trace(T_timeSync , 4);
   while( ! udp.parsePacket()){
     if(millis() - sendMillis > 3000){
+      trace(T_timeSync , 42);
       udp.stop();
       return UNIXtime() + (RTCrunning ? 60 : 0);
     }
@@ -131,6 +140,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
         // Have a packet,
         // read and reformat to little endian and make fractions milliseconds
 
+  trace(T_timeSync , 5);
   uint32_t recvMillis = millis();
   ntpPacket packet;
   size_t packetSize = udp.read((uint8_t*)&packet,sizeof(ntpPacket));
@@ -142,22 +152,26 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
         // Validate packet.
 
+  trace(T_timeSync , 6);
   if(packetSize < sizeof(ntpPacket) || recvMillis - sendMillis > 3000){
     return UNIXtime() + (RTCrunning ? 60 : 0);
   }
 
         // Check for Kiss-o'-Death packet
-
+  trace(T_timeSync , 7);
   if(packet.stratum == 0){
     //log("timesync: Kiss-o'-Death, code %c%c%c%c, ip: %s", 
     //packet.referenceID[0], packet.referenceID[1], packet.referenceID[2], packet.referenceID[3], timeServerIP.toString().c_str());
     return UNIXtime() + 30;
   } 
 
+  trace(T_timeSync , 8);
   if(packet.origin_ts_sec != origin_sec || packet.origin_ts_frac != origin_frac){
+    trace(T_timeSync , 81);
     return UNIXtime() + (RTCrunning ? 60 : 0);
   }
   if(packet.trans_ts_sec < NTP2018 || packet.trans_ts_sec > NTP2028){
+    trace(T_timeSync , 82);
     return UNIXtime() + (RTCrunning ? 60 : 0);
   }
 
@@ -170,14 +184,18 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
         // Check for seconds adjustment.
         // If so, do it again to verify.
 
+  trace(T_timeSync , 9);
   uint32_t presDiff = current_ts_sec - NTPtime();
   if(presDiff != prevDiff){
+    trace(T_timeSync , 91);
     prevDiff = presDiff; 
     prevIP = timeServerIP;
     return UNIXtime() + (RTCrunning ? 60 : 0);
   }
   if(prevDiff){
+    trace(T_timeSync , 92);
     if(prevIP == timeServerIP){
+      trace(T_timeSync , 93);
       return UNIXtime() + (RTCrunning ? 60 : 0);
     }
     //log("IPs: %s, %s, prevDiff: %d", prevIP.toString().c_str(), timeServerIP.toString().c_str(), prevDiff);
@@ -188,6 +206,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   
         // Set/adjust internal clock
 
+  trace(T_timeSync , 10);
   timeRefNTP = current_ts_sec - 1;
   timeRefMs = recvMillis - 1000 - current_ts_frac;
   lastNTPupdate = UNIXtime();
@@ -195,16 +214,19 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
         // If RTC not running, set it.
 
   if( ! RTCrunning) {
+    trace(T_timeSync , 11);
     programStartTime = UNIXtime();
     rtc.adjust(UNIXtime());
     RTCrunning = true;
     log("timeSync: RTC initalized to NTP time");
+    SdFile::dateTimeCallback(dateTime);
   }
 
         // RTC is running, 
         // check against internal time and adjust if necessary.
 
   else {
+    trace(T_timeSync , 12);
     int32_t timeDiff = UNIXtime() - rtc.now().unixtime();
     if(timeDiff < 0){
       timeDiff += 1;
@@ -212,6 +234,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
       timeDiff -= 1;
     }
     if(timeDiff != 0){
+      trace(T_timeSync , 13);
       //log("UNIXtime: %u, RTC: %u, timeDiff: %d", UNIXtime(), rtc.now().unixtime(), timeDiff);
       log("timeSync: adjusting RTC by %d", timeDiff);
       rtc.adjust(rtc.now().unixtime() + timeDiff);
@@ -220,6 +243,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
           // Go back to sleep.
 
+  trace(T_timeSync , 14);
   return UNIXtime() + timeSynchInterval;    
 }
 
