@@ -99,9 +99,9 @@ messageLog msglog;
       // Define filename Strings of system files.          
 
 char* deviceName;             
-const char* IotaLogFile = "/IotaWatt/IotaLog";
-const char* historyLogFile = "/IotaWatt/histLog";
-const char* IotaMsgLog = "/IotaWatt/IotaMsgs.txt";
+const char* IotaLogFile = "iotawatt/iotalog";
+const char* historyLogFile = "iotawatt/histLog";
+const char* IotaMsgLog = "iotawatt/iotamsgs.txt";
 const char* ntpServerName = "pool.ntp.org";
 
                        
@@ -193,7 +193,7 @@ uint8_t  ledCount;                           // Current index into cycle
       
 const char* updateURL = "iotawatt.com";
 const char* updatePath = "/firmware/iotaupdt.php";
-char*    updateClass = nullptr;              // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
+char*    updateClass;                                   // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
 const uint8_t publicKey[32] PROGMEM = {
                         0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
                         0xcc, 0x2c, 0xea, 0x2e, 0x88, 0x9c, 0xe0, 0xea,
