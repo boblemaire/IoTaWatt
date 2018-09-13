@@ -58,10 +58,11 @@
       // If it's not a new log, get the last entry.
       
       if(currLog.fileSize() == 0){
+        log("dataLog: New current log created.");
         if(histLog.begin(historyLogFile) == 0 && histLog.fileSize() > 0){
           logRecord->UNIXtime = histLog.lastKey();
           histLog.readKey(logRecord);
-          log("dataLog: Last history entry: %d", logRecord->UNIXtime);
+          log("dataLog: Last history entry: %s", dateString(logRecord->UNIXtime).c_str());
         }
       }
       else {
