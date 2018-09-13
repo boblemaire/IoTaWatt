@@ -533,14 +533,7 @@ void handleCommand(){
     trace(T_WEB,5); 
     uint16_t chan = server.arg(F("sample")).toInt();
     samplePower(chan,0);
-    /*
-    String response = String(samples) + "\n\r";
-    for(int i=0; i<samples; i++){
-      response += String(Vsample[i]) + "," + String(Isample[i]) + "\r\n";
-    }
-    server.send(200, txtPlain_P, response);*/
     getSamples();
-
     return; 
   }
   if(server.hasArg(F("disconnect"))) {
@@ -552,28 +545,38 @@ void handleCommand(){
   }
   if(server.hasArg(F("deletelog"))) {
     trace(T_WEB,21); 
-    server.send(200, "text/plain", "ok");
-    if(server.arg(F("deletelog")) == "current"){
-      log("delete current log command received.");
+    String arg = server.arg(F("deletelog"));
+    log("deletelog=%s command received.", arg.c_str());
+    if(arg == "current"){
+      trace(T_WEB,21); 
       currLog.end();
-      delay(1000);
       deleteRecursive(String(IotaLogFile) + ".log");
       deleteRecursive(String(IotaLogFile) + ".ndx");
-      ESP.restart();
-    }
-    if(server.arg(F("deletelog")) == "history"){
-      trace(T_WEB,21); 
-      server.send(200, txtPlain_P, "ok");
-      log("delete history log command received.");
+    } 
+    else if(arg == "history"){
+      trace(T_WEB,22); 
       histLog.end();
       deleteRecursive(String(historyLogFile) + ".log");
       deleteRecursive(String(historyLogFile) + ".ndx");
-      delay(1000);
-      ESP.restart();
     }
-    
+    else if(arg == "both"){
+      trace(T_WEB,23);
+      currLog.end();
+      deleteRecursive(String(IotaLogFile) + ".log");
+      deleteRecursive(String(IotaLogFile) + ".ndx");
+      histLog.end();
+      deleteRecursive(String(historyLogFile) + ".log");
+      deleteRecursive(String(historyLogFile) + ".ndx");
+    }
+    else {
+      server.send(400, txtPlain_P, F("Specify current, history, or both."));
+      return;
+    }
+    server.send(200, txtPlain_P, "ok");
+    delay(1000);
+    ESP.restart();
   }
-  server.send(400, txtJson_P, F("Unrecognized request"));
+  server.send(400, txtPlain_P, F("Unrecognized request"));
 }
 
 void handleGetFeedList(){ 

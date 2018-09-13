@@ -82,8 +82,7 @@ class IotaLog
 
   private:
         
-	File 	 IotaFile;
-	String    ndxPath;						            // For backward compatibility during transition
+	  File 	 IotaFile;
 
     char*    _path;                         // file pathname
     uint16_t _interval;	                    // Posting interval to log. Currently tested only using 5.

@@ -63,7 +63,7 @@ class IotaInputChannel {
     ,_aRef(8)
     ,_offset(2048)
     ,_vchannel(0)
-	  ,_burden(0)
+	  ,_burden(24)
     ,_calibration(0)
     ,_phase(0)
     ,_vphase(0)

@@ -64,7 +64,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         if(logRecord->UNIXtime % histLog.interval()){
             logRecord->UNIXtime += histLog.interval() - (logRecord->UNIXtime % histLog.interval());
         }
-        log("historyLog: first entry", logRecord->UNIXtime);
+        log("historyLog: first entry %s", dateString(logRecord->UNIXtime).c_str());
         currLog.readKey(logRecord);
         histLog.write(logRecord);
         delete logRecord;

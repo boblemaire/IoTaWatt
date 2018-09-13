@@ -36,10 +36,12 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         delete[] _updateClass;
         _updateClass = charstar(updateClass);
         log("Updater: Auto-update class changed to %s", _updateClass);
-        lastVersionCheck = 0;
-        upToDate = false;
-        state = getVersion;
-        return 1;
+        if (strcmp(_updateClass, "NONE") != 0){
+          lastVersionCheck = 0;
+          upToDate = false;
+          state = getVersion;
+          return 1;
+        }
       }
       else if (strcmp(_updateClass, "NONE") != 0 && UNIXtime() - lastVersionCheck > updaterServiceInterval){
         lastVersionCheck = UNIXtime();
@@ -397,6 +399,10 @@ bool copyUpdate(String version){
   File inFile;
   while(inFile = updtDir.openNextFile()){
     log("Updater: Installing %s", inFile.name());
+    if(strcmp_ci(inFile.name(),"config.txt") == 0 && SD.exists(inFile.name())){
+      inFile.close();
+      continue;
+    }
     SD.remove(inFile.name());
     File outFile = SD.open(inFile.name(), FILE_WRITE);
     uint32_t fileSize = inFile.size();
