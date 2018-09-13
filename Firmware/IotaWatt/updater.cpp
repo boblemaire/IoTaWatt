@@ -36,10 +36,12 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         delete[] _updateClass;
         _updateClass = charstar(updateClass);
         log("Updater: Auto-update class changed to %s", _updateClass);
-        lastVersionCheck = 0;
-        upToDate = false;
-        state = getVersion;
-        return 1;
+        if (strcmp(_updateClass, "NONE") != 0){
+          lastVersionCheck = 0;
+          upToDate = false;
+          state = getVersion;
+          return 1;
+        }
       }
       else if (strcmp(_updateClass, "NONE") != 0 && UNIXtime() - lastVersionCheck > updaterServiceInterval){
         lastVersionCheck = UNIXtime();
