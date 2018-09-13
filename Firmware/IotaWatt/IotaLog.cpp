@@ -12,7 +12,6 @@ int IotaLog::begin (const char* path ){
   String logPath = String(path) + ".log";
 	_path = new char[logPath.length()+1];
 	strcpy(_path, logPath.c_str());
-  ndxPath = String(path) + ".ndx";
   if(!SD.exists(_path)){
 		if(logPath.lastIndexOf('/') > 0){
 			String  dir = logPath.substring(0,logPath.lastIndexOf('/'));
@@ -26,9 +25,6 @@ int IotaLog::begin (const char* path ){
 			return 2;
 		}
 		IotaFile.close();
-		SD.remove(ndxPath);
-		File ndxFile = SD.open((char*)ndxPath.c_str(), FILE_WRITE);
-		ndxFile.close();
   }
   IotaFile = SD.open(_path, FILE_READ);
 	if(!IotaFile){
@@ -264,7 +260,6 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 	IotaFile.close();
 	IotaFile = SD.open(_path, FILE_WRITE);	 
   if(_wrap || _fileSize >= _maxFileSize){
-		//Serial.print("seeking: "); Serial.println(_wrap);
 		IotaFile.seek(_wrap);
 		_wrap = (_wrap + sizeof(IotaLogRecord)) % _fileSize;
   }
@@ -273,35 +268,21 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 		_fileSize += sizeof(IotaLogRecord);
 		_entries++;
   }
-  //Serial.println("Writing");
   IotaFile.write((char*)callerRecord, sizeof(IotaLogRecord));
   IotaFile.close();
 	IotaFile = SD.open(_path, FILE_READ);	 
-
-		  // For backward compatability during transition, 
-		  // keep up the index file.
-
-  if(callerRecord->UNIXtime - _lastKey > _interval){
-	  File ndxFile = SD.open((char*)ndxPath.c_str(), FILE_WRITE);
-	  if(ndxFile){
-		  ndxFile.write((char*)callerRecord, 8);
-		  ndxFile.close();
-	  }
-  }
-
   _lastKey = callerRecord->UNIXtime;
   _lastSerial = callerRecord->serial;
   if(_firstKey == 0){
-	_firstKey = callerRecord->UNIXtime;
+		_firstKey = callerRecord->UNIXtime;
   }
   else if(_wrap || _fileSize == _maxFileSize){
-	//Serial.print("seeking: "); Serial.println(_wrap);
-	IotaFile.seek(_wrap);
-	IotaFile.read((char*)callerRecord,8);
-	_firstKey = callerRecord->UNIXtime;
-	_firstSerial = callerRecord->serial;
-	callerRecord->UNIXtime = _lastKey;
-	callerRecord->serial = _lastSerial;
+		IotaFile.seek(_wrap);
+		IotaFile.read((char*)callerRecord,8);
+		_firstKey = callerRecord->UNIXtime;
+		_firstSerial = callerRecord->serial;
+		callerRecord->UNIXtime = _lastKey;
+		callerRecord->serial = _lastSerial;
   }
   
   return 0;
