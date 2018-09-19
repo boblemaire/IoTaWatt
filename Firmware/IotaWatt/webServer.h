@@ -15,11 +15,14 @@ bool serverOn(authLevel level, const __FlashStringHelper* uri, HTTPMethod method
 void returnOK();
 void returnFail(String msg);
 bool loadFromSdCard(String path);
+bool loadFromSpiffs(String path, String dataType);
 void handleFileUpload();
+void handleSpiffsUpload();
 void deleteRecursive(String path);
 void handleDelete();
 void handleCreate();
 void printDirectory();
+void printSpiffsDirectory(String path);
 void handleNotFound();
 void handleStatus();
 void handleVcal();
