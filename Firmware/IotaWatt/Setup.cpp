@@ -102,6 +102,21 @@ void setup()
   traceEntry.seq = 0;
   for(int i=0; i<32; i++) trace(0,0);
 
+//*************************************** Mount the SPIFFS ******************************************
+
+if(spiffsBegin()){
+  log("SPIFFS mounted.");
+} else {
+  if(spiffsFormat()){
+    log("SPIFFS formated");
+    if(spiffsBegin()){
+      log("SPIFFS mounted.");
+    }
+  } else {
+    log("SPIFFS format failed");
+  }
+}
+
 //************************************* Process Config file *****************************************
   if(!getConfig()) {
     log("Configuration failed");
