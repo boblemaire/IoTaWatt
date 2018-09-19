@@ -61,6 +61,7 @@
 #include "influxDB.h"
 #include "Emonservice.h"
 #include "auth.h"
+#include "spiffs.h"
 
 
       // Declare instances of major classes
