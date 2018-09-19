@@ -247,3 +247,22 @@ String timeString(int value){
   if(value < 10) return String("0") + String(value);
   return String(value);
 }
+
+/**************************************************************************************************
+ *     Get SHA256 hash of a file.                                                                 *  
+ * ************************************************************************************************/
+void hashFile(uint8_t* sha, File file){
+  SHA256 sha256;
+  int buffSize = 256;
+  uint8_t* buff = new uint8_t[buffSize];
+  size_t pos = file.position();
+  file.seek(0);
+  sha256.reset();
+  while(file.available()){
+    int bytesRead = file.read(buff,MIN(file.available(),buffSize));
+    sha256.update(buff, bytesRead); 
+  }
+  delete[] buff;
+  sha256.finalize(sha,32);
+  file.seek(pos);
+}

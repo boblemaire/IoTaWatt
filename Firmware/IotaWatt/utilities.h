@@ -25,3 +25,5 @@ char*  JsonDetail(File file, JsonArray& locator);   // Read and compress a detai
 
 String dateString(uint32_t UNIXtime);               // Convert unixtime to a data/time string
 String timeString(int value);                       // Convert time to String(HH:MM:SS)
+
+void hashFile(uint8_t* sha, File file);             // Get SHA256 hash of a file    
