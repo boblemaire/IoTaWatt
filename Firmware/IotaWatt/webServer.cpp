@@ -133,6 +133,10 @@ bool loadFromSdCard(String path){
   else if(path.endsWith(".pdf")) dataType = F("application/pdf");
   else if(path.endsWith(".zip")) dataType = F("application/zip");
 
+  if(path.startsWith("/esp_spiffs/")){
+    return loadFromSpiffs(path.substring(11), dataType);
+  }
+
   File dataFile = SD.open(path.c_str());
   if(dataFile.isDirectory()){
     path += "/index.htm";
@@ -173,49 +177,75 @@ bool loadFromSdCard(String path){
   return true;
 }
 
+bool loadFromSpiffs(String path, String dataType){
+  if( ! spiffsFileExists(path.c_str())){
+    server.send(404, txtPlain_P, "Not Found");
+    return false;
+  }
+  String contents = spiffsRead(path.c_str());
+  server.send(200, dataType, contents);
+  return true;
+}
+
 void handleFileUpload(){
   trace(T_WEB,11);
   if(server.uri() != "/edit") return;
   HTTPUpload& upload = server.upload();
+  if( ! upload.filename.startsWith("/")){
+    upload.filename = String('/') + upload.filename;
+  }
+  upload.filename.toLowerCase();
+  if(upload.filename.startsWith("/esp_spiffs/")){
+    handleSpiffsUpload();
+  }
   if(upload.status == UPLOAD_FILE_START){
     if( ! authenticate(authAdmin)) return;
-    if(upload.filename.equalsIgnoreCase("config.txt") ||
-        upload.filename.equalsIgnoreCase("/config.txt")){
+      if(upload.filename.equals("/config.txt")){
       if(server.hasHeader(F("X-configSHA256"))){
         if(server.header(F("X-configSHA256")) != base64encode(configSHA256, 32)){
           server.send(409, txtPlain_P, "Config not current");
           return;
         }
       }
-      if( ! uploadSHA){
-        uploadSHA = new SHA256;
-      }
-      uploadSHA->reset();  
     }
     if(SD.exists((char *)upload.filename.c_str())) SD.remove((char *)upload.filename.c_str());
     if(uploadFile = SD.open(upload.filename.c_str(), FILE_WRITE)){
       DBG_OUTPUT_PORT.print("Upload: START, filename: "); DBG_OUTPUT_PORT.println(upload.filename);
     }
+
   } else if(upload.status == UPLOAD_FILE_WRITE){
     if(uploadFile) {
       uploadFile.write(upload.buf, upload.currentSize);
-      if(uploadSHA){
-        uploadSHA->update(upload.buf, upload.currentSize);
-      }
-      // DBG_OUTPUT_PORT.print("Upload: WRITE, Bytes: "); DBG_OUTPUT_PORT.println(upload.currentSize);
     }
     
   } else if(upload.status == UPLOAD_FILE_END){
     if(uploadFile){
       uploadFile.close();
       DBG_OUTPUT_PORT.print("Upload: END, Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
-      if(uploadSHA){
-        uploadSHA->finalize(configSHA256, 32);
-        delete uploadSHA;
-        uploadSHA = nullptr;
+      if(upload.filename.equals("/config.txt")){
+        uploadFile = SD.open(upload.filename.c_str(), FILE_READ);
+        hashFile(configSHA256, uploadFile);
+        uploadFile.close();
         server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
       }
     }
+  }
+}
+
+void handleSpiffsUpload(){
+  trace(T_WEB,11);
+  HTTPUpload& upload = server.upload();
+  if(upload.status == UPLOAD_FILE_START){
+
+    if( ! authenticate(authAdmin)) return;
+      DBG_OUTPUT_PORT.print("Upload: START, filename: "); DBG_OUTPUT_PORT.println(upload.filename);
+      spiffsWrite(upload.filename.substring(11).c_str(), "", 0);        // Create a null file
+
+  } else if(upload.status == UPLOAD_FILE_WRITE){
+      spiffsWrite(upload.filename.substring(11).c_str(), upload.buf, upload.currentSize, true);   // append to the file (true)
+
+  } else if(upload.status == UPLOAD_FILE_END){
+      DBG_OUTPUT_PORT.print("Upload: END, Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
   }
 }
 
@@ -250,7 +280,12 @@ void handleDelete(){
   trace(T_WEB,9); 
   if(server.args() == 0) return returnFail("BAD ARGS");
   String path = server.arg(0);
-  if(path == "/" || !SD.exists((char *)path.c_str())) {
+  if(path.startsWith("/esp_spiffs")){
+    spiffsRemove(path.substring(11).c_str());
+    returnOK();
+    return;
+  } 
+    if(path == "/" || !SD.exists((char *)path.c_str())) {
     returnFail("BAD PATH");
     return;
   }
@@ -268,6 +303,14 @@ void handleCreate(){
   trace(T_WEB,10); 
   if(server.args() == 0) return returnFail("BAD ARGS");
   String path = server.arg(0);
+
+  if(path.startsWith("/esp_spiffs")){
+    if(spiffsFileExists(path.substring(11).c_str())) return returnFail("BAD PATH");
+    spiffsWrite(path.substring(11).c_str(),"");
+    returnOK();
+    return;
+  } 
+
   if(path == "/" || SD.exists((char *)path.c_str())) {
     returnFail("BAD PATH");
     return;
@@ -288,7 +331,43 @@ void handleCreate(){
 void printDirectory() {
   trace(T_WEB,7); 
   if(!server.hasArg("dir")) return returnFail("BAD ARGS");
+  String response;
   String path = server.arg("dir");
+  if(path.startsWith("/esp_spiffs")){
+    response = spiffsDirectory(path.substring(11));
+  }
+  else {
+    if(path != "/" && !SD.exists((char *)path.c_str())) return returnFail("BAD PATH");
+    File dir = SD.open((char *)path.c_str());
+    if(!dir.isDirectory()){
+      dir.close();
+      return returnFail("NOT DIR");
+    }
+    DynamicJsonBuffer jsonBuffer;
+    JsonArray& array = jsonBuffer.createArray();
+    dir.rewindDirectory();
+    File entry;
+    while(entry = dir.openNextFile()){
+      JsonObject& object = jsonBuffer.createObject();
+      object["type"] = (entry.isDirectory()) ? "dir" : "file";
+      object["name"] = String(entry.name());
+      array.add(object);
+      entry.close();
+    }
+    dir.close();
+    if(path == "/"){
+      JsonObject& object = jsonBuffer.createObject();
+      object["type"] = "dir";
+      object["name"] = String("esp_spiffs");
+      array.add(object);
+    }
+    array.printTo(response);
+  }  
+  server.send(200, appJson_P, response);
+}
+
+void printSpiffsDirectory(String path) {
+  trace(T_WEB,7); 
   if(path != "/" && !SD.exists((char *)path.c_str())) return returnFail("BAD PATH");
   File dir = SD.open((char *)path.c_str());
   path = String();
@@ -306,7 +385,7 @@ void printDirectory() {
     object["name"] = String(entry.name());
     array.add(object);
     entry.close();
-  }  
+  }
   String response = "";
   array.printTo(response);
   server.send(200, appJson_P, response);
