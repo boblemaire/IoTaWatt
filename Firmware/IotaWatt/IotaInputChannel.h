@@ -42,7 +42,8 @@ class IotaInputChannel {
     float		     _burden;					            // Value of on-board burden resistor, zero if none	
     float        _calibration;                // Calibration factor
     float        _phase;                      // Phase correction in degrees (+lead, - lag);
-    float        _vphase;                     // Phase offset for 3-phase voltage reference	
+    float        _vphase;                     // Phase offset for 3-phase voltage reference
+    uint16_t     _turns;                      // Turns ratio of current type CT	
     uint16_t     _offset;                     // ADC bias 
     uint8_t      _channel;                    // Internal identifying number
     uint8_t      _addr;                       // Highbyte ADC, Lowbyte port on ADC
@@ -67,6 +68,7 @@ class IotaInputChannel {
     ,_calibration(0)
     ,_phase(0)
     ,_vphase(0)
+    ,_turns(0)
 	  ,_active(false)
     ,_reversed(false)
     ,_signed(false)
