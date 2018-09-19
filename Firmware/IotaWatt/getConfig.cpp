@@ -93,7 +93,7 @@ boolean getConfig(void){
   }
         // ************************************** configure influxDB **********************************
   trace(T_CONFIG,8);
-  JsonArray& influxArray = Config["influxdb"];
+  JsonArray& influxArray = Config[F("influxdb")];
   if(influxArray.success()){
     char* influxStr = JsonDetail(ConfigFile, influxArray);
     if( ! influxConfig(influxStr)){
@@ -119,16 +119,16 @@ bool configDevice(const char* JsonStr){
     log("device: Json parse failed");
   }
   delete[] deviceName;
-  if(device.containsKey("name")){
-    deviceName = charstar(device["name"].as<char*>());
+  if(device.containsKey(F("name"))){
+    deviceName = charstar(device[F("name")].as<char*>());
   }
   else {
     deviceName = charstar(F("IotaWatt"));
   }
 
   int channels = 21;
-  if(device.containsKey("version")){
-    deviceVersion = device["version"].as<unsigned int>();
+  if(device.containsKey(F("version"))){
+    deviceVersion = device[F("version")].as<unsigned int>();
     if(deviceVersion < 3){
       log("Device version no longer supported.");
       dropDead();
@@ -140,15 +140,15 @@ bool configDevice(const char* JsonStr){
   ADC_selectPin[1] = pin_CS_ADC1;
   channels = 15;
       
-  if(device.containsKey("refvolts")){
-    VrefVolts = device["refvolts"].as<float>();
+  if(device.containsKey(F("refvolts"))){
+    VrefVolts = device[F("refvolts")].as<float>();
   }  
   
           // Build or update the input channels
           
   trace(T_CONFIG,5); 
-  if(device.containsKey("channels")){
-    channels = MIN(device["channels"].as<unsigned int>(),MAXINPUTS);
+  if(device.containsKey(F("channels"))){
+    channels = MIN(device[F("channels")].as<unsigned int>(),MAXINPUTS);
   }
   
   if(maxInputs != channels) {
@@ -172,7 +172,7 @@ bool configDevice(const char* JsonStr){
         // Override V3 defaults if V2 device
 
   if(deviceVersion == 2){
-    for(int i=0; i<MIN(maxInputs,device["chanaddr"].size()); i++){
+    for(int i=0; i<MIN(maxInputs,device[F("chanaddr")].size()); i++){
       inputChannel[i]->_addr = int(i / 7) * 8 + i % 7;
       inputChannel[i]->_aRef = int(i / 7) * 8 + 7;
     }
@@ -180,22 +180,36 @@ bool configDevice(const char* JsonStr){
 
         // Override all defaults with user specification
  
-  if(device.containsKey("chanaddr")){
-    for(int i=0; i<MIN(maxInputs,device["chanaddr"].size()); i++){
-      inputChannel[i]->_addr = device["chanaddr"][i].as<unsigned int>();
+  if(device.containsKey(F("chanaddr"))){
+    for(int i=0; i<MIN(maxInputs,device[F("chanaddr")].size()); i++){
+      inputChannel[i]->_addr = device[F("chanaddr")][i].as<unsigned int>();
     }
   }
   
-  if(device.containsKey("chanaref")){
-    for(int i=0; i<MIN(maxInputs,device["chanaddr"].size()); i++){
-      inputChannel[i]->_aRef = device["chanaref"][i].as<unsigned int>();
+  if(device.containsKey(F("chanaref"))){
+    for(int i=0; i<MIN(maxInputs,device[F("chanaddr")].size()); i++){
+      inputChannel[i]->_aRef = device[F("chanaref")][i].as<unsigned int>();
     }
   }
- 
+          // Get burden values.
+          // If there is a burden file in the spiffs, use that.
+          // else, if there is a burden object in the config, use that.
+          // else, the default in the IotaInputChannel constructor prevails.
 
-   if(device.containsKey("burden")){
-    for(int i=0; i<MIN(maxInputs,device["burden"].size()); i++){
-      inputChannel[i]->_burden = device["burden"][i].as<float>();
+  const char burdenFileName[] = "/config/device/burden.txt";
+  if(spiffsFileExists(burdenFileName)){
+    String JsonBurden = spiffsRead(burdenFileName);
+    JsonArray& burden = Json.parseArray(JsonBurden);
+    for(int i=0; i<MIN(maxInputs,burden.size()); i++){
+      inputChannel[i]->_burden = burden[i].as<float>();
+    }
+  }
+  else if(device.containsKey(F("burden"))){
+    String JsonBurden;
+    device[F("burden")].printTo(JsonBurden);
+    spiffsWrite(burdenFileName, JsonBurden);
+    for(int i=0; i<MIN(maxInputs,device[F("burden")].size()); i++){
+      inputChannel[i]->_burden = device[F("burden")][i].as<float>();
     }
   }
 }
@@ -220,7 +234,11 @@ bool configInputs(const char* JsonStr){
       inputChannel[i]->_name = charstar(input["name"].as<char*>());
       delete inputChannel[i]->_model;
       inputChannel[i]->_model = charstar(input["model"].as<char*>());
+      inputChannel[i]->_turns = input["turns"].as<float>();
       inputChannel[i]->_calibration = input["cal"].as<float>();
+      if(inputChannel[i]->_turns && inputChannel[i]->_burden){
+        inputChannel[i]->_calibration = inputChannel[i]->_turns / inputChannel[i]->_burden;
+      }
       inputChannel[i]->_phase = input["phase"].as<float>();
       inputChannel[i]->_vphase = input["vphase"].as<float>();
       inputChannel[i]->_vchannel = input.containsKey("vref") ? input["vref"].as<int>() : 0;
@@ -269,22 +287,6 @@ bool configOutputs(const char* JsonStr){
   outputs = new ScriptSet(outputsArray);
   return true;
 } 
-
-//********************************** hashFile() ***********************************************
-void hashFile(uint8_t* sha, File file){
-  SHA256 sha256;
-  int buffSize = 256;
-  uint8_t* buff = new uint8_t[buffSize];
-  file.seek(0);
-  sha256.reset();
-  while(file.available()){
-    int bytesRead = file.read(buff,MIN(file.available(),buffSize));
-    sha256.update(buff, bytesRead); 
-  }
-  delete[] buff;
-  sha256.finalize(sha,32);
-  file.seek(0);
-}
 
 //********************************** old2newScript ***********************************************
 String old2newScript(JsonArray& script){
