@@ -82,7 +82,8 @@
  *   08/08/18 02_03_12 Finally fix memory leak?
  *   08/11/18 02_03_13 Back to 2.4.1 core, overhaul timeservice, fix zero voltage, add RSSI for WiFi 
  *   09/08/18 02_03_14 Add reverse and double to inputs, modify sampleCycle 
- *   09/12/18 02_03_15 Ready for MFG load, don't overwrite config, cleanup, deletelog=both, remove .ndx support, datalog fix, delete, dump                                
+ *   09/12/18 02_03_15 Ready for MFG load, don't overwrite config, cleanup, deletelog=both, remove .ndx support, datalog fix, delete, dump
+ *   09/21/18 02_03_16 Add access to spiffs, maintain burden in spiffs, improve performance of iotalog and histlog service                               
  * 
  *****************************************************************************************************/
 
