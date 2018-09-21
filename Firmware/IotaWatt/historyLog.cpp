@@ -23,10 +23,11 @@
 #define GapFill 600           // Fill in gaps of less than this seconds 
       
 uint32_t historyLog(struct serviceBlock* _serviceBlock){
-  enum states {initialize, logData};
+  enum states {initialize, logFill, logData};
   static states state = initialize;
-  static uint32_t lastExitTime = 0;                                         
-  IotaLogRecord* logRecord;
+  static uint32_t lastExitTime = 0;
+  static uint32_t fillTarget = 0;                                         
+  static IotaLogRecord* logRecord = nullptr;
   trace(T_history,0);  
  
   switch(state){
@@ -36,18 +37,18 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
 
         // If iotaLog not open or empty, check back later.
 
-      if( ! currLog.isOpen() || (currLog.firstKey() - currLog.lastKey()) < histLog.interval()){
+      if( ! currLog.isOpen() || (currLog.lastKey() - currLog.firstKey()) < histLog.interval()){
          return UNIXtime() + histLog.interval(); 
       }
 
-      log("historyLog: service started.");
+      log("historyLog: service started."); 
 
         // Initialize the historyLog class
      
       trace(T_history,2);   
       if(int rtc = histLog.begin(historyLogFile)){
-        log("historyLog: Log file open failed: %d", rtc);
-        dropDead();
+        log("historyLog: Log file open failed: %d, service halted.", rtc);
+        return 0;
       }
       
         // If it's not a new log, get the last entry.
@@ -59,7 +60,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         // New history log, start with first even increment in IotaLog     
 
       else {
-        logRecord = new IotaLogRecord;
+        if( ! logRecord) logRecord = new IotaLogRecord;
         logRecord->UNIXtime = currLog.firstKey();
         if(logRecord->UNIXtime % histLog.interval()){
             logRecord->UNIXtime += histLog.interval() - (logRecord->UNIXtime % histLog.interval());
@@ -68,31 +69,55 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         currLog.readKey(logRecord);
         histLog.write(logRecord);
         delete logRecord;
+        logRecord = nullptr;
       }
 
-      trace(T_history,3); 
-      state = logData;
+      trace(T_history,3);
+      if(histLog.lastKey() < currLog.firstKey()){
+        fillTarget = currLog.firstKey();
+        state = logFill;
+      } else {
+        state = logData;
+      }
       break;
     } 
 
+          // logFill replicates the last history file record until fillTarget.
+          // Used primarily to fill large gaps as when the current log has been 
+          // deleted after an interruption.
+
+    case logFill: {
+      if( ! logRecord) {
+        logRecord = new IotaLogRecord;
+        histLog.readSerial(logRecord, histLog.lastSerial());
+      }
+      logRecord->UNIXtime += histLog.interval();
+      if(logRecord->UNIXtime < fillTarget){ 
+        histLog.write(logRecord);
+      }
+      else {
+        delete logRecord;
+        logRecord = nullptr;
+        state = logData;
+      }
+      return 1;
+    }
+
     case logData: {
-      if((millis() - lastExitTime) < (2000 / frequency)) return 1;
       trace(T_history,4);   
       if((histLog.lastKey() + histLog.interval()) > currLog.lastKey()){
         return UNIXtime() + 5;
       }
-      trace(T_history,5); 
-      logRecord = new IotaLogRecord;
-      logRecord->UNIXtime = histLog.lastKey() + histLog.interval();
-      if(logRecord->UNIXtime < currLog.firstKey()){
-        trace(T_history,6); 
-        logRecord->UNIXtime = histLog.lastKey();
-        histLog.readKey(logRecord);
-        logRecord->UNIXtime += histLog.interval();
+      trace(T_history,5);
+      if( ! logRecord){
+        logRecord = new IotaLogRecord;
+        logRecord->UNIXtime = histLog.lastKey(); 
       }
-      else if(currLog.readKey(logRecord)){
-        log("historyLog: primary log file read failure. Service suspended.");
+      logRecord->UNIXtime += histLog.interval();
+      if(currLog.readKey(logRecord)){
+      log("historyLog: primary log file read failure. Service suspended.");
         delete logRecord;
+        logRecord = nullptr;
         return 0;
       }
       trace(T_history,7); 
@@ -100,15 +125,18 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         Serial.print("log file record not multiple of history interval: ");
         Serial.println(logRecord->UNIXtime);
         delete logRecord;
+        logRecord = nullptr;
         return 0;
       }
       trace(T_history,8); 
       histLog.write(logRecord);
-      delete logRecord;
+      if((histLog.lastKey() + histLog.interval()) > currLog.lastKey()){
+        delete logRecord;
+        logRecord = nullptr;
+      }
       break;
     }
   }
   trace(T_history,9);
-  lastExitTime = millis();
   return histLog.lastKey() + histLog.interval(); 
 }
