@@ -26,7 +26,7 @@ int IotaLog::begin (const char* path ){
 		}
 		IotaFile.close();
   }
-  IotaFile = SD.open(_path, FILE_READ);
+  IotaFile = SD.open(_path, FILE_WRITE);
 	if(!IotaFile){
 		return 2;
   }
@@ -257,8 +257,6 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 		return 1;
   }
   callerRecord->serial = ++_lastSerial;
-	IotaFile.close();
-	IotaFile = SD.open(_path, FILE_WRITE);	 
   if(_wrap || _fileSize >= _maxFileSize){
 		IotaFile.seek(_wrap);
 		_wrap = (_wrap + sizeof(IotaLogRecord)) % _fileSize;
@@ -269,8 +267,7 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 		_entries++;
   }
   IotaFile.write((char*)callerRecord, sizeof(IotaLogRecord));
-  IotaFile.close();
-	IotaFile = SD.open(_path, FILE_READ);	 
+  IotaFile.flush();
   _lastKey = callerRecord->UNIXtime;
   _lastSerial = callerRecord->serial;
   if(_firstKey == 0){
