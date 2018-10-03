@@ -164,9 +164,11 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
           // for the entire update blob to be transfered and written to SD.
           // Takes about 5-10 seconds.
 
+      setLedCycle(LED_UPDATING);
       while(request->readyState() != 4){
         yield();
       }
+      endLedCycle();
       HTTPrequestFree = HTTPrequestMax;
       size_t fileSize = releaseFile.size();
       releaseFile.close();

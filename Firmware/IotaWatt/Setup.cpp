@@ -40,7 +40,7 @@ void setup()
 
   if(!SD.begin(pin_CS_SDcard)) {
     log("SD initiatization failed. Retrying.");
-    setLedCycle("G.R.R...");
+    setLedCycle(LED_SD_INIT_FAILURE);
     while(!SD.begin(pin_CS_SDcard, SPI_FULL_SPEED)){ 
       yield();
     }
@@ -137,7 +137,7 @@ if(spiffsBegin()){
   uint32_t autoConnectTimeout = millis() + 3000UL;
   while(WiFi.status() != WL_CONNECTED){
     if(millis() > autoConnectTimeout){
-      setLedCycle("R.G.G...");
+      setLedCycle(LED_CONNECT_WIFI);
       wifiManager.setDebugOutput(false);
       wifiManager.setConfigPortalTimeout(180);
       String ssid = "iota" + String(ESP.getChipId());
@@ -147,7 +147,7 @@ if(spiffsBegin()){
       endLedCycle();
       while(WiFi.status() != WL_CONNECTED && RTCrunning == false){
         log("RTC not running, waiting for WiFi.");
-        setLedCycle("R.R.G...");
+        setLedCycle(LED_CONNECT_WIFI_NO_RTC);
         wifiManager.setConfigPortalTimeout(3600);
         wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
         endLedCycle();
@@ -191,7 +191,7 @@ if(spiffsBegin()){
 }  // setup()
 /***************************************** End of Setup **********************************************/
 
-void dropDead(void){dropDead("R.R.R...");}
+void dropDead(void){dropDead(LED_HALT);}
 void dropDead(const char* pattern){
   log("Program halted.");
   setLedCycle(pattern);

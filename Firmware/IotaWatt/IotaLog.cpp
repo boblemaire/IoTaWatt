@@ -286,7 +286,7 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 }
 
 void IotaLog::dumpFile(){
-	setLedCycle("R.G.R...");
+	setLedCycle(LED_DUMPING_LOG);
 	char diagPath[] = "iotaWatt/logDiag.txt";
 	File logDiag = SD.open(diagPath, FILE_READ);
 	if(logDiag){

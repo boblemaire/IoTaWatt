@@ -145,7 +145,18 @@ extern traceUnion traceEntry;
 #define T_stats 18         // Stat service 
 #define T_datalog 19       // datalog service
 #define T_timeSync 20      // timeSync service 
-#define T_WiFi 21          // WiFi service                               
+#define T_WiFi 21          // WiFi service  
+
+      // LED codes
+
+#define LED_CONNECT_WIFI            "R.G.G..."              // Connecting to WiFi, AP active
+#define LED_CONNECT_WIFI_NO_RTC     "R.R.G..."              // Connecting to WiFi, AP active, nofail
+#define LED_SD_INIT_FAILURE         "G.R.R..."              // SD initialization failed
+#define LED_DUMPING_LOG             "R.G.R..."              // Dtatlog damage, creating diagnostic file
+#define LED_HALT                    "R.R.R..."              // Fatal error, IoTaWatt halted
+#define LED_NO_CONFIG               "R.R.R.R..."            // No configuration file found
+#define LED_BAD_CONFIG              "R.R.R.G..."            // Could not parse config file
+#define LED_UPDATING                "R.G."                  // Downloading new release
 
       // ADC descriptors
 

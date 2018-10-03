@@ -28,7 +28,7 @@ boolean getConfig(void){
   ConfigFile = SD.open(ConfigFileURL, FILE_READ);
   if(!ConfigFile) {
     log("Config file open failed.");
-    return false;
+    dropDead(LED_NO_CONFIG);
   }
   hashFile(configSHA256, ConfigFile);
   String configSummary = JsonSummary(ConfigFile, 1);
@@ -36,7 +36,7 @@ boolean getConfig(void){
   trace(T_CONFIG,4);
   if (!Config.success()) {
     log("Config file parse failed.");
-    return false;
+    dropDead(LED_BAD_CONFIG);
   }
   
   //************************************** Process misc first level stuff **************************
