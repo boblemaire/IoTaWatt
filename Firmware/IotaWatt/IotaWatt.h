@@ -154,8 +154,8 @@ extern traceUnion traceEntry;
 #define LED_SD_INIT_FAILURE         "G.R.R..."              // SD initialization failed
 #define LED_DUMPING_LOG             "R.G.R..."              // Dtatlog damage, creating diagnostic file
 #define LED_HALT                    "R.R.R..."              // Fatal error, IoTaWatt halted
-#define LED_NO_CONFIG               "R.R.R.R..."            // No configuration file found
-#define LED_BAD_CONFIG              "R.R.R.G..."            // Could not parse config file
+#define LED_NO_CONFIG               "G.R.R.R..."            // No configuration file found
+#define LED_BAD_CONFIG              "G.R.R.G..."            // Could not parse config file
 #define LED_UPDATING                "R.G."                  // Downloading new release
 
       // ADC descriptors
