@@ -160,14 +160,18 @@ if(spiffsBegin()){
     log("No WiFi connection.");
   }
     
-  //*************************************** Start the local DNS service ****************************
+  //*************************************** Startup the Zeroconfig responders *********************
 
-  if (MDNS.begin(deviceName)) {
+  if(WiFi.status() == WL_CONNECTED){
+    if (MDNS.begin(deviceName)) {
       MDNS.addService("http", "tcp", 80);
-      log("MDNS responder started");
-      log("You can now connect to http://%s.local", deviceName);
+      log("MDNS responder successfully started for %s.local", deviceName);
+    }
+    if (LLMNR.begin(deviceName)){
+      log("LLMNR responder successfully started for %s.local", deviceName);
+    } 
   }
-   
+  
  //*************************************** Start the web server ****************************
 
   server.on(F("/edit"), HTTP_POST, returnOK, handleFileUpload);
