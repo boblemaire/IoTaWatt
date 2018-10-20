@@ -95,23 +95,24 @@ class IotaInputChannel {
     _double = false;
 	}
 	
-    void ageBuckets(uint32_t timeNow) {
+  void ageBuckets(uint32_t timeNow) {
 		double elapsedHrs = double((uint32_t)(timeNow - dataBucket.timeThen)) / 3600000E0;
 		dataBucket.accum1 += dataBucket.value1 * elapsedHrs;
 		dataBucket.accum2 += dataBucket.value2 * elapsedHrs;
 		dataBucket.timeThen = timeNow;    
-    }
+  }
 
 	void setVoltage(float volts, float Hz){
 		if(_type != channelTypeVoltage) return;
-		setVoltage(volts);
 		dataBucket.Hz = Hz;	
+		setVoltage(volts);
+
 	}	
-    void setVoltage(float volts){
+  void setVoltage(float volts){
 		if(_type != channelTypeVoltage) return;
-		ageBuckets(millis());
 		dataBucket.volts = volts;
-    }
+		ageBuckets(millis());
+  }
 	
 	void setHz(float Hz){
 		if(_type != channelTypeVoltage) return;
@@ -120,14 +121,13 @@ class IotaInputChannel {
 	
 	void setPower(float watts, float VA){
 		if(_type != channelTypePower) return;
-		ageBuckets(millis());
 		dataBucket.watts = watts;
 		dataBucket.VA = VA;
+		ageBuckets(millis());
 	}
 	
-	bool isActive(){return _active;}
-	void active(bool _active_){_active = _active_;}
-	
+	bool   isActive(){return _active;}
+	void   active(bool _active_){_active = _active_;}
 	double getVoltage(){return dataBucket.volts;}	
 	double getPower(){return dataBucket.watts;}
 	double getPf(){return dataBucket.watts / dataBucket.VA;}
