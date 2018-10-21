@@ -61,6 +61,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static asyncHTTPrequest* request = nullptr;
   static char* base64Sha = nullptr;
   const  size_t reqDataLimit = 2000;            // Transaction yellow light size
+  static uint32_t HTTPtoken = 0;
           
   trace(T_Emon,0);
   if( ! _serviceBlock) return 0;
@@ -98,10 +99,10 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
-      if( ! HTTPrequestFree){
+      HTTPtoken = HTTPreserve(T_Emon);
+      if( ! HTTPtoken){
         return UNIXtime() + 1;
       }
-      HTTPrequestFree--;
       if( ! request){
         request = new asyncHTTPrequest;
       }
@@ -125,7 +126,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(request->readyState() != 4){
         return UNIXtime() + 1; 
       }
-      HTTPrequestFree++;
+      HTTPrelease(HTTPtoken);
       trace(T_Emon,4);
       if(request->responseHTTPcode() != 200){
         state = queryLastGet;
@@ -336,10 +337,10 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
-      if( ! HTTPrequestFree){
+      HTTPtoken = HTTPreserve(T_Emon);
+      if( ! HTTPtoken){
         return UNIXtime() + 1;
       }
-      HTTPrequestFree--;
       if( ! request){
         request = new asyncHTTPrequest;
       }
@@ -369,16 +370,10 @@ case sendSecure:{
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
-      if( ! HTTPrequestFree){
+      HTTPtoken = HTTPreserve(T_Emon);
+      if( ! HTTPtoken){
         return UNIXtime() + 1;
       }
-
-              // Temporary pause code until lwip 2 is fixed for "time Wait" problem.
-
-      if(ESP.getFreeHeap() < 15000){
-        return UNIXtime() + 1;
-      }
-      HTTPrequestFree--;
       if( ! request) {
         request = new asyncHTTPrequest;
       }
@@ -468,7 +463,7 @@ case sendSecure:{
       if(request->readyState() != 4){
         return 1; 
       }
-      HTTPrequestFree++;
+      HTTPrelease(HTTPtoken);
       reqData.flush();
       trace(T_Emon,11);
       if(request->responseHTTPcode() != 200){

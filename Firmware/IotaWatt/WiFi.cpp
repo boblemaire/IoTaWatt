@@ -33,11 +33,23 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
     }
   }
 
+    // Check for degraded heap.
+
   if(ESP.getFreeHeap() < 10000){
     log("Heap memory has degraded below safe minimum, restarting.");
     delay(500);
     ESP.restart();
   }
+
+      // Check for expired HTTP request.
+
+  for(int i=0; i<HTTPrequestMax; i++){
+    if(HTTPrequestStart[i] && (millis() - HTTPrequestStart[i]) > 900000UL){
+      log("Incomplete HTTP request detected, id %d, restarting.", HTTPrequestId[i]);
+      delay(500);
+      ESP.restart();
+    }
+  }    
 
       // Purge any timed out authorization sessions.
 
@@ -60,4 +72,32 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
   }
  
   return UNIXtime() + 1;  
+}
+
+uint32_t HTTPreserve(uint16_t id, bool lock){
+  if(HTTPrequestFree == 0 || HTTPlock) return 0;
+  HTTPrequestFree--;
+  for(int i=0; i<HTTPrequestMax; i++){
+    if(HTTPrequestStart[i] == 0){
+      HTTPrequestStart[i] = millis();
+      HTTPrequestId[i] = id;
+      if(lock){
+        HTTPlock = HTTPrequestStart[i];
+      }
+      return HTTPrequestStart[i];
+    }
+  }
+  return 0;
+}
+
+void HTTPrelease(uint32_t HTTPtoken){
+  for(int i=0; i<HTTPrequestMax; i++){
+    if(HTTPrequestStart[i] == HTTPtoken){
+      HTTPrequestStart[i] = 0;
+      HTTPrequestFree++;
+      if(HTTPtoken == HTTPlock){
+        HTTPlock = 0;
+      }
+    }
+  }
 }

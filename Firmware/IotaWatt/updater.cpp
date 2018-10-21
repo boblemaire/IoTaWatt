@@ -17,6 +17,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   static int checkResponse = 0;
   static char* _updateClass = nullptr;
   static uint32_t lastVersionCheck = 0;
+  static uint32_t HTTPtoken = 0;
 
   if( ! WiFi.isConnected()){
     return UNIXtime() + 1;
@@ -52,17 +53,20 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
 
     case getVersion: {
-      if( ! WiFi.isConnected() || ! HTTPrequestFree){
+      if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
-      HTTPrequestFree--;
+      HTTPtoken = HTTPreserve(T_UPDATE);
+      if( ! HTTPtoken){
+        return UNIXtime() + 1;
+      }
       if( ! request){
         request = new asyncHTTPrequest;
       }
       request->setDebug(false);
       String URL = String(updateURL) + updatePath;
       if( ! request->open("GET", URL.c_str())){
-        HTTPrequestFree++;
+        HTTPrelease(HTTPtoken);
         break;
       }
       request->setTimeout(10);
@@ -72,7 +76,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       request->setReqHeader("X_CURRENT_VERSION", IOTAWATT_VERSION);
       if( ! request->send()){
         request->abort();
-        HTTPrequestFree++;
+        HTTPrelease(HTTPtoken);;
         break;
       }
       state = waitVersion;
@@ -83,7 +87,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       if(request->readyState() != 4){
         return UNIXtime() + 1;
       }
-      HTTPrequestFree++;
+      HTTPrelease(HTTPtoken);;
       if(request->responseHTTPcode() != 200 || request->available() != 8){
         int responseCode = request->responseHTTPcode();
         delete request;
@@ -137,10 +141,13 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
       
     case download: {  
-      if( ! WiFi.isConnected() || HTTPrequestFree != HTTPrequestMax){
+      if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
-      HTTPrequestFree = 0;
+      HTTPtoken = HTTPreserve(T_UPDATE, true);
+      if( ! HTTPtoken){
+        return UNIXtime() + 1;
+      }
       if( ! request){
         request = new asyncHTTPrequest;
       }
@@ -169,7 +176,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         yield();
       }
       endLedCycle();
-      HTTPrequestFree = HTTPrequestMax;
+      HTTPrelease(HTTPtoken);
       size_t fileSize = releaseFile.size();
       releaseFile.close();
       if(request->responseHTTPcode() != 200){

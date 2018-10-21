@@ -170,8 +170,10 @@ uint16_t          authTimeout = 600;      // Timeout interval of authSession in 
 
       // ************************** HTTP concurrent request semaphore *************************
 
-int16_t  HTTPrequestMax = 2;      // Maximum number of concurrent HTTP requests        
-int16_t  HTTPrequestFree = 2;     // Request semaphore 
+int16_t  HTTPrequestFree = HTTPrequestMax;  // Request semaphore
+uint32_t HTTPrequestStart[HTTPrequestMax];  // Reservation time(ms)
+uint16_t HTTPrequestId[HTTPrequestMax];     // Module ID of reserver    
+uint32_t HTTPlock = 0;                      // Time(ms) HTTP was locked (no new requests)   
 
       // ****************************** Timing and time data **********************************
 

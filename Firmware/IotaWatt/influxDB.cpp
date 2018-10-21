@@ -50,6 +50,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static uint32_t postFirstTime = UNIXtime();   // First measurement in outstanding post request
   static uint32_t postLastTime = UNIXtime();    // Last measurement in outstanding post request
   static size_t reqDataLimit = 4000;            // transaction yellow light size
+  static uint32_t HTTPtoken = 0;
 
 
   trace(T_influx,0);                            // Announce entry
@@ -92,10 +93,11 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
           // Make sure wifi is connected and there is a resource available.
 
-      if( ! WiFi.isConnected() || ! HTTPrequestFree){
+      if( ! WiFi.isConnected()) return UNIXtime() + 1;
+      HTTPtoken = HTTPreserve(T_influx);
+      if( ! HTTPtoken){
         return UNIXtime() + 1;
       }
-      HTTPrequestFree--;
 
           // Create a new request
 
@@ -143,7 +145,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(request->readyState() != 4){
         return UNIXtime() + 1; 
       }
-      HTTPrequestFree++;
+      HTTPrelease(HTTPtoken);
       String response = request->responseText();
       int HTTPcode = request->responseHTTPcode();
       delete request;
@@ -207,7 +209,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
     case waitPost: {
       trace(T_influx,9);
       if(request && request->readyState() == 4){
-        HTTPrequestFree++;
+        HTTPrelease(HTTPtoken);
         trace(T_influx,9);
         if(request->responseHTTPcode() != 204){
           if(++retryCount == 10){
@@ -365,11 +367,10 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
-
-      if( ! HTTPrequestFree){
+      HTTPtoken = HTTPreserve(T_influx);
+      if( ! HTTPtoken){
         return 1;
       }
-      HTTPrequestFree--;
       if( ! request){
         request = new asyncHTTPrequest;
       }

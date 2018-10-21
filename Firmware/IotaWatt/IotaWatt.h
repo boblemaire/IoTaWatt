@@ -222,8 +222,11 @@ extern boolean  serverAvailable;          // Set false when asynchronous handler
 extern boolean  wifiConnected;
 extern uint8_t  configSHA256[32];         // Hash of config file
 
-extern int16_t  HTTPrequestMax;           // Maximum concurrent HTTP requests
+#define HTTPrequestMax 2                  // Maximum number of concurrent HTTP requests  
 extern int16_t  HTTPrequestFree;          // Request semaphore
+extern uint32_t HTTPrequestStart[HTTPrequestMax]; // request start time tokens
+extern uint16_t HTTPrequestId[HTTPrequestMax];    // Module ID of requestor
+extern uint32_t HTTPlock;                 // start time token of locking request      
 
 extern uint8_t*   adminH1;                // H1 digest md5("admin":"admin":password) 
 extern uint8_t*   userH1;                 // H1 digest md5("user":"user":password) 
@@ -301,6 +304,9 @@ boolean   getConfig(void);
 
 size_t    sendChunk(char* buf, size_t bufPos);
 
-void getSamples();
+uint32_t  HTTPreserve(uint16_t id, bool lock = false);
+void      HTTPrelease(uint32_t HTTPtoken);
+
+void      getSamples();
 
 #endif
