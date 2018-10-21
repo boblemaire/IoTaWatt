@@ -92,8 +92,8 @@
 WiFiClient WifiClient;
 WiFiManager wifiManager;
 DNSServer dnsServer;    
-IotaLog currLog(5,400);                     // current data log  (1.1 years) 
-IotaLog histLog(60,4000);                   // history data log  (11 years)  
+IotaLog currLog(5,365);                     // current data log  (1 year) 
+IotaLog histLog(60,3652);                   // history data log  (10 years)  
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
 messageLog msglog;
@@ -119,9 +119,8 @@ traceUnion traceEntry;
        * Core dispatching parameters - There's a lot going on, but the steady rhythm is sampling the
        * power channels, and that has to be done on their schedule - the AC frequency.  During sampling,
        * the time (in ms) of the last zero crossing is saved here.  Upon return to "Loop", the estimated
-       * time just before the next crossing is computed.  That's when samplePower will be called again.
-       * We try to run everything else during the half-wave intervals between power sampling.  The next 
-       * channel to be sampled is also kept here to complete the picture.  
+       * time just before the next crossing is computed.  That's when samplePower should be called again.
+       * We try to run everything else during the half-wave intervals between power sampling.  
        **************************************************************************************************/
        
 uint32_t lastCrossMs = 0;             // Timestamp at last zero crossing (ms) (set in samplePower)
