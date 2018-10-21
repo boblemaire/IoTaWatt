@@ -288,12 +288,8 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 void IotaLog::dumpFile(){
 	setLedCycle(LED_DUMPING_LOG);
 	char diagPath[] = "iotaWatt/logDiag.txt";
-	File logDiag = SD.open(diagPath, FILE_READ);
-	if(logDiag){
-		logDiag.close();
-		SD.remove(diagPath);
-	}
-	logDiag = SD.open(diagPath, FILE_WRITE);
+	SD.remove(diagPath);
+	File logDiag = SD.open(diagPath, FILE_WRITE);
 	if(logDiag){
 		DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
     logDiag.printf_P(PSTR("%d/%02d/%02d %02d:%02d:%02d\r\nfilesize %d, entries %d\r\n"),
@@ -312,7 +308,7 @@ void IotaLog::dumpFile(){
 		filePos += _recordSize;
 		IotaFile.seek(filePos);
 		IotaFile.read(&record,sizeof(record));
-		if(record.UNIXtime - endKey != _interval || filePos >= _fileSize){
+		if(record.UNIXtime - endKey != _interval || record.serial - endSerial != 1 || filePos >= _fileSize){
 			Serial.printf_P(PSTR("%d,%d,%d,%d\r\n"), begKey, begSerial, endKey, endSerial);
 			logDiag = SD.open(diagPath, FILE_WRITE);
 			if(logDiag){
