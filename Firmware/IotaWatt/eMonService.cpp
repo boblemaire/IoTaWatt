@@ -60,12 +60,12 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   static int32_t retryCount = 0;
   static asyncHTTPrequest* request = nullptr;
   static char* base64Sha = nullptr;
-  const  size_t reqDataLimit = 2000;            // Transaction yellow light size
+  const  size_t reqDataLimit = 2500;            // Transaction yellow light size
   static uint32_t HTTPtoken = 0;
           
   trace(T_Emon,0);
   if( ! _serviceBlock) return 0;
-
+  
             // If stop signaled, do so.  
 
   if(EmonRestart) {
@@ -245,14 +245,17 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           logRecord = new IotaLogRecord;
         }
         logRecord->UNIXtime = UnixNextPost;
-        logReadKey(logRecord);    
+        currLog.readKey(logRecord);    
       
             // Compute the time difference between log entries.
-            // If zero, don't bother.
+            // If zero, read ahead to skip over a potentially lengthy gap.
             
         double elapsedHours = logRecord->logHours - oldRecord->logHours;
         if(elapsedHours == 0 || elapsedHours != elapsedHours){
-          UnixNextPost += EmonCMSInterval;
+          if(currLog.readNext(logRecord) == 0) {
+            UnixNextPost = logRecord->UNIXtime - (logRecord->UNIXtime % influxDBInterval);
+          }
+          UnixNextPost += influxDBInterval;
           return UnixNextPost;  
         }
         

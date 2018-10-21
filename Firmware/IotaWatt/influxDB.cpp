@@ -302,6 +302,9 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
             
         double elapsedHours = logRecord->logHours - oldRecord->logHours;
         if(elapsedHours == 0){
+          if(currLog.readNext(logRecord) == 0) {
+            UnixNextPost = logRecord->UNIXtime - (logRecord->UNIXtime % influxDBInterval);
+          }
           UnixNextPost += influxDBInterval;
           return UnixNextPost;  
         }
