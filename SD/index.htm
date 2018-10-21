@@ -2365,7 +2365,7 @@ function getConfig(callback){
   readFile(configFileURL, function(response){
     config = JSON.parse(response);
     checkConfig();
-    document.title = "IoTaWatt-" + config.device.name;
+    document.title = config.device.name;
     if(callback !== undefined) callback();
     });
     EbyId("mainMenu").style.display = "block";
