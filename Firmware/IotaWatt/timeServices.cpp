@@ -236,8 +236,9 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     }
     if(timeDiff != 0){
       trace(T_timeSync, 13);
-      //log("UNIXtime: %u, RTC: %u, timeDiff: %d", UNIXtime(), rtc.now().unixtime(), timeDiff);
-      log("timeSync: adjusting RTC by %d", timeDiff);
+      if(abs(timeDiff > 1)){
+        log("timeSync: adjusting RTC by %d", timeDiff);
+      }
       rtc.adjust(rtc.now().unixtime() + timeDiff);
     }
   }
