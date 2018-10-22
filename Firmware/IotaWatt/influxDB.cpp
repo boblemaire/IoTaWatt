@@ -75,7 +75,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(!currLog.isOpen()){                  
         return UNIXtime() + 5;
       }
-      log("influxDB: started, url: %s:%d,db: %s,interval: %d", influxURL, influxPort,
+      log("influxDB: started, url=%s:%d, db=%s, interval=%d", influxURL, influxPort,
               influxDataBase, influxDBInterval); 
       state = queryLastPostTime;
       return 1;

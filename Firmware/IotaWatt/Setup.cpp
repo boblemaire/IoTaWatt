@@ -165,10 +165,10 @@ if(spiffsBegin()){
   if(WiFi.status() == WL_CONNECTED){
     if (MDNS.begin(deviceName)) {
       MDNS.addService("http", "tcp", 80);
-      log("MDNS responder started for %s.local", deviceName);
+      log("MDNS responder started for hostname %s", deviceName);
     }
     if (LLMNR.begin(deviceName)){
-      log("LLMNR responder started for %s.local", deviceName);
+      log("LLMNR responder started for hostname %s", deviceName);
     } 
   }
   

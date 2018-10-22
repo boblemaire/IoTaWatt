@@ -85,8 +85,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(!currLog.isOpen()){
         return UNIXtime() + 5;
       }
-      log("EmonService: started. url:%s:%d%s,node:%s,interval:%d,%s", EmonURL, EmonPort, EmonURI, 
-           emonNode, EmonCMSInterval, (EmonSend == EmonSendGET ? " unsecure GET" : " encrypted POST"));
+      log("EmonService: started. url=%s:%d%s, node=%s, interval=%d%s", EmonURL, EmonPort, EmonURI, 
+           emonNode, EmonCMSInterval, (EmonSend == EmonSendGET ? "" : ", encrypted"));
       EmonStarted = true;
       retryCount = 0;
       EmonLastPost = EmonBeginPosting;
