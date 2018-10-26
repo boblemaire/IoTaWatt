@@ -2098,7 +2098,10 @@ function statusDisplay(statusMessage){
     button.innerHTML = status.influx.running ? "Stop" : "Start";
     button.setAttribute("onclick","influxToggle()");
     influxDiv.appendChild(button);
-    influxDiv.appendChild(document.createTextNode((status.influx.running ? " Running" : " Stopped") + ".  Last update " + formatDateTime(status.influx.lastpost)));
+    influxDiv.appendChild(document.createTextNode(status.influx.running ? " Running" : " Stopped"));
+    if(status.influx.lastpost){
+      influxDiv.appendChild(document.createTextNode(", Last update " + formatDateTime(status.influx.lastpost)));
+    }
   } 
   
   var emonDiv = EbyId("statusEmonDiv");
@@ -2109,7 +2112,10 @@ function statusDisplay(statusMessage){
     button.innerHTML = status.emon.running ? "Stop" : "Start";
     button.setAttribute("onclick","emonToggle()");
     emonDiv.appendChild(button);
-    emonDiv.appendChild(document.createTextNode((status.emon.running ? " Running" : " Stopped") + ".  Last update " + formatDateTime(status.emon.lastpost)));
+    emonDiv.appendChild(document.createTextNode(status.emon.running ? " Running" : " Stopped"));
+    if(status.emon.lastpost){
+      emonDiv.appendChild(document.createTextNode(", Last update " + formatDateTime(status.emon.lastpost)));
+    }
   } 
   
   statusTable = EbyId("inputStatusTable");
@@ -2199,6 +2205,7 @@ function formatRunTime(time){
 }
 
 function formatDateTime(unixtime){
+  if(unixtime == 0) return ""; 
   var date = new Date(unixtime*1000);
   return date.toLocaleDateString() + " " + date.toLocaleTimeString();
 }

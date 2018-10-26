@@ -80,9 +80,18 @@ boolean getConfig(void){
          // ************************************** configure Emoncms **********************************
 
   trace(T_CONFIG,8);
-  JsonArray& EmonArray = Config["server"];
+  char* EmonStr = nullptr;
+  JsonArray& EmonArray = Config["emoncms"];
   if(EmonArray.success()){
-    char* EmonStr = JsonDetail(ConfigFile, EmonArray);
+    EmonStr = JsonDetail(ConfigFile, EmonArray);
+  } else // Accept old format ~ 02_03_17
+  {      
+    JsonArray& serverArray = Config["server"];
+    if(serverArray.success()){
+      EmonStr = JsonDetail(ConfigFile, serverArray);
+    }
+  }
+  if(EmonStr){
     if( ! EmonConfig(EmonStr)){
       log("EmonService: Invalid configuration.");
     }
