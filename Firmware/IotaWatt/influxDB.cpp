@@ -29,6 +29,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
   enum   states {initialize,        // Basic startup of the service - one time
                  queryLastPostTime, // Setup to query for last post time of each measurement
+                 queryLast,         // Query last() for this measurement
                  queryLastWait,     // wait for [async] query to complete
                  getLastRecord,     // Read the logRec and prep the context for logging
                  post,              // Add a measurement to the reqData xbuf
@@ -73,7 +74,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         return UNIXtime() + 5;
       }
       log("influxDB: started, url=%s:%d, db=%s, interval=%d", influxURL, influxPort,
-              influxDataBase, influxDBInterval); 
+              influxDataBase, influxDBInterval);
       state = queryLastPostTime;
       return 1;
     }
@@ -82,7 +83,15 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
     case queryLastPostTime:{
       trace(T_influx,3);
       influxLastPost = influxBeginPosting;
+      script = influxOutputs->first();
       trace(T_influx,4);
+      state = queryLast;
+      return 1;
+    }
+
+  //********************************************************* queryLast *****************************    
+
+    case queryLast:{
 
           // Make sure wifi is connected and there is a resource available.
 
@@ -95,10 +104,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
           // Create a new request
 
-      if(request){
-        delete request;
-      }
-      request = new asyncHTTPrequest;
+      if( ! request) request = new asyncHTTPrequest;
       request->setTimeout(5);
       request->setDebug(false);
       {
@@ -106,6 +112,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         sprintf_P(URL, PSTR("%s:%d/query"),influxURL,influxPort);
         request->open("POST", URL);
       }
+      
       if(influxUser && influxPwd){
         xbuf xb;
         xb.printf("%s:%s", influxUser, influxPwd);
@@ -115,18 +122,21 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         request->setReqHeader("Authorization", auth.c_str()); 
       }
       trace(T_influx,4);
-      reqData.flush();
       request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
-      reqData.printf_P(PSTR("db=%s&epoch=s&q=select *::field from /.*/"), influxDataBase);
+      reqData.flush();
+      reqData.printf_P(PSTR("db=%s&epoch=s&q=SELECT LAST(%s) FROM %s"), influxDataBase,
+            influxVarStr(influxFieldKey, script).c_str(),
+            influxVarStr(influxMeasurement, script).c_str());
       if(influxTagSet){
-        reqData.printf_P(PSTR(" where %s = \'%s\'"), influxTagSet->key, influxVarStr(influxTagSet->value, influxOutputs->first()).c_str());
+        trace(T_influx,41);
+        influxTag* tag = influxTagSet;
+        reqData.printf_P(PSTR(" WHERE %s=\'%s\'"), tag->key, influxVarStr(tag->value, script).c_str());
       }
-      reqData.write(" order by time desc limit 1");
 
           // Send the request
 
       request->send(&reqData, reqData.available());
-      trace(T_influx,4);
+      trace(T_influx,42);
       state = queryLastWait;
       return 1;
     }
@@ -137,7 +147,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
       trace(T_influx,5); 
       if(request->readyState() != 4){
-        return UNIXtime() + 1; 
+        return 1; 
       }
       HTTPrelease(HTTPtoken);
       String response = request->responseText();
@@ -154,26 +164,40 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         return 1;
       } 
       trace(T_influx,5);
-      DynamicJsonBuffer Json;  
-      trace(T_influx,5);
-      JsonObject& result = Json.parseObject(response); 
-      if(result.success()){
-        trace(T_influx,5);
-        JsonArray& lastSeries = result["results"][0]["series"];
-        if(lastSeries.success()){
-          for(int i=0; i<lastSeries.size(); i++){
-            JsonArray& lastValues = lastSeries[i]["values"][0];
-            if(lastValues.get<unsigned long>(0) > influxLastPost){
-              influxLastPost = lastValues.get<unsigned long>(0);
+      
+            // Json parse the response to get the columns and values arrays
+            // and extract time
+
+      DynamicJsonBuffer Json;
+      JsonObject& results = Json.parseObject(response);
+      if(results.success()){
+        JsonArray& columns = results["results"][0]["series"][0]["columns"];
+        JsonArray& values = results["results"][0]["series"][0]["values"][0];
+        if(columns.success() && values.success()){
+          for(int i=0; i<columns.size(); i++){
+            if(strcmp("time",columns[i].as<char*>()) == 0){
+              if(values[i].as<unsigned long>() > influxLastPost){
+                influxLastPost = values[i].as<unsigned long>();
+              }
+              break;
             }
           }
         }
       }
+      
+      script = script->next();
+      if(script){
+        state = queryLast;
+        return 1;
+      }
+
       if(influxLastPost == 0){
         influxLastPost = UNIXtime();
-        influxLastPost -= influxLastPost % influxDBInterval;
       }
-      log("influxDB: Start posting from %s", dateString(influxLastPost + influxDBInterval).c_str());
+      influxLastPost -= influxLastPost % influxDBInterval;
+      log("influxDB: Start posting at %s", dateString(influxLastPost + influxDBInterval).c_str());
+      delete request;
+      request = nullptr;
       state = getLastRecord;
       return 1;
     }
@@ -184,7 +208,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         oldRecord = new IotaLogRecord;
       }
       oldRecord->UNIXtime = influxLastPost;      
-      logReadKey(oldRecord);
+      currLog.readKey(oldRecord);
       trace(T_influx,6);
 
           // Assume that record was posted (not important).
@@ -331,7 +355,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
     case sendPost: {
       trace(T_influx,8);
-      
       if( ! WiFi.isConnected()){
         return UNIXtime() + 1;
       }
