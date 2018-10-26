@@ -67,17 +67,15 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
   if( ! _serviceBlock) return 0;
   
             // If stop signaled, do so.  
-
-  if(EmonRestart) {
-    trace(T_Emon,1);
-    state = initialize;
-    EmonRestart = false;
-  }
         
   switch(state){
 
     case initialize: {
       trace(T_Emon,2);
+      if(EmonStop){
+        EmonStarted = false;
+        return 0;
+      }
 
           // We post the log to EmonCMS,
           // so wait until the log service is up and running.
@@ -87,7 +85,6 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       log("EmonService: started. url=%s:%d%s, node=%s, interval=%d%s", EmonURL, EmonPort, EmonURI, 
            emonNode, EmonCMSInterval, (EmonSend == EmonSendGET ? "" : ", encrypted"));
-      EmonStarted = true;
       retryCount = 0;
       EmonLastPost = EmonBeginPosting;
       state = queryLastGet;
@@ -253,9 +250,9 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         double elapsedHours = logRecord->logHours - oldRecord->logHours;
         if(elapsedHours == 0 || elapsedHours != elapsedHours){
           if(currLog.readNext(logRecord) == 0) {
-            UnixNextPost = logRecord->UNIXtime - (logRecord->UNIXtime % influxDBInterval);
+            UnixNextPost = logRecord->UNIXtime - (logRecord->UNIXtime % EmonCMSInterval);
           }
-          UnixNextPost += influxDBInterval;
+          UnixNextPost += EmonCMSInterval;
           return UnixNextPost;  
         }
         
@@ -450,7 +447,12 @@ case sendSecure:{
         DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
         Serial.printf_P(PSTR("time %02d:%02d:%02d, length %d, %d\r\n"), now.hour(),now.minute(),now.second(), reqData.available(), reqUnixtime);
       }
-      request->open("POST", URL.c_str());
+      if( ! request->open("POST", URL.c_str())){
+        HTTPrelease(HTTPtoken);
+        EmonLastPost = reqUnixtime - EmonCMSInterval;
+        state = getLastRecord;
+        return UNIXtime() + 1;
+      }
       trace(T_Emon,10);
       request->setReqHeader("Content-Type","aes128cbc");
       request->setReqHeader("Authorization", auth.c_str());
@@ -473,7 +475,7 @@ case sendSecure:{
         if(++retryCount == 3){
             log("EmonService: HTTP response %d, retrying.", request->responseHTTPcode());
         }
-        EmonLastPost = lastRequestTime;
+        EmonLastPost = reqUnixtime - EmonCMSInterval;
         state = getLastRecord;
         return UNIXtime() + retryCount / 10;
       }
@@ -484,7 +486,9 @@ case sendSecure:{
         if(++retryCount == 3){
           log("EmonService: Invalid response, retrying.");
         }
-        EmonLastPost = reqUnixtime - EmonCMSInterval;
+        if(retryCount % 10){
+          EmonLastPost = reqUnixtime;
+        }
         state = getLastRecord;
         return UNIXtime() + retryCount / 10;
       }
@@ -524,20 +528,15 @@ bool EmonConfig(const char* configObj){
   if(revision == EmonRevision) {
     return true;
   }
-  EmonRevision = config["revision"];
-  if(config["stop"].as<bool>()){
-    trace(T_EmonConfig,1);
-    EmonStop = true;
-  }
-  else if(EmonStarted){
-    trace(T_EmonConfig,2);
-    EmonRestart = true;
-  }
+  EmonRevision = revision;
+  EmonStop = config["stop"].as<bool>();
   String URL = config["url"].as<String>();
   URL = config["url"].as<String>();
-  if(URL.startsWith("http://")) URL = URL.substring(7);
-  else if(URL.startsWith("https://")){
-    URL = URL.substring(8);
+  if(URL.substring(0,7).equalsIgnoreCase("http://")){
+    URL.remove(0,7);
+  } 
+  else if(URL.substring(0,8).equalsIgnoreCase("https://")){
+    URL.remove(0,8);
   }
   delete[] EmonURI;
   if(URL.indexOf("/") > 0){
