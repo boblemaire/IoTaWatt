@@ -3,7 +3,7 @@
 
 bool      influxStarted = false;                    // True when Service started
 bool      influxStop = false;                       // Stop the influx service
-bool      influxRestart = true;                     // Restart the influx service
+bool      influxRestart = false;                    // Restart the influx service
 bool      influxLogHeap = false;                    // Post a heap size measurement (diag)
 uint32_t  influxLastPost = 0;                       // Last acknowledge post for status report
 
@@ -29,7 +29,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
   enum   states {initialize,        // Basic startup of the service - one time
                  queryLastPostTime, // Setup to query for last post time of each measurement
-                 queryLastGet,
                  queryLastWait,     // wait for [async] query to complete
                  getLastRecord,     // Read the logRec and prep the context for logging
                  post,              // Add a measurement to the reqData xbuf
@@ -50,25 +49,23 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static uint32_t postFirstTime = UNIXtime();   // First measurement in outstanding post request
   static uint32_t postLastTime = UNIXtime();    // Last measurement in outstanding post request
   static size_t reqDataLimit = 4000;            // transaction yellow light size
-  static uint32_t HTTPtoken = 0;
+  static uint32_t HTTPtoken = 0;                // HTTP resource reservation token
+  static Script* script = nullptr;              // current Script
 
 
   trace(T_influx,0);                            // Announce entry
-
-          // If restart, set to reinitialize. 
-
-  if(influxRestart){
-    trace(T_influx,1);
-    state = initialize;
-    influxRestart = false;
-  }
       
           // Handle current state
 
   switch(state){
 
+//********************************************************* Initialize **************************************
     case initialize: {
       trace(T_influx,2);
+      if(influxStop){
+        influxStarted = false;
+        return 0;
+      }
 
           // We post from the log, so wait if not available.          
 
@@ -81,19 +78,16 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       return 1;
     }
  
+ //********************************************************* queryLastPostTime *****************************
     case queryLastPostTime:{
       trace(T_influx,3);
       influxLastPost = influxBeginPosting;
-      state = queryLastGet;
-      return 1;
-    } 
-
-    case queryLastGet:{
       trace(T_influx,4);
 
           // Make sure wifi is connected and there is a resource available.
 
       if( ! WiFi.isConnected()) return UNIXtime() + 1;
+       
       HTTPtoken = HTTPreserve(T_influx);
       if( ! HTTPtoken){
         return UNIXtime() + 1;
@@ -206,28 +200,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       return UnixNextPost;
     }
 
-    case waitPost: {
-      trace(T_influx,9);
-      if(request && request->readyState() == 4){
-        HTTPrelease(HTTPtoken);
-        trace(T_influx,9);
-        if(request->responseHTTPcode() != 204){
-          if(++retryCount == 10){
-            log("influxDB: Post Failed: %d", request->responseHTTPcode());
-          }
-          delete request;
-          request = nullptr; 
-          state = getLastRecord;
-          return 1;
-        }
-        trace(T_influx,9);
-        retryCount = 0;
-        influxLastPost = lastRequestTime; 
-        state = post;
-        trace(T_influx,9);
-        return 1;
-      }
-    }   
     
     case post: {
       trace(T_influx,7);
@@ -238,9 +210,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         if(request && request->readyState() < 4) return 1;
         trace(T_influx,71);
         log("influxDB: Stopped. Last post %s", dateString(influxLastPost).c_str());
-        influxStarted = false;
         trace(T_influx,72);    
-        state = initialize;
         delete oldRecord;
         oldRecord = nullptr;
         delete logRecord;
@@ -266,15 +236,10 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         influxTagSet = nullptr;  
         delete influxTagSet;
         influxOutputs;      
+        influxStarted = false;
+        state = initialize;
         return 0;
       }
-
-          // If there is an outstanding request and buffer is full, just return.
-
-
-      if(request && request->readyState() < 4 && reqData.available() > reqDataLimit){
-        return 1; 
-      } 
 
           // If not enough entries for bulk-send, come back in one second;
 
@@ -294,7 +259,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         }
         trace(T_influx,7);
         logRecord->UNIXtime = UnixNextPost;
-        logReadKey(logRecord);
+        currLog.readKey(logRecord);
         trace(T_influx,7);
         
             // Compute the time difference between log entries.
@@ -313,7 +278,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
             // values for each channel are (delta value hrs)/(delta log hours) = period value.
             // Update the previous (Then) buckets to the most recent values.
       
-        Script* script = influxOutputs->first();
+        script = influxOutputs->first();
         trace(T_influx,7);
         while(script){
           double value = script->run(oldRecord, logRecord, elapsedHours);
@@ -393,7 +358,13 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         if(influxRetention){
           sprintf(URL+len,"&rp=%s", influxRetention);
         }
-        request->open("POST", URL);
+        if( ! request->open("POST", URL)){
+          HTTPrelease(HTTPtoken);
+          delete request;
+          request = nullptr; 
+          state = getLastRecord;
+          return 1;
+        }
       }
       trace(T_influx,8);
       request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
@@ -413,11 +384,33 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       return 1;
     } 
 
-    
+    case waitPost: {
+      trace(T_influx,9);
+      if(request && request->readyState() == 4){
+        HTTPrelease(HTTPtoken);
+        trace(T_influx,9);
+        if(request->responseHTTPcode() != 204){
+          if(++retryCount == 10){
+            log("influxDB: Post Failed: %d", request->responseHTTPcode());
+          }
+          delete request;
+          request = nullptr; 
+          state = getLastRecord;
+          return 1;
+        }
+        trace(T_influx,9);
+        retryCount = 0;
+        influxLastPost = lastRequestTime; 
+        state = post;
+        trace(T_influx,9);
+      }
+      return 1;
+    }   
   }
 
   return 1;
 }
+
 
 bool influxConfig(const char* configObj){
   trace(T_influxConfig,0);
@@ -434,23 +427,14 @@ bool influxConfig(const char* configObj){
   }
   trace(T_influxConfig,0);
   influxRevision = revision;
-  influxStop = false;
-  if(config["stop"].as<bool>()){
-    trace(T_influxConfig,1);
-    influxStop = true;
-  }
-  else if(influxStarted){
-    trace(T_influxConfig,2);
-    influxRestart = true;
-  }
+  influxStop = config["stop"].as<bool>();
   influxLogHeap = config["heap"].as<bool>();
-  trace(T_influxConfig,3);
   String URL = config.get<String>("url");
-  if(URL.startsWith("http")){
-    URL.remove(0,4);
-    if(URL.startsWith("s"))URL.remove(0,1);
-    if(URL.startsWith(":"))URL.remove(0,1);
-    while(URL.startsWith("/")) URL.remove(0,1);
+  if(URL.substring(0,7).equalsIgnoreCase("http://")){
+    URL.remove(0,7);
+  } 
+  else if(URL.substring(0,8).equalsIgnoreCase("https://")){
+    URL.remove(0,8);
   }  
   if(URL.indexOf(":") > 0){
     influxPort = URL.substring(URL.indexOf(":")+1).toInt();
@@ -463,12 +447,12 @@ bool influxConfig(const char* configObj){
   influxDataBase = charstar(config.get<char*>("database"));
   influxDBInterval = config.get<unsigned int>("postInterval");
   influxBulkSend = config.get<unsigned int>("bulksend");
+  if(influxBulkSend <1) influxBulkSend = 1;
   trace(T_influxConfig,5);
   delete[] influxUser;
   influxUser = charstar(config.get<const char*>("user"));
   delete[] influxPwd;
   influxPwd = charstar(config.get<const char*>("pwd"));  
-  if(influxBulkSend <1) influxBulkSend = 1;
   trace(T_influxConfig,7);
   delete[] influxRetention;
   influxRetention = charstar(config.get<const char*>("retp"));
