@@ -131,8 +131,8 @@ if(spiffsBegin()){
 
 //*************************************** Start the WiFi  connection *****************************
   
+  WiFi.hostname(deviceName);
   WiFi.setAutoConnect(true);
-  WiFi.hostname();
   WiFi.begin();
   uint32_t autoConnectTimeout = millis() + 3000UL;
   while(WiFi.status() != WL_CONNECTED){

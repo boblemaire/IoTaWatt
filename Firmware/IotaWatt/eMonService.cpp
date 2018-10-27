@@ -449,7 +449,6 @@ case sendSecure:{
       }
       if( ! request->open("POST", URL.c_str())){
         HTTPrelease(HTTPtoken);
-        EmonLastPost = reqUnixtime - EmonCMSInterval;
         state = getLastRecord;
         return UNIXtime() + 1;
       }
@@ -475,7 +474,6 @@ case sendSecure:{
         if(++retryCount == 3){
             log("EmonService: HTTP response %d, retrying.", request->responseHTTPcode());
         }
-        EmonLastPost = reqUnixtime - EmonCMSInterval;
         state = getLastRecord;
         return UNIXtime() + retryCount / 10;
       }
