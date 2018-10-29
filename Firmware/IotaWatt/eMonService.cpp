@@ -346,7 +346,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       String URL(EmonURL);
       URL += ":" + String(EmonPort) + EmonURI + "/input/bulk";
-      request->setTimeout(1);
+      request->setTimeout(2);
       request->setDebug(false);
       if(request->debug()){
         DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
@@ -438,7 +438,7 @@ case sendSecure:{
       trace(T_Emon,10);
       String URL(EmonURL);
       URL += ":" + String(EmonPort) + EmonURI + "/input/bulk";
-      request->setTimeout(1);
+      request->setTimeout(2);
       request->setDebug(false);
       trace(T_Emon,10); 
       String auth(EmonUsername);
