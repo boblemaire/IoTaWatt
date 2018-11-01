@@ -2,7 +2,7 @@
 "VT":[
   {"model":"generic120V","type":"U","cal":11.50,"phase":2.0},
   {"model":"generic240V","type":"U","cal":23.00,"phase":2.0},
-  {"model":"Ideal 77DB-06-09(UK)","cal":20.69,"phase":1.78},
+  {"model":"Ideal 77DB-06-09(UK)","cal":20.51,"phase":1.78},
   {"model":"Ideal 77DE-06-09(EU)","cal":19.26,"phase":1.78},
   {"model":"Ideal 77DA-10-09-MI(USA)","cal":11.06,"phase":1.43},
   {"model":"TDC DA-10-09","cal":11.23,"phase":2.66},	
