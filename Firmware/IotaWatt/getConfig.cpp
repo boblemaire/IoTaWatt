@@ -248,9 +248,6 @@ bool configDST(const char* JsonStr){
   timezoneRule->endPeriod.instance = dstRule["end"]["instance"].as<int>();
   timezoneRule->endPeriod.time = dstRule["end"]["time"].as<int>();
 
-  
-
-
   /******************************************************************************************************************************
    * 
    *    Activate this code to test a dst rule.  Will run through ten years at one minute intervals and
