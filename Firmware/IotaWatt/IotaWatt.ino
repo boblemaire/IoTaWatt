@@ -178,7 +178,8 @@ uint32_t HTTPlock = 0;                      // Time(ms) HTTP was locked (no new 
 
       // ****************************** Timing and time data **********************************
 
-int      localTimeDiff = 0;                  // Hours from UTC 
+int32_t  localTimeDiff = 0;                  // Hours from UTC 
+tzRule*  timezoneRule = nullptr;             // Rule for DST 
 uint32_t programStartTime = 0;               // Time program started (UnixTime)
 uint32_t timeRefNTP = SEVENTY_YEAR_SECONDS;  // Last time from NTP server (NTPtime)
 uint32_t timeRefMs = 0;                      // Internal MS clock corresponding to timeRefNTP

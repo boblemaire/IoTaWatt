@@ -122,8 +122,11 @@ if(spiffsBegin()){
     log("Configuration failed");
     dropDead();
   }
-  log("Local time zone: %d", localTimeDiff);
-  log("device name: %s, version: %d", deviceName, deviceVersion);
+  log("Local time zone: %+d:%02d", (int)localTimeDiff/60, (int)localTimeDiff%60);
+  if(timezoneRule){
+    log("Using Daylight Saving Time (BST) when in effect.");
+  }
+  log("device name: %s", deviceName); 
 
 //************************************* Load passwords *******************************************
 
@@ -234,8 +237,3 @@ void setLedState(){
     digitalWrite(redLed, HIGH);
   }
 }
-
-      
-
-
-

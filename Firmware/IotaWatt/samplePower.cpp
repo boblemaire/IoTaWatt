@@ -382,7 +382,7 @@ void samplePower(int channel, int overSample){
     return 1;
   }
   if(abs(samples - (midCrossSamples * 2)) > 10){
-    //DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
+    //DateTime now = DateTime(localUNIXtime());
     //Serial.printf_P(PSTR("%d/%02d/%02d %02d:%02d:%02d sample imbalance: %d - %d = %d\r\n"), now.month(), now.day(), now.year()%100,
     //now.hour(), now.minute(), now.second(), midCrossSamples, samples-midCrossSamples, abs(samples - (midCrossSamples * 2)));
     return 1;

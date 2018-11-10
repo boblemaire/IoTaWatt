@@ -291,7 +291,7 @@ void IotaLog::dumpFile(){
 	SD.remove(diagPath);
 	File logDiag = SD.open(diagPath, FILE_WRITE);
 	if(logDiag){
-		DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
+		DateTime now = DateTime(localUNIXtime());
     logDiag.printf_P(PSTR("%d/%02d/%02d %02d:%02d:%02d\r\nfilesize %d, entries %d\r\n"),
     now.month(), now.day(), now.year()%100, now.hour(), now.minute(), now.second(),
 		IotaFile.size(), _entries);

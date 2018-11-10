@@ -158,7 +158,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(EmonLastPost < currLog.firstKey()){
         EmonLastPost = currLog.firstKey();
       }
-      log("EmonService: Start posting at %s", dateString(EmonLastPost + EmonCMSInterval).c_str());
+      log("EmonService: Start posting at %s", localDateString(EmonLastPost + EmonCMSInterval).c_str());
       state = getLastRecord;
       return 1;
     }
@@ -198,7 +198,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(EmonStop){
         if(request && request->readyState() < 4) return 1;
         trace(T_Emon,61);
-        log("EmonService: Stopped.  Last post %s", dateString(EmonLastPost).c_str());
+        log("EmonService: Stopped.  Last post %s", localDateString(EmonLastPost).c_str());
         EmonStarted = false;
         EmonStop = false;
         state = initialize;
@@ -349,7 +349,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       request->setTimeout(2);
       request->setDebug(false);
       if(request->debug()){
-        DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
+        DateTime now = DateTime(localUNIXtime());
         String msg = timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second());
         Serial.println(msg);
       }
@@ -444,7 +444,7 @@ case sendSecure:{
       String auth(EmonUsername);
       auth += ':' + bin2hex(value, 32);
       if(request->debug()){
-        DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
+        DateTime now = DateTime(localUNIXtime());
         Serial.printf_P(PSTR("time %02d:%02d:%02d, length %d, %d\r\n"), now.hour(),now.minute(),now.second(), reqData.available(), reqUnixtime);
       }
       if( ! request->open("POST", URL.c_str())){

@@ -62,13 +62,13 @@
         if(histLog.begin(historyLogFile) == 0 && histLog.fileSize() > 0){
           logRecord->UNIXtime = histLog.lastKey();
           histLog.readKey(logRecord);
-          log("dataLog: Last history entry: %s", dateString(logRecord->UNIXtime).c_str());
+          log("dataLog: Last history entry: %s", localDateString(logRecord->UNIXtime).c_str());
         }
       }
       else {
         logRecord->UNIXtime = currLog.lastKey();
         currLog.readKey(logRecord);
-        log("dataLog: Last log entry %s", dateString(currLog.lastKey()).c_str());
+        log("dataLog: Last log entry %s", localDateString(currLog.lastKey()).c_str());
       }
 
       state = checkClock;
