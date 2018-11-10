@@ -9,6 +9,7 @@ struct phaseTableEntry {
   }; 
 
 bool configDevice(const char*);
+bool configDST(const char* JsonStr);
 bool configInputs(const char*);
 bool configOutputs(const char*);
 void hashFile(uint8_t* sha, File file);
@@ -44,8 +45,8 @@ boolean getConfig(void){
   delete[] updateClass;
   updateClass = charstar(Config["update"] | "NONE");
 
-  localTimeDiff = Config["timezone"].as<signed int>() | 0;; 
-
+  localTimeDiff = 60.0 * Config["timezone"].as<float>();
+    
   if(Config.containsKey("logdays")){ 
     log("Current log overide days: %d", currLog.setDays(Config["logdays"].as<int>()));
   }      
@@ -53,25 +54,38 @@ boolean getConfig(void){
         //************************************ Configure device ***************************
 
   trace(T_CONFIG,5);
-  JsonArray& deviceArray = Config["device"]     ;
+  JsonArray& deviceArray = Config["device"];
   if(deviceArray.success()){
     char* deviceStr = JsonDetail(ConfigFile, deviceArray);
     configDevice(deviceStr);
     delete[] deviceStr;
-  }   
-        //************************************ Configure input channels ***************************
+  }  
+
+        //************************************ Configure DST rule *********************************
 
   trace(T_CONFIG,6);
-  JsonArray& inputsArray = Config["inputs"]     ;
+  delete timezoneRule;
+  timezoneRule = nullptr;
+  JsonArray& dstruleArray = Config["dstrule"];
+  if(dstruleArray.success()){
+    char* dstruleStr = JsonDetail(ConfigFile, dstruleArray);
+    configDST(dstruleStr);
+    delete[] dstruleStr;
+  }  
+
+        //************************************ Configure input channels ***************************
+
+  trace(T_CONFIG,7);
+  JsonArray& inputsArray = Config["inputs"];
   if(inputsArray.success()){
     char* inputsStr = JsonDetail(ConfigFile, inputsArray);
     configInputs(inputsStr);
     delete[] inputsStr;
   }  
         // ************************************ configure output channels *************************
-  trace(T_CONFIG,7);
+  trace(T_CONFIG,8);
   delete outputs;
-  JsonArray& outputsArray = Config["outputs"]     ;
+  JsonArray& outputsArray = Config["outputs"];
   if(outputsArray.success()){
     char* outputsStr = JsonDetail(ConfigFile, outputsArray);
     configOutputs(outputsStr);
@@ -79,7 +93,7 @@ boolean getConfig(void){
   }   
          // ************************************** configure Emoncms **********************************
 
-  trace(T_CONFIG,8);
+  trace(T_CONFIG,9);
   char* EmonStr = nullptr;
   JsonArray& EmonArray = Config["emoncms"];
   if(EmonArray.success()){
@@ -101,7 +115,7 @@ boolean getConfig(void){
     EmonStop = true;
   }
         // ************************************** configure influxDB **********************************
-  trace(T_CONFIG,8);
+  trace(T_CONFIG,10);
   JsonArray& influxArray = Config[F("influxdb")];
   if(influxArray.success()){
     char* influxStr = JsonDetail(ConfigFile, influxArray);
@@ -115,7 +129,7 @@ boolean getConfig(void){
   }
   
   ConfigFile.close();
-  trace(T_CONFIG,9);
+  trace(T_CONFIG,11);
   return true;
 }                                       // End of getConfig
 
@@ -135,11 +149,10 @@ bool configDevice(const char* JsonStr){
     deviceName = charstar(F("IotaWatt"));
   }
 
-  int channels = 21;
   if(device.containsKey(F("version"))){
     deviceVersion = device[F("version")].as<unsigned int>();
     if(deviceVersion < 3){
-      log("Device version no longer supported.");
+      log("Device version %d no longer supported.", deviceVersion);
       dropDead();
     }
   } 
@@ -147,7 +160,7 @@ bool configDevice(const char* JsonStr){
   VrefVolts = 2.5;
   ADC_selectPin[0] = pin_CS_ADC0;
   ADC_selectPin[1] = pin_CS_ADC1;
-  channels = 15;
+  int channels = 15;
       
   if(device.containsKey(F("refvolts"))){
     VrefVolts = device[F("refvolts")].as<float>();
@@ -176,15 +189,6 @@ bool configDevice(const char* JsonStr){
     delete[] inputChannel;
     inputChannel = newList;
     maxInputs = channels;
-  }
-
-        // Override V3 defaults if V2 device
-
-  if(deviceVersion == 2){
-    for(int i=0; i<MIN(maxInputs,device[F("chanaddr")].size()); i++){
-      inputChannel[i]->_addr = int(i / 7) * 8 + i % 7;
-      inputChannel[i]->_aRef = int(i / 7) * 8 + 7;
-    }
   }
 
         // Override all defaults with user specification
@@ -223,12 +227,67 @@ bool configDevice(const char* JsonStr){
   }
 }
 
+//********************************** configure DST *********************************************
+
+bool configDST(const char* JsonStr){
+  DynamicJsonBuffer Json;
+  JsonVariant dstRule = Json.parse(JsonStr);
+  if( ! dstRule.success()){
+    log("DST: Json parse failed");
+    return false;
+  }
+  timezoneRule = new tzRule;
+  timezoneRule->useUTC = dstRule["utc"].as<bool>();
+  timezoneRule->adjMinutes = dstRule["adj"].as<int>();
+  timezoneRule->begPeriod.month = dstRule["begin"]["month"].as<int>();
+  timezoneRule->begPeriod.weekday = dstRule["begin"]["weekday"].as<int>();
+  timezoneRule->begPeriod.instance = dstRule["begin"]["instance"].as<int>();
+  timezoneRule->begPeriod.time = dstRule["begin"]["time"].as<int>();
+  timezoneRule->endPeriod.month = dstRule["end"]["month"].as<int>();
+  timezoneRule->endPeriod.weekday = dstRule["end"]["weekday"].as<int>();
+  timezoneRule->endPeriod.instance = dstRule["end"]["instance"].as<int>();
+  timezoneRule->endPeriod.time = dstRule["end"]["time"].as<int>();
+
+  
+
+
+  /******************************************************************************************************************************
+   * 
+   *    Activate this code to test a dst rule.  Will run through ten years at one minute intervals and
+   *    log changes in offset between local and UTC.
+   * 
+    
+  Serial.printf("timezoneRule: minutes %d, UTC %s\r\n", timezoneRule->adjMinutes, timezoneRule->useUTC ? "true" : "false");
+  Serial.printf("  begin: month %d, weekday %d, instance %d, time %d\r\n", timezoneRule->begPeriod.month, 
+                 timezoneRule->begPeriod.weekday, timezoneRule->begPeriod.instance, timezoneRule->begPeriod.time);
+  Serial.printf("    end: month %d, weekday %d, instance %d, time %d\r\n", timezoneRule->endPeriod.month, 
+                 timezoneRule->endPeriod.weekday, timezoneRule->endPeriod.instance, timezoneRule->endPeriod.time);
+
+  uint32_t utime = 1451606400UL;   // 01/01/2016 00:00:00
+  uint32_t ltime = utime;
+  int32_t adj = 0;
+  for(uint32_t days=1; days<=365*10; days++){
+    for(uint32_t min=0; min<(60*24); min++){
+      utime+=60;
+      ltime = localTime(utime);
+      if(ltime - utime != adj){
+        adj = ltime - utime;
+        Serial.printf("UTC %s, local %s, offset %f\r\n", dateString(utime).c_str(), dateString(ltime).c_str(), float(adj/3600.0));
+      }
+    }
+    yield();
+  }              
+********************************************************************************************************************************/
+} 
+
+
 //********************************** configInputs ***********************************************
 bool configInputs(const char* JsonStr){
   DynamicJsonBuffer Json;
   JsonVariant JsonInputs = Json.parse(JsonStr);
   if( ! JsonInputs.success()){
     log("inputs: Json parse failed");
+    return false;
   }
   phaseTableEntry* phaseTable = nullptr;
   buildPhaseTable(&phaseTable);

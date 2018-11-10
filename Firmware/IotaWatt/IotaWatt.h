@@ -63,6 +63,7 @@
 #include "Emonservice.h"
 #include "auth.h"
 #include "spiffs.h"
+#include "timeServices.h"
 
 
       // Declare instances of major classes
@@ -235,7 +236,8 @@ extern uint16_t   authTimeout;            // Timeout interval of authSession in 
 
       // ****************************** Timing and time data *************************
 #define  SEVENTY_YEAR_SECONDS 2208988800UL
-extern int      localTimeDiff;
+extern int32_t  localTimeDiff;                 // Local time Difference in minutes
+extern tzRule*  timezoneRule;                  // Rule for DST 
 extern uint32_t programStartTime;;             // Time program started (UnixTime)
 extern uint32_t timeRefNTP;                    // Last time from NTP server (NTPtime)
 extern uint32_t timeRefMs;                     // Internal MS clock corresponding to timeRefNTP
@@ -293,12 +295,6 @@ void      setLedState();
 
 void      dropDead(void);
 void      dropDead(const char*);
-
-uint32_t  NTPtime();
-uint32_t  UNIXtime();
-uint32_t  MillisAtUNIXtime(uint32_t);
-void      dateTime(uint16_t* date, uint16_t* time);
-String    timeString(int value);
 
 boolean   getConfig(void);
 

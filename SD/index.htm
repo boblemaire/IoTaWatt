@@ -423,6 +423,11 @@ var scriptEditReturn;
 var scriptEditUnits = [];
 var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA"];
 var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh"];
+var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:false,begin:{month:3,weekday:1,instance:2,time:120},end:{month:11,weekday:1,instance:1,time:120}}},
+                {id:"Europe",begOffset:0,endOffset:2,dstrule:{adj:60,utc:true,begin:{month:3,weekday:1,instance:-1,time:60},end:{month:10,weekday:1,instance:-1,time:60}}},
+                {id:"Australia",begOffset:9.5,endOffset:10.0,dstrule:{adj:60,utc:false,begin:{month:10,weekday:1,instance:1,time:120},end:{month:4,weekday:1,instance:1,time:180}}},
+                {id:"NewZealand",begOffset:12,endOffset:12,dstrule:{adj:60,utc:false,begin:{month:9,weekday:1,instance:-1,time:120},end:{month:4,weekday:1,instance:1,time:180}}}
+              ];
 
 /***************************************************************************************************
  *                       Shorthand functions
@@ -916,15 +921,15 @@ function refreshInputEdit(){
   }
   
   inputReverse = addTableRow(table, "", "inputReverse", "input");
-    inputReverse.parentNode.appendChild(document.createTextNode("Reverse"));
-    addInfo(inputReverse, inputEditObject.type == "CT" ? "Same as reversing CT on conductor" : "Same as reversing VT in socket");
-    inputReverse.setAttribute("type","checkbox");
-    inputReverse.setAttribute("onchange","inputEditObject.reverse = this.checked; refreshInputEdit();");
-    if(inputEditObject.reverse != undefined && inputEditObject.reverse){
-      inputReverse.checked = true;
-    } else {
-      inputEditObject.reverse = undefined;
-    }
+  inputReverse.parentNode.appendChild(document.createTextNode("Reverse"));
+  addInfo(inputReverse, inputEditObject.type == "CT" ? "Same as reversing CT on conductor" : "Same as reversing VT in socket");
+  inputReverse.setAttribute("type","checkbox");
+  inputReverse.setAttribute("onchange","inputEditObject.reverse = this.checked; refreshInputEdit();");
+  if(inputEditObject.reverse != undefined && inputEditObject.reverse){
+    inputReverse.checked = true;
+  } else {
+    inputEditObject.reverse = undefined;
+  }
 
   if(inputEditObject.type == "VT"){
     EbyId("inputEditDelete").style.display = 
@@ -1447,11 +1452,16 @@ function buildDevice(){
   var deviceTimezone = addTableRow(deviceTable, "Time Zone:","deviceTimezone", "input", 3);
   deviceTimezone.value = config.timezone;
   deviceTimezone.setAttribute("onchange","config.timezone = this.value; checkDevice();");
-  deviceTimezone.setAttribute("style","width: 40px;");
+  deviceTimezone.setAttribute("style","width: 65px;");
   deviceTimezone.setAttribute("type","number");
   deviceTimezone.setAttribute("min","-12");
-  deviceTimezone.setAttribute("max","12");
-  deviceTimezone.setAttribute("step","1");
+  deviceTimezone.setAttribute("max","13");
+  deviceTimezone.setAttribute("step",".5");
+  
+  var allowDST = addTableRow(deviceTable, "Allow Daylight Time:","allowDST", "input");
+  allowDST.setAttribute("type","checkbox");
+  allowDST.checked = (config.dstrule != undefined) ? true : false;
+  allowDST.setAttribute("onchange", "checkDevice();");
   
   var deviceUpdate = addTableRow(deviceTable, "Auto-update Class:","deviceUpdate", "select");
   for(i in updateClasses){
@@ -1471,7 +1481,7 @@ function checkDevice(){
   editing = true;
   var complete = true;
   var nameChange = false;
-  if( ! validateInput("deviceName")) complete = false;
+  if( ! validateInput("deviceName", true)) complete = false;
   else {
     if(config.device.name != originalName){
       nameChange = true;
@@ -1483,7 +1493,6 @@ function checkDevice(){
     }
   }
   if( ! validateInput("deviceTimezone")) complete = false;
-  EbyId("actionBurden").style.display = (complete && (!nameChange)) ? "inline" : "none";
   EbyId("deviceSave").style.display = complete ? "inline" : "none";
 }
 
@@ -1497,6 +1506,17 @@ function deviceCancel(){
 function deviceSave(){
   currentBodyPop();
   editing = false;
+  config.allowdst = undefined;
+  config.tzrule = undefined;
+  config.dstrule = undefined;
+  if(EbyId("allowDST").checked){
+    for(i in dstRules){
+      if(config.timezone >= dstRules[i].begOffset && config.timezone <= dstRules[i].endOffset){
+        config.dstrule = dstRules[i].dstrule;
+        break;
+      }
+    }
+  } 
   uploadConfig(resetDisplay, (config.device.name != originalName) ? "restart" : "reload");
 }
 

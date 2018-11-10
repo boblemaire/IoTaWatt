@@ -195,7 +195,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         influxLastPost = UNIXtime();
       }
       influxLastPost -= influxLastPost % influxDBInterval;
-      log("influxDB: Start posting at %s", dateString(influxLastPost + influxDBInterval).c_str());
+      log("influxDB: Start posting at %s", localDateString(influxLastPost + influxDBInterval).c_str());
       delete request;
       request = nullptr;
       state = getLastRecord;
@@ -233,7 +233,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(influxStop) {
         if(request && request->readyState() < 4) return 1;
         trace(T_influx,71);
-        log("influxDB: Stopped. Last post %s", dateString(influxLastPost).c_str());
+        log("influxDB: Stopped. Last post %s", localDateString(influxLastPost).c_str());
         trace(T_influx,72);    
         delete oldRecord;
         oldRecord = nullptr;
@@ -369,7 +369,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       request->setDebug(false);
       if(request->debug()){
         Serial.println(ESP.getFreeHeap()); 
-        DateTime now = DateTime(UNIXtime() + (localTimeDiff * 3600));
+        DateTime now = DateTime(localUNIXtime());
         String msg = timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second());
         Serial.println(msg);
         Serial.println(reqData.peekString(reqData.available()));

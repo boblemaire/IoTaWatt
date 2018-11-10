@@ -235,9 +235,12 @@ char*  JsonDetail(File file, JsonArray& locator){
     return out;
 }
 
+String localDateString(uint32_t UNIXtime){
+    return dateString(localTime(UNIXtime));
+}
 
 String dateString(uint32_t UNIXtime){
-    DateTime now = DateTime(UNIXtime + (localTimeDiff * 3600));
+    DateTime now = DateTime(UNIXtime);
   
     return String(now.month()) + '/' + String(now.day()) + '/' + String(now.year()%100) + ' ' + 
           timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second()) + ' ';

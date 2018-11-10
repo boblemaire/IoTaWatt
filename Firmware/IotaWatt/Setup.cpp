@@ -117,13 +117,37 @@ if(spiffsBegin()){
   }
 }
 
+localTimeDiff = -300;
+
+timezoneRule = new tzRule;
+timezoneRule->begPeriod.month = 3;
+timezoneRule->begPeriod.weekday = 1;
+timezoneRule->begPeriod.instance = 2;
+timezoneRule->begPeriod.time = 120;
+timezoneRule->endPeriod.month = 11;
+timezoneRule->endPeriod.weekday = 1;
+timezoneRule->endPeriod.instance = 1;
+timezoneRule->endPeriod.time = 120;
+timezoneRule->adjMinutes = 60;
+timezoneRule->useUTC = false;
+
+/*
+uint32_t ut = 1520726400UL;
+for(int i=0; i<36; i++){
+  Serial.print(dateString(ut + i*1800));
+  Serial.print(" ");
+  Serial.println(localDateString(ut + i*1800));
+}
+dropDead();
+*/
+
 //************************************* Process Config file *****************************************
   if(!getConfig()) {
     log("Configuration failed");
     dropDead();
   }
-  log("Local time zone: %d", localTimeDiff);
-  log("device name: %s, version: %d", deviceName, deviceVersion);
+  log("Local time zone: %+d:%02d", (int)localTimeDiff/60, (int)localTimeDiff%60);
+  log("device name: %s", deviceName); 
 
 //************************************* Load passwords *******************************************
 
@@ -234,8 +258,3 @@ void setLedState(){
     digitalWrite(redLed, HIGH);
   }
 }
-
-      
-
-
-

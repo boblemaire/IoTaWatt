@@ -1,5 +1,5 @@
 #include "IotaWatt.h"
-uint32_t littleEndian(uint32_t);
+
 #define NTP2018 (1514796044UL + SEVENTY_YEAR_SECONDS)
 #define NTP2028 (1830328844UL + SEVENTY_YEAR_SECONDS)
 
@@ -43,6 +43,7 @@ uint32_t littleEndian(uint32_t);
  * 
  *  uint32_t NTPtime() - Return the current time in NTP format
  *  uint32_t Unixtime() - Return the current time in Unix format
+ *  uint32_t localUNIXtime() - Return the current time adjusted for local time (not true unix time)
  *  Both return zero if the clock is not set//
  *  uint32_t MillisAtUNIXtime - Return the local Millis() value corresponding to the UnixTime
  * 
@@ -55,6 +56,10 @@ uint32_t NTPtime() {
 uint32_t UNIXtime() {
   return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000 - SEVENTY_YEAR_SECONDS;
  }
+
+uint32_t localUNIXtime() {
+  return localTime();
+} 
  
 uint32_t MillisAtUNIXtime(uint32_t UnixTime){                  
   return (uint32_t)timeRefMs + 1000 * (UnixTime - SEVENTY_YEAR_SECONDS - timeRefNTP);
@@ -264,27 +269,58 @@ uint32_t littleEndian(uint32_t in){
  ********************************************************************************/
 
 void dateTime(uint16_t* date, uint16_t* time) {
-  uint32_t localUnixTime = UNIXtime() + localTimeDiff*3600;
-  
+   
   // return date using FAT_DATE macro to format fields
-  *date = FAT_DATE(DateTime(localUnixTime).year(),
-                   DateTime(localUnixTime).month(),
-                   DateTime(localUnixTime).day());
+  *date = FAT_DATE(DateTime(localUNIXtime()).year(),
+                   DateTime(localUNIXtime()).month(),
+                   DateTime(localUNIXtime()).day());
 
   // return time using FAT_TIME macro to format fields
-  *time = FAT_TIME(DateTime(localUnixTime).hour(), 
-                   DateTime(localUnixTime).minute(),
-                   DateTime(localUnixTime).second());
+  *time = FAT_TIME(DateTime(localUNIXtime()).hour(), 
+                   DateTime(localUNIXtime()).minute(),
+                   DateTime(localUNIXtime()).second());
 }
 
 /********************************************************************************************
- * Just a handy little formatter.  
- *******************************************************************************************/
-String formatHMS(uint32_t epoch) {
-    String result = String((epoch  % 86400L) / 3600) + ":";
-    if ( ((epoch % 3600) / 60) < 10 ) result += "0";
-    result += String((epoch  % 3600) / 60) + ":";
-    if ( (epoch % 60) < 10 ) result += "0";
-    result += String(epoch % 60);
+  
+*******************************************************************************************/
+uint32_t localTime() {return localTime(UNIXtime());}
+uint32_t localTime(uint32_t UTCtime){
+    uint32_t result = UTCtime + localTimeDiff * 60;
+    if( ! timezoneRule) return result;
+
+    if(timezoneRule->begPeriod.month <= timezoneRule->endPeriod.month) {
+      if((testRule(timezoneRule->useUTC ? UTCtime : result, timezoneRule->begPeriod) &&
+        !testRule(timezoneRule->useUTC ? UTCtime : result, timezoneRule->endPeriod)) &&
+        !testRule(timezoneRule->useUTC ? UTCtime : result+timezoneRule->adjMinutes*60, timezoneRule->endPeriod)){ 
+        result += timezoneRule->adjMinutes * 60;
+      }
+    } else {
+      result += timezoneRule->adjMinutes * 60;
+      if(testRule(timezoneRule->useUTC ? UTCtime : result, timezoneRule->endPeriod)){
+        result -= timezoneRule->adjMinutes * 60;
+      } 
+      if(testRule(timezoneRule->useUTC ? UTCtime : result, timezoneRule->begPeriod)){
+        result += timezoneRule->adjMinutes * 60;
+      } 
+    }
     return result;
+}
+
+bool testRule(uint32_t standardTime, dateTimeRule dtrule){
+    uint8_t daysInMonth[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+    DateTime now = DateTime(standardTime);
+    if(now.month() < dtrule.month) return false;
+    if(now.month() > dtrule.month) return true;
+    int fwdm = ((standardTime-(now.day()-1)*86400)/86400+4)%7+1;     // weekday of first day in month
+    int lwdm = (fwdm+daysInMonth[now.month()-1]-2)%7+1;         // weekday of last day in month
+    int startDay;
+    if(dtrule.instance > 0){
+        startDay = (dtrule.weekday-fwdm+7)%7+1+(dtrule.instance-1)*7;
+    } else {
+        startDay = daysInMonth[now.month()-1]-(lwdm-dtrule.weekday+7)%7+dtrule.instance*7+7;
+    }
+    if(now.day() < startDay) return false;
+    if(now.day() > startDay) return true;
+    return (now.hour()*60+now.minute()) >= dtrule.time;
 }
