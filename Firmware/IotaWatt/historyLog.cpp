@@ -38,7 +38,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         // If iotaLog not open or empty, check back later.
 
       if( ! currLog.isOpen() || (currLog.lastKey() - currLog.firstKey()) < histLog.interval()){
-         return UNIXtime() + histLog.interval(); 
+         return UTCTime() + histLog.interval(); 
       }
 
       log("historyLog: service started."); 
@@ -106,7 +106,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
     case logData: {
       trace(T_history,4);   
       if((histLog.lastKey() + histLog.interval()) > currLog.lastKey()){
-        return UNIXtime() + 5;
+        return UTCTime() + 5;
       }
       trace(T_history,5);
       if( ! logRecord){

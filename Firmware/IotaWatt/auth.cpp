@@ -72,7 +72,7 @@ bool auth(authLevel level){
       md5.calculate();
       String _responsecheck = md5.toString();
       if(_response == _responsecheck){
-        session->lastUsed = UNIXtime();  
+        session->lastUsed = UTCTime();  
         return true;
       }
     }
@@ -110,7 +110,7 @@ authSession* newAuthSession(){
     session->next = new authSession;
     session = session->next;
     session->IP = server.client().remoteIP();
-    session->lastUsed = UNIXtime();
+    session->lastUsed = UTCTime();
     getNonce(session->nonce);
     return session;
 }
@@ -136,7 +136,7 @@ authSession* getAuthSession(const char* nonce, const char* nc){
 void  purgeAuthSessions(){
     authSession* session = (authSession*)&authSessions;
     while(session->next){
-        if((session->next->lastUsed + 600) < UNIXtime()){
+        if((session->next->lastUsed + 600) < UTCTime()){
             authSession* expSession = session->next;
             session->next = expSession->next;
             delete expSession;

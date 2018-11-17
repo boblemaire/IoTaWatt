@@ -40,32 +40,6 @@
 }; 
 
 /********************************************************************************************
- * 
- *  uint32_t NTPtime() - Return the current time in NTP format
- *  uint32_t Unixtime() - Return the current time in Unix format
- *  uint32_t localUNIXtime() - Return the current time adjusted for local time (not true unix time)
- *  Both return zero if the clock is not set//
- *  uint32_t MillisAtUNIXtime - Return the local Millis() value corresponding to the UnixTime
- * 
- *******************************************************************************************/
-
-uint32_t NTPtime() {
-  return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000;
- }
-  
-uint32_t UNIXtime() {
-  return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000 - SEVENTY_YEAR_SECONDS;
- }
-
-uint32_t localUNIXtime() {
-  return localTime();
-} 
- 
-uint32_t MillisAtUNIXtime(uint32_t UnixTime){                  
-  return (uint32_t)timeRefMs + 1000 * (UnixTime - SEVENTY_YEAR_SECONDS - timeRefNTP);
- }
-
-/********************************************************************************************
  * timeSync is a SERVICE that periodically (timeSynchInterval seconds) attempts to get
  * the NTP time from the internet, synchronize to that time and update the RTC.
  * The NTP request is blocking.
@@ -87,7 +61,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   trace(T_timeSync, 0);
   if( ! started){
     log("timeSync: service started.");
-    lastNTPupdate = UNIXtime();
+    lastNTPupdate = UTCTime();
     started = true; 
   }
  
@@ -103,9 +77,9 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
           // Log if no time update for 24 hours.
 
   trace(T_timeSync, 2);
-  if(UNIXtime() - lastNTPupdate > 86400UL){ 
+  if(UTCTime() - lastNTPupdate > 86400UL){ 
     log("timeSync: No time update in last 24 hours.");
-    lastNTPupdate = UNIXtime();
+    lastNTPupdate = UTCTime();
   }
 
         // Send an SNTP request.
@@ -126,7 +100,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     } 
     else {
       trace(T_timeSync, 33);
-      return RTCrunning ? (UNIXtime() + 60) : 1;
+      return RTCrunning ? (UTCTime() + 60) : 1;
     }
   }
   
@@ -138,7 +112,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     if(millis() - sendMillis > (RTCrunning ? 3000 : 10000)){
       trace(T_timeSync, 42);
       udp.stop();
-      return RTCrunning ? (UNIXtime() + 60) : 1;
+      return RTCrunning ? (UTCTime() + 60) : 1;
     }
   }
 
@@ -159,7 +133,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
   trace(T_timeSync, 6);
   if(packetSize < sizeof(ntpPacket) || recvMillis - sendMillis > (RTCrunning ? 3000 : 10000)){
-    return RTCrunning ? (UNIXtime() + 60) : 1;
+    return RTCrunning ? (UTCTime() + 60) : 1;
   }
 
         // Check for Kiss-o'-Death packet
@@ -168,17 +142,17 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   if(packet.stratum == 0){
     log("timesync: Kiss-o'-Death, code %c%c%c%c, ip: %s", 
     packet.referenceID[0], packet.referenceID[1], packet.referenceID[2], packet.referenceID[3], timeServerIP.toString().c_str());
-    return UNIXtime() + 15;
+    return UTCTime() + 15;
   } 
 
   trace(T_timeSync, 8);
   if(packet.origin_ts_sec != origin_sec || packet.origin_ts_frac != origin_frac){
     trace(T_timeSync, 81);
-    return RTCrunning ? (UNIXtime() + 60) : 1;
+    return RTCrunning ? (UTCTime() + 60) : 1;
   }
   if(packet.trans_ts_sec < NTP2018 || packet.trans_ts_sec > NTP2028){
     trace(T_timeSync, 82);
-    return RTCrunning ? (UNIXtime() + 60) : 1;
+    return RTCrunning ? (UTCTime() + 60) : 1;
   }
 
         // compute time as NTP transmit time + 1/2 transaction duration.
@@ -196,13 +170,13 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     trace(T_timeSync, 91);
     prevDiff = presDiff; 
     prevIP = timeServerIP;
-    return RTCrunning ? (UNIXtime() + 60) : 1;
+    return RTCrunning ? (UTCTime() + 60) : 1;
   }
   if(prevDiff){
     trace(T_timeSync, 92);
     if(prevIP == timeServerIP){
       trace(T_timeSync, 93);
-      return RTCrunning ? (UNIXtime() + 60) : 1;
+      return RTCrunning ? (UTCTime() + 60) : 1;
     }
     //log("IPs: %s, %s, prevDiff: %d", prevIP.toString().c_str(), timeServerIP.toString().c_str(), prevDiff);
     //log("packet sec: %u, frac: %u",packet.trans_ts_sec, packet.trans_ts_frac);
@@ -215,14 +189,14 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   trace(T_timeSync, 10);
   timeRefNTP = current_ts_sec - 1;
   timeRefMs = recvMillis - 1000 - current_ts_frac;
-  lastNTPupdate = UNIXtime();
+  lastNTPupdate = UTCTime();
  
         // If RTC not running, set it.
 
   if( ! RTCrunning) {
     trace(T_timeSync, 11);
-    programStartTime = UNIXtime();
-    rtc.adjust(UNIXtime());
+    programStartTime = UTCTime();
+    rtc.adjust(UTCTime());
     RTCrunning = true;
     log("timeSync: RTC initalized to NTP time");
     SdFile::dateTimeCallback(dateTime);
@@ -233,7 +207,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
   else {
     trace(T_timeSync, 12);
-    int32_t timeDiff = UNIXtime() - rtc.now().unixtime();
+    int32_t timeDiff = UTCTime() - rtc.now().unixtime();
     if(timeDiff < 0){
       timeDiff += 1;
     } else if(timeDiff > 0){
@@ -251,7 +225,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
           // Go back to sleep.
 
   trace(T_timeSync, 14);
-  return UNIXtime() + timeSynchInterval;    
+  return UTCTime() + timeSynchInterval;    
 }
 
 //  This can be a little mind-bogling. The ESP stores words in little-endian format,
@@ -271,21 +245,43 @@ uint32_t littleEndian(uint32_t in){
 void dateTime(uint16_t* date, uint16_t* time) {
    
   // return date using FAT_DATE macro to format fields
-  *date = FAT_DATE(DateTime(localUNIXtime()).year(),
-                   DateTime(localUNIXtime()).month(),
-                   DateTime(localUNIXtime()).day());
+  *date = FAT_DATE(DateTime(localTime()).year(),
+                   DateTime(localTime()).month(),
+                   DateTime(localTime()).day());
 
   // return time using FAT_TIME macro to format fields
-  *time = FAT_TIME(DateTime(localUNIXtime()).hour(), 
-                   DateTime(localUNIXtime()).minute(),
-                   DateTime(localUNIXtime()).second());
+  *time = FAT_TIME(DateTime(localTime()).hour(), 
+                   DateTime(localTime()).minute(),
+                   DateTime(localTime()).second());
 }
 
 /********************************************************************************************
+ * 
+ *  uint32_t NTPtime() - Return the current time in NTP format
+ *  uint32_t Unixtime() - Return the current time in Unix format
+ *  uint32_t localTime() - Return the current time adjusted for local time (not true unix time)
+ *  Both return zero if the clock is not set//
+ *  uint32_t MillisAtUNIXtime - Return the local Millis() value corresponding to the UnixTime
+ * 
+ *******************************************************************************************/
+
+uint32_t NTPtime() {
+  return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000;
+ }
   
-*******************************************************************************************/
-uint32_t localTime() {return localTime(UNIXtime());}
-uint32_t localTime(uint32_t UTCtime){
+uint32_t UTCTime() {
+  return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000 - SEVENTY_YEAR_SECONDS;
+ }
+
+uint32_t localTime() {
+  return UTC2Local(UTCTime());
+} 
+ 
+uint32_t millisAtUTCTime(uint32_t UnixTime){                  
+  return (uint32_t)timeRefMs + 1000 * (UnixTime - SEVENTY_YEAR_SECONDS - timeRefNTP);
+ }
+
+uint32_t UTC2Local(uint32_t UTCtime){
     uint32_t result = UTCtime + localTimeDiff * 60;
     if( ! timezoneRule) return result;
 
@@ -305,6 +301,12 @@ uint32_t localTime(uint32_t UTCtime){
       } 
     }
     return result;
+}
+
+uint32_t  local2UTC(uint32_t localTime){
+  uint32_t trialUTC = localTime - localTimeDiff * 60;
+  uint32_t testLocal = UTC2Local(trialUTC);
+  return trialUTC - testLocal + localTime;
 }
 
 bool testRule(uint32_t standardTime, dateTimeRule dtrule){

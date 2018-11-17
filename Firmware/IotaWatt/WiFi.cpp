@@ -71,7 +71,7 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
     }
   }
  
-  return UNIXtime() + 1;  
+  return UTCTime() + 1;  
 }
 
 uint32_t HTTPreserve(uint16_t id, bool lock){

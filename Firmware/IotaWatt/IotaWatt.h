@@ -64,6 +64,7 @@
 #include "auth.h"
 #include "spiffs.h"
 #include "timeServices.h"
+#include "pvoutput.h"
 
 
       // Declare instances of major classes
@@ -147,7 +148,8 @@ extern traceUnion traceEntry;
 #define T_stats 18         // Stat service 
 #define T_datalog 19       // datalog service
 #define T_timeSync 20      // timeSync service 
-#define T_WiFi 21          // WiFi service  
+#define T_WiFi 21          // WiFi service
+#define T_PVoutput 22      // PVoutput class     
 
       // LED codes
 

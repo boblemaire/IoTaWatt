@@ -464,7 +464,7 @@ void handleStatus(){
     trace(T_WEB,14);
     stats.set(F("chanrate"),cycleSampleRate);
     trace(T_WEB,14);
-    stats.set(F("runseconds"), UNIXtime()-programStartTime);
+    stats.set(F("runseconds"), UTCTime()-programStartTime);
     trace(T_WEB,14);
     stats.set(F("stack"),ESP.getFreeHeap());
     trace(T_WEB,14);
@@ -534,6 +534,17 @@ void handleStatus(){
     emon.set(F("running"),EmonStarted);
     emon.set(F("lastpost"),EmonLastPost);  
     root["emon"] = emon;
+  }
+
+  if(server.hasArg(F("pvoutput"))){
+    trace(T_WEB,23);
+    JsonObject& status = jsonBuffer.createObject();
+    if(!pvoutput){
+      status.set(F("state"),"stopped");
+    } else {
+      pvoutput->getStatusJson(status);
+    }
+    root["pvoutput"] = status;
   }
 
   if(server.hasArg(F("datalogs"))){

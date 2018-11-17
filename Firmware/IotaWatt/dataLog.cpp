@@ -62,13 +62,13 @@
         if(histLog.begin(historyLogFile) == 0 && histLog.fileSize() > 0){
           logRecord->UNIXtime = histLog.lastKey();
           histLog.readKey(logRecord);
-          log("dataLog: Last history entry: %s", localDateString(logRecord->UNIXtime).c_str());
+          log("dataLog: Last history entry: %s", datef(UTC2Local(logRecord->UNIXtime)).c_str());
         }
       }
       else {
         logRecord->UNIXtime = currLog.lastKey();
         currLog.readKey(logRecord);
-        log("dataLog: Last log entry %s", localDateString(currLog.lastKey()).c_str());
+        log("dataLog: Last log entry %s", datef(UTC2Local(currLog.lastKey())).c_str());
       }
 
       state = checkClock;
@@ -93,8 +93,8 @@
 
       // If it's been a long time since last entry, skip ahead.
       
-      if((UNIXtime() - logRecord->UNIXtime) > GapFill){
-        logRecord->UNIXtime = UNIXtime() - UNIXtime() % currLog.interval();
+      if((UTCTime() - logRecord->UNIXtime) > GapFill){
+        logRecord->UNIXtime = UTCTime() - UTCTime() % currLog.interval();
       }
 
       // Initialize timeNext (will be incremented at exit below)
@@ -110,11 +110,11 @@
 
       // If this seems premature.... get outta here.
 
-      if(UNIXtime() < timeNext) return timeNext;
+      if(UTCTime() < timeNext) return timeNext;
 
       // If log is up to date, update the entry with latest data.
           
-      if(timeNext >= (UNIXtime() - UNIXtime() % currLog.interval())){
+      if(timeNext >= (UTCTime() - UTCTime() % currLog.interval())){
         double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
         for(int i=0; i<maxInputs; i++){
           IotaInputChannel* _input = inputChannel[i];

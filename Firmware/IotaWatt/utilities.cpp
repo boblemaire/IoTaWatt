@@ -235,20 +235,100 @@ char*  JsonDetail(File file, JsonArray& locator){
     return out;
 }
 
+/**************************************************************************************************
+ *     Date/Time conversions between unixtime and YYYYMMDD format                                                                 *  
+ * ************************************************************************************************/
+
+/**************************************************************************************************
+ *     Unixtime() - Convert year,month,day [,hour [,min [,sec]]] to Unixtime                                                                 *  
+ * ************************************************************************************************/
+uint32_t Unixtime(int year, uint8_t month, uint8_t day, uint8_t hour, uint8_t minute, uint8_t second){
+    if(year < 1970 || month > 12 || day > 31 || hour > 23 || minute > 59 || second > 59 ) return 0;
+    uint16_t month2date[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
+    uint32_t unixdays = (year-1970) * 365 + ((year-1969)/4);
+    unixdays += month2date[month-1] + (day-1) + ((year % 4 == 0 && month > 2) ? 1 : 0);
+    return unixdays * 86400 + hour * 3600 + minute * 60 + second;
+}
+
+/**************************************************************************************************
+ *     datef(unixtime, format) Generate formatted date/time string.                                                               *  
+ * ************************************************************************************************/
+String datef(uint32_t unixtime, const char* format){
+    uint16_t month2date[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
+    uint16_t month2leapdate[] = {0,31,60,91,121,152,182,213,244,274,305,335,366};
+    char formatChar[] = {"YMDhms"};
+    int value[6];                                           // YMDHMS
+    uint32_t daytime = unixtime % 86400;                    // Get time of day
+    value[3] = daytime / 3600;                              // Extract hour
+    value[4] = (daytime % 3600) / 60;                       // Extract minute
+    value[5] = daytime % 60;                                // extract second
+    unixtime /= 86400;                                      // Convert from seconds to days
+    unixtime += 365;                                        // Relative to 1969 - start of quadrenial ending with leap year       
+    value[0] = 4 * (unixtime / 1461) + 1969;                // Absolute year at end of last whole quadrenial
+    unixtime = unixtime % 1461;                             // Days after last whole quadrenial (-1)
+    int month = 0;
+    if(unixtime < 1095){                                    // Ends in one of first three non-leapyears
+        value[0] += unixtime / 365;                             // Add whole years
+        unixtime = unixtime % 365;                          // Days in last year (-1)
+        while(unixtime > month2date[++month]);              // Lookup month
+        value[2] = unixtime - month2date[month-1] + 1;      // Compute residual days
+    } else {                                                // Ends in leap year
+        value[0] += 3;                                      // Count three good years    
+        unixtime -= 1095;                                   // Days in last year (-1)    
+        while(unixtime > month2leapdate[++month]);          // Lookup month in leapyear
+        value[2] = unixtime - month2leapdate[month-1] + 1;  // Compute residual days
+    }
+    value[1] = month;
+
+        // Construct output string
+
+    char* str = new char[30]; 
+    char* out = str;
+    const char* in = format;
+    char* f;
+    while(*in){
+        if(char* f = strchr(formatChar, *in)){
+            int ndx = f - formatChar;
+            int len = 0;
+            while(*in == *(in+1+len++));
+            if(len == 1){
+                out += sprintf(out, "%d", value[ndx] % 100);
+            }
+            else if(len == 2){
+                out += sprintf(out, "%02d", value[ndx] % 100);
+            } 
+            else {
+                out += sprintf(out, "%0*d", len, value[ndx]);
+            }
+            in += len;
+        } else {
+            *(out++) = *(in++);
+        }
+    }
+    *out = 0;
+    String result = str;
+    delete[] str;
+    return result;
+}
+
 String localDateString(uint32_t UNIXtime){
-    return dateString(localTime(UNIXtime));
+    return datef(UTC2Local(UNIXtime), "MM/DD/YY hh:mm:ss");
 }
 
-String dateString(uint32_t UNIXtime){
-    DateTime now = DateTime(UNIXtime);
-  
-    return String(now.month()) + '/' + String(now.day()) + '/' + String(now.year()%100) + ' ' + 
-          timeString(now.hour()) + ':' + timeString(now.minute()) + ':' + timeString(now.second()) + ' ';
+uint32_t YYYYMMDD2Unixtime(const char* YYYYMMDD){
+    int year, month, day;
+    if(sscanf(YYYYMMDD, "%4d%2d%2d", &year, &month, &day) == 3){
+        return Unixtime(year, month, day);
+    }
+    return 0; 
 }
 
-String timeString(int value){
-  if(value < 10) return String("0") + String(value);
-  return String(value);
+int32_t HHMM2daytime(const char* HHMMSS, const char* format){
+    int hour(0), minute(0), second(0);
+    if(sscanf(HHMMSS, format, &hour, &minute, &second)){
+        return hour * 3600 + minute * 60 + second;
+    }
+    return -1;
 }
 
 /**************************************************************************************************

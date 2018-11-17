@@ -22,12 +22,13 @@ struct tzRule {                 // Defines a daylight saving period and adjustme
 };  
 
 uint32_t  NTPtime();
-uint32_t  UNIXtime();
-uint32_t  localUNIXtime();
-uint32_t  MillisAtUNIXtime(uint32_t);
+uint32_t  UTCTime();
+uint32_t  localTime();
+uint32_t  millisAtUTCTime(uint32_t);
 void      dateTime(uint16_t* date, uint16_t* time);
 uint32_t  littleEndian(uint32_t);
-uint32_t localTime();
-uint32_t localTime(uint32_t UTCtime);
-bool     testRule(uint32_t standardTime, dateTimeRule);
+uint32_t  localTime();
+uint32_t  UTC2Local(uint32_t UTCtime);
+uint32_t  local2UTC(uint32_t localTime);
+bool      testRule(uint32_t standardTime, dateTimeRule);
 
