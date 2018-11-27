@@ -327,7 +327,7 @@ void samplePower(int channel, int overSample){
             lastCrossMs = millis();                     // For main loop dispatcher to estimate when next crossing is imminent
             lastCrossSamples = samples;
           }
-          else {
+          else if(crossCount == ((crossLimit + 1) / 2)){
             midCrossSamples = samples;                               
           }
         }   
@@ -382,9 +382,9 @@ void samplePower(int channel, int overSample){
     return 1;
   }
   if(abs(samples - (midCrossSamples * 2)) > 10){
-    //DateTime now = DateTime(localTime());
-    //Serial.printf_P(PSTR("%d/%02d/%02d %02d:%02d:%02d sample imbalance: %d - %d = %d\r\n"), now.month(), now.day(), now.year()%100,
-    //now.hour(), now.minute(), now.second(), midCrossSamples, samples-midCrossSamples, abs(samples - (midCrossSamples * 2)));
+    // DateTime now = DateTime(localTime());
+    // Serial.printf_P(PSTR("%d/%02d/%02d %02d:%02d:%02d sample imbalance: %d - %d = %d, vchan %d, ichan %d\r\n"), now.month(), now.day(), now.year()%100,
+    // now.hour(), now.minute(), now.second(), midCrossSamples, samples-midCrossSamples, abs(samples - (midCrossSamples * 2)), Vchan, Ichan);
     return 1;
   }
             // Update damped frequency.
@@ -506,7 +506,7 @@ String samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
   int16_t rawV;                               // Raw ADC readings
   int16_t rawI;
 
-  double IshiftDeg = (double)Ishift * 360.0 / (samples / cycles);  
+   
   double sumVsq = 0;
   double sumIsq = 0;
   double sumVI = 0;
@@ -514,8 +514,9 @@ String samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
 
   for(int i=0; i<4; i++){
     uint32_t startTime = millis();
-    while (sampleCycle(Vchannel, Ichannel, cycles)){
-      if(millis()-startTime > 75){
+    while (int rtc = sampleCycle(Vchannel, Ichannel, cycles)){
+      Serial.printf("sample rtc %d\r\n", rtc);
+      if(millis()-startTime > (cycles * 30)){
         return String("Unable to sample");
       }
     }
@@ -530,8 +531,9 @@ String samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift){
   double Vrms = sqrt(sumVsq / sumSamples);
   double Irms = sqrt(sumIsq / sumSamples);
   double VI = sumVI / sumSamples;
-  float phaseDiff = (double)57.29578 * acos(VI / (Vrms * Irms)) - 0.055;  // 0.055 is shift introduced in sampling timing
-
+  float  phaseDiff = (double)57.29578 * acos(VI / (Vrms * Irms)) - 0.055;  // 0.055 is shift introduced in sampling timing
+  double IshiftDeg = (double)Ishift * 360.0 / (samples / cycles); 
+  
   String response = "Sample phase lead\r\n\r\nChannel: " + String(Ichan) + "\r\n";
   response += "Refchan: " + String(Vchan) + "\r\n";
   if(Ishift){
