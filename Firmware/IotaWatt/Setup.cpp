@@ -65,7 +65,7 @@ void setup()
     timeRefNTP = rtc.now().unixtime() + SEVENTY_YEAR_SECONDS;
     timeRefMs = millis();
     RTCrunning = true;
-    log("Real Time Clock is running. Unix time %d ", UTCTime());
+    log("Real Time Clock is running. Unix time %d ", UTCtime());
     if((Control_3 & 0x08) != 0){
       log("Power failure detected.");
       Wire.beginTransmission(PCF8523_ADDRESS);            
@@ -78,7 +78,7 @@ void setup()
   else {
     log("Real Time Clock not initialized.");
   }
-  programStartTime = UTCTime();
+  programStartTime = UTCtime();
   
   Wire.beginTransmission(PCF8523_ADDRESS);            // Set crystal load capacitance
   Wire.write((byte)0);

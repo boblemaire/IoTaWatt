@@ -254,9 +254,9 @@ uint32_t Unixtime(int year, uint8_t month, uint8_t day, uint8_t hour, uint8_t mi
  *     datef(unixtime, format) Generate formatted date/time string.                                                               *  
  * ************************************************************************************************/
 String datef(uint32_t unixtime, const char* format){
-    uint16_t month2date[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
-    uint16_t month2leapdate[] = {0,31,60,91,121,152,182,213,244,274,305,335,366};
-    char formatChar[] = {"YMDhms"};
+    const uint16_t month2date[] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
+    const uint16_t month2leapdate[] = {0,31,60,91,121,152,182,213,244,274,305,335,366};
+    const char formatChar[] = {"YMDhms"};
     int value[6];                                           // YMDHMS
     uint32_t daytime = unixtime % 86400;                    // Get time of day
     value[3] = daytime / 3600;                              // Extract hour
@@ -270,12 +270,12 @@ String datef(uint32_t unixtime, const char* format){
     if(unixtime < 1095){                                    // Ends in one of first three non-leapyears
         value[0] += unixtime / 365;                             // Add whole years
         unixtime = unixtime % 365;                          // Days in last year (-1)
-        while(unixtime > month2date[++month]);              // Lookup month
+        while(unixtime >= month2date[++month]);              // Lookup month
         value[2] = unixtime - month2date[month-1] + 1;      // Compute residual days
     } else {                                                // Ends in leap year
         value[0] += 3;                                      // Count three good years    
         unixtime -= 1095;                                   // Days in last year (-1)    
-        while(unixtime > month2leapdate[++month]);          // Lookup month in leapyear
+        while(unixtime >= month2leapdate[++month]);          // Lookup month in leapyear
         value[2] = unixtime - month2leapdate[month-1] + 1;  // Compute residual days
     }
     value[1] = month;

@@ -464,7 +464,7 @@ void handleStatus(){
     trace(T_WEB,14);
     stats.set(F("chanrate"),cycleSampleRate);
     trace(T_WEB,14);
-    stats.set(F("runseconds"), UTCTime()-programStartTime);
+    stats.set(F("runseconds"), UTCtime()-programStartTime);
     trace(T_WEB,14);
     stats.set(F("stack"),ESP.getFreeHeap());
     trace(T_WEB,14);

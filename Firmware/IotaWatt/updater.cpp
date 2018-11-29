@@ -20,7 +20,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   static uint32_t HTTPtoken = 0;
 
   if( ! WiFi.isConnected()){
-    return UTCTime() + 1;
+    return UTCtime() + 1;
   }
 
   switch(state){
@@ -44,21 +44,21 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
           return 1;
         }
       }
-      else if (strcmp(_updateClass, "NONE") != 0 && UTCTime() - lastVersionCheck > updaterServiceInterval){
-        lastVersionCheck = UTCTime();
+      else if (strcmp(_updateClass, "NONE") != 0 && UTCtime() - lastVersionCheck > updaterServiceInterval){
+        lastVersionCheck = UTCtime();
         state = getVersion;
         return 1;
       }
-      return UTCTime() + 7;
+      return UTCtime() + 7;
     }
 
     case getVersion: {
       if( ! WiFi.isConnected()){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       HTTPtoken = HTTPreserve(T_UPDATE);
       if( ! HTTPtoken){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       if( ! request){
         request = new asyncHTTPrequest;
@@ -85,7 +85,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
 
     case waitVersion: {
       if(request->readyState() != 4){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       HTTPrelease(HTTPtoken);;
       if(request->responseHTTPcode() != 200 || request->available() != 8){
@@ -99,9 +99,9 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         state = getVersion;
         state = checkAutoUpdate;
         if(responseCode == 403){
-          lastVersionCheck = UTCTime();
+          lastVersionCheck = UTCtime();
         }
-        return UTCTime() + 11 ;
+        return UTCtime() + 11 ;
       }
       checkResponse = 0;
       updateVersion = request->responseText();
@@ -142,11 +142,11 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       
     case download: {  
       if( ! WiFi.isConnected()){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       HTTPtoken = HTTPreserve(T_UPDATE, true);
       if( ! HTTPtoken){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       if( ! request){
         request = new asyncHTTPrequest;
@@ -205,7 +205,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       state = checkAutoUpdate;
     }
   }
-  return UTCTime() + 1;
+  return UTCtime() + 1;
 }
 
 /**************************************************************************************************

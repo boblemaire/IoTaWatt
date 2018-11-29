@@ -81,7 +81,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // so wait until the log service is up and running.
       
       if(!currLog.isOpen()){
-        return UTCTime() + 5;
+        return UTCtime() + 5;
       }
       log("EmonService: started. url=%s:%d%s, node=%s, interval=%d%s", EmonURL, EmonPort, EmonURI, 
            emonNode, EmonCMSInterval, (EmonSend == EmonSendGET ? "" : ", encrypted"));
@@ -94,11 +94,11 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     case queryLastGet: {
       trace(T_Emon,3);
       if(! WiFi.isConnected()){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       HTTPtoken = HTTPreserve(T_Emon);
       if( ! HTTPtoken){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       if( ! request){
         request = new asyncHTTPrequest;
@@ -115,26 +115,26 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       trace(T_Emon,3);
       request->send();
       state = queryLastWait;
-      return UTCTime() + 1;
+      return UTCtime() + 1;
     } 
 
     case queryLastWait: {
       trace(T_Emon,4);
       if(request->readyState() != 4){
-        return UTCTime() + 1; 
+        return UTCtime() + 1; 
       }
       HTTPrelease(HTTPtoken);
       trace(T_Emon,4);
       if(request->responseHTTPcode() != 200){
         state = queryLastGet;
         if(++retryCount < 10){
-          return UTCTime() + 1;
+          return UTCtime() + 1;
         }
         if(retryCount == 10){
           log("EmonService: get input list failing, code: %d", request->responseHTTPcode());
           Serial.println(request->responseText());
         }
-        return UTCTime() + 30;
+        return UTCtime() + 30;
       }
 
       trace(T_Emon,4);    
@@ -228,7 +228,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // If not enough entries for bulk-send, come back in one second;
 
       if(((currLog.lastKey() - EmonLastPost) / EmonCMSInterval + reqEntries) < EmonBulkSend){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
 
           // If buffer isn't full,
@@ -336,11 +336,11 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
     case sendPost:{
       trace(T_Emon,7);
       if( ! WiFi.isConnected()){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       HTTPtoken = HTTPreserve(T_Emon);
       if( ! HTTPtoken){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       if( ! request){
         request = new asyncHTTPrequest;
@@ -367,11 +367,11 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
 case sendSecure:{
       trace(T_Emon,9);
       if( ! WiFi.isConnected()){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       HTTPtoken = HTTPreserve(T_Emon);
       if( ! HTTPtoken){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       if( ! request) {
         request = new asyncHTTPrequest;
@@ -449,7 +449,7 @@ case sendSecure:{
       if( ! request->open("POST", URL.c_str())){
         HTTPrelease(HTTPtoken);
         state = getLastRecord;
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       trace(T_Emon,10);
       request->setReqHeader("Content-Type","aes128cbc");
@@ -474,7 +474,7 @@ case sendSecure:{
             log("EmonService: HTTP response %d, retrying.", request->responseHTTPcode());
         }
         state = getLastRecord;
-        return UTCTime() + retryCount / 10;
+        return UTCtime() + retryCount / 10;
       }
       trace(T_Emon,11);
       String response = request->responseText();
@@ -487,7 +487,7 @@ case sendSecure:{
           EmonLastPost = reqUnixtime;
         }
         state = getLastRecord;
-        return UTCTime() + retryCount / 10;
+        return UTCtime() + retryCount / 10;
       }
       trace(T_Emon,11);
       if(retryCount >= 3){

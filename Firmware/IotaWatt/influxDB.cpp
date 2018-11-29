@@ -41,14 +41,14 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static IotaLogRecord* oldRecord = nullptr;
   static uint32_t lastRequestTime = 0;          // Time of last measurement in last or current request
   static uint32_t lastBufferTime = 0;           // Time of last measurement reqData buffer
-  static uint32_t UnixNextPost = UTCTime();    // Next measurement to be posted
+  static uint32_t UnixNextPost = UTCtime();    // Next measurement to be posted
   static xbuf reqData;                          // Current request buffer
   static uint32_t reqUnixtime = 0;              // First measurement in current reqData buffer
   static int  reqEntries = 0;                   // Number of measurement intervals in current reqData
   static int16_t retryCount = 0;                // HTTP error count
   static asyncHTTPrequest* request = nullptr;   // -> instance of asyncHTTPrequest
-  static uint32_t postFirstTime = UTCTime();   // First measurement in outstanding post request
-  static uint32_t postLastTime = UTCTime();    // Last measurement in outstanding post request
+  static uint32_t postFirstTime = UTCtime();   // First measurement in outstanding post request
+  static uint32_t postLastTime = UTCtime();    // Last measurement in outstanding post request
   static size_t reqDataLimit = 4000;            // transaction yellow light size
   static uint32_t HTTPtoken = 0;                // HTTP resource reservation token
   static Script* script = nullptr;              // current Script
@@ -71,7 +71,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           // We post from the log, so wait if not available.          
 
       if(!currLog.isOpen()){                  
-        return UTCTime() + 5;
+        return UTCtime() + 5;
       }
       log("influxDB: started, url=%s:%d, db=%s, interval=%d", influxURL, influxPort,
               influxDataBase, influxDBInterval);
@@ -95,11 +95,11 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
           // Make sure wifi is connected and there is a resource available.
 
-      if( ! WiFi.isConnected()) return UTCTime() + 1;
+      if( ! WiFi.isConnected()) return UTCtime() + 1;
        
       HTTPtoken = HTTPreserve(T_influx);
       if( ! HTTPtoken){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
 
           // Create a new request
@@ -192,7 +192,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       }
 
       if(influxLastPost == 0){
-        influxLastPost = UTCTime();
+        influxLastPost = UTCtime();
       }
       influxLastPost -= influxLastPost % influxDBInterval;
       log("influxDB: Start posting at %s", localDateString(influxLastPost + influxDBInterval).c_str());
@@ -268,7 +268,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           // If not enough entries for bulk-send, come back in one second;
 
       if(((currLog.lastKey() - influxLastPost) / influxDBInterval + reqEntries) < influxBulkSend){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       } 
 
           // If buffer isn't full,
@@ -345,18 +345,18 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
             Script* script = influxOutputs->first();
             reqData.printf_P(PSTR(",%s=%s"), tag->key, influxVarStr(tag->value, script).c_str());
           }
-          reqData.printf_P(PSTR(" value=%d %d\n"), (uint32_t)heapMs / heapMsPeriod, UTCTime());
+          reqData.printf_P(PSTR(" value=%d %d\n"), (uint32_t)heapMs / heapMsPeriod, UTCtime());
           heapMs = 0.0;
           heapMsPeriod = 0;
         }       
       }
-      return (UnixNextPost > UTCTime()) ? UTCTime() + 1 : 1;
+      return (UnixNextPost > UTCtime()) ? UTCtime() + 1 : 1;
     }
 
     case sendPost: {
       trace(T_influx,8);
       if( ! WiFi.isConnected()){
-        return UTCTime() + 1;
+        return UTCtime() + 1;
       }
       HTTPtoken = HTTPreserve(T_influx);
       if( ! HTTPtoken){

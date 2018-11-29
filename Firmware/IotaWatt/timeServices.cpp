@@ -61,7 +61,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   trace(T_timeSync, 0);
   if( ! started){
     log("timeSync: service started.");
-    lastNTPupdate = UTCTime();
+    lastNTPupdate = UTCtime();
     started = true; 
   }
  
@@ -77,9 +77,9 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
           // Log if no time update for 24 hours.
 
   trace(T_timeSync, 2);
-  if(UTCTime() - lastNTPupdate > 86400UL){ 
+  if(UTCtime() - lastNTPupdate > 86400UL){ 
     log("timeSync: No time update in last 24 hours.");
-    lastNTPupdate = UTCTime();
+    lastNTPupdate = UTCtime();
   }
 
         // Send an SNTP request.
@@ -100,7 +100,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     } 
     else {
       trace(T_timeSync, 33);
-      return RTCrunning ? (UTCTime() + 60) : 1;
+      return RTCrunning ? (UTCtime() + 60) : 1;
     }
   }
   
@@ -112,7 +112,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     if(millis() - sendMillis > (RTCrunning ? 3000 : 10000)){
       trace(T_timeSync, 42);
       udp.stop();
-      return RTCrunning ? (UTCTime() + 60) : 1;
+      return RTCrunning ? (UTCtime() + 60) : 1;
     }
   }
 
@@ -133,7 +133,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
   trace(T_timeSync, 6);
   if(packetSize < sizeof(ntpPacket) || recvMillis - sendMillis > (RTCrunning ? 3000 : 10000)){
-    return RTCrunning ? (UTCTime() + 60) : 1;
+    return RTCrunning ? (UTCtime() + 60) : 1;
   }
 
         // Check for Kiss-o'-Death packet
@@ -142,17 +142,17 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   if(packet.stratum == 0){
     log("timesync: Kiss-o'-Death, code %c%c%c%c, ip: %s", 
     packet.referenceID[0], packet.referenceID[1], packet.referenceID[2], packet.referenceID[3], timeServerIP.toString().c_str());
-    return UTCTime() + 15;
+    return UTCtime() + 15;
   } 
 
   trace(T_timeSync, 8);
   if(packet.origin_ts_sec != origin_sec || packet.origin_ts_frac != origin_frac){
     trace(T_timeSync, 81);
-    return RTCrunning ? (UTCTime() + 60) : 1;
+    return RTCrunning ? (UTCtime() + 60) : 1;
   }
   if(packet.trans_ts_sec < NTP2018 || packet.trans_ts_sec > NTP2028){
     trace(T_timeSync, 82);
-    return RTCrunning ? (UTCTime() + 60) : 1;
+    return RTCrunning ? (UTCtime() + 60) : 1;
   }
 
         // compute time as NTP transmit time + 1/2 transaction duration.
@@ -170,13 +170,13 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     trace(T_timeSync, 91);
     prevDiff = presDiff; 
     prevIP = timeServerIP;
-    return RTCrunning ? (UTCTime() + 60) : 1;
+    return RTCrunning ? (UTCtime() + 60) : 1;
   }
   if(prevDiff){
     trace(T_timeSync, 92);
     if(prevIP == timeServerIP){
       trace(T_timeSync, 93);
-      return RTCrunning ? (UTCTime() + 60) : 1;
+      return RTCrunning ? (UTCtime() + 60) : 1;
     }
     //log("IPs: %s, %s, prevDiff: %d", prevIP.toString().c_str(), timeServerIP.toString().c_str(), prevDiff);
     //log("packet sec: %u, frac: %u",packet.trans_ts_sec, packet.trans_ts_frac);
@@ -189,14 +189,14 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   trace(T_timeSync, 10);
   timeRefNTP = current_ts_sec - 1;
   timeRefMs = recvMillis - 1000 - current_ts_frac;
-  lastNTPupdate = UTCTime();
+  lastNTPupdate = UTCtime();
  
         // If RTC not running, set it.
 
   if( ! RTCrunning) {
     trace(T_timeSync, 11);
-    programStartTime = UTCTime();
-    rtc.adjust(UTCTime());
+    programStartTime = UTCtime();
+    rtc.adjust(UTCtime());
     RTCrunning = true;
     log("timeSync: RTC initalized to NTP time");
     SdFile::dateTimeCallback(dateTime);
@@ -207,7 +207,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
   else {
     trace(T_timeSync, 12);
-    int32_t timeDiff = UTCTime() - rtc.now().unixtime();
+    int32_t timeDiff = UTCtime() - rtc.now().unixtime();
     if(timeDiff < 0){
       timeDiff += 1;
     } else if(timeDiff > 0){
@@ -225,7 +225,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
           // Go back to sleep.
 
   trace(T_timeSync, 14);
-  return UTCTime() + timeSynchInterval;    
+  return UTCtime() + timeSynchInterval;    
 }
 
 //  This can be a little mind-bogling. The ESP stores words in little-endian format,
@@ -269,12 +269,12 @@ uint32_t NTPtime() {
   return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000;
  }
   
-uint32_t UTCTime() {
+uint32_t UTCtime() {
   return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000 - SEVENTY_YEAR_SECONDS;
  }
 
 uint32_t localTime() {
-  return UTC2Local(UTCTime());
+  return UTC2Local(UTCtime());
 } 
  
 uint32_t millisAtUTCTime(uint32_t UnixTime){                  

@@ -93,8 +93,8 @@
 
       // If it's been a long time since last entry, skip ahead.
       
-      if((UTCTime() - logRecord->UNIXtime) > GapFill){
-        logRecord->UNIXtime = UTCTime() - UTCTime() % currLog.interval();
+      if((UTCtime() - logRecord->UNIXtime) > GapFill){
+        logRecord->UNIXtime = UTCtime() - UTCtime() % currLog.interval();
       }
 
       // Initialize timeNext (will be incremented at exit below)
@@ -110,11 +110,11 @@
 
       // If this seems premature.... get outta here.
 
-      if(UTCTime() < timeNext) return timeNext;
+      if(UTCtime() < timeNext) return timeNext;
 
       // If log is up to date, update the entry with latest data.
           
-      if(timeNext >= (UTCTime() - UTCTime() % currLog.interval())){
+      if(timeNext >= (UTCtime() - UTCtime() % currLog.interval())){
         double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
         for(int i=0; i<maxInputs; i++){
           IotaInputChannel* _input = inputChannel[i];

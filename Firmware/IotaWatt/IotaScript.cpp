@@ -61,17 +61,17 @@ Script::~Script() {
       delete[] _constants;
     }
 
-Script*   Script::next() {return _next;}
+Script*       Script::next() {return _next;}
 
-char*     Script::name() {return _name;} 
+const char*   Script::name() {return _name;} 
 
-const char* Script::getUnits() {return unitstr[_units];};
+const char*   Script::getUnits() {return unitstr[_units];};
 
-int     Script::precision(){return unitsPrecision[_units];};
+int           Script::precision(){return unitsPrecision[_units];};
 
-size_t    ScriptSet::count() {return _count;}
+size_t        ScriptSet::count() {return _count;}
 
-Script*   ScriptSet::first() {return _listHead;}  
+Script*       ScriptSet::first() {return _listHead;}  
 
 void    Script::print() {
         uint8_t* token = _tokens;

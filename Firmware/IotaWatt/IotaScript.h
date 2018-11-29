@@ -26,7 +26,7 @@ class Script {
     Script(JsonObject&); 
     ~Script();
 
-    char*   name();     // name associated with this Script
+    const char*   name();     // name associated with this Script
     const char*   getUnits();    // units associated with this Script
     void    setUnits(const char*);
     Script* next();     // -> next Script in set
