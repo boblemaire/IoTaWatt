@@ -114,7 +114,9 @@ boolean getConfig(void){
   else {
     EmonStop = true;
   }
+
         // ************************************** configure influxDB **********************************
+
   trace(T_CONFIG,10);
   JsonArray& influxArray = Config[F("influxdb")];
   if(influxArray.success()){
@@ -128,9 +130,28 @@ boolean getConfig(void){
     influxStop = true;
   }
   
-  ConfigFile.close();
+      // ************************************** configure PVoutput **********************************
+
   trace(T_CONFIG,11);
+  JsonArray& PVoutputArray = Config[F("pvoutput")];
+  if(PVoutputArray.success()){
+    char* PVoutputStr = JsonDetail(ConfigFile, PVoutputArray);
+    if(! pvoutput){
+      pvoutput = new PVoutput();
+    }
+    if( ! pvoutput->config(PVoutputStr)){
+      log("PVoutput: Invalid configuration."); 
+    } 
+    delete[] PVoutputStr;
+  }   
+  else if(pvoutput){
+    pvoutput->end();
+  } 
+  
+  ConfigFile.close();
+  trace(T_CONFIG,12);
   return true;
+
 }                                       // End of getConfig
 
 
@@ -266,10 +287,10 @@ bool configDST(const char* JsonStr){
   for(uint32_t days=1; days<=365*10; days++){
     for(uint32_t min=0; min<(60*24); min++){
       utime+=60;
-      ltime = localTime(utime);
+      ltime = UTC2LocalTimeutime);
       if(ltime - utime != adj){
         adj = ltime - utime;
-        Serial.printf("UTC %s, local %s, offset %f\r\n", dateString(utime).c_str(), dateString(ltime).c_str(), float(adj/3600.0));
+        Serial.printf("UTC %s, local %s, offset %f\r\n", datef(utime).c_str(), datef(ltime).c_str(), float(adj/3600.0));
       }
     }
     yield();

@@ -46,7 +46,7 @@ void loop()
 // ---------- If the head of the service queue is dispatchable
 //            call the SERVICE.
 
-  if(serviceQueue != NULL && UNIXtime() >= serviceQueue->callTime){
+  if(serviceQueue != NULL && UTCtime() >= serviceQueue->callTime){
     serviceBlock* thisBlock = serviceQueue;
     serviceQueue = thisBlock->next;
     ESP.wdtFeed();
@@ -108,7 +108,7 @@ void NewService(uint32_t (*serviceFunction)(struct serviceBlock*), const uint8_t
   }
 
 void AddService(struct serviceBlock* newBlock){
-  if(newBlock->callTime < UNIXtime()) newBlock->callTime = UNIXtime();
+  if(newBlock->callTime < UTCtime()) newBlock->callTime = UTCtime();
   if(serviceQueue == NULL ||
     (newBlock->callTime < serviceQueue->callTime) ||
     (newBlock->callTime == serviceQueue->callTime && newBlock->priority < serviceQueue->priority)){

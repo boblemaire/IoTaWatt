@@ -65,9 +65,10 @@ void setup()
     timeRefNTP = rtc.now().unixtime() + SEVENTY_YEAR_SECONDS;
     timeRefMs = millis();
     RTCrunning = true;
-    log("Real Time Clock is running. Unix time %d ", UNIXtime());
+    log("Real Time Clock is running. Unix time %d ", UTCtime());
     if((Control_3 & 0x08) != 0){
       log("Power failure detected.");
+      powerFailRestart = true;
       Wire.beginTransmission(PCF8523_ADDRESS);            
       Wire.write((byte)PCF8523_CONTROL_3);
       Wire.write((byte)0);
@@ -78,7 +79,7 @@ void setup()
   else {
     log("Real Time Clock not initialized.");
   }
-  programStartTime = UNIXtime();
+  programStartTime = UTCtime();
   
   Wire.beginTransmission(PCF8523_ADDRESS);            // Set crystal load capacitance
   Wire.write((byte)0);
@@ -94,7 +95,9 @@ void setup()
   //**************************************** Display the trace ****************************************
 
   log("Reset reason: %s", ESP.getResetReason().c_str());
-  logTrace();
+  if( ! powerFailRestart){
+      logTrace();
+  }
   log("ESP8266 ChipID: %d",ESP.getChipId());
 
   // ****************************************** Flush the trace ************************************
@@ -137,27 +140,29 @@ if(spiffsBegin()){
   WiFi.hostname(deviceName);
   WiFi.setAutoConnect(true);
   WiFi.begin();
-  uint32_t autoConnectTimeout = millis() + 3000UL;
-  while(WiFi.status() != WL_CONNECTED){
-    if(millis() > autoConnectTimeout){
-      setLedCycle(LED_CONNECT_WIFI);
-      wifiManager.setDebugOutput(false);
-      wifiManager.setConfigPortalTimeout(180);
-      String ssid = "iota" + String(ESP.getChipId());
-      String pwd = deviceName;
-      log("Connecting with WiFiManager.");
-      wifiManager.autoConnect(ssid.c_str(), deviceName);
-      endLedCycle();
-      while(WiFi.status() != WL_CONNECTED && RTCrunning == false){
-        log("RTC not running, waiting for WiFi.");
-        setLedCycle(LED_CONNECT_WIFI_NO_RTC);
-        wifiManager.setConfigPortalTimeout(3600);
-        wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
+  if( ! RTCrunning || powerFailRestart){
+    uint32_t autoConnectTimeout = millis() + 3000UL;
+    while(WiFi.status() != WL_CONNECTED){
+      if(millis() > autoConnectTimeout){
+        setLedCycle(LED_CONNECT_WIFI);
+        wifiManager.setDebugOutput(false);
+        wifiManager.setConfigPortalTimeout(180);
+        String ssid = "iota" + String(ESP.getChipId());
+        String pwd = deviceName;
+        log("Connecting with WiFiManager.");
+        wifiManager.autoConnect(ssid.c_str(), deviceName);
         endLedCycle();
+        while(WiFi.status() != WL_CONNECTED && RTCrunning == false){
+          log("RTC not running, waiting for WiFi.");
+          setLedCycle(LED_CONNECT_WIFI_NO_RTC);
+          wifiManager.setConfigPortalTimeout(3600);
+          wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
+          endLedCycle();
+        }
+        break;
       }
-      break;
+      yield();
     }
-    yield();
   }
   if(WiFi.status() != WL_CONNECTED){
     log("No WiFi connection.");

@@ -25,7 +25,7 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
       statRecord.accum1[i] = 0.0;
       statRecord.accum2[i] = 0.0;
     }
-    return (uint32_t)UNIXtime() + 1;
+    return (uint32_t)UTCtime() + 1;
   }
   
   double elapsedHrs = double((uint32_t)(timeNow - timeThen)) / MS_PER_HOUR;
@@ -56,6 +56,6 @@ uint32_t statService(struct serviceBlock* _serviceBlock) {
   heapMsPeriod += timeNow - timeThen;
   timeThen = timeNow;
   trace(T_stats, 5);
-  return ((uint32_t)UNIXtime() + statServiceInterval);
+  return UTCtime() + statServiceInterval;
 }
 

@@ -17,14 +17,16 @@ String formatHex(uint32_t data);                    // Convert the input to a St
 String bin2hex(const uint8_t* in, size_t len);
 void   hex2bin(uint8_t* out, const char* in, size_t len); 
 
-void base64encode(xbuf* buf);                       // Convert the contents of an xbuf to base64
+void   base64encode(xbuf* buf);                     // Convert the contents of an xbuf to base64
 String base64encode(const uint8_t* in, size_t len); // Convert the input buffer to a base64 String
 
-String  JsonSummary(File file, int depth);          // Read a json file and return a summary Json string              
+String JsonSummary(File file, int depth);           // Read a json file and return a summary Json string              
 char*  JsonDetail(File file, JsonArray& locator);   // Read and compress a detail segment of a json file
 
 String localDateString(uint32_t UNIXtime);          // Convert unixtime to a local data/time string
-String dateString(uint32_t UNIXtime);               // Convert unixtime to a data/time string
-String timeString(int value);                       // Convert time to String(HH:MM:SS)
+uint32_t Unixtime(int year, uint8_t month, uint8_t day, uint8_t hour=0, uint8_t minute=0, uint8_t second=0); // Convert YMDhms to unixtime
+uint32_t YYYYMMDD2Unixtime(const char* YYYYMMDD);   // Convert character string YYYYMMDD to unixtime
+String datef(uint32_t unixtime, const char* format = "MM/DD/YY hh:mm:ss");
+int32_t HHMMSS2daytime(const char* HHMMSS, const char* format = "%2d:%2d:%2d");
 
 void hashFile(uint8_t* sha, File file);             // Get SHA256 hash of a file    

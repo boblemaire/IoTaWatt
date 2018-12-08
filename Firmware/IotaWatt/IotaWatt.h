@@ -64,6 +64,7 @@
 #include "auth.h"
 #include "spiffs.h"
 #include "timeServices.h"
+#include "pvoutput.h"
 
 
       // Declare instances of major classes
@@ -147,7 +148,8 @@ extern traceUnion traceEntry;
 #define T_stats 18         // Stat service 
 #define T_datalog 19       // datalog service
 #define T_timeSync 20      // timeSync service 
-#define T_WiFi 21          // WiFi service  
+#define T_WiFi 21          // WiFi service
+#define T_PVoutput 22      // PVoutput class     
 
       // LED codes
 
@@ -249,6 +251,7 @@ extern uint32_t updaterServiceInterval;        // Interval (sec) to check for so
 
 extern bool     hasRTC;
 extern bool     RTCrunning;
+extern bool     powerFailRestart;               // Set true on power fail restart (detected by RTC)  
 
 extern char     ledColor[12];                   // Pattern to display led, each char is 500ms color - R, G, Blank
 extern uint8_t  ledCount;                       // Current index into cycle

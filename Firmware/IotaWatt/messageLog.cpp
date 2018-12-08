@@ -30,9 +30,7 @@ size_t      messageLog::write(const uint8_t byte){
                         this->printf_P("\r\n** Restart **\r\n\n");
                     }
                     if(RTCrunning){
-                        DateTime now = DateTime(localUNIXtime());
-                        this->printf_P(PSTR("%d/%02d/%02d %02d:%02d:%02d "),
-                        now.month(), now.day(), now.year()%100, now.hour(), now.minute(), now.second());
+                        this->printf("%s ", datef(localTime(),"M/DD/YY hh:mm:ss").c_str());
                         if(localTimeDiff == 0){
                             buf[bufPos-1] = 'z';
                             buf[bufPos++] = ' ';
