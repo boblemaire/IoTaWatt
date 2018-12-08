@@ -144,9 +144,9 @@ boolean getConfig(void){
     } 
     delete[] PVoutputStr;
   }   
-  else {
-   // PVoutputStop = true;
-  }
+  else if(pvoutput){
+    pvoutput->end();
+  } 
   
   ConfigFile.close();
   trace(T_CONFIG,12);

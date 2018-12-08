@@ -306,7 +306,7 @@ String datef(uint32_t unixtime, const char* format){
         }
     }
     *out = 0;
-    String result = str;
+    String result(str);
     delete[] str;
     return result;
 }
@@ -323,7 +323,7 @@ uint32_t YYYYMMDD2Unixtime(const char* YYYYMMDD){
     return 0; 
 }
 
-int32_t HHMM2daytime(const char* HHMMSS, const char* format){
+int32_t HHMMSS2daytime(const char* HHMMSS, const char* format){
     int hour(0), minute(0), second(0);
     if(sscanf(HHMMSS, format, &hour, &minute, &second)){
         return hour * 3600 + minute * 60 + second;
