@@ -559,7 +559,7 @@ uint32_t PVoutput::tickUploadStatus(){
         delete newRecord;
         newRecord = nullptr;  
         trace(T_PVoutput,84);
-        Serial.printf("****************************\r\nbatch count %d, size %d, heap %d\r\n", _reqEntries, reqData.available(), ESP.getFreeHeap());
+        Serial.printf("PVoutput: batch count %d, size %d, heap %d\r\n", _reqEntries, reqData.available(), ESP.getFreeHeap());
         HTTPPost("addbatchstatus.jsp", "application/x-www-form-urlencoded", checkUploadStatus);
         _reqEntries = 0;
 
