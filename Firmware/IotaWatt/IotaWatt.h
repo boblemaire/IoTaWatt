@@ -251,6 +251,7 @@ extern uint32_t updaterServiceInterval;        // Interval (sec) to check for so
 
 extern bool     hasRTC;
 extern bool     RTCrunning;
+extern bool     powerFailRestart;               // Set true on power fail restart (detected by RTC)  
 
 extern char     ledColor[12];                   // Pattern to display led, each char is 500ms color - R, G, Blank
 extern uint8_t  ledCount;                       // Current index into cycle

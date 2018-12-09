@@ -546,7 +546,6 @@ uint32_t PVoutput::tickUploadStatus(){
         oldRecord = nullptr;
         delete newRecord;
         newRecord = nullptr;  
-        trace(T_PVoutput,84);
         HTTPPost(F("addbatchstatus.jsp"), checkUploadStatus);
         _reqEntries = 0;
 
