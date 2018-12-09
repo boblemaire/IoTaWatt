@@ -11,6 +11,7 @@ int strcmp_ci(const char*, const char*);            // Case insensitive strcmp()
 char* charstar(const char* str);                    // Create a new char* array...
 char* charstar(String str);                         // copy the argument to it...
 char* charstar(const char str);                     // return a pointer.
+char* charstar(const __FlashStringHelper *str);
 
 String hashName(const char* name);                  // hash the input string to an eight character base 64 string
 String formatHex(uint32_t data);                    // Convert the input to a String of hex digits

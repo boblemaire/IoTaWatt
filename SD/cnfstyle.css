@@ -238,7 +238,7 @@
     
   .calcField{text-align: right; }  
   #calcName {width: 120px; height: 30px; margin-top: 4px; margin-bottom: 4px;}
-  #calcUnits {width: 60px; height: 30px; margin-bottom: 2px;}
+  #calcUnits {width: 100px; height: 30px; margin-bottom: 2px;}
  
   #calcDisplay{
     font-family: console, lucida, Sans-serif;
@@ -250,7 +250,7 @@
   	text-align: left;
   }
   
-  #calcTable {
+  #calcKeypad {
     width: 100%; 
     border: 2px;
     border-style: ridge; 
