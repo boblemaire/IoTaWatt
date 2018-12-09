@@ -10,6 +10,10 @@
 
 PVoutput* pvoutput = nullptr;
 
+    // This is the worm hole that the scheduler uses to get into the class state machine.
+    // It invokes the tick method of the class.
+    // On return, it checks for no-schedule return and invokes the stop() method. 
+
 uint32_t PVoutputTick(struct serviceBlock* serviceBlock) {
     trace(T_PVoutput,0);
     if(pvoutput){
@@ -73,7 +77,6 @@ uint32_t PVoutput::tick(struct serviceBlock* serviceBlock){
         case initialize:            {return tickInitialize();}
         case getSystemService:      {return tickGetSystemService();}
         case checkSystemService:    {return tickCheckSystemService();}
-        case gotSystemService:      {return tickGotSystemService();}
         case getMissingList:        {return tickGetMissingList();}
         case checkMissingList:      {return tickCheckMissingList();}
         case gotMissingList:        {return tickGotMissingList();}
@@ -124,7 +127,7 @@ uint32_t PVoutput::tickInitialize(){
 uint32_t PVoutput::tickGetSystemService(){
     trace(T_PVoutput,20);
     reqData.print("donations=1");
-    HTTPPost("getsystem.jsp", "application/x-www-form-urlencoded", checkSystemService);
+    HTTPPost(F("getsystem.jsp"), checkSystemService);
     reqData.flush();
     return 1;
 }
@@ -132,10 +135,22 @@ uint32_t PVoutput::tickGetSystemService(){
 uint32_t PVoutput::tickCheckSystemService(){
     trace(T_PVoutput,25);
     switch (_HTTPresponse) {
+        default:{
+            log("PVoutput: Unrecognized HTTP completion, getSystemService %.40s", response->peek(40).c_str());
+            return 0;
+        }
         case OK: {
-            _state = gotSystemService;
-            return 1;
+            trace(T_PVoutput,30);
+            _interval = response->parsel(0,15) * 60;
+            if(response->parsel(2,0)){
+                _donator = true;
             }
+            log("PVoutput: System %s, interval %d%s  ", response->parseString(0,0).c_str(), _interval/60, _donator ? ", donator mode" : ", freeloader mode");
+            delete response;
+            response = nullptr;
+            _state = getMissingList;
+            return 1;
+        }
         case LOAD_IN_PROGRESS:
         case RATE_LIMIT:
         case HTTP_FAILURE: {
@@ -143,21 +158,6 @@ uint32_t PVoutput::tickCheckSystemService(){
             return 1;
         }
     }
-    log("PVoutput: Unrecognized HTTP completion, getSystemService %.40s", response->peek(40).c_str());
-    return 0;
-}
-
-uint32_t PVoutput::tickGotSystemService(){
-    trace(T_PVoutput,30);
-    _interval = response->parsel(0,15) * 60;
-    if(response->parsel(2,0)){
-        _donator = true;
-    }
-    log("PVoutput: System %s, interval %d%s  ", response->parseString(0,0).c_str(), _interval/60, _donator ? ", donator mode" : ", freeloader mode");
-    delete response;
-    response = nullptr;
-    _state = getMissingList;
-    return 1;
 }
 
 uint32_t PVoutput::tickGetMissingList(){
@@ -188,10 +188,9 @@ uint32_t PVoutput::tickGetMissingList(){
         _state = gotMissingList;
         return 1;
     }
-    Serial.printf("Last missing %s\r\n", datef(_lastMissing).c_str());
     reqData.flush();
     reqData.printf("df=%s&dt=%s", datef(_lastMissing, "YYYYMMDD").c_str(), datef(yesterday, "YYYYMMDD").c_str());
-    HTTPPost("getmissing.jsp", "application/x-www-form-urlencoded", checkMissingList);
+    HTTPPost(F("getmissing.jsp"), checkMissingList);
     return 1;
 }
 
@@ -215,9 +214,7 @@ uint32_t PVoutput::tickCheckMissingList(){
         case DATE_IN_FUTURE:
         case OK: {
             trace(T_PVoutput,50);
-            response->print();
             int items = response->items();
-            Serial.printf("items %d\r\n", items);
             for(int i=0; i<items; i++){
                 uint32_t date = response->parseDate(0,i);
                 if( ! _missingQ){
@@ -271,17 +268,6 @@ uint32_t PVoutput::tickGotMissingList(){
         _next = _temp;
     }
     _missingQ = _this;
-    
-
-            //  Display the missing queue.
-
-    missingQ* Qhead = _missingQ;
-    while(Qhead){
-        Serial.print(datef(Qhead->first, "MM/DD/YY"));
-        Serial.print(" - ");
-        Serial.println(datef(Qhead->last, "MM/DD/YY"));
-        Qhead = Qhead->next;
-    }
     trace(T_PVoutput,52);
 
     _lastPostTime = 0;
@@ -316,9 +302,8 @@ uint32_t PVoutput::tickUploadMissing(){
      if( ! Qentry || _reqEntries >= (_donator ? PV_DONATOR_OUTPUT_LIMIT : PV_DEFAULT_OUTPUT_LIMIT)){
         trace(T_PVoutput,61);
         if(_reqEntries){
-            Serial.printf("\r\nOutput %d\r\n", _reqEntries); 
             _reqEntries = 0;
-            HTTPPost("addbatchoutput.jsp", "application/x-www-form-urlencoded", checkUploadMissing);
+            HTTPPost(F("addbatchoutput.jsp"), checkUploadMissing);
             return 1;
          }
      }   
@@ -337,6 +322,9 @@ uint32_t PVoutput::tickUploadMissing(){
             // Add new output to reqData.
 
     trace(T_PVoutput,63);
+    if( ! oldRecord){
+        oldRecord = new IotaLogRecord;
+    }
     if( ! newRecord) {
         newRecord = new IotaLogRecord;
     }
@@ -425,7 +413,7 @@ uint32_t PVoutput::tickCheckUploadMissing(){
 
 uint32_t PVoutput::tickGetStatus(){
     trace(T_PVoutput,70);
-    HTTPPost("getstatus.jsp", "application/x-www-form-urlencoded", gotStatus);
+    HTTPPost(F("getstatus.jsp"), gotStatus);
     return 1;
 }
 
@@ -444,12 +432,10 @@ uint32_t PVoutput::tickGotStatus(){
         }
         case NO_STATUS: {
             trace(T_PVoutput,76);
-            Serial.println("No Status");
             _lastPostTime = 0;
             break;
         }
         case OK: {
-            Serial.println("OK Status");
             trace(T_PVoutput,77); 
             _lastPostTime = response->parseDate(0,0) + response->parseTime(0,1);
             break;
@@ -547,11 +533,13 @@ uint32_t PVoutput::tickUploadStatus(){
   
             // Write buffer if not empty and any one of the following is true:
             // Maximum enries per write
+            // reqData larger than PV_REQDATA_LIMIT
             // Last entry is current
             // Last entry is last entry for a day
             
     if(_reqEntries &&
       (_reqEntries >= (_donator ? PV_DONATOR_STATUS_LIMIT : PV_DEFAULT_STATUS_LIMIT) ||
+      (reqData.available() >= PV_REQDATA_LIMIT) ||
       (_lastReqTime + _interval) > UTC2Local(histLog.lastKey()) ||
       (_lastReqTime % UNIX_DAY) == 0)){
         delete oldRecord;
@@ -559,8 +547,7 @@ uint32_t PVoutput::tickUploadStatus(){
         delete newRecord;
         newRecord = nullptr;  
         trace(T_PVoutput,84);
-        Serial.printf("****************************\r\nbatch count %d, size %d, heap %d\r\n", _reqEntries, reqData.available(), ESP.getFreeHeap());
-        HTTPPost("addbatchstatus.jsp", "application/x-www-form-urlencoded", checkUploadStatus);
+        HTTPPost(F("addbatchstatus.jsp"), checkUploadStatus);
         _reqEntries = 0;
 
         // while(reqData.indexOf(';') > 0){
@@ -656,7 +643,7 @@ uint32_t PVoutput::tickUploadStatus(){
         else if(strcmp(script->name(),"voltage") == 0){
             voltage = script->run(oldRecord, newRecord, elapsedHours, unitsVolts);    
         }
-        else if(strstr(script->name(),"extended_") == script->name()){
+        else if(strstr(script->name(),"v") == script->name()){
             long ndx = strtol(script->name()+9,nullptr,10) - 1;
             if(ndx >= 0 && ndx <=5){
                 if(ndx > lastExtended){
@@ -689,7 +676,7 @@ uint32_t PVoutput::tickUploadStatus(){
         reqData.print(",,");
     }
     if(_donator && lastExtended >= 0){
-        for(int ndx=0; ndx<lastExtended; ndx++){
+        for(int ndx=0; ndx<=lastExtended; ndx++){
             reqData.print(',');
             if(haveExtended[ndx]){
                 reqData.printf("%.*f", extendedPrecision[ndx], extended[ndx]);
@@ -748,7 +735,9 @@ const char respHeaderLimit[] = "X-Rate-Limit-Limit";
 const char respHeaderReset[] = "X-Rate-Limit-Reset";
 const char reqHeaderContentType[] = "Content-type";
 
-void PVoutput::HTTPPost(const char* URI, const char* contentType, states completionState){
+//void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, const __FlashStringHelper *contentType){
+    
+void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, const char* contentType){
     trace(T_PVoutput,100);
     if( ! _POSTrequest){
         _POSTrequest = new POSTrequest;
@@ -756,7 +745,11 @@ void PVoutput::HTTPPost(const char* URI, const char* contentType, states complet
     delete _POSTrequest->URI;
     _POSTrequest->URI = charstar(URI);
     delete _POSTrequest->contentType;
-    _POSTrequest->contentType = charstar(contentType);
+    if(contentType){
+        _POSTrequest->contentType = charstar(contentType);
+    } else {
+        _POSTrequest->contentType = charstar("application/x-www-form-urlencoded");
+    }
     _POSTrequest->completionState = completionState;
     _state = HTTPpost;
 }
@@ -817,6 +810,9 @@ uint32_t PVoutput::tickHTTPWait(){
     trace(T_PVoutput,120);
     if(request->respHeaderExists(respHeaderLimit)){
         _rateLimitLimit = strtol(request->respHeaderValue(respHeaderLimit),nullptr,10);
+        if(_rateLimitLimit == PV_DONATOR_RATE_LIMIT){
+            _donator = true;
+        }
     }
     if(request->respHeaderExists(respHeaderRemaining)){
         _rateLimitRemaining = strtol(request->respHeaderValue(respHeaderRemaining),nullptr,10);
@@ -839,20 +835,8 @@ uint32_t PVoutput::tickHTTPWait(){
             // Capture response.
 
     trace(T_PVoutput,121);
-    
-    // if(_state == checkUploadStatus){
-    //     delete response;
-    //     response = nullptr;
-    // } else {
-        delete response;
-        response = new PVresponse(request); 
-    // }
-    
-    
-            // Put out Serial diagnostics
-
-    //Serial.printf_P(PSTR("HTTP response %d, length %d, %.40s\r\n"), request->responseHTTPcode(), response->length(), response->peek(40).c_str());
-    //Serial.printf_P(PSTR("Limit %d, Remaining %d, Reset %s\r\n"), _rateLimitLimit, _rateLimitRemaining, datef(UTC2Local(_rateLimitReset)).c_str());
+    delete response;
+    response = new PVresponse(request); 
     trace(T_PVoutput,122);
 
             // Interpret response code.
@@ -904,7 +888,6 @@ uint32_t PVoutput::tickHTTPWait(){
 uint32_t PVoutput::tickLimitWait(){
     if(UTCtime() > _rateLimitReset){
         trace(T_PVoutput,131);
-        Serial.printf("waitLimit UTC %s, reset %s\r\n", datef(UTCtime()).c_str(), datef(_rateLimitReset).c_str());
         _state = HTTPpost;
         return 1;
     }

@@ -1,7 +1,31 @@
 #pragma once
 #include "IotaWatt.h"
 
+//********************************************************************************************************
+// PVoutput class
+//
+// This class provides everything needed to post data to the PVoutput.org service
+//
+//  It supports:
+//      freeload and donator modes
+//      Extended data values in donator mode
+//      Loading and reloading of historical data within the constraints of PVoutput
+//      PVoutput flow control limits
+//      
+//  This implementation of PVoutput is based on priliminary work by Brendon Costa 
+//  who produced a working prototype with this basic class orientation, which is a huge
+//  improvement over the approach taken in the initial export services for influxDB and
+//  emoncms  This second cut adds support for donator mode and uses the IoTaWatt script 
+//  system to produce the various data items that are exported in the output and status 
+//  records. The logic was also simplified by new local time zone support that was not
+//  available at the time of the first cut.
+//
+//********************************************************************************************************
+
+        // Some useful definitions of universal constants and current limits of pvoutput
+
 #define UNIX_DAY 86400UL
+#define PV_REQDATA_LIMIT 5000                       // Maximum size of status batch
 #define PV_MISSING_LIMIT 50                         // maximum missing outputs returned in one request
 #define PV_DEFAULT_RATE_LIMIT 60                    // writes per hour default
 #define PV_DONATOR_RATE_LIMIT 300                   // writes per hour donator
@@ -12,26 +36,29 @@
 #define PV_DEFAULT_STATUS_DAYS 14                   // max status update lookback days default
 #define PV_DONATOR_STATUS_DAYS 90                   // max status update lookback days donator
 
+        // PVresponse class is used to capture the response from any PVoutut API request and make them
+        // intelligible as sets of items delimited by commas within sets of sections delimited by semicolons.
+
 class PVresponse {
     private:
-        char*       _response;
+        char*       _response;                                  // The raw response string
 
     public:
         PVresponse(asyncHTTPrequest* request);
         ~PVresponse();
-        size_t      sections();
-        size_t      items(int section=0);
-        int32_t     parsel(int section, int item);
-        uint32_t    parseul(int section, int item);
-        String      parseString(int section, int item);
-        char*       parsePointer(int section, int item);
-        uint32_t    parseDate(int section, int item);
-        uint32_t    parseTime(int section, int item);
-        void        print();
-        String      peek(int length, int offset=0);
-        size_t      length();
-        bool        contains(const char *str);
-        bool        contains(const __FlashStringHelper *str);
+        size_t      sections();                                 // number of sections in response
+        size_t      items(int section=0);                       // number of items in given section
+        int32_t     parsel(int section, int item);              // parse a given section/item as a long
+        uint32_t    parseul(int section, int item);             // parse a given section/item as a unsigned long
+        String      parseString(int section, int item);         // parse a given section/item as a String    
+        char*       parsePointer(int section, int item);        // parse a given section/item as a char*
+        uint32_t    parseDate(int section, int item);           // parse a given section/item as a YYYYMMDD date
+        uint32_t    parseTime(int section, int item);           // parse a given section/item as a hh:mm time
+        void        print();                                    // Print the whole response
+        String      peek(int length, int offset=0);             // Return the whole response as a String
+        size_t      length();                                   // Return strlen(_response)
+        bool        contains(const char *str);                  // Check if _response contains a given string
+        bool        contains(const __FlashStringHelper *str);   // Same with a _FlashStringHelper
     
  };
 
@@ -60,7 +87,7 @@ public:
         ,response(nullptr)
         ,_lastPostTime(0)
         ,_lastReqTime(0)
-        ,oldRecord(new IotaLogRecord)
+        ,oldRecord(nullptr)
         ,newRecord(nullptr)
         ,_POSTrequest(nullptr)
         ,_rateLimitReset(0)
@@ -78,19 +105,22 @@ public:
         delete _POSTrequest;
     };
 
-    bool config(const char* jsonText);
-    void stop();
-    void end();
-    void restart();
-    void getStatusJson(JsonObject&);
-    uint32_t tick(struct serviceBlock* serviceBlock);
+        // Methods available
+
+    bool config(const char* jsonText);                  // Process configuration as a string of Json
+    void stop();                                        // stop the state machine ASAP
+    void end();                                         // Destroy this instance of the class ASAP
+    void restart();                                     // Force a restart of the state machine ASAP
+    void getStatusJson(JsonObject&);                    // Add status objects to the supplied Json object
+    uint32_t tick(struct serviceBlock* serviceBlock);   // Invoke state machine execution
 
 private:
+
+        // Services operate as state machines to maintain context and synchronize.
 
     enum    states     {initialize, 
                         getSystemService,
                         checkSystemService,
-                        gotSystemService,
                         getMissingList,
                         checkMissingList,
                         gotMissingList,
@@ -104,8 +134,30 @@ private:
                         HTTPwait,
                         limitWait,
                         stopped,
-                        noRetry
+                        invalid
                     } _state;
+
+    
+        // State machine handlers corresponding to like named states.
+
+    uint32_t    tickInitialize();
+    uint32_t    tickGetSystemService();
+    uint32_t    tickCheckSystemService();
+    uint32_t    tickGetMissingList();
+    uint32_t    tickCheckMissingList();
+    uint32_t    tickGotMissingList();
+    uint32_t    tickUploadMissing();
+    uint32_t    tickCheckUploadMissing();
+    uint32_t    tickGetStatus();
+    uint32_t    tickGotStatus();
+    uint32_t    tickUploadStatus();
+    uint32_t    tickCheckUploadStatus();
+    uint32_t    tickHTTPPost();
+    uint32_t    tickHTTPWait();
+    uint32_t    tickLimitWait();
+    uint32_t    tickStopped();
+
+        // Possible response from any HTTP request
 
     enum HTTPresponses {OK,
                         LOAD_IN_PROGRESS,
@@ -117,6 +169,8 @@ private:
                         HTTP_FAILURE
                     } _HTTPresponse;
 
+        // Parameters supplied to HTTPost                
+
     struct      POSTrequest{
         char*   URI;
         char*   contentType;
@@ -125,6 +179,12 @@ private:
         ~POSTrequest(){delete[] URI; delete[] contentType;}
     };
 
+        // function used by state handlers to transition to HTTPpost state
+
+    void        HTTPPost(const __FlashStringHelper *URI, states completionState, const char *contentType = nullptr);
+
+        // List entries used to build list of missing outputs during startup
+
     struct      missingQ {
         missingQ*   next;
         uint32_t    first;
@@ -132,6 +192,8 @@ private:
         missingQ():next(nullptr), first(0), last(0){};
         ~missingQ(){delete next;};
     };
+
+        // Class variables
     
     uint16_t    _interval;                  // Status interval from getSystemService
     char*       _apiKey;                    // From configuration
@@ -166,36 +228,9 @@ private:
     double      _baseGeneration;            // Energy generation at start of current reporting day
     uint32_t    _baseTime;                  // Local date (UNIXtime 00:00:00) of above base values
 
-    uint32_t    tickInitialize();
-    uint32_t    tickGetSystemService();
-    uint32_t    tickCheckSystemService();
-    uint32_t    tickGotSystemService();
-    uint32_t    tickGetMissingList();
-    uint32_t    tickCheckMissingList();
-    uint32_t    tickGotMissingList();
-    uint32_t    tickUploadMissing();
-    uint32_t    tickCheckUploadMissing();
-    uint32_t    tickGetStatus();
-    uint32_t    tickGotStatus();
-    uint32_t    tickUploadStatus();
-    uint32_t    tickCheckUploadStatus();
-    uint32_t    tickHTTPPost();
-    uint32_t    tickHTTPWait();
-    uint32_t    tickLimitWait();
-    uint32_t    tickStopped();
-
-    void        HTTPPost(const char* URI, const char* contentType, states completionState);
-    
-enum        HTTP_status {
-                    HTTP_SUCCESS,
-                    HTTP_LIMIT,
-                    HTTP_DONATOR,
-                    HTTP_INVALID
-                    } _HTTP_status;
-
 };
 
-extern PVoutput* pvoutput;
+extern PVoutput* pvoutput;                  // external pointer to the instance of pvoutput
 
-uint32_t PVOutputTick(struct serviceBlock* serviceBlock);
+uint32_t PVOutputTick(struct serviceBlock* serviceBlock); // external function used to schedule state machine
    

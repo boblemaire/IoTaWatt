@@ -265,7 +265,7 @@ extern const char     base64codes_P[];
 
       // ************************ ADC sample pairs ************************************
 
-#define MAX_SAMPLES 900
+#define MAX_SAMPLES 1000
 extern int16_t samples;                           // Number of samples taken in last sampling
 extern int16_t Vsample [MAX_SAMPLES];             // voltage/current pairs during sampling
 extern int16_t Isample [MAX_SAMPLES];
