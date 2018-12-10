@@ -197,6 +197,33 @@
       </p>
     </div>
     
+    <div class="body color_body" id="divInfluxTag" style="display:none">
+      <h3>Edit influx tag</h3>
+      <table width="80%">
+        <tr><th>tag key</th><th> </th><th>tag value</th></tr>
+        <tr>
+          <td><input id="influxTagKey" oninput="influxTagCheck()"></td>
+          <td>=</td>
+          <td><input id="influxTagValue" oninput="influxTagCheck()" title="enter a string or variable ($name, $units..)."></td>
+        </tr>
+      </table>
+      
+      <p>Tags are optional key-value pairs of metadata that can be associated with the measurement.
+      Because they are indexed, queries on tags perform better than queries on fields.
+      </p>
+      <p>When tags are specified, IoTaWatt assumes the first tag is unique to this measurement
+      and is referenced to determine the time of last measurement during restart recovery. 
+      In that way, an IoTaWatt can maintain context and continuity where multiple data
+      sources are writing to a single database.</p>
+      <p>Tag-values can be a fixed string, or one of the variables $device, $name, $units</p>
+      <p>
+        <button class="actionDelete" id="influxTagDelete">delete</button>
+        <button class="actionCancel" id="influxTagCancel" onclick="influxTagCancel()">cancel</button>
+        <button class="actionSave" id="influxTagSave">save</button>
+      </p>
+    </div>
+              
+    
     <!-- ****************************** divStatus **********************************--> 
     
     <div id="divStatus" class="body color_body" style="display:none">
