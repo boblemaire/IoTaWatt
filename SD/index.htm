@@ -197,6 +197,33 @@
       </p>
     </div>
     
+    <div class="body color_body" id="divInfluxTag" style="display:none">
+      <h3>Edit influx tag</h3>
+      <table width="80%">
+        <tr><th>tag key</th><th> </th><th>tag value</th></tr>
+        <tr>
+          <td><input id="influxTagKey" oninput="influxTagCheck()"></td>
+          <td>=</td>
+          <td><input id="influxTagValue" oninput="influxTagCheck()" title="enter a string or variable ($name, $units..)."></td>
+        </tr>
+      </table>
+      
+      <p>Tags are optional key-value pairs of metadata that can be associated with the measurement.
+      Because they are indexed, queries on tags perform better than queries on fields.
+      </p>
+      <p>When tags are specified, IoTaWatt assumes the first tag is unique to this measurement
+      and is referenced to determine the time of last measurement during restart recovery. 
+      In that way, an IoTaWatt can maintain context and continuity where multiple data
+      sources are writing to a single database.</p>
+      <p>Tag-values can be a fixed string, or one of the variables $device, $name, $units</p>
+      <p>
+        <button class="actionDelete" id="influxTagDelete">delete</button>
+        <button class="actionCancel" id="influxTagCancel" onclick="influxTagCancel()">cancel</button>
+        <button class="actionSave" id="influxTagSave">save</button>
+      </p>
+    </div>
+              
+    
     <!-- ****************************** divStatus **********************************--> 
     
     <div id="divStatus" class="body color_body" style="display:none">
@@ -228,10 +255,6 @@
       <div id="tabEmon" style="display: none;">
         <button class="groupTab" onclick="toggleDisplay('statusEmonDiv')">Emoncms</button>
         <p id="statusEmonDiv" class="statusDiv" style="display: none;"></p>
-      </div>
-       <div id="tabPVout" style="display: none;">
-        <button class="groupTab" onclick="toggleDisplay('statusPVoutDiv')">PVoutput</button>
-        <p id="statusPVoutDiv" class="statusDiv" style="display: none;"></p>
       </div>
       <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
         <div id="statusLogsDiv" class="statusDiv" style="display: none;"></div>
@@ -309,12 +332,16 @@
     
     <div id="divCalc" class="color_body" style="display:none">
       <div id="calcBody" class="color_inputcontainer">
-        
+        <form>
           <h3  style="text-align:center">Configure Output</h3>
-          <table id="calcTable"><tr><th width="30%"></th><th></th></tr></table>
-        
+          <table><tr><th width="30%"></th><th></th></tr>
+            <tr><td class="calcField"><strong>Name:</strong></td><td><input id="calcName" pattern="[a-zA-Z]{1}[a-zA-Z0-9_]*" oninput="refreshCalcDisplay()" title="invalid name"></td></tr>
+            <tr><td class="calcField"><strong>Units:</strong></td><td><select id="calcUnits" oninput="refreshCalcDisplay()"></select></td>
+            </tr>
+          </table>
+        </form>
         <h3 id="calcDisplay">0</h3>  
-          <table id="calcKeypad"><tr><th></th><th></th><th></th><th></th></tr>
+          <table id="calcTable"><tr><th></th><th></th><th></th><th></th></tr>
           <tr><td><button class="calcButton calcClr" onclick="keyClearAll()" title="Clear all" value="C">C</button></td>
           <td><button class="calcButton calcBack" onclick="keyClearEntry()" title="Clear last entry" value="CE">CE</button></td>
           <td> <button class="calcButton calcBack" onclick="keyClearChar()" title = "Backspace" value="del">&#x21e6;</button></td>
@@ -360,7 +387,6 @@
 // configuration files
 var configFileURL = "config.txt";
 var configNewURL = "config.txt";
-var burdenFileURL = "/esp_spiffs/config/device/burden.txt";
 var configTablesURL = "tables.txt";
 var editURL = "edit.htm";
 var graphURL = "graph.htm";
@@ -393,17 +419,9 @@ var scriptEditSet;
 var scriptEditIndex = -1;
 var scriptEditSave;
 var scriptEditReturn;
-var scriptEditNameList = [];
-var scriptEditNameTitle = "";
-var scriptEditNamePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
 var scriptEditUnits = [];
 var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA"];
 var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh"];
-var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:false,begin:{month:3,weekday:1,instance:2,time:120},end:{month:11,weekday:1,instance:1,time:120}}},
-                {id:"Europe",begOffset:0,endOffset:2,dstrule:{adj:60,utc:true,begin:{month:3,weekday:1,instance:-1,time:60},end:{month:10,weekday:1,instance:-1,time:60}}},
-                {id:"Australia",begOffset:9.5,endOffset:10.0,dstrule:{adj:60,utc:false,begin:{month:10,weekday:1,instance:1,time:120},end:{month:4,weekday:1,instance:1,time:180}}},
-                {id:"NewZealand",begOffset:12,endOffset:12,dstrule:{adj:60,utc:false,begin:{month:9,weekday:1,instance:-1,time:120},end:{month:4,weekday:1,instance:1,time:180}}}
-              ];
 
 /***************************************************************************************************
  *                       Shorthand functions
@@ -660,9 +678,6 @@ function configInputs(){
       if(config.inputs[i].reverse){
         newColumn.innerHTML += "&#8634";
       }
-      if(config.inputs[i].turns != undefined){
-        config.inputs[i].cal = config.inputs[i].turns / config.device.burden[i];
-      }
       newColumn.innerHTML += ", cal:<strong>" + Number(config.inputs[i].cal).toFixed(2) + "</strong>";
       newColumn.innerHTML += ", lead:<strong>" + Number(config.inputs[i].phase).toFixed(2) + "&#176</strong>";
       if(config.inputs[i].vchan !== undefined){
@@ -897,15 +912,15 @@ function refreshInputEdit(){
   }
   
   inputReverse = addTableRow(table, "", "inputReverse", "input");
-  inputReverse.parentNode.appendChild(document.createTextNode("Reverse"));
-  addInfo(inputReverse, inputEditObject.type == "CT" ? "Same as reversing CT on conductor" : "Same as reversing VT in socket");
-  inputReverse.setAttribute("type","checkbox");
-  inputReverse.setAttribute("onchange","inputEditObject.reverse = this.checked; refreshInputEdit();");
-  if(inputEditObject.reverse != undefined && inputEditObject.reverse){
-    inputReverse.checked = true;
-  } else {
-    inputEditObject.reverse = undefined;
-  }
+    inputReverse.parentNode.appendChild(document.createTextNode("Reverse"));
+    addInfo(inputReverse, inputEditObject.type == "CT" ? "Same as reversing CT on conductor" : "Same as reversing VT in socket");
+    inputReverse.setAttribute("type","checkbox");
+    inputReverse.setAttribute("onchange","inputEditObject.reverse = this.checked; refreshInputEdit();");
+    if(inputEditObject.reverse != undefined && inputEditObject.reverse){
+      inputReverse.checked = true;
+    } else {
+      inputEditObject.reverse = undefined;
+    }
 
   if(inputEditObject.type == "VT"){
     EbyId("inputEditDelete").style.display = 
@@ -1079,7 +1094,8 @@ function calVTsave(obj){
  * ****************************************************************************************/
  function configOutputs(){
     currentBodyPush("configOutputs");
-    
+    EbyId("calcName").title="Name must be alphanumeric and start with a letter";
+    EbyId("calcName").pattern="^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
     scriptEditSave = function(){
       config.outputs = scriptEditSet
       uploadConfig();
@@ -1093,9 +1109,6 @@ function calVTsave(obj){
     scriptEditTable.innerHTML = "";
     scriptEditSet = config.outputs;
     scriptEditUnits = scriptEditUnitsOutput;
-    scriptEditNameList = [];
-    scriptEditNameTitle="Name must be alphanumeric and start with a letter";
-    scriptEditNamePattern="^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
     editScript();
   }
   
@@ -1108,11 +1121,6 @@ function calVTsave(obj){
    *                scriptEditSet - the array containing the individual Scripts
    *                scriptEditSave - function  to be used to save the edited scriptSet
    *                scriptEditReturn - function to be called upon completion of an edit.
-   *                scriptEditUnits - array of units values that are permitted
-   *                
-   *                scriptEditNameList - array of acceptable names values (empty = input)
-   *                scriptEditNamePattern - regex pattern for validation
-   *                scriptEditNameTitle - title to be associated with name
    *                
    * *******************************************************************************************/
    
@@ -1173,8 +1181,7 @@ function calVTsave(obj){
   function calculator(index){
     editingScript = true;
     currentBodyPush("divCalc");
-    EbyId("calcTable").innerHTML = "";
-    buildNames(scriptEditSet[index].name);
+    EbyId("calcName").value = scriptEditSet[index].name;
     buildUnitsList(scriptEditSet[index].units);
     tokens = parseScript(scriptEditSet[index].script);
     EbyId("calcDelete").style.display = "inline";
@@ -1185,8 +1192,7 @@ function calVTsave(obj){
   function addOutput(){
     editingScript = true;
     currentBodyPush("divCalc");
-    EbyId("calcTable").innerHTML = "";
-    buildNames("");
+    EbyId("calcName").value = "";
     buildUnitsList("watts");
     tokens = ["#0"];
     EbyId("calcDelete").style.display = "none";
@@ -1240,38 +1246,16 @@ function calVTsave(obj){
     else EbyId("calcSave").style.display = "inline";
   }
   
-  function buildNames(name){
-    var calcTable = EbyId("calcTable");
-    if(scriptEditNameList.length == 0){
-      var calcName = addTableRow(calcTable, "Name:", "calcName", "input", 1);
-      calcName.setAttribute("onchange","refreshCalcDisplay()");
-      calcName.pattern = scriptEditNamePattern;
-      calcName.title = scriptEditNameTitle;
-      calcName.value = name;
-    } else {
-      var calcName = addTableRow(calcTable, "Name:", "calcName", "select", 1);
-      calcName.setAttribute("oninput","refreshCalcDisplay()");
-      calcName.value = name;
-      for(i in scriptEditNameList){
-        var option = document.createElement("option");
-        option.value = scriptEditNameList[i];
-        option.innerHTML = scriptEditNameList[i];
-        calcName.add(option);
-        if(option.value == name){
-          option.selected = true;
-        }
-      }
-    }
-  }
-  
   function buildUnitsList(units){
-    var calcTable = EbyId("calcTable");
-    var calcUnits = addTableRow(calcTable, "Units:", "calcUnits", "select", 1);
+    var calcUnits = EbyId("calcUnits");
+    while(calcUnits.hasChildNodes()){
+      calcUnits.removeChild(calcUnits.firstChild);
+    }
     for(i in scriptEditUnits){
       var option = document.createElement("option");
       option.value = scriptEditUnits[i];
       option.innerHTML = scriptEditUnits[i];
-      calcUnits.add(option);
+      calcUnits.appendChild(option);
       if(option.value == units){
         option.selected = true;
       }
@@ -1459,16 +1443,11 @@ function buildDevice(){
   var deviceTimezone = addTableRow(deviceTable, "Time Zone:","deviceTimezone", "input", 3);
   deviceTimezone.value = config.timezone;
   deviceTimezone.setAttribute("onchange","config.timezone = this.value; checkDevice();");
-  deviceTimezone.setAttribute("style","width: 65px;");
+  deviceTimezone.setAttribute("style","width: 40px;");
   deviceTimezone.setAttribute("type","number");
   deviceTimezone.setAttribute("min","-12");
-  deviceTimezone.setAttribute("max","13");
-  deviceTimezone.setAttribute("step",".5");
-  
-  var allowDST = addTableRow(deviceTable, "Allow Daylight Time:","allowDST", "input");
-  allowDST.setAttribute("type","checkbox");
-  allowDST.checked = (config.dstrule != undefined) ? true : false;
-  allowDST.setAttribute("onchange", "checkDevice();");
+  deviceTimezone.setAttribute("max","12");
+  deviceTimezone.setAttribute("step","1");
   
   var deviceUpdate = addTableRow(deviceTable, "Auto-update Class:","deviceUpdate", "select");
   for(i in updateClasses){
@@ -1488,7 +1467,7 @@ function checkDevice(){
   editing = true;
   var complete = true;
   var nameChange = false;
-  if( ! validateInput("deviceName", true)) complete = false;
+  if( ! validateInput("deviceName")) complete = false;
   else {
     if(config.device.name != originalName){
       nameChange = true;
@@ -1500,6 +1479,7 @@ function checkDevice(){
     }
   }
   if( ! validateInput("deviceTimezone")) complete = false;
+  EbyId("actionBurden").style.display = (complete && (!nameChange)) ? "inline" : "none";
   EbyId("deviceSave").style.display = complete ? "inline" : "none";
 }
 
@@ -1513,17 +1493,6 @@ function deviceCancel(){
 function deviceSave(){
   currentBodyPop();
   editing = false;
-  config.allowdst = undefined;
-  config.tzrule = undefined;
-  config.dstrule = undefined;
-  if(EbyId("allowDST").checked){
-    for(i in dstRules){
-      if(config.timezone >= dstRules[i].begOffset && config.timezone <= dstRules[i].endOffset){
-        config.dstrule = dstRules[i].dstrule;
-        break;
-      }
-    }
-  } 
   uploadConfig(resetDisplay, (config.device.name != originalName) ? "restart" : "reload");
 }
 
@@ -1585,12 +1554,7 @@ function burdenCancel(){
  
 function burdenSave(){
   currentBodyPop();
-  for(i in config.inputs){
-    if(config.inputs[i] != null && config.inputs[i].turns != undefined){
-      config.inputs[i].cal = config.inputs[i].turns / config.device.burden[i];
-    }
-  }
-  writeFile(JSON.stringify(config.device.burden), burdenFileURL, uploadConfig());
+  uploadConfig();
 }
 
 /********************************************************************************************
@@ -1598,7 +1562,7 @@ function burdenSave(){
  * ******************************************************************************************/
 
 function buildWebServer(){
-  var servers = ["Emoncms", "InfluxDB", "PVoutput"];
+  var servers = ["Emoncms", "InfluxDB"];
   EbyId("serverHead").innerHTML = "Web Server Setup";
   EbyId("divInfluxTagSet").style.display = "none";
   EbyId("divServerOutputs").style.display = "none";
@@ -1621,9 +1585,6 @@ function buildWebServer(){
     if(servers[i].toLowerCase() == "influxdb"){
       option.text += (config.influxdb !== undefined) ? " (edit)" : " (add)";
     }
-    if(servers[i].toLowerCase() == "pvoutput"){
-      option.text += (config.pvoutput !== undefined) ? " (edit)" : " (add)";
-    }
     serverSelect.add(option);
   }
   EbyId("serverDelete").style.display = "none";
@@ -1636,9 +1597,6 @@ function editServer(obj){
   }
   else if(obj.value.toLowerCase() == "influxdb"){
     editInfluxdb();
-  }
-  else if(obj.value.toLowerCase() == "pvoutput"){
-    editPVoutput();
   }
 }
 
@@ -1750,6 +1708,8 @@ function editEmoncms(){
   EbyId("divServerOutputs").style.display = "inline";
   EbyId("serverOutputsHeader").innerHTML = "Emoncms inputs";
   
+  EbyId("calcName").pattern="^[1-9]{1}$|^[1-2]{1}[0-9]{1}$";
+  EbyId("calcName").title="Name is Emoncms Input Key 1-29";
   scriptEditSave = function(){
     scriptEditSet.sort(function(a, b){return a.name - b.name});
     config.server.outputs = scriptEditSet;
@@ -1762,9 +1722,6 @@ function editEmoncms(){
   scriptEditTable = EbyId("serverOutputs");
   scriptEditSet = config.server.outputs;
   scriptEditUnits = scriptEditUnitsUpload;
-  scriptEditNameList = [];
-  scriptEditNamePattern="^[1-9]{1}$|^[1-2]{1}[0-9]{1}$";
-  scriptEditNameTitle="Name is Emoncms Input Key 1-29";
   editScript();
   checkEmoncms();
 }
@@ -1926,6 +1883,8 @@ function editInfluxdb(){
   EbyId("divServerOutputs").style.display = "inline";
   EbyId("serverOutputsHeader").innerHTML = "measurements";
 
+  EbyId("calcName").title="Name must be valid influxDB field name";
+  EbyId("calcName").pattern="^[0-9a-zA-Z_$-/\.\+]+$";
   scriptEditSave = function(){
     config.influxdb.outputs = scriptEditSet;
   };
@@ -1937,18 +1896,15 @@ function editInfluxdb(){
   scriptEditTable = EbyId("serverOutputs");
   scriptEditSet = config.influxdb.outputs;
   scriptEditUnits = scriptEditUnitsUpload;
-  scriptEditNameList = [];
-  scriptEditNameTitle="Name must be valid influxDB field name";
-  scriptEditNamePattern="^[0-9a-zA-Z_$-/\.\+]+$";
   editScript();
   checkInfluxdb();
 }
 
 function toInputDate(unixtime){
   var date = new Date(unixtime * 1000);
-  var month = date.getUTCMonth()+1;
-  var day = date.getUTCDate();
-  return date.getUTCFullYear() + '-' + (month < 10 ? '0' : '') + month.toString() + '-' + (day < 10 ? '0' : '') + day.toString();
+  var month = date.getMonth()+1;
+  var day = date.getDate()+1;
+  return date.getFullYear() + '-' + (month < 10 ? '0' : '') + month.toString() + '-' + (day < 10 ? '0' : '') + day.toString();
 }
 
 function checkInfluxdb(){
@@ -2080,123 +2036,10 @@ function influxToggle(){
 }
 
 /***********************************************************************************************
- *                                Configure PVOutput
- * ********************************************************************************************/
-function editPVoutput(){
-  editing = true;
-  
-  var serverTable = EbyId("serverTable");
-  serverTable.innerHTML = "";
-  
-  if(config.pvoutput === undefined){
-    config.pvoutput = {type:"pvoutput",
-                      revision: 0,
-                      interval:5*60,
-                      apikey:"",
-                      systemid:0,
-                      outputs:[]
-                      };
-    EbyId("serverDelete").style.display = "none";
-    EbyId("serverHead").innerHTML = "Add PVOutput Service";
-  }
-  else {
-    config.pvoutput.revision++;
-    EbyId("serverHead").innerHTML = "Edit PVOutput Service";
-    EbyId("serverDelete").style.display = "inline";
-    EbyId("serverDelete").setAttribute("onclick","deletePVOutput();");
-  }
-  
-  var keyInput = addTableRow(serverTable, "API Key:", "apiKey", "input", 40);
-  keyInput.value = config.pvoutput.apikey;
-  keyInput.setAttribute("oninput","config.pvoutput.apikey = this.value; checkPVOutput();");
-  keyInput.setAttribute("size","40");
-  keyInput.pattern = "[0-9a-f]{40}";
-  keyInput.title = "read/write key - 40 hexadecimal digits";
-  addTableText(serverTable,"","See <a href=\"https://pvoutput.org/account.jsp\">https://pvoutput.org/account.jsp</a>")
-  
-  var systemInput =   addTableRow(serverTable, "System ID: ", "systemId", "input", 7);
-  systemInput.value = config.pvoutput.systemid;
-  systemInput.setAttribute("oninput","config.pvoutput.systemid = this.value; checkPVOutput();");
-  systemInput.setAttribute("style","width: 100px;");
-  systemInput.pattern = "^[1-9]{1}[0-9]*";
-  systemInput.title = "System ID number - all digits";
-  addTableText(serverTable,"","See <a href=\"https://pvoutput.org/addsystem.jsp\">https://pvoutput.org/addsystem.jsp</a>");
-  
-  var begdateInput = addTableRow(serverTable, "upload history from:", "serverBegd", "input", 16);
-  begdateInput.setAttribute("oninput",
-    "config.pvoutput.begdate = (this.value == '') ? undefined : new Date(this.value).getTime()/1000; checkPVOutput();");
-  begdateInput.value =  toInputDate(config.pvoutput.begdate);
-  begdateInput.type = "date";
-  
-  var reload = addTableRow(serverTable, "Reload History", "reload", "input");
-  addInfo(reload,"Will ovewrite existing data, may take hours to complete.");
-  reload.setAttribute("type","checkbox");
-  reload.setAttribute("onchange","config.pvoutput.reload = this.checked; checkPVOutput();");
-  if(config.pvoutput.reload != undefined && config.pvoutput.reload){
-    reload.checked = true;
-  }
-
-  EbyId("divServerOutputs").style.display = "inline";
-  EbyId("serverOutputsHeader").innerHTML = "Status Outputs";
-
-  
-  scriptEditSave = function(){
-    config.pvoutput.outputs = scriptEditSet;
-  };
-  scriptEditReturn = function(){
-    scriptEditTable.innerHTML = "";
-    editScript();
-    checkPVOutput();
-  };
-  scriptEditTable = EbyId("serverOutputs");
-  scriptEditSet = config.pvoutput.outputs;
-  scriptEditUnits = scriptEditUnitsUpload;
-  scriptEditNameList = ["generation", "consumption", "voltage", "extended_1(v7)", "extended_2(v8)", "extended_3(v9)", "extended_4(v10)", "extended_5(v11)", "extended_6(v12)"];
-  scriptEditNamePattern = undefined;
-  scriptEditNameTitle = "extended is used for donator mode only";
-  editScript();
-  checkPVOutput();
-}
-
-function checkPVOutput(){
-  var complete = false;
-  for(i in config.pvoutput.outputs){
-    if(config.pvoutput.outputs[i].name == "consumption" || config.pvoutput.outputs[i].name == "generation"){
-      complete = true;
-    }
-  }
-  if( ! validateInput("apiKey")) complete = false;
-  if( ! validateInput("systemId", true)) complete = false;
-  if( ! validateInput("serverBegd", false)) complete = false;
-  EbyId("serverSave").style.display = complete ? "inline" : "none";
-  if(config.pvoutput.reload != undefined && config.pvoutput.reload == false){
-    config.pvoutput.reload = undefined;
-  }
-}
-  
-function deletePVOutput(){
-  config.pvoutput = undefined;
-  serverSave();
-}
-
-function PVoutToggle(){
-  if(config.pvoutput.stop === undefined || config.pvoutput.stop == false){
-    config.pvoutput.stop = true;
-  }
-  else {
-    config.pvoutput.stop = undefined;
-    
-  }
-  config.pvoutput.revision++;
-  uploadConfig();
-}
-
-/***********************************************************************************************
  *                        Setup and run status display
  * *******************************************************************************************/
 function statusBegin(){
   EbyId("tabinflux").style.display = config.influxdb !== undefined ? "inline" : "none";
-  EbyId("tabPVout").style.display = config.influxdb !== undefined ? "inline" : "none";
   EbyId("tabEmon").style.display = (config.server !== undefined && config.server.type == "emoncms") ? "inline" : "none";
   currentBodyPush("divStatus");
   getStatus = true;
@@ -2214,7 +2057,7 @@ function statusGet(){
       statusDisplay(xmlHttp.responseText);
     }
   }
-  xmlHttp.open("GET","/status?state=yes&inputs=yes&outputs=yes&stats=yes&datalogs=yes&influx=yes&emon=yes&pvoutput=yes", true);
+  xmlHttp.open("GET","/status?state=yes&inputs=yes&outputs=yes&stats=yes&datalogs=yes&influx=yes&emon=yes", true);
   xmlHttp.send(null);
 }
 
@@ -2272,20 +2115,6 @@ function statusDisplay(statusMessage){
     emonDiv.appendChild(document.createTextNode(status.emon.running ? " Running" : " Stopped"));
     if(status.emon.lastpost){
       emonDiv.appendChild(document.createTextNode(", Last update " + formatDateTime(status.emon.lastpost)));
-    }
-  } 
-  
-  var PVoutDiv = EbyId("statusPVoutDiv");
-  PVoutDiv.innerHTML = "";
-  if(status.pvoutput !== undefined){
-    var button = document.createElement("button");
-    button.style = "configButton";
-    button.innerHTML = status.pvoutput.running ? "Stop" : "Start";
-    button.setAttribute("onclick","PVoutToggle()");
-    PVoutDiv.appendChild(button);
-    PVoutDiv.appendChild(document.createTextNode(status.pvoutput.running ? " Running" : " Stopped"));
-    if(status.pvoutput.lastpost){
-      PVoutDiv.appendChild(document.createTextNode(", Last update " + formatDateTime(status.pvoutput.lastpost)));
     }
   } 
   
@@ -2382,9 +2211,6 @@ function formatDateTime(unixtime){
 }
 
 function checkConfig(){
-  readFile(burdenFileURL, function(response){
-    config.device.burden = JSON.parse(response);
-    }); 
   if(config.device.channels === undefined){
     config.device.channels = 15;
   }
