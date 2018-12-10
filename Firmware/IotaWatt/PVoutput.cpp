@@ -128,7 +128,6 @@ uint32_t PVoutput::tickGetSystemService(){
     trace(T_PVoutput,20);
     reqData.print("donations=1");
     HTTPPost(F("getsystem.jsp"), checkSystemService);
-    reqData.flush();
     return 1;
 }
 
@@ -145,7 +144,7 @@ uint32_t PVoutput::tickCheckSystemService(){
             if(response->parsel(2,0)){
                 _donator = true;
             }
-            log("PVoutput: System %s, interval %d%s  ", response->parseString(0,0).c_str(), _interval/60, _donator ? ", donator mode" : ", freeloader mode");
+            log("PVoutput: System %s, interval %d%s  ", response->parseString(0,0).c_str(), _interval/60, _donator ? ", donator mode" : ", freeload mode");
             delete response;
             response = nullptr;
             _state = getMissingList;
@@ -642,7 +641,7 @@ uint32_t PVoutput::tickUploadStatus(){
         else if(strcmp(script->name(),"voltage") == 0){
             voltage = script->run(oldRecord, newRecord, elapsedHours, unitsVolts);    
         }
-        else if(strstr(script->name(),"v") == script->name()){
+        else if(strstr(script->name(),"extended_") == script->name()){
             long ndx = strtol(script->name()+9,nullptr,10) - 1;
             if(ndx >= 0 && ndx <=5){
                 if(ndx > lastExtended){
@@ -809,9 +808,6 @@ uint32_t PVoutput::tickHTTPWait(){
     trace(T_PVoutput,120);
     if(request->respHeaderExists(respHeaderLimit)){
         _rateLimitLimit = strtol(request->respHeaderValue(respHeaderLimit),nullptr,10);
-        if(_rateLimitLimit == PV_DONATOR_RATE_LIMIT){
-            _donator = true;
-        }
     }
     if(request->respHeaderExists(respHeaderRemaining)){
         _rateLimitRemaining = strtol(request->respHeaderValue(respHeaderRemaining),nullptr,10);
