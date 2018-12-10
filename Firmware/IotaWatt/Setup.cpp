@@ -140,6 +140,10 @@ if(spiffsBegin()){
   WiFi.hostname(deviceName);
   WiFi.setAutoConnect(true);
   WiFi.begin();
+
+        // If the RTC is not running or power fail restart
+        // Use the WiFi Manager.
+
   if( ! RTCrunning || powerFailRestart){
     uint32_t autoConnectTimeout = millis() + 3000UL;
     while(WiFi.status() != WL_CONNECTED){
@@ -164,21 +168,16 @@ if(spiffsBegin()){
       yield();
     }
   }
-  if(WiFi.status() != WL_CONNECTED){
-    log("No WiFi connection.");
-  }
-    
-  //*************************************** Startup the Zeroconfig responders *********************
 
-  if(WiFi.status() == WL_CONNECTED){
-    if (MDNS.begin(deviceName)) {
-      MDNS.addService("http", "tcp", 80);
-      log("MDNS responder started for hostname %s", deviceName);
-    }
-    if (LLMNR.begin(deviceName)){
-      log("LLMNR responder started for hostname %s", deviceName);
-    } 
+      //*************************************** Startup the Zeroconfig responders *********************
+
+  if (MDNS.begin(deviceName)) {
+    MDNS.addService("http", "tcp", 80);
+    log("MDNS responder started for hostname %s", deviceName);
   }
+  if (LLMNR.begin(deviceName)){
+    log("LLMNR responder started for hostname %s", deviceName);
+  } 
   
  //*************************************** Start the web server ****************************
 
@@ -192,10 +191,10 @@ if(spiffsBegin()){
   WiFi.mode(WIFI_STA);
   
  //*************************************** Start the logging services *********************************
-   
+
+  NewService(WiFiService, T_WiFi); 
   NewService(timeSync, T_timeSync);
   NewService(statService, T_stats);
-  NewService(WiFiService, T_WiFi);
   NewService(updater, T_UPDATE);
   NewService(dataLog, T_datalog);
   NewService(historyLog, T_history);
