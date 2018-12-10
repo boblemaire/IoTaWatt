@@ -190,14 +190,14 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
         uint8_t pendingOp = opAdd;
         uint8_t* token = *tokens;
         do {
-          if(*token >= opAdd && *token <= opDiv){
+          if(*token >= opAdd && *token <= opMax){
             result = evaluate(result, pendingOp, operand);
             pendingOp = *token;
             operand = 0;
             if(*token == opDiv || *token == opMult) operand = 1;
           }
           else if(*token == opAbs){
-            if(operand < 0) operand *= -1;
+            if(operand < 0) operand = 0 - operand;
           }       
           else if(*token == opPush){
             token++;
@@ -259,16 +259,12 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
 
 double    Script::evaluate(double result, uint8_t token, double operand){
         switch (token) {
-          case opAdd:
-            return result + operand;
-          case opSub:
-            return result - operand;
-          case opMult:
-            return result * operand;
-          case opDiv:
-            if(operand == 0){
-              return 0;
-            }
-            return result / operand;        
+          case opAdd:  return result + operand;
+          case opSub:  return result - operand;
+          case opMult: return result * operand;
+          case opDiv:  return operand == 0 ? 0 : result / operand;
+          case opMin:  return result < operand ? result : operand;
+          case opMax:  return result > operand ? result : operand;
+          default:     return 0;        
         }
 }

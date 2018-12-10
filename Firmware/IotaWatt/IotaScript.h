@@ -52,10 +52,12 @@ class Script {
                 opSub   = 2,
                 opMult  = 3,
                 opDiv   = 4,
-                opAbs   = 5,
-                opPush  = 6,
-                opPop   = 7};
-    const char* opChars = "=+-*/|()";
+                opMin   = 5,
+                opMax   = 6,
+                opAbs   = 7,
+                opPush  = 8,
+                opPop   = 9};
+    const char* opChars = "=+-*/<>|()";
 
     double    runRecursive(uint8_t**, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, char type);
     double    evaluate(double, byte, double);
