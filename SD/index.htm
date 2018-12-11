@@ -2232,7 +2232,7 @@ function PVoutToggle(){
  * *******************************************************************************************/
 function statusBegin(){
   EbyId("tabinflux").style.display = config.influxdb !== undefined ? "inline" : "none";
-  EbyId("tabPVout").style.display = config.influxdb !== undefined ? "inline" : "none";
+  EbyId("tabPVout").style.display = config.pvoutput !== undefined ? "inline" : "none";
   EbyId("tabEmon").style.display = (config.server !== undefined && config.server.type == "emoncms") ? "inline" : "none";
   currentBodyPush("divStatus");
   getStatus = true;
