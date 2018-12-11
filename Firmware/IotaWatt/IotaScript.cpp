@@ -190,6 +190,7 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
         uint8_t pendingOp = opAdd;
         uint8_t* token = *tokens;
         do {
+          //Serial.printf("token %d, result %f, operand %f, pendingop %d\r\n", *token, result, operand, pendingOp);
           if(*token >= opAdd && *token <= opMax){
             result = evaluate(result, pendingOp, operand);
             pendingOp = *token;
