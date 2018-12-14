@@ -26,11 +26,8 @@
 
 #define UNIX_DAY 86400UL
 #define PV_REQDATA_LIMIT 5000                       // Maximum size of status batch
-#define PV_MISSING_LIMIT 50                         // maximum missing outputs returned in one request
 #define PV_DEFAULT_RATE_LIMIT 60                    // writes per hour default
 #define PV_DONATOR_RATE_LIMIT 300                   // writes per hour donator
-#define PV_DEFAULT_OUTPUT_LIMIT 30                  // max outputs added per batch default
-#define PV_DONATOR_OUTPUT_LIMIT 100                 // max outputs added per batch donator
 #define PV_DEFAULT_STATUS_LIMIT 30                  // max status added per batch default
 #define PV_DONATOR_STATUS_LIMIT 100                 // max status added per batch donator
 #define PV_DEFAULT_STATUS_DAYS 14                   // max status update lookback days default
@@ -72,8 +69,6 @@ public:
         ,_systemID(nullptr)
         ,_revision(-1)
         ,_beginPosting(0)
-        ,_lastMissing(0)
-        ,_missingQ(nullptr)
         ,_state(initialize)
         ,_started(false)
         ,_stop(false)
@@ -95,7 +90,6 @@ public:
         {};
 
     ~PVoutput(){
-        delete _missingQ;
         delete[] _apiKey;
         delete oldRecord;
         delete newRecord;
@@ -121,11 +115,6 @@ private:
     enum    states     {initialize, 
                         getSystemService,
                         checkSystemService,
-                        getMissingList,
-                        checkMissingList,
-                        gotMissingList,
-                        uploadMissing,
-                        checkUploadMissing,
                         getStatus,
                         gotStatus,
                         uploadStatus,
@@ -143,11 +132,6 @@ private:
     uint32_t    tickInitialize();
     uint32_t    tickGetSystemService();
     uint32_t    tickCheckSystemService();
-    uint32_t    tickGetMissingList();
-    uint32_t    tickCheckMissingList();
-    uint32_t    tickGotMissingList();
-    uint32_t    tickUploadMissing();
-    uint32_t    tickCheckUploadMissing();
     uint32_t    tickGetStatus();
     uint32_t    tickGotStatus();
     uint32_t    tickUploadStatus();
@@ -183,16 +167,6 @@ private:
 
     void        HTTPPost(const __FlashStringHelper *URI, states completionState, const char *contentType = nullptr);
 
-        // List entries used to build list of missing outputs during startup
-
-    struct      missingQ {
-        missingQ*   next;
-        uint32_t    first;
-        uint32_t    last;
-        missingQ():next(nullptr), first(0), last(0){};
-        ~missingQ(){delete next;};
-    };
-
         // Class variables
     
     uint16_t    _interval;                  // Status interval from getSystemService
@@ -200,8 +174,6 @@ private:
     char*       _systemID;                  // From configuration
     int32_t     _revision;                  // Configuration change identifier
     uint32_t    _beginPosting;              // Earliest date to begin posting as appropriate
-    uint32_t    _lastMissing;               // Used for context while building missing outputs list
-    missingQ*   _missingQ;                  // Head of queue of missing outputs
     bool        _started;                   // Initialization has been completed
     bool        _stop;                      // Set to stop and idle (_state = stopped) ASAP    
     bool        _restart;                   // Restart by setting (_state = getSystemService) ASAP

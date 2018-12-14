@@ -77,11 +77,6 @@ uint32_t PVoutput::tick(struct serviceBlock* serviceBlock){
         case initialize:            {return tickInitialize();}
         case getSystemService:      {return tickGetSystemService();}
         case checkSystemService:    {return tickCheckSystemService();}
-        case getMissingList:        {return tickGetMissingList();}
-        case checkMissingList:      {return tickCheckMissingList();}
-        case gotMissingList:        {return tickGotMissingList();}
-        case uploadMissing:         {return tickUploadMissing();}
-        case checkUploadMissing:    {return tickCheckUploadMissing();}
         case getStatus:             {return tickGetStatus();}
         case gotStatus:             {return tickGotStatus();}
         case uploadStatus:          {return tickUploadStatus();}
@@ -118,6 +113,9 @@ uint32_t PVoutput::tickStopped(){
 
 uint32_t PVoutput::tickInitialize(){
     trace(T_PVoutput,10);
+    if( ! histLog.isOpen()){
+        return UTCtime() + 10;
+    }
     log("PVoutput: started");
     _started = true;
     _state = getSystemService;
@@ -147,7 +145,7 @@ uint32_t PVoutput::tickCheckSystemService(){
             log("PVoutput: System %s, interval %d%s  ", response->parseString(0,0).c_str(), _interval/60, _donator ? ", donator mode" : ", freeload mode");
             delete response;
             response = nullptr;
-            _state = getMissingList;
+            _state = getStatus;
             return 1;
         }
         case LOAD_IN_PROGRESS:
@@ -157,257 +155,6 @@ uint32_t PVoutput::tickCheckSystemService(){
             return 1;
         }
     }
-}
-
-uint32_t PVoutput::tickGetMissingList(){
-    trace(T_PVoutput,40);
-    if( ! histLog.isOpen()){
-        return UTCtime() + 60;
-    }
-
-    uint32_t yesterday = localTime();
-    yesterday -= UNIX_DAY + yesterday % UNIX_DAY;
-    if(histLog.firstKey() > local2UTC(yesterday)){
-        _state = getStatus;
-        return 1;
-    }
-    trace(T_PVoutput,40);
-    if(_lastMissing == 0){
-        _lastMissing = UTC2Local(histLog.firstKey()) + UNIX_DAY;
-        _lastMissing -= _lastMissing % UNIX_DAY;
-        if(_beginPosting > _lastMissing){
-            _lastMissing = _beginPosting  - _beginPosting % UNIX_DAY;
-        }
-    }
-    trace(T_PVoutput,40);
-    if(_reload){
-        _missingQ = new missingQ;
-        _missingQ->first = _lastMissing;
-        _missingQ->last = yesterday;
-        _state = gotMissingList;
-        return 1;
-    }
-    reqData.flush();
-    reqData.printf("df=%s&dt=%s", datef(_lastMissing, "YYYYMMDD").c_str(), datef(yesterday, "YYYYMMDD").c_str());
-    HTTPPost(F("getmissing.jsp"), checkMissingList);
-    return 1;
-}
-
-uint32_t PVoutput::tickCheckMissingList(){
-    trace(T_PVoutput,45);
-    switch (_HTTPresponse) {
-
-        default:{
-            log("PVoutput: Unrecognized HTTP completion, getMissing %.40s", response->peek(40).c_str());
-            return 0;
-        }
-        
-        case LOAD_IN_PROGRESS:
-        case RATE_LIMIT:
-        case HTTP_FAILURE: {
-            _state = getMissingList;
-            return 1;
-        }
-
-        case DATE_TOO_OLD:
-        case DATE_IN_FUTURE:
-        case OK: {
-            trace(T_PVoutput,50);
-            int items = response->items();
-            for(int i=0; i<items; i++){
-                uint32_t date = response->parseDate(0,i);
-                if( ! _missingQ){
-                    _missingQ = new missingQ;
-                    _missingQ->first = date;
-                    _missingQ->last = date;
-                } 
-                else if(date == (_missingQ->last + UNIX_DAY)){
-                    _missingQ->last = date;
-                }
-                else {
-                    missingQ* link = _missingQ;
-                    _missingQ = new missingQ;
-                    _missingQ->next = link;
-                    _missingQ->first = date;
-                    _missingQ->last = date;
-                }
-            }
-            if(items == 50 ){
-                _lastMissing = _missingQ->last + UNIX_DAY;
-                _state = getMissingList;
-                return 1;
-            }
-            _state = gotMissingList;
-            return 1;
-        }
-    }
-}
-
-uint32_t PVoutput::tickGotMissingList(){
-    trace(T_PVoutput,50);
-    
-            // If nothing missing, skip ahead to getStatus.
-
-    if( ! _missingQ){
-        _state = getStatus;
-        return 1;
-    }
-
-            // List complete, convert from lifo to fifo.
-
-    trace(T_PVoutput,51);
-    
-    missingQ* _this = _missingQ;
-    missingQ* _next = _this->next;
-    _this->next = nullptr;
-    while(_next){
-        missingQ* _temp = _next->next;
-        _next->next = _this;
-        _this = _next;
-        _next = _temp;
-    }
-    _missingQ = _this;
-    trace(T_PVoutput,52);
-
-    _lastPostTime = 0;
-    _reqEntries = 0;
-    _lastReqTime = _missingQ->first - UNIX_DAY;
-    reqData.flush();
-    _state = uploadMissing;
-    return 1;
-}
-
-uint32_t PVoutput::tickUploadMissing(){
-    trace(T_PVoutput,60);
-
-            // If buffer isn't full, get next request date (_lastReqTime)
-
-    missingQ* Qentry = _missingQ;
-    if(_reqEntries < (_donator ? PV_DONATOR_OUTPUT_LIMIT : PV_DEFAULT_OUTPUT_LIMIT)){
-        while(Qentry){
-            if(Qentry->last > _lastReqTime){
-                _lastReqTime += UNIX_DAY;
-                if(_lastReqTime < Qentry->first){
-                    _lastReqTime = Qentry->first;
-                }
-                break;
-            } 
-            Qentry = Qentry->next;
-        }
-    }
-
-            // If no more dates, or buffer is full, write out buffer.
-
-     if( ! Qentry || _reqEntries >= (_donator ? PV_DONATOR_OUTPUT_LIMIT : PV_DEFAULT_OUTPUT_LIMIT)){
-        trace(T_PVoutput,61);
-        if(_reqEntries){
-            _reqEntries = 0;
-            HTTPPost(F("addbatchoutput.jsp"), checkUploadMissing);
-            return 1;
-         }
-     }   
-        
-            // If queue is empty, and no current request
-            // We're done, advance to getStatus. 
-
-    if( ! Qentry && _reqEntries == 0){
-        trace(T_PVoutput,62);
-        delete _missingQ;
-        _missingQ = nullptr;
-        _state = getStatus;
-        return 1;
-    }
-
-            // Add new output to reqData.
-
-    trace(T_PVoutput,63);
-    if( ! oldRecord){
-        oldRecord = new IotaLogRecord;
-    }
-    if( ! newRecord) {
-        newRecord = new IotaLogRecord;
-    }
-    trace(T_PVoutput,64);
-    if(newRecord->UNIXtime == local2UTC(_lastReqTime)){
-        trace(T_PVoutput,64);
-        IotaLogRecord* temp = oldRecord;
-        oldRecord = newRecord;
-        newRecord = temp;
-    } else {
-        trace(T_PVoutput,65);    
-        oldRecord->UNIXtime = local2UTC(_lastReqTime);
-        if(histLog.readKey(oldRecord) != 0){
-            return 1;
-        }
-    }
-    trace(T_PVoutput,66);
-    newRecord->UNIXtime = local2UTC(_lastReqTime + UNIX_DAY);
-    if(histLog.readKey(newRecord) != 0){
-        return 1;
-    }
-
-            // Have bookend log records, create an output
-
-    trace(T_PVoutput,67);
-    double elapsedHours = newRecord->logHours - oldRecord->logHours;
-    if(elapsedHours == 0.0){
-        trace(T_PVoutput,67);
-        return 1;
-    }
-    if(reqData.available()){
-        reqData.print(';');
-        _reqEntries++;
-    } else {
-        reqData.print("data=");
-        _reqEntries = 1;
-    }
-    int32_t generation = 0;
-    int32_t consumption = 0;
-
-    trace(T_PVoutput,68);
-    Script* script = _outputs->first();
-    while(script){
-        double value = script->run(oldRecord, newRecord, elapsedHours, unitsWh);
-        if(strcmp(script->name(),"generation") == 0){
-            generation = value;
-        }
-        else if(strcmp(script->name(),"consumption") == 0){
-            consumption = value;    
-        }
-        script = script->next();
-    }
-    int32_t exported = generation - consumption;
-    if(exported < 0){
-        exported = 0;
-    }
-
-    trace(T_PVoutput,68);
-    reqData.printf_P(PSTR("%s,%d,%d,%d"), datef(_lastReqTime,"YYYYMMDD").c_str(), generation, exported, consumption, newRecord->logHours - oldRecord->logHours);
-
-    trace(T_PVoutput,68);
-    return 1;
-}
-
-uint32_t PVoutput::tickCheckUploadMissing(){
-    trace(T_PVoutput,69);
-    switch (_HTTPresponse) {
-        case DATE_TOO_OLD:
-        case DATE_IN_FUTURE:
-        case OK: {
-            _lastPostTime = _lastReqTime;   
-            _state = uploadMissing;
-            return 1;
-            }
-        case LOAD_IN_PROGRESS:
-        case RATE_LIMIT:
-        case HTTP_FAILURE: {
-            _lastReqTime = _lastPostTime;
-            _state = uploadMissing; 
-            return 1;
-        }
-    }
-    log("PVoutput: Unrecognized HTTP completion, uploadMissing %.40s", response->peek(40).c_str());
-    return 0;
 }
 
 uint32_t PVoutput::tickGetStatus(){
@@ -547,14 +294,6 @@ uint32_t PVoutput::tickUploadStatus(){
         newRecord = nullptr;  
         HTTPPost(F("addbatchstatus.jsp"), checkUploadStatus);
         _reqEntries = 0;
-
-        // while(reqData.indexOf(';') > 0){
-        //     Serial.println(reqData.readStringUntil(';'));
-        // }
-        // Serial.println(reqData.readString());
-        // reqData.flush();
-        // _lastPostTime = _lastReqTime;
-
         return 1;
     }
 
