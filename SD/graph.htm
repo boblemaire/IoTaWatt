@@ -3,92 +3,28 @@
     <head>
         <meta http-equiv="content-type" content="text/html; charset=UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Emoncms - graph 122285 </title>
-        <link rel="shortcut icon" href="https://emoncms.org/Theme/basic/favicon.png" />
+        <title>Emoncms - graph</title>
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
-        <link rel="apple-touch-startup-image" href="https://emoncms.org/Theme/basic/ios_load.png">
-        <link rel="apple-touch-icon" href="https://emoncms.org/Theme/basic/logo_normal.png">
-        <!--<link href="https://emoncms.org/Lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://emoncms.org/Lib/bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet">
-        <link href="https://emoncms.org/Lib/bootstrap-datetimepicker-0.0.11/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
-        -->
-        <link href="https://emoncms.org/Lib/bootstrap/css/bootstrap-combined.min.css" rel="stylesheet">
-        
-        <link href="https://emoncms.org/Theme/basic/emon.css" rel="stylesheet">
-        <script type="text/javascript" src="https://emoncms.org/Lib/jquery-1.11.3.min.js"></script>
+            <!-- Latest compiled and minified CSS -->
+            <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css">
+            
+            <!-- jQuery library -->
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+            
+            <!-- Popper JS -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+            
+            <!-- Latest compiled JavaScript -->
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script> 
     </head>
     <body>
         <div id="wrap">
-  <!--      <div class="navbar navbar-inverse navbar-fixed-top" >
-            <div class="navbar-inner">
-                <div class="container">
-                        <style>
-                            @media (max-width: 1200px){
-                              .menu-text {
-                                display: none !important;
-                              }
-                            }
-                            @media (max-width: 480px){
-                              .menu-dashboard {
-                                display: none !important;
-                              }
-                            }
 
-                            @media (max-width: 320px){
-                              .menu-extra {
-                                display: none !important;
-                              }
-                            }
-                        </style>
-                        
-
-<ul class="nav">
-<li class=' menu-left'><a href="https://emoncms.org/site/home"><div style='display: inline'> <img style='margin-top: -4px;' id='emoncms-logo' src='https://emoncms.org/Theme/emoncms-logo.png' /></div></a></li><li class="dropdown menu-left"><a href="#" class="dropdown-toggle" data-toggle="dropdown"><div style='display: inline'><i class='icon-th-large icon-white' title='Dashboard'></i> <span class='menu-text'>Dashboard</span></div><b class="caret"></b></a><ul class="dropdown-menu"><li class=""><a href="https://emoncms.org/dashboard/view&id=33334"><div style='display: inline'> Current Use</div></a></li></ul></li><li class="dropdown menu-left"><a href="#" class="dropdown-toggle" data-toggle="dropdown"><div style='display: inline'><i class='icon-leaf icon-white' title='Apps'></i> <span class='menu-text'>Apps</span></div><b class="caret"></b></a><ul class="dropdown-menu"><li class=""><a href="https://emoncms.org/app?readkey=f790bd4967f720f961f91d13f946eeea#myelectric"><div style='display: inline'> My Electric</div></a></li><li class=""><a href="https://emoncms.org/app?readkey=f790bd4967f720f961f91d13f946eeea#mysolarpv"><div style='display: inline'> My Solar</div></a></li><li class=""><a href="https://emoncms.org/app?readkey=f790bd4967f720f961f91d13f946eeea#myenergy"><div style='display: inline'> My Solar&amp;Wind</div></a></li></ul></li></ul>
-
-<ul class="nav pull-right">
-<li class="dropdown menu-extra"><a href="#" class="dropdown-toggle" data-toggle="dropdown">
-  <div style='display: inline'><i class='icon-plus icon-white' title='Extra'></i> <span class='menu-text'>Extra</span></div>
-  <b class="caret"></b></a><ul class="dropdown-menu"><li class=""><a href="https://emoncms.org/myip/list">
-<div style='display: inline'> My IP</div></a></li><li class=""><a href="https://emoncms.org/vis/list">
-<div style='display: inline'><i class='icon-tint' title='Visualization'></i> Visualization</div>
-  </a></li></ul></li><li class="dropdown menu-setup"><a href="#" class="dropdown-toggle" data-toggle="dropdown">
-<div style='display: inline'><i class='icon-wrench icon-white' title='Setup'></i> <span class='menu-text'>Setup</span></div><b class="caret">
-  </b></a><ul class="dropdown-menu"><li class=""><a href="https://emoncms.org/input/view">
-<div style='display: inline'><i class='icon-signal' title='Inputs'></i> Inputs</div>
-  </a></li><li class=""><a href="https://emoncms.org/feed">
-<div style='display: inline'><i class='icon-list-alt' title='Feeds'></i> Feeds</div></a></li><li class=""><a href="https://emoncms.org/graph">
-<div style='display: inline'><i class='icon-retweet' title='Graphs'></i> Graphs</div>
-  </a></li><li class=""><a href="https://emoncms.org/dashboard/list">
-<div style='display: inline'><i class='icon-th-large' title='Dashboards'></i> Dashboards</div>
-  </a></li><li class="divider"></li><li class=""><a href="https://emoncms.org/user/view">
-<div style='display: inline'><i class='icon-user' title='My Account'></i> My Account</div>
-  </a></li><li class=""><a href="https://emoncms.org/site/api#input">
-<div style='display: inline'><i class='icon-book' title='API'></i> API</div>
-  </a></li></ul></li><li class=' menu-right'><a href="https://emoncms.org/user/logout">
-<div style='display: inline'><i class='icon-off icon-white' title='Logout'></i> <span class='menu-text'>Logout</span></div>
-  </a></li></ul> 
-                </div> 
-            </div>
-        </div>
-
-        <div id="topspacer"></div>  -->
-
-        
                 <div class = "container-fluid"><div class="row-fluid"><div class="span12">
             
-<!--[if IE]><script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/excanvas.min.js"></script><![endif]-->
-
-<!--
-<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/jquery.flot.min.js"></script>
-<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/jquery.flot.time.min.js"></script>
-<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/jquery.flot.selection.min.js"></script>
-<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/jquery.flot.touch.min.js"></script>
-<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/jquery.flot.togglelegend.min.js"></script>
--->
-<script language="javascript" type="text/javascript" src="https://emoncms.org/Lib/flot/flot.min.js"></script>
-
-<script language="javascript" type="text/javascript" src="https://emoncms.org/Modules/graph/vis.helper.js"></script>
+<script language="javascript" type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery.flot@0.8.3/jquery.flot.min.js"></script>
+<script language="javascript" type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery.flot@0.8.3/jquery.flot.time.min.js"></script>
 
 <style>
 #wrapper {
@@ -254,6 +190,193 @@
     </div>
 </div>
 
+<!- copy of https://emoncms.org/Modules/graph/vis.helper.js -->
+<script>
+  var view =
+{
+  start:0,
+  end:0,
+  fixinterval:false,
+
+  'zoomout':function ()
+  {
+    var time_window = this.end - this.start;
+    var middle = this.start + time_window / 2;
+    time_window = time_window * 2;
+    this.start = middle - (time_window/2);
+    this.end = middle + (time_window/2);
+    this.calc_interval();
+  },
+
+  'zoomin':function ()
+  {
+    var time_window = this.end - this.start;
+    var middle = this.start + time_window / 2;
+    time_window = time_window * 0.5;
+    this.start = middle - (time_window/2);
+    this.end = middle + (time_window/2);
+    this.calc_interval();
+  },
+
+  'panright':function ()
+  {
+    var time_window = this.end - this.start;
+    var shiftsize = time_window * 0.2;
+    this.start += shiftsize;
+    this.end += shiftsize;
+    this.calc_interval();
+  },
+
+  'panleft':function ()
+  {
+    var time_window = this.end - this.start;
+    var shiftsize = time_window * 0.2;
+    this.start -= shiftsize;
+    this.end -= shiftsize;
+    this.calc_interval();
+  },
+
+  'timewindow':function(time)
+  {
+    this.start = ((new Date()).getTime())-(3600000*24*time);	//Get start time
+    this.end = (new Date()).getTime();	//Get end time
+    this.calc_interval();
+  },
+  
+  'calc_interval':function()
+  {
+    var npoints = 600;
+    var interval = Math.round(((this.end - this.start)*0.001)/npoints);
+    
+    var outinterval = 5;
+    if (interval>10) outinterval = 10;
+    if (interval>15) outinterval = 15;
+    if (interval>20) outinterval = 20;
+    if (interval>30) outinterval = 30;
+    if (interval>60) outinterval = 60;
+    if (interval>120) outinterval = 120;
+    if (interval>180) outinterval = 180;
+    if (interval>300) outinterval = 300;
+    if (interval>600) outinterval = 600;
+    if (interval>900) outinterval = 900;
+    if (interval>1200) outinterval = 1200;
+    if (interval>1800) outinterval = 1800;
+    if (interval>3600*1) outinterval = 3600*1;
+    if (interval>3600*2) outinterval = 3600*2;
+    if (interval>3600*3) outinterval = 3600*3;
+    if (interval>3600*4) outinterval = 3600*4;
+    if (interval>3600*5) outinterval = 3600*5;
+    if (interval>3600*6) outinterval = 3600*6;
+    if (interval>3600*12) outinterval = 3600*12;
+    if (interval>3600*24) outinterval = 3600*24;
+    
+    if (!this.fixinterval) this.interval = outinterval;
+    
+    this.start = Math.floor((this.start*0.001) / this.interval) * this.interval * 1000;
+    this.end = Math.ceil((this.end*0.001) / this.interval) * this.interval * 1000;
+  }
+}
+
+function stats(data)
+{
+    var sum = 0;
+    var i=0;
+    var minval = 0;
+    var maxval = 0;
+    var npoints = 0;
+    var npointsnull = 0;
+    
+    var val = null;
+    for (var z in data)
+    {
+        // var val = data[z][1];                   // 1) only calculated based on present values
+        if (data[z][1]!=null) val = data[z][1];    // 2) if value is missing use last value
+        if (val!=null) 
+        {
+            if (i==0) {
+                maxval = val;
+                minval = val;
+            }
+            if (val>maxval) maxval = val;
+            if (val<minval) minval = val;
+            sum += val;
+            i++;
+        }
+        if (data[z][1]==null) npointsnull++;
+        
+        npoints ++;
+    }
+    var mean = sum / i;
+    sum = 0, i=0;
+    for (z in data)
+    {
+        sum += (data[z][1] - mean) * (data[z][1] - mean);
+        i++;
+    }
+    var stdev = Math.sqrt(sum / i);
+    
+    return {
+        "minval":minval,
+        "maxval":maxval,
+        "diff":maxval-minval,
+        "mean":mean,
+        "stdev":stdev,
+        "npointsnull":npointsnull,
+        "npoints":npoints
+    };
+};
+
+// http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values/901144#901144
+var urlParams;
+(window.onpopstate = function () {
+    var match,
+        pl = /\+/g, // Regex for replacing addition symbol with a space
+        search = /([^&=]+)=?([^&]*)/g,
+        decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+        query = window.location.search.substring(1);
+
+    urlParams = {};
+    while (match = search.exec(query))
+       urlParams[decode(match[1])] = decode(match[2]);
+})();
+
+function tooltip(x, y, contents, bgColour)
+{
+    var offset = 15; // use higher values for a little spacing between `x,y` and tooltip
+    var elem = $('<div id="tooltip">' + contents + '</div>').css({
+        position: 'absolute',
+        display: 'none',
+        'font-weight':'bold',
+        border: '1px solid rgb(255, 221, 221)',
+        padding: '2px',
+        'background-color': bgColour,
+        opacity: '0.8'
+    }).appendTo("body").fadeIn(200);
+
+    var elemY = y - elem.height() - offset;
+    var elemX = x - elem.width()  - offset;
+    if (elemY < 0) { elemY = 0; } 
+    if (elemX < 0) { elemX = 0; } 
+    elem.css({
+        top: elemY,
+        left: elemX
+    });
+};
+
+function parseTimepickerTime(timestr){
+    var tmp = timestr.split(" ");
+    if (tmp.length!=2) return false;
+
+    var date = tmp[0].split("/");
+    if (date.length!=3) return false;
+
+    var time = tmp[1].split(":");
+    if (time.length!=3) return false;
+
+    return new Date(date[2],date[1]-1,date[0],time[0],time[1],time[2],0).getTime() / 1000;
+}
+</script>
+
 <script language="javascript" type="text/javascript" src="graph.js"></script>
 
 <script>
@@ -294,6 +417,5 @@
             Powered by             <a href="http://openenergymonitor.org">openenergymonitor.org</a>
             <span></span>
         </div>
-        <script type="text/javascript" src="https://emoncms.org/Lib/bootstrap/js/bootstrap.js"></script>
     </body>
 </html>
