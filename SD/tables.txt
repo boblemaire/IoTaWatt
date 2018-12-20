@@ -2,6 +2,8 @@
 "VT":[
   {"model":"generic120V","type":"U","cal":11.50,"phase":2.0},
   {"model":"generic240V","type":"U","cal":23.00,"phase":2.0},
+  {"model":"DCSS AC910(Aus)","mfg":"Radio Parts","cal":11.1,"phase":2.45,"p50":3.86},
+  {"model":"Powertech MP-3027(Aus)","mfg":"jaycar","cal":23.18,"phase":1.98,"p50":2.69},
   {"model":"Ideal 77DB-06-09(UK)","cal":20.01,"phase":2.01,"p50":2.82},
   {"model":"Ideal 77DE-06-09(EU)","cal":19.12,"phase":2.20,"p50":3.22},
   {"model":"Ideal 77DA-10-09-MI(USA)","cal":11.06,"phase":1.43},
