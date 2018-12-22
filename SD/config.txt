@@ -1,7 +1,7 @@
 {
 	"format": 2,
 	"timezone": 0,
-	"update": "MINOR",
+	"update": "ALPHA",
 	"device": {
 		"name": "IotaWatt",
 		"version": 3,
@@ -29,9 +29,9 @@
 			"channel": 0,
 			"name": "Input_0",
 			"type": "VT",
-			"model": "TDC DA-10-09",
-			"phase": 2.66,
-			"cal": 11.23
+			"model": "TDC DA-10-09-E6",
+			"phase": 1.49,
+			"cal": 10.79
 		},
 		null,
 		null,
