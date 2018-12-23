@@ -137,7 +137,7 @@ IotaInputChannel* *inputChannel;      // -->s to incidences of input channels (m
 uint8_t maxInputs = 0;                        // channel limit based on configured hardware (set in Config)      
 ScriptSet* outputs;                   // -> scriptSet for output channels
 
-uint16_t  deviceVersion = 0;
+uint16_t  deviceVersion = (4 << 8) + 8;  // Default to 4.8
 float     VrefVolts = 2.5;            // Voltage reference shunt value used to calibrate
 
       // ****************************************************************************

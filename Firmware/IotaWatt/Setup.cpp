@@ -86,13 +86,7 @@ void setup()
   Wire.write((byte)0x80);
   Wire.endTransmission();
 
-  //**************************************** Display software version *********************************
-
-  log("Version %s", IOTAWATT_VERSION);
-
-  copyUpdate(String(IOTAWATT_VERSION));
-  
-  //**************************************** Display the trace ****************************************
+    //**************************************** Display the trace ****************************************
 
   log("Reset reason: %s", ESP.getResetReason().c_str());
   if( ! powerFailRestart){
@@ -104,6 +98,53 @@ void setup()
 
   traceEntry.seq = 0;
   for(int i=0; i<32; i++) trace(0,0);
+
+
+
+//*************************************** Process the EEPROM ****************************************
+
+
+
+EEprom* EE = new EEprom;
+uint8_t* EEbytes = (uint8_t*) EE;
+size_t EEsize = sizeof(EEprom);
+
+  // Create the EEprom
+
+// EEPROM.begin(EEsize);
+// memcpy(EE->id, "IoTaWatt", 8);
+// EE->EEversion = 0;
+// EE->deviceMajorVersion = 4;
+// EE->deviceMinorVersion = 9;
+// EE->mfgDate = 0;
+// EE->mfgLot = 0;
+// EE->mfgBurden = 20;
+// EE->mfgRefVolts = 2500;
+// for(int i=0; i<EEsize; i++){
+//   EEPROM.write(i,EEbytes[i]);
+// }
+// EEPROM.end();
+
+EEPROM.begin(EEsize);
+for(int i=0; i<EEsize; i++){
+  EEbytes[i] = EEPROM.read(i);
+}
+if( ! memcmp(EE->id, "IoTaWatt", 8)){
+  if(EE->EEversion > 0){
+    log("EEPROM unrecognized version %d", EE->EEversion);
+  } else {
+    deviceVersion = EE->deviceMajorVersion * 256 + EE->deviceMinorVersion;
+    VrefVolts = (float)EE->mfgRefVolts / 1000.0;
+  }
+}
+EEPROM.end();
+delete EE;
+EE = nullptr;
+
+//**************************************** Display software version *********************************
+
+  log("IoTaWatt revision %d.%d, firmware version %s", deviceVersion/256, deviceVersion%256, IOTAWATT_VERSION);
+  copyUpdate(String(IOTAWATT_VERSION));
 
 //*************************************** Mount the SPIFFS ******************************************
 

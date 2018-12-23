@@ -26,6 +26,7 @@
 #define MAX(a,b) ((a>b)?a:b)
 
 #include <Arduino.h>
+#include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <WiFiManager.h>
 #include <ESP8266mDNS.h>
@@ -89,7 +90,6 @@ extern const char* IotaLogFile;
 extern const char* historyLogFile;
 extern const char* IotaMsgLog;
 extern const char*  ntpServerName;
-extern uint16_t deviceVersion;
 
         // Define the hardware pins
 
@@ -118,6 +118,20 @@ union traceUnion {
 };
 
 extern traceUnion traceEntry;
+
+      // Structure of EEPROM
+
+struct EEprom {
+      char        id[8];                  // Valid EE area identifier "IoTaWatt"
+      uint8_t     EEversion;              // Version of this EE (higher is superset)
+      uint8_t     deviceMajorVersion;     // Major version of PCB as "4" in 4.8
+      uint8_t     deviceMinorVersion;     // Minor version of PCB as "8" in 4.8
+      uint8_t     mfgBurden;              // Burden resistor value at manufacture
+      uint16_t    mfgRefVolts;            // Voltage reference at manufacture in mV
+      uint16_t    reserved;               // alignment
+      uint32_t    mfgDate;                // Unix time          
+      uint32_t    mfgLot;                 // Manufacturing lot
+      };
 
       // Identifiers used to construct id numbers for graph API
 
@@ -193,6 +207,7 @@ extern serviceBlock* serviceQueue;     // Head of ordered list of services
 #define MAXINPUTS 15                          // Compile time input channels, can't be changed easily 
 extern IotaInputChannel* *inputChannel;       // -->s to incidences of input channels (maxInputs entries)
 extern uint8_t  maxInputs;                    // channel limit based on configured hardware (set in Config)
+extern uint16_t deviceVersion;                // high byte major version low byte minor version
 extern float    VrefVolts;                    // Voltage reference shunt value used to calibrate
                                               // the ADCs. (can be specified in config.device.refvolts)
 #define Vadj_3 13                             // Voltage channel attenuation ratio

@@ -170,13 +170,6 @@ bool configDevice(const char* JsonStr){
     deviceName = charstar(F("IotaWatt"));
   }
 
-  if(device.containsKey(F("version"))){
-    deviceVersion = device[F("version")].as<unsigned int>();
-    if(deviceVersion < 3){
-      log("Device version %d no longer supported.", deviceVersion);
-      dropDead();
-    }
-  } 
   hasRTC = true;
   VrefVolts = 2.5;
   ADC_selectPin[0] = pin_CS_ADC0;
@@ -343,6 +336,9 @@ bool configInputs(const char* JsonStr){
       if(type == "VT") {
         inputChannel[i]->_type = channelTypeVoltage;
         inputChannel[i]->_vchannel = i;
+        if(deviceVersion >= (4*256+9)){
+          inputChannel[i]->_phase -= 1.44;
+        }
       }
       else if (type == "CT"){
         inputChannel[i]->_type = channelTypePower;
