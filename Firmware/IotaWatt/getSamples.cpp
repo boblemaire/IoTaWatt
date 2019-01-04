@@ -12,12 +12,12 @@ void getSamples(){ //(struct serviceBlock* _serviceBlock){
       // Setup buffer to do it "chunky-style"
   
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(200,"application/json","");
+  server.send(200,"text","");
   bufPos += sprintf_P(buf+bufPos , PSTR("samples %d\r\n"), samples);
 
       // Loop to generate entries
   
-  for(int i=0; i<samples; i++){
+  for(int i=0; i<samples+1; i++){
     bufPos += sprintf_P(buf+bufPos, PSTR("%d,%d\r\n"),Vsample[i], Isample[i]);
 
     if(bufPos > (chunkSize - 15)){

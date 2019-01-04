@@ -612,7 +612,7 @@ void handleCommand(){
     if(server.hasArg(F("refchan"))){
       refChan = server.arg(F("refchan")).toInt();
     }
-    uint16_t shift = 60;
+    uint16_t shift = 100;
     if(server.hasArg(F("shift"))){
       shift = server.arg(F("shift")).toInt();
     }
@@ -622,7 +622,7 @@ void handleCommand(){
   if(server.hasArg(F("sample"))){
     trace(T_WEB,5); 
     uint16_t chan = server.arg(F("sample")).toInt();
-    samplePower(chan,0);
+    sampleCycle(inputChannel[0], inputChannel[chan]);
     getSamples();
     return; 
   }

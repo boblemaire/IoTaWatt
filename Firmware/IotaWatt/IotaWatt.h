@@ -163,7 +163,8 @@ struct EEprom {
 #define T_datalog 19       // datalog service
 #define T_timeSync 20      // timeSync service 
 #define T_WiFi 21          // WiFi service
-#define T_PVoutput 22      // PVoutput class     
+#define T_PVoutput 22      // PVoutput class 
+#define T_samplePhase 23   // Sample phase (within samplePower)       
 
       // LED codes
 
