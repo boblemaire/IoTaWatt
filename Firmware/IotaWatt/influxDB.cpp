@@ -76,6 +76,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       log("influxDB: started, url=%s:%d, db=%s, interval=%d", influxURL, influxPort,
               influxDataBase, influxDBInterval);
       state = queryLastPostTime;
+      trace(T_influx,2);
       return 1;
     }
  
@@ -84,6 +85,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       trace(T_influx,3);
       influxLastPost = influxBeginPosting;
       script = influxOutputs->first();
+      retryCount = 0;
       trace(T_influx,4);
       state = queryLast;
       return 1;
@@ -110,7 +112,10 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       {
         char URL[100];
         sprintf_P(URL, PSTR("%s:%d/query"),influxURL,influxPort);
-        request->open("POST", URL);
+        if( ! request->open("POST", URL)){
+          HTTPrelease(HTTPtoken);
+          return UTCtime() + 2;
+        }
       }
       
       if(influxUser && influxPwd){
@@ -127,15 +132,20 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       reqData.printf_P(PSTR("db=%s&epoch=s&q=SELECT LAST(%s) FROM %s"), influxDataBase,
             influxVarStr(influxFieldKey, script).c_str(),
             influxVarStr(influxMeasurement, script).c_str());
-      if(influxTagSet){
-        trace(T_influx,41);
-        influxTag* tag = influxTagSet;
-        reqData.printf_P(PSTR(" WHERE %s=\'%s\'"), tag->key, influxVarStr(tag->value, script).c_str());
+      influxTag* tag = influxTagSet;
+      trace(T_influx,41);
+      while(tag){
+        reqData.printf_P(PSTR(" %s %s=\'%s\'"), tag == influxTagSet ? "WHERE" : "AND", tag->key, influxVarStr(tag->value, script).c_str());
+        tag = tag->next;
       }
-
+      
           // Send the request
 
-      request->send(&reqData, reqData.available());
+      if( ! request->send(&reqData, reqData.available())){
+        HTTPrelease(HTTPtoken);
+        request->abort();
+        return UTCtime() + 2;
+      }
       trace(T_influx,42);
       state = queryLastWait;
       return 1;
@@ -150,19 +160,21 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         return 1; 
       }
       HTTPrelease(HTTPtoken);
+      if(influxStop || influxRestart){
+        state = post;
+        return 1;
+      }
       String response = request->responseText();
       int HTTPcode = request->responseHTTPcode();
       delete request;
       request = nullptr;
-      if(HTTPcode != 200){
-        log("influxDB: last entry query failed: %d", HTTPcode);
-        if(HTTPcode > 204){
-          Serial.print(response);
+      if(HTTPcode < 0){
+        if(retryCount++ == 20){
+          log("influxDB: last entry query failed: %d, retrying.", HTTPcode);
         }
-        influxStop = true;
-        state = post;
-        return 1;
-      } 
+        state = queryLastWait;
+        return UTCtime() + retryCount < 20 ? 1 : 31;
+      }
       trace(T_influx,5);
       
             // Json parse the response to get the columns and values arrays
@@ -170,7 +182,14 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
       DynamicJsonBuffer Json;
       JsonObject& results = Json.parseObject(response);
-      if(results.success()){
+      if(results.success()){ 
+        const char* error = results.get<const char*>("error");
+        if(error){
+          log("influxDB: last entry query failed %d %s", HTTPcode, error);
+          influxStop = true;
+          state = post;
+          return 1;
+        }
         JsonArray& columns = results["results"][0]["series"][0]["columns"];
         JsonArray& values = results["results"][0]["series"][0]["values"][0];
         if(columns.success() && values.success()){
@@ -181,6 +200,14 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
               }
               break;
             }
+          }
+        } else {
+          const char* error = results["results"][0]["error"].as<const char*>();
+          if(error){
+            log("influxDB: last entry query failed %d %s", HTTPcode, error);
+            influxStop = true;
+            state = post;
+            return 1;
           }
         }
       }
@@ -230,39 +257,46 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
           // If stop requested, do it now.
 
-      if(influxStop) {
+      if(influxStop || influxRestart) {
         if(request && request->readyState() < 4) return 1;
         trace(T_influx,71);
-        log("influxDB: Stopped. Last post %s", localDateString(influxLastPost).c_str());
-        trace(T_influx,72);    
-        delete oldRecord;
-        oldRecord = nullptr;
-        delete logRecord;
-        logRecord = nullptr;
-        delete request;
-        request = nullptr;
-        reqData.flush();
-        delete[] influxUser;
-        influxUser = nullptr;
-        delete[] influxPwd;
-        influxPwd = nullptr; 
-        delete[] influxRetention;
-        influxRetention = nullptr;
-        delete[] influxMeasurement;
-        influxMeasurement = nullptr;
-        delete[] influxFieldKey;
-        influxFieldKey = nullptr; 
-        delete[] influxURL;
-        influxURL = nullptr;
-        delete[] influxDataBase;
-        influxDataBase = nullptr;
-        delete influxTagSet;
-        influxTagSet = nullptr;  
-        delete influxTagSet;
-        influxOutputs;      
-        influxStarted = false;
         state = initialize;
-        return 0;
+        if(influxRestart){
+          log("influxDB: Restart. Last post %s", localDateString(influxLastPost).c_str());
+          influxRestart = false;
+          return 1;
+        } else {
+          log("influxDB: Stopped. Last post %s", localDateString(influxLastPost).c_str());
+          trace(T_influx,72);    
+          delete oldRecord;
+          oldRecord = nullptr;
+          delete logRecord;
+          logRecord = nullptr;
+          delete request;
+          request = nullptr;
+          reqData.flush();
+          delete[] influxUser;
+          influxUser = nullptr;
+          delete[] influxPwd;
+          influxPwd = nullptr; 
+          delete[] influxRetention;
+          influxRetention = nullptr;
+          delete[] influxMeasurement;
+          influxMeasurement = nullptr;
+          delete[] influxFieldKey;
+          influxFieldKey = nullptr; 
+          delete[] influxURL;
+          influxURL = nullptr;
+          delete[] influxDataBase;
+          influxDataBase = nullptr;
+          delete influxTagSet;
+          influxTagSet = nullptr;  
+          delete influxTagSet;
+          influxOutputs;      
+          influxStarted = false;
+          return 0;
+        }
+        
       }
 
           // If not enough entries for bulk-send, come back in one second;
@@ -518,6 +552,8 @@ bool influxConfig(const char* configObj){
     trace(T_influxConfig,10);
     NewService(influxService, T_influx);
     influxStarted = true;
+  } else if(! influxStop) {
+    influxRestart = true;
   }
   return true;
 }
