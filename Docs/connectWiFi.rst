@@ -13,7 +13,7 @@ with a reliable internet connection*.
 
 If the power-up connection is successful, the LED will begin to glow dull green.
 This indicates that the IoTaWatt has connected and is in normal operating mode.
-At this point you can skip ahead to the `next section <ACreference.html>`__
+At this point you can skip ahead to the `next section <devConfig.html>`__
 
 New connection
 --------------
@@ -29,7 +29,7 @@ that new name will be the password required in this step.
 
 After connecting, a page will be rendered with several choices.  Select ``Configure WiFi``.
 
-.. image:: pics/captiveportal.jpg
+.. image:: pics/captivePortal.jpg
     :scale: 25 %
     :align: center
     :alt: captive portal image
@@ -47,5 +47,5 @@ Select your network and enter the password, then save. Once connected,
 the new WiFi network credentials will be saved and the device will continue it's
 startup procedure.  If you see another LED sequence, refer to the `troubleshooting <troubleshooting.html>`__ section.
 
-When the LED begins bliinking a rapid dull green, proceed to the next step
-`ACreference  <ACreference.html>`__
+When the LED glows dull green, proceed to the next step
+`Device Configuration  <devConfig.html>`__
