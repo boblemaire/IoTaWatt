@@ -9,14 +9,14 @@ That objective was soon supplanted by an open hardware design based on the ESP82
 Typical IoTaWatt installations use a commercially manufactured unit
 that is certified to UL and CE safety standards and complies with FCC requirements.
 
-The IoTaWatt firmware is factory installed into those devices and is securely updated over WiFi.
-This section of the documentation deals with the physical installation of that
-commercially available IoTaWatt unit with firmware factory installed.
+The IoTaWatt firmware is factory installed and can be automatically and securely updated over WiFi.
+This section of the documentation deals with the physical installation of the
+commercial IoTaWatt unit with factory installed firmware.
 
 Components
 ----------
 
-IoTaWatt has 15 input channels.  One is reserved for monitoring voltage only, and the remaining 14 can be used to monitor power or voltage.
+IoTaWatt has 15 input channels.  One is reserved for monitoring voltage, and the remaining 14 can be used to monitor power or voltage.
 The minimum requirements for operation are:
 
     * IoTaWatt
@@ -44,6 +44,6 @@ Setup is simple:
 
 That's it.
 
-Next step: `connecting to WiFi <connectWiFi>`_
+Next step: `connecting to WiFi <connectWiFi.html>`__
 
  

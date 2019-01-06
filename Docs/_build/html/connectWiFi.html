@@ -36,6 +36,40 @@
             
   <div class="section" id="connecting-to-wifi">
 <h1>Connecting to WiFi<a class="headerlink" href="#connecting-to-wifi" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Permalink to this headline">¶</a></h2>
+<p>When the device powers up, it attempts to connect to the last WiFi network used.
+A connection must be established to an internet connected network if the real
+time clock is not set, or to run the configuration utility,
+or if logging to an external server like Emoncms is desired.
+<em>It is strongly recommended to connect the IoTaWatt to a WiFi network
+with a reliable internet connection</em>.</p>
+<p>If the power-up connection is successful, the LED will begin to glow dull green.
+This indicates that the IoTaWatt has connected and is in normal operating mode.
+At this point you can skip ahead to the <a class="reference external" href="ACreference.html">next section</a></p>
+</div>
+<div class="section" id="new-connection">
+<h2>New connection<a class="headerlink" href="#new-connection" title="Permalink to this headline">¶</a></h2>
+<p>If the IoTaWatt has never been connected to a WiFi network (new),
+or the last used network is not available, the ESP8266 will start in
+AP (Access Point) mode when powered-up (not on a software restart).
+This state is indicated when the LED flashes the three color sequence RED-GREEN-GREEN.
+It will broadcast an SSID recognizable by the prefix <code class="docutils literal notranslate"><span class="pre">iota</span></code> followed by a unique number.
+Connect to it using a smartphone or tablet.  Use the password <code class="docutils literal notranslate"><span class="pre">IotaWatt</span></code> (case sensitive).
+If the device was previously configured and the device name was changed,
+that new name will be the password required in this step.</p>
+<p>After connecting, a page will be rendered with several choices.  Select <code class="docutils literal notranslate"><span class="pre">Configure</span> <span class="pre">WiFi</span></code>.</p>
+<a class="reference internal image-reference" href="_images/captiveportal.jpg"><img alt="captive portal image" class="align-center" src="_images/captiveportal.jpg" style="width: 185.0px; height: 256.0px;" /></a>
+<p>A few seconds may elapse while the IoTaWatt scans for the local networks,
+then another page will be rendered allowing you to select one of the listed
+networks, or specify another network not listed.</p>
+<a class="reference internal image-reference" href="_images/SSIDpwd.jpg"><img alt="Specify Network image" class="align-center" src="_images/SSIDpwd.jpg" style="width: 211.5px; height: 234.75px;" /></a>
+<p>Select your network and enter the password, then save. Once connected,
+the new WiFi network credentials will be saved and the device will continue it's
+startup procedure.  If you see another LED sequence, refer to the <a class="reference external" href="troubleshooting.html">troubleshooting</a> section.</p>
+<p>When the LED begins bliinking a rapid dull green, proceed to the next step
+<a class="reference external" href="ACreference.html">ACreference</a></p>
+</div>
 </div>
 
 
@@ -58,7 +92,11 @@
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Connecting to WiFi</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Connecting to WiFi</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#purpose">Purpose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#new-connection">New connection</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
 </ul>
 
