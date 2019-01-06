@@ -1,4 +1,4 @@
-IoTaWatt documentation!
+IoTaWatt documentation
 ====================================
 
 .. toctree::
@@ -7,4 +7,4 @@ IoTaWatt documentation!
 
    Installation <installation>
    Connecting to WiFi <connectWiFi>
-   Configuration <configuration>
+   Device Configuration <devConfig>

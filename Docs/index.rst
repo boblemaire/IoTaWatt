@@ -7,4 +7,4 @@ IoTaWatt documentation
 
    Installation <installation>
    Connecting to WiFi <connectWiFi>
-   Device Configuration <devConfiguration>
+   Device Configuration <devConfig>
