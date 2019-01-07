@@ -62,14 +62,14 @@ These models are quite different and need to be properly configured.
 .. figure:: pics/TDC-DA-09-10.jpg
     :scale: 10 %
     :align: left
-    :alt: Select VT Image
+    :alt: TDC DA-09-10
 
     use model: TDC DA-09-10
 
 .. figure:: pics/TDC-DA-09-10-E6.jpg
     :scale: 10 %
     :align: center
-    :alt: Select VT Image
+    :alt: TDC DA-09-10-E6
 
     use model: TDC DA-09-10-E6
 
