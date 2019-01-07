@@ -8,3 +8,6 @@ IoTaWatt documentation
    Installation <installation>
    Connecting to WiFi <connectWiFi>
    Device Configuration <devConfig>
+   VT Configuration <VTconfig>
+   CT Configuration <CTconfig>
+   
