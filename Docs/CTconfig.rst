@@ -14,13 +14,9 @@ CTs come in a various capacities, physical connection type, and electrical outpu
 
 The good news is that IoTaWatt supports a wide variety of readily available CTs, 
 and many can be configured simply by selecting the model from a list. 
-Standard IoTaWatt devices have burden resistors installed on the input channels 
-to convert the CT output to a voltage that can be measured. 
-The value of those resistors will have been pre-configured during manufacture. 
-For purposes of this tutorial, we will assume that your device has the correct burden resistors specified.
-
-IotaWatt is designed to use 3.5mm stereo jacks (headphone jacks) to connect the CTs. 
-The CTs that are sold at the IoTaWatt stuff store `http://stuff.iotawatt.com`_  have the correct 3.5mm jacks.  
+CTs are connected with 3.5mm stereo jacks (headphone jacks). 
+The CTs that are sold at the IoTaWatt stuff store `http://stuff.iotawatt.com`_  
+are manufactured with 3.5mm jacks.  
 
 .. figure:: pics/CT.jpg
     :scale: 20 %
@@ -45,11 +41,6 @@ will tell you which ones appear to be backward, and provides a way to correct vi
 Configuring the Input Channels
 ------------------------------
 
-At this point, you should have the IoTaWatt up and running with the voltage channel 
-connected, configured, and calibrated if necessary. 
-You are using the config app in a browser connected to your WiFi network.  
-Hover over |Setup| and click |Input| in the dropdown buttons.
-
 .. |Setup| image:: pics/SetupButton.png
     :scale: 60 %
     :alt: **Setup button**
@@ -57,6 +48,11 @@ Hover over |Setup| and click |Input| in the dropdown buttons.
 .. |Input| image:: pics/InputsButton.png
     :scale: 60 %
     :alt: **Inputs button**
+
+At this point, you should have the IoTaWatt up and running with the voltage channel 
+connected, configured, and calibrated if necessary. 
+You are using the config app in a browser connected to your WiFi network.  
+Hover over |Setup| and click |Input| in the dropdown buttons.
 
 .. image:: pics/setupInputs.png
     :scale: 60 %
@@ -84,7 +80,7 @@ You can just use the default "Input_1" or something more meaningful like "Kitche
 or "Living Room" or "Main". We will configure one of our US 120/240V split-phase mains
 as **main_1**.
 
-The default type is **CT** and we will stick with that as input 0 is our VT.
+The default type is **CT** and that's correct.
 
 The next drop-down box is the model of the CT.  Initially it will be `generic`, 
 Click the drop-down list and select the **ECS24200** CT.  
@@ -106,6 +102,7 @@ That's because those values are known for the listed CTs.
 If you have a CT that is not found in the list, 
 you will need specify the "generic" entry and 
 provide the turns-ratio and phase-lead for that CT.
+see `generic CT`_ below.
 
 There are check-boxes to further configure the CT.  
 Most of the time, these will not be used, but there are circumstances 
@@ -135,8 +132,8 @@ a brief description will appear. They are explained below:
     IoTaWatt will sense this and correct automatically in single-phase power systems.  
     It will correct the negative value automatically and indicate so in the 
     status display with a little ↺ symbol. Selecting this option will virtually reverse 
-    the CT as if it were oriented correctly rather than physically reversing the CT
-    on the conductor.  While merely convenient for single-phase systems, correct orientation 
+    the CT as if it were oriented correctly, obviating the need to physically reverse it.
+    Doing so can be safer and/or easier especially with solid core CTs. While merely convenient for single-phase systems, correct orientation 
     is a necessity in three-phase installations because the IoTaWatt cannot automatically 
     sense a reversed CT and correct for it.
 
@@ -181,7 +178,7 @@ Current Type CT
 ~~~~~~~~~~~~~~~
 
 Current type CTs are the most common type of CT used with IoTaWatt and all of the
-CTs sold in the IoTaWatt Stuff Store are of this type. They are typically described by
+CTs available in the IoTaWatt *Stuff* Store are of this type. They are typically described by
 the ratio of the maximum primary current that they can measure and the corresponding
 secondary current that will be produced, as in 200A:50mA.  
 For these CTs, you will be asked to specify the "Turns:".  
@@ -191,9 +188,9 @@ So that 100A:50mA described above would be 100/.050 = 2000 turns.
 Voltage Type CT
 ~~~~~~~~~~~~~~~
 
-Voltage type CTs are typically described with an output in volts (V).  
-They have an internal burden resistor that causes them to produce an ouput 
-voltage rather than an output current.  They are connected to a modified IoTaWatt 
+Voltage type CTs are typically described with an output in volts (V) and  
+have an internal burden resistor that causes them to produce an output 
+voltage rather current.  They are connected to a modified IoTaWatt 
 input that has had the internal burden resistor removed and specified as zero 
 in the device configuration burden menu.  IoTaWatt will ask for a **Cal** factor.  
 This is the primary current in amps that corresponds to 1 volt of output from the CT.  
