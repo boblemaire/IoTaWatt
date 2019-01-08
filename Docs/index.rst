@@ -12,7 +12,7 @@ IoTaWatt documentation
    CT Configuration <CTconfig>
    Status Display <status>
    Outputs <outputs>
-   Sending to Web Servers <webServers>
+   Sending to Web Servers <webServers/master.rst>
    Troubleshooting <troubleshooting>
    Graphing your Data <graphing>
    File Manager and Editor <fileManager>
