@@ -1,3 +1,4 @@
+========================
 IoTaWatt documentation
 ====================================
 
@@ -11,7 +12,7 @@ IoTaWatt documentation
    VT Configuration <VTconfig>
    CT Configuration <CTconfig>
    Status Display <status>
-   Troubleshooting <troubleshooting>
+   Outputs <outputs>
    Graphing the Data <graphing>
    File Manager and Editor <fileManager>
 
