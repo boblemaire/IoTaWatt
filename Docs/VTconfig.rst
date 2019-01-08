@@ -51,7 +51,7 @@ you should be good to go on to the next step Adding Power Channel CTs
 If your VT wasn't listed in the dropdown above,
 the generic entry is a reasonable starting point that will get you in the ball park for your 9-12Vac adapter.
 If your country is 230V or 240V select "generic240V". Now you must perform the
-`calibration procedure <Voltage Calibration>`_ below.
+`Voltage Calibration`_  procedure below.
 
 TDC DA-09-10 model ambiguity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
