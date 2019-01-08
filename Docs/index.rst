@@ -11,4 +11,10 @@ IoTaWatt documentation
    VT Configuration <VTconfig>
    CT Configuration <CTconfig>
    Status Display <status>
-   
+   Outputs <outputs>
+   Sending to Web Servers <webServers>
+   Troubleshooting <troubleshooting>
+   Graphing your Data <graphing>
+   File Manager and Editor <fileManager>
+   Message Log <messageLog>
+   Three-phase Power <threePhase>
