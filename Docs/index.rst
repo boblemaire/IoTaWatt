@@ -10,4 +10,5 @@ IoTaWatt documentation
    Device Configuration <devConfig>
    VT Configuration <VTconfig>
    CT Configuration <CTconfig>
+   Status Display <status>
    
