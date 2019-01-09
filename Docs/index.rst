@@ -1,17 +1,17 @@
-========================
+======================
 IoTaWatt documentation
-====================================
+======================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+..  toctree::
+    :maxdepth: 2
+    :caption: Contents:
 
-   Installation <installation>
-   Connecting to WiFi <connectWiFi>
-   Device Configuration <devConfig>
-   VT Configuration <VTconfig>
-   CT Configuration <CTconfig>
-   Status Display <status>
-   Graphing the Data <graphing>
-   File Manager and Editor <fileManager>
-
+    Installation <installation>
+    Connecting to WiFi <connectWiFi>
+    Device Configuration <devConfig>
+    VT Configuration <VTconfig>
+    CT Configuration <CTconfig>
+    Status Display <status>
+    Outputs <outputs.rst>
+    Graphing the Data <graphing>
+    File Manager and Editor <fileManager>
