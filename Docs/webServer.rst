@@ -75,8 +75,8 @@ Both solar generation and energy consumption data can be
 ombined to provide a 'Net' view of energy being either 
 generated or consumed live.
 
-`influxDB <influxDB>`_
-----------------------
+`influxDB <influxDB.html>`_
+---------------------------
 
 influxDB is a free industrial strength, open-source, schema-less time series 
 database. It is fast, efficient and scalable. You can install on a 
@@ -85,8 +85,8 @@ Raspberry Pi, a home server, or a commercial web host site.
 There are several excellent visualization packages that can be used 
 to visualize and report the data.
 
-`Emoncms <Emoncms>`_
---------------------
+`Emoncms <Emoncms.html>`_
+-------------------------
 
 Emoncms is another open-source time series database that was specifically
 designed to handle energy monitoring data with robust set of
