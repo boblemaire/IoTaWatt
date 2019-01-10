@@ -73,7 +73,7 @@ The entire process should never take more than a minute.
 Led Sequences
 -------------
 
-Red-Green-Green
+red-green-green
 ^^^^^^^^^^^^^^^
 
 IoTaWatt is having trouble connecting to the WiFi network. 
@@ -100,7 +100,7 @@ but it cannot accumulate log data if it doesn't know what time it is,
 and it sets the real-time-clock from the internet. 
 Determine the problem with your WiFi network or connect to a new network.
 
-Green-Red-Red
+green-red-red
 ^^^^^^^^^^^^^
 
 IoTaWatt is having trouble accessing the SDcard inside the device. 

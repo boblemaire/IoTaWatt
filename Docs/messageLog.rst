@@ -64,52 +64,51 @@ and provide a lot of information.
     1/08/19 14:39:58 influxDB: Start posting at 01/08/19 14:39:40
 
 Some things to look for:
-
+::
     Real Time Clock is running. Unix time 1546976383
 
 Except for initial setup, the RTC should always be running.
 If it is not, suspect the battery needs replacement.
-
+::
     Power failure detected.
 
 This indicates that power interrupted prior to the restart.
-
+::
     Reset reason: External System
 
 This is the reason for the restart.
 External System is a normal cause. Reasons like WDT and 
 Exception indicate program faults and, if frequent, 
 should be posted to the support forum.
-
+::
     IoTaWatt revision 4.9, firmware version 02_03_20
 
 The hardware and firmware versions.  Good to know if things
 go wrong, and also useful toget the corresponding version
 of this documentation.
-
+::
     Local time zone: -5:00
 
 The local time zone specified in you config file.
 This message and all subsequent messages should
 be timestamped with local-time as opposed to UTC
 which was indicated in prior messages with by the suffix 'z'.
-
+::
     device name: IotaWatt
 
 This is the external name of the unit.  It will
 be used as the hostname when connecting to
 WiFi and it is the name that you must use to 
 access the device as in http://iotawatt.local.
-
-    WiFi connected. SSID=flyaway, IP=192.168.1.102, 
-    channel=1, RSSI -69db
+::
+    WiFi connected. SSID=flyaway, IP=192.168.1.102, channel=1, RSSI -69db
 
 Indicates connection to WiFi and the IP address 
 assigned. The RSSI is an indication of WiFi signal strength.
 A good number would be between -50 and -78 or so.
 If you are having WiFi problems, this metric along with
 the channel number can be helpful in resolving.
-
+::
     timeSync: service started.
 
 All of the regular services will log their startup.
