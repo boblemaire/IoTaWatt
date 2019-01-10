@@ -42,7 +42,7 @@ Tools main menu.
     :alt: File Manager
 
 The left column is the file list. 
-Directories are not expanded but can be by clicking the + sign 
+Directories can be expanded by clicking the + sign 
 as in the typical paradigm. Action can be taken on individual 
 files by right clicking and selecting from the options:
 
