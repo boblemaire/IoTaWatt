@@ -142,11 +142,10 @@ To do this, select the date that you want to begin from,
 and click the *Reload History* box. When you press |save|, the reload will begin.
 
 If necessary, the starting date will be adjusted to coincide 
-with the contents of the data log. Statuses, 
-which are the 5 minute interval detail data, 
-can only be reloaded for 14 days back (90 days in donator mode).
+with the contents of the data log. Up to 14 days of history can be
+uploaded in free mode while donator mode allows 90 days.
 
-Large history uploads may pause for to hourly transaction limits 
+Large history uploads may pause due to hourly transaction limits 
 imposed by PVoutput. 
 The message log will indicate these pauses and when to expect resumption.
 
