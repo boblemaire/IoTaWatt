@@ -118,4 +118,3 @@ about their configuration or state. All messages
 from system services begin with the name of the service
 followed by a colon.
 
-
