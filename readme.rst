@@ -11,7 +11,7 @@ Configuration and administration is through an easy to
 use browser based utility running in a browser on a 
 compute, tablet or smartphone.
 
-.. figure:: docs/pics/USAbundle.jpg
+.. figure:: Docs/pics/USAbundle.jpg
     :scale: 20 %
     :align: center
     :alt: **IoTaWatt USA Bundle**
@@ -52,23 +52,23 @@ The unit is manufactured in the USA.
     *   `Project Website <https://iotawatt.com>`_
     *   `User Forum <https://community.iotawatt.com>`_
 
-.. image:: docs/pics/inputsOutputsDisplay.png
+.. image:: Docs/pics/inputsOutputsDisplay.png
     :scale: 20 %
     :align: left
 
-.. image:: docs/pics/graphMultiChannel.jpg
+.. image:: Docs/pics/graphMultiChannel.jpg
     :scale: 20 %
     :align: right
 
-.. image:: docs/pics/totalPowerOutput.png
+.. image:: Docs/pics/totalPowerOutput.png
     :scale: 20 %
     :align: center
 
-.. image:: docs/pics/PVoutputDisplay.png
+.. image:: Docs/pics/PVoutputDisplay.png
     :scale: 20 %
     :align: center
 
-.. image:: docs/pics/influxDBgrafana.png
+.. image:: Docs/pics/influxDBgrafana.png
     :scale: 20 %
     :align: center
 
