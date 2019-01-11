@@ -17,6 +17,7 @@ IoTaWatt documentation
     PVoutput <PVoutput>
     Emoncms <Emoncms>
     influxDB <influxDB>
+    Three-phase power <threePhase>
     Graphing the Data <graphing>
     File Manager and Editor <fileManager>
     Message Log <messageLog>

@@ -31,18 +31,21 @@ Hover over |Setup| and click
 
 .. image:: pics/webServerMenu.png
     :scale: 60 %
+    :align: center
     :alt: **Setup Menu**
 
 Choose influxDB.
 
 .. image:: pics/selectInfluxDB.png
     :scale: 60 %
+    :align: center
     :alt: **Select influxDB**
 
 Here you specify what you want IoTaWatt to upload.
 
 .. image:: pics/addinflux.png
     :scale: 60 %
+    :align: center
     :alt: **Select influxDB**
 
 **post interval**
@@ -131,6 +134,7 @@ tag-set
 
 .. image:: pics/addTagSet.png
     :scale: 60 %
+    :align: center
     :alt: **Influx tag-set**
 
 **field-key** 
@@ -206,6 +210,7 @@ So as an example, when generating a measurement configured as:
 
 .. image:: pics/addInfluxSolar.png
     :scale: 60 %
+    :align: center
     :alt: **Influx Solar Output**
 
 with a device name of IotaHome and the current value of the input 
