@@ -8,8 +8,8 @@ It can use any of dozens of common current transformers and
 will report the data locally via integrated web server,
 or upload to any of several third-party energy websites/data bases.
 Configuration and administration is through an easy to 
-use browser based utility running in a browser on a 
-compute, tablet or smartphone.
+use browser based utility running on a 
+computer, tablet or smartphone.
 
 .. figure:: Docs/pics/USAbundle.jpg
     :scale: 20 %
@@ -56,7 +56,7 @@ The unit is manufactured in the USA.
     :scale: 20 %
     :align: left
 
-.. image:: Docs/pics/graphMultiChannel.jpg
+.. image:: Docs/pics/graphMultichannel.jpg
     :scale: 20 %
     :align: right
 
@@ -68,7 +68,7 @@ The unit is manufactured in the USA.
     :scale: 20 %
     :align: center
 
-.. image:: Docs/pics/influxDBgrafana.png
+.. image:: Docs/pics/influxDBGrafana.png
     :scale: 20 %
     :align: center
 
