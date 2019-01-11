@@ -1,10 +1,25 @@
-IoTaWatt documentation!
-====================================
+======================
+IoTaWatt documentation
+======================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+..  toctree::
+    :maxdepth: 2
+    :caption: Contents:
 
-   Installation <installation>
-   Connecting to WiFi <connectWiFi>
-   Configuration <configuration>
+    Installation <installation>
+    Connecting to WiFi <connectWiFi>
+    Device Configuration <devConfig>
+    VT Configuration <VTconfig>
+    CT Configuration <CTconfig>
+    Status Display <status>
+    Outputs <outputs.rst>
+    Web Servers <webServer>
+    Configure PVoutput <PVoutput>
+    Configure Emoncms <Emoncms>
+    Configure influxDB <influxDB>
+    Three-phase power <threePhase>
+    Graphing the Data <graphing>
+    File Manager and Editor <fileManager>
+    Message Log <messageLog>
+    Troubleshooting <troubleshooting>
+
