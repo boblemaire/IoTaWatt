@@ -2,26 +2,25 @@
 Three-phase Power
 =================
 
-IoTaWatt has the capability to measure power in polyphase power systems. 
+IoTaWatt has the capability to measure power in polyphase systems. 
 In the interest of keeping the user interface simple for the majority 
-of users with single phase power, the details are somewhat disguised 
-and/or hidden. As of this writing, there are only a handful of 
-three-phase users, but there's a lot of interest so the user 
-interface will be enhanced as more is learned about what works 
-best and what accuracy can be expected from the various methods.
+of users with single phase power, the details are disguised and/or hidden
+until needed. There has been a lot of interest in using IoTaWatt
+for three-phase monitoring, particularly in three phase countries like
+Australia and Germany. For home energy monitoring, the *derived reference*
+method is very popular.
 
 As explained in the introductory single phase section, 
 a voltage reference is needed to measure real power. 
-The challenge with three phase power is to obtain 
+The challenge with three-phase power is to obtain 
 three different voltage/phase reference signals. 
-IoTaWatt can do this by two different methods 
-that we call Direct Reference and Derived Reference.
+IoTaWatt can do this by two different methods: 
 
     **Direct Reference** uses three discrete voltage transformers 
     or VTs, each one plugged into a circuit on a different phase. 
-    The primary advantage is accuracy, while the disadvantages 
-    are that the extra VTs add cost, require using two of the inputs, 
-    require special adapters, and require plugs on each phase 
+    The primary advantage is voltage accuracy, while the 
+    disadvantages are that the extra VTs add cost, require using 
+    two of the inputs, and require plugs on each phase 
     in proximity to the IoTaWatt.
 
     **Derived Reference** uses a single voltage transformer 
@@ -39,17 +38,16 @@ Connecting additional VTs
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To use Direct Reference three-phase power measurement, 
-it's necessary to first obtain and install two additional 
-VTs (total of three), and to locate each of them in a 
-receptacle supplied by a unique phase that is in 
-proximity to the IoTaWatt. 
+it's necessary to install two additional 
+VTs (total of three), and to plug each of them into a 
+receptacle that is supplied by a unique phase. 
 
 Version 4.9 of IoTaWatt, available second quarter 2019,
 will have native plugs to connect the additional VTs.
 This tutorial will assume you have the new version 4.9
 IoTaWatt.
 
-The additional will plug into twosockets at the rear
+The additional VTs will plug into two sockets at the rear
 of the unit.  They are labelled VT-13 and VT-14.
 When these are used, the standard channel 13 and 14
 jacks should not be used.
@@ -58,7 +56,7 @@ Configuring the voltage inputs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Now the additional VTs can be configured and calibrated. 
-Do this in exactly the same way that the first VT was configured. 
+Do this in the same way that the first VT was configured. 
 Click the channel number, click "VT" then specify the model. 
 Click Calibrate and calibrate the voltage to match your reference. 
 It's not necessary that the VTs be plugged into their 
@@ -105,11 +103,14 @@ reference signal for the other two. While not as exact, this method
 can produce good results. The IoTaWatt numerically shifts the single 
 voltage/phase reference by 120° or 240° to measure power on the 
 additional two legs. Using this method, a three-phase system can 
-be monitored with one VT as it does with single-phase systems.
+be monitored with a single VT, just as with single-phase systems.
 
 This chapter explains how to configure IoTaWatt to 
-use "Derived Reference" measurement. 
+use "Derived Reference". 
 It's pretty straightforward.
+
+Configure the VT
+^^^^^^^^^^^^^^^^
 
 Set up your IoTaWatt with the voltage reference VT on whatever 
 phase of the three-phase is convenient. We will call that phase
@@ -118,9 +119,9 @@ A. This is important:
     *However you identify your physical phases, IoTaWatt always 
     identifies the phase that the VT is connected to as phase A.*
 
-The other two legs will be phase B and phase C. 
-It's just a big circle, so it's just a matter of where you start. 
-Your starting point is always A.
+The other two virtual phases will be phase B and phase C. 
+It doesn't matter where which of the physical phases
+your VT is connected to. Your starting point is always A.
 
 There are color coding schemes for the phases, but they vary so 
 widely that I'm not going to try to reconcile this scheme 
@@ -128,13 +129,16 @@ with any of them. That exercise is left to the reader.
 The good news is that you really don't have to know what 
 any of the phases are to complete this setup.
 
+Configure the CTs
+^^^^^^^^^^^^^^^^^
+
 Connect CTs to each of the circuits that you want to measure, 
 and configure them as described here.
 
     *Be sure to orient all of the CTs the same way 
     with respect to source and load*. 
     
-The following instructions may not work as described 
+The following instructions will not work as described 
 if any CTs on the derived phases are reversed.
 
 If you've done everything correctly, 
@@ -151,7 +155,7 @@ click the box for "Enable derived three-phase" at the bottom.
     :alt: **Derived Three-phase Inputs**
 
 The configured input channels should now have "phase:A" 
-appended to their descriptions. Now go to the status display 
+appended to their descriptions. Go to the status display 
 and evaluate which of the inputs appear to be showing power 
 that is half what is expected. Note them and go back 
 to the input configuration screen. If you know the relative 
@@ -167,11 +171,14 @@ changing the "Mains Phase" to phase B.
     :alt: **Derived Three-phase Selection**
 
 Now go back to the status display and see which inputs
-still appear to be half of the expected value, 
+still appear to be about half of the expected value, 
 go back to the input menu and change those to phase C.
 
 The status display should now indicate 
 the correct power for all of the phase.
+
+This procedure works best when the loads are substantial and
+have high power factors.
 
 One additional point. Once you configure inputs to 
 indicate mains phase B or C, the "Enable derived three-phase" 
@@ -179,7 +186,7 @@ checkbox will remain set and cannot be turned
 off until all of the inputs are reconfigured back to phase A.
 
 Reporting Power
-^^^^^^^^^^^^^^^
+---------------
 
 Once all of the VTs and CTs are configured, 
 there are several ways to view the power used. 

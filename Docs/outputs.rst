@@ -36,7 +36,9 @@ So lets click |add|:
     :alt: New Output
 
 This is the *calculator* interface that IoTaWatt uses to specify 
-how to calculate an output using input channel values.  
+how to calculate an output using input channel values.
+A script is created that IoTaWatt uses to compute the value when 
+needed.  
 It works just like the simple four function calculators we are all used to, 
 and using the |input| key, you can select 
 input channel values to be used in the formula that you are creating. 
@@ -87,6 +89,7 @@ Some other useful outputs would be:
         If for instance the inverter were putting out 4500
         watts and your Main(s) indicated an outflow represented as -3100
         watts, local usage would be 1400 watts with 3100 watts exported.
+        
 
     *   Where the Main(s) are monitored and selected circuits within the panel
         are also measured, you can create an output that shows the aggregate

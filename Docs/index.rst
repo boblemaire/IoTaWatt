@@ -14,9 +14,9 @@ IoTaWatt documentation
     Status Display <status>
     Outputs <outputs.rst>
     Web Servers <webServer>
-    PVoutput <PVoutput>
-    Emoncms <Emoncms>
-    influxDB <influxDB>
+    Configure PVoutput <PVoutput>
+    Configure Emoncms <Emoncms>
+    Configure influxDB <influxDB>
     Three-phase power <threePhase>
     Graphing the Data <graphing>
     File Manager and Editor <fileManager>

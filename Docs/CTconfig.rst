@@ -16,7 +16,7 @@ CTs come in a various capacities, physical connection type, and electrical outpu
 The good news is that IoTaWatt supports a wide variety of readily available 
 CTs, and many can be configured simply by selecting the model from a list. 
 CTs are connected with 3.5mm stereo jacks (headphone jacks). 
-The CTs that are sold at the IoTaWatt stuff store `http://stuff.iotawatt.com`__  
+The CTs that are sold at the `IoTaWatt stuff store <http://stuff.iotawatt.com>`_  
 are manufactured with 3.5mm jacks.  
 
 .. figure:: pics/CT.jpg
@@ -42,18 +42,10 @@ will tell you which ones appear to be backward, and provides a way to correct vi
 Configuring the Input Channels
 ------------------------------
 
-.. |Setup| image:: pics/SetupButton.png
-    :scale: 60 %
-    :alt: **Setup button**
-
-.. |Input| image:: pics/InputsButton.png
-    :scale: 60 %
-    :alt: **Inputs button**
-
 At this point, you should have the IoTaWatt up and running with the voltage 
 channel connected, configured, and calibrated if necessary. 
 You are using the config app in a browser connected to your WiFi network.  
-Hover over |Setup| and click |Inputs| in the dropdown buttons.
+Hover over |Setup| and click |inputs| in the dropdown buttons.
 
 .. image:: pics/setupInputs.png
     :scale: 60 %
@@ -65,9 +57,6 @@ transformer (VT). Now we will configure current transformers (CTs) to other
 inputs. To add or edit the CT specification for an input channel, 
 click the channel's number button. Let's add a CT to channel |Input1|.
 
-.. |Input1| image:: pics/Input1Button.png
-    :scale: 60 %
-    :alt: **Input 1 button**
 
 .. image:: pics/configGenericInput.png
     :scale: 60 %
@@ -124,30 +113,29 @@ next to each, a brief description will appear. They are explained below:
 **Double**
     In North American split-phase power systems (120V/240V), 
     all circuits are assumed to be 120V.  When this option is selected, 
-    the voltage is assumed to be double the reference voltage, or nominally 
-    240V. Use this for 240V circuits where one CT has been applied to one 
+    power will be computed using double the value of the
+    reference voltage, or nominally 240V. 
+    Use this for 240V circuits where one CT has been applied to one 
     of the conductors and there is no neutral (white) wire used by the 
     appliance. Typical circuits would be Water Heater, Water Pump, 
     Mini-Split Heat-Pump. There are other ways to monitor 
     240V circuits as well.
 
 **Reverse**
-    Sometimes a CT is installed backwards.  
+    Sometimes a CT is installed backwards with respect to normal 
+    current flow.  
     IoTaWatt will sense this and correct automatically in single-phase 
     power systems. It will correct the negative value automatically and 
     indicate so in the status display with a little ↺ symbol. Selecting 
     this option will virtually reverse the CT as if it were oriented 
     correctly, obviating the need to physically reverse it.
-    Doing so can be safer and/or easier especially with solid core CTs. 
+    Doing so can be safer and/or easier, especially with solid core CTs. 
     While merely convenient for single-phase systems, correct orientation 
     is a necessity in three-phase installations because the IoTaWatt 
     cannot automatically sense a reversed CT and correct for it.
 
 Press |save| to finish.
 
-.. |save| image:: pics/SaveButton.png
-    :scale: 60 %
-    :alt: **Save**
 
 .. image:: pics/inputsECS24200.png
     :scale: 60 %
@@ -159,7 +147,7 @@ can add more channels or change the configuration of existing inputs.
 Each time you press save, the new configuration is sent to IoTaWatt 
 and the changes take effect immediately. If the CTs are installed 
 and connected, you will can see the power displayed in the 
-Input Channel Status screen.
+Input Channel `Status screen <status.html>`_.
 
 When you have configured all of the CTs connected to the IoTaWatt, 
 basic configuration is complete.
@@ -167,9 +155,6 @@ Click the |Status| button to see the IoTaWatt in action.
 
 The following additional information may provide guidance for more advanced installations.
 
-.. |Status| image:: pics/StatusButton.png
-    :scale: 60 %
-    :alt: **Status button**
 
 Generic CT
 ----------
@@ -199,7 +184,7 @@ Voltage Type CT
 
 Voltage type CTs are typically described with an output in volts (V) and  
 have an internal burden resistor that causes them to produce an output 
-voltage rather current.  They are connected to a modified IoTaWatt 
+voltage rather than current.  They are connected to a modified IoTaWatt 
 input that has had the internal burden resistor removed and specified as zero 
 in the device configuration burden menu.  IoTaWatt will ask for a **Cal** 
 factor. This is the primary current in amps that corresponds to 1 volt 
@@ -212,7 +197,7 @@ Phase
 Both of the generic CT types above will also provide a place to specify 
 **Phase**. Representative samples of the CTs in the model list have been 
 tested to determine a phase correction value to compensate for phase 
-shift of the transformer. If you have a generic CT a good rule of thumb 
+shift of the transformer. If you have a generic CT a rule of thumb 
 would be to use 2.0 for a split core CT (one that snaps onto a wire), 
 and 0.2 for solid core CTs (Basically a solid doughnut that you pass 
 the conductor through).
@@ -222,4 +207,25 @@ Enable derived three-phase
 
 This checkbox enables advanced features used to configure inputs in a 
 three-phase power system. Refer to the 
-section `Three Phase Power <ThreePhase.html>`_ for more information.
+section `Three Phase Power <threePhase.html>`_ for more information.
+
+
+.. |Setup| image:: pics/SetupButton.png
+    :scale: 60 %
+    :alt: **Setup button**
+
+.. |Inputs| image:: pics/InputsButton.png
+    :scale: 60 %
+    :alt: **Inputs button**
+
+.. |Input1| image:: pics/Input1Button.png
+    :scale: 60 %
+    :alt: **Input 1 button**
+
+.. |save| image:: pics/SaveButton.png
+    :scale: 60 %
+    :alt: **Save**
+
+.. |Status| image:: pics/StatusButton.png
+    :scale: 60 %
+    :alt: **Status button**

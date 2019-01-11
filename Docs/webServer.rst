@@ -7,8 +7,8 @@ Sending Data to a Web Service
 
 As a standalone unit, IoTaWatt is a very capable data logger
 with an integrated web server/API interface that can provide
-real-time as well as historical data using the provided
-graph interface or otherwise to any web connected client.
+real-time as well as historical data, using the provided
+graph interface, or otherwise to any web connected client.
 That said, there are limitations in that queries can take
 several seconds and the web server currently works with
 locally connected clients on the same WiFi network and
@@ -23,7 +23,7 @@ client applications across the internet. Some of those
 databases can also be installed on a private server hosted
 by anything from a Raspberry Pi to a commercial hosting
 service. IoTaWatt has the capability to upload selected data 
-while still while maintaining all of its own local logging 
+while still maintaining all of its own local logging 
 and reporting capabilities.
 
 When one of these services becomes unavailable for any reason,
@@ -39,6 +39,7 @@ To initiate configuration of any web server, hover over
 
 .. image:: pics/webServerMenu.png
     :scale: 60 %
+    :align: center
     :alt: **Setup Menu**
 
 click the **Web Service:** dropdown and select a server you would 
@@ -49,11 +50,12 @@ like to use from the dropdown list. Each service is designated as
 
 .. image:: pics/selectWebServer.png
     :scale: 60 %
+    :align: center
     :alt: **Select Web Server Menu**
 
 When you select a server, the configuration menu for that particular server
-will appear. For details of configuring each unique server type, see the
-corresponding section below.
+will appear. For details of configuring each unique server type, click on
+the heading of the corresponding section below.
 
 `PVoutput <PVoutput.html>`_ 
 ---------------------------
@@ -62,18 +64,23 @@ PVOutput is a free online service for sharing and comparing photovoltaic
 solar panel output data. It provides both manual and automatic data 
 uploading facilities.
 
-Output data can be graphed, analysed and compared with other pvoutput 
+Output data can be graphed, analysed and compared with other PVoutput 
 contributors over various time periods. The ability to compare with 
 similar systems within close proximity allows both short and 
-longer term performance issues to be easily identified.
+longer term performance issues to be identified.
 
 While pvoutput is primarily focused on monitoring energy generation, 
 it also provides equally capabable facilities to upload and monitor 
 energy consumption data from various energy monitoring devices.
 
 Both solar generation and energy consumption data can be 
-ombined to provide a 'Net' view of energy being either 
-generated or consumed live.
+combined to provide a live 'Net' view of energy being  
+generated and consumed.
+
+.. image:: pics/pvoutputDisplay.png
+    :scale: 50 %
+    :align: center
+    :alt: **PVoutput Display**
 
 `influxDB <influxDB.html>`_
 ---------------------------
@@ -84,6 +91,13 @@ Raspberry Pi, a home server, or a commercial web host site.
 
 There are several excellent visualization packages that can be used 
 to visualize and report the data.
+
+.. figure:: pics/influxDBGrafana.png
+    :scale: 30 %
+    :align: center
+    :alt: influxDB/Grafana
+
+    grafana dashboard with influxDB
 
 `Emoncms <Emoncms.html>`_
 -------------------------

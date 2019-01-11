@@ -43,7 +43,7 @@ Choose influxDB.
 
 Here you specify what you want IoTaWatt to upload.
 
-.. image:: pics/addinflux.png
+.. image:: pics/addInflux.png
     :scale: 60 %
     :align: center
     :alt: **Select influxDB**
