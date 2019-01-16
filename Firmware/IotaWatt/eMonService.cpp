@@ -470,27 +470,27 @@ case sendSecure:{
       reqData.flush();
       trace(T_Emon,11);
       if(request->responseHTTPcode() != 200){
-        if(++retryCount == 3){
+        if(++retryCount == 30){
             log("EmonService: HTTP response %d, retrying.", request->responseHTTPcode());
         }
         state = getLastRecord;
-        return UTCtime() + retryCount / 10;
+        return UTCtime() + (retryCount < 30 ? 1 : retryCount / 10);
       }
       trace(T_Emon,11);
       String response = request->responseText();
       if((EmonSend == EmonSendGET && ! response.startsWith("ok")) ||
         (EmonSend == EmonSendPOSTsecure && ! response.startsWith(base64Sha))){
-        if(++retryCount == 3){
+        if(++retryCount == 30){
           log("EmonService: Invalid response, retrying.");
         }
-        if(retryCount % 10){
+        if(retryCount % 30){
           EmonLastPost = reqUnixtime;
         }
         state = getLastRecord;
-        return UTCtime() + retryCount / 10;
+        return UTCtime() + retryCount / 30;
       }
       trace(T_Emon,11);
-      if(retryCount >= 3){
+      if(retryCount >= 30){
         log("EmonService: Retry successful after %d attempts.", retryCount);
       }
       retryCount = 0;

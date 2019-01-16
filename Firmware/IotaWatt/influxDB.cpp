@@ -164,7 +164,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         state = post;
         return 1;
       }
-      String response = request->responseText();
+      String response = request->responseText(); 
       int HTTPcode = request->responseHTTPcode();
       delete request;
       request = nullptr;
@@ -172,9 +172,10 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         if(retryCount++ == 20){
           log("influxDB: last entry query failed: %d, retrying.", HTTPcode);
         }
-        state = queryLastWait;
-        return UTCtime() + retryCount < 20 ? 1 : 31;
+        state = queryLast;
+        return UTCtime() + (retryCount < 20 ? 1 : retryCount / 10);
       }
+      retryCount = 0;
       trace(T_influx,5);
       
             // Json parse the response to get the columns and values arrays
@@ -436,7 +437,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       reqEntries = 0;
       lastRequestTime = lastBufferTime;
       state = waitPost;
-      return 1;
+        1;
     } 
 
     case waitPost: {
@@ -445,13 +446,13 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         HTTPrelease(HTTPtoken);
         trace(T_influx,9);
         if(request->responseHTTPcode() != 204){
-          if(++retryCount == 10){
+          if(++retryCount == 50){
             log("influxDB: Post Failed: %d", request->responseHTTPcode());
           }
           delete request;
           request = nullptr; 
           state = getLastRecord;
-          return 1;
+          return UTCtime() + (retryCount < 30 ? 1 : retryCount / 10);
         }
         trace(T_influx,9);
         retryCount = 0;
