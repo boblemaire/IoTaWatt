@@ -472,6 +472,7 @@ void handleStatus(){
     trace(T_WEB,14);
     stats.set(F("frequency"),frequency);
     trace(T_WEB,14);
+    stats.set(F("lowbat"), RTClowBat);
     root.set(F("stats"),stats);
   }
   
