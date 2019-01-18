@@ -55,24 +55,33 @@ void setup()
   Wire.begin(pin_I2C_SDA, pin_I2C_SCL);
   rtc.begin();
 
-  Wire.beginTransmission(PCF8523_ADDRESS);            // Read Control_3
-  Wire.write((byte)2);
+  Wire.beginTransmission(PCF8523_ADDRESS);            // Read Control registers
+  Wire.write(PCF8523_CTL_1);
   Wire.endTransmission();
-  Wire.requestFrom(PCF8523_ADDRESS, 1);
-  uint8_t Control_3 = Wire.read();
+  Wire.requestFrom(PCF8523_ADDRESS, 3);
+  byte Control_1 = Wire.read();
+  byte Control_2 = Wire.read();
+  byte Control_3 = Wire.read();
   
   if(rtc.initialized()){
     timeRefNTP = rtc.now().unixtime() + SEVENTY_YEAR_SECONDS;
     timeRefMs = millis();
     RTCrunning = true;
     log("Real Time Clock is running. Unix time %d ", UTCtime());
-    if((Control_3 & 0x08) != 0){
+    if((Control_3 & PCF8523_CTL_3_BSF) != 0){
       log("Power failure detected.");
       powerFailRestart = true;
       Wire.beginTransmission(PCF8523_ADDRESS);            
       Wire.write((byte)PCF8523_CONTROL_3);
       Wire.write((byte)0);
       Wire.endTransmission();
+    }
+    else if(Control_2 & PCF8523_CTL_2_WTAF){
+      log("RTC watchdog timer reset");
+    }
+    if(Control_3 & PCF8523_CTL_3_BLF){
+      log("Real Time Clock battery is low.");
+      RTClowBat = true;
     }
     SdFile::dateTimeCallback(dateTime);
   }
@@ -83,7 +92,7 @@ void setup()
   
   Wire.beginTransmission(PCF8523_ADDRESS);            // Set crystal load capacitance
   Wire.write((byte)0);
-  Wire.write((byte)0x80);
+  Wire.write((byte)PCF8523_CTL_1_CAP_SEL);
   Wire.endTransmission();
 
     //**************************************** Display the trace ****************************************
