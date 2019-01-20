@@ -164,7 +164,8 @@ struct EEprom {
 #define T_timeSync 20      // timeSync service 
 #define T_WiFi 21          // WiFi service
 #define T_PVoutput 22      // PVoutput class 
-#define T_samplePhase 23   // Sample phase (within samplePower)       
+#define T_samplePhase 23   // Sample phase (within samplePower) 
+#define T_RTCWDT 24        // Dead man pedal service         
 
       // LED codes
 
@@ -268,6 +269,7 @@ extern uint32_t updaterServiceInterval;        // Interval (sec) to check for so
 extern bool     hasRTC;
 extern bool     RTCrunning;
 extern bool     powerFailRestart;               // Set true on power fail restart (detected by RTC)  
+extern bool     RTClowBat;                      // Set true when battery is low
 
 extern char     ledColor[12];                   // Pattern to display led, each char is 500ms color - R, G, Blank
 extern uint8_t  ledCount;                       // Current index into cycle
