@@ -87,7 +87,8 @@
  *   10/22/18 02_03_17 LLMNR responder, core 2.4.2, Age with new values, Add WDT to HTTP, Skip gaps posting Emon&influx, Check zeroDiv in script
  *   10/27/18 02_03_18 Improvements to influx, set WiFi hostname
  *   12/09/18 02_03_19 Add PVoutput support, local-time with DST, reduce use of WiFi Manager
- *   12/14/18 02_03_20 Upload live status only in PVoutput                           
+ *   12/14/18 02_03_20 Upload live status only in PVoutput 
+ *   01/18/19 02_03_21 EEprom, influx error recovery+, RTC battery warning, graph from IoTaWatt.com                          
  * 
  *****************************************************************************************************/
 
