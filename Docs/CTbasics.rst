@@ -31,17 +31,17 @@ Wikipedia does well.  Here we'll try to focus on the
 CTs that are suited to use with the IoTaWatt in typical
 scenarios.
 
-Physically, a CT needs to have an iron core that through
+Physically, a CT needs to have an iron core through
 which one or more primary conductors pass. The most basic
 type is a solid-core CT, where an iron doughnut is wrapped 
 with turns of wire. This type of CT is relatively inexpensive,
-and is typically more accurate, but requires that the primary
+typically very accurate, but requires that the primary
 conductor be disconnected and reconnected to install, thus
 exposing the installer to high-voltage and disrupting the
 primary circuit.
 
 .. figure:: pics/solidCoreCT.jpg
-    :scale: 10 %
+    :scale: 30 %
     :align: center
     :alt: Solid Core CT
 
@@ -49,8 +49,8 @@ primary circuit.
 
 Split-core CTs also require an iron core around the primary,
 but do so using two hinged halves that mate to form the continuous
-iron loop. This type of CT can be installed on an active 
-insulated primary conductor.
+iron loop. This type of CT can be installed by simply snapping
+the two halves over an active primary conductor.
 
 .. figure:: pics/splitCoreCT.jpg
     :scale: 30 %
@@ -62,7 +62,12 @@ insulated primary conductor.
 Installation
 ------------
 
-*Regardless of type, the installation of CTs can be dangerous and/or
+.. image:: pics/warningSymbol.png
+    :scale: 30 %
+    :align: left
+    :alt: **Warning!**
+
+*The installation of CTs can be dangerous and/or
 cause hazardous situations resulting serious injury or death.
 Worldwide, there are a variety of electrical conventions, regulations 
 and standards.  It is the user's responsibility to insure that the 
@@ -78,17 +83,17 @@ create a safety hazard. When plugged into the IoTaWatt, the
 secondary windings are loaded by a *burden resistor*.
 
 Some CTs have protective diodes, called TVS diodes, that will 
-protect against damage when unplugged for short periods.  If
-a CT is to be unplugged for an extended length of time where the 
-primary is energized, a CT should be removed or shorted.  Shorting
-will not damage a CT.
+protect against damage when unplugged for short periods.  Even if
+a diode protected CT is to be unplugged for an extended length 
+of time where the primary is energized, the CT should be removed 
+or shorted.  Shorting will not damage the CT.
 
 Polarity
 --------
 
 CTs are manufactured to produce a secondary current that is in 
 phase with the primary current when installed with a particular 
-orientation. It single and split-phase installations it is
+orientation. In single and split-phase installations it is
 important to observe polarity in certain situations.  In
 three-phase installations, it is imperitive that a polarity 
 convention be observed.
@@ -96,10 +101,11 @@ convention be observed.
 IoTaWatt will accept many different CTs from different manufacturers.
 While most have some type of markings that can be used as a 
 reference for polarity, there is no universal standard.  Typically,
-CTs from the same manufacturer will observe a common standard.
+CTs from the same manufacturer will be consistent with respect to source 
+and load indicators.
 
 And so it is for the Echun CTs that IoTaWatt, Inc makes available. 
-When installing, we introduce the notion of a *source* and a *load*.
+When installing, we use the notion of a *source* and a *load*.
 The source can be conceptualized as *where the power comes from* 
 and the load as *where the power goes*.
 
@@ -155,19 +161,20 @@ Single and three-phase systems
 
 All of the CTs in single or three-phase systems should
 be installed identically with respect to load and 
-source.  This is expecially important when configuring 
-three-phase systems using the Derived Three-phase method.
+source.  This is especially important when configuring 
+three-phase systems using the 
+`Derived Three-phase <threePhase.html>`_ method.
 
 Split-phase systems
 -------------------
 
 Most of North America and some Asian countries use 
 a split-phase power system with dual voltage, typically 
-120/240V.  With this power system, there are to mains 
+120/240V.  With this power system, there are two mains 
 with exact opposite phase. The voltage between either
 main and neutral is 120V, while the voltage between 
-the two mains is 240V.  This provides the advantage of 
-the relative safety of lower 120V in small appliance
+the two mains is 240V.  This provides an advantage of 
+the relative safety of lower voltage in small appliance
 outlets, while still providing high voltage for 
 workhorse appliances like water-heaters, ranges, 
 and clothes dryers.
@@ -175,7 +182,7 @@ and clothes dryers.
 In these systems, while possible to use two voltage refrences,
 typical IoTaWatt installations use a single reference
 that reflects the phase and voltage of one of the sides, 
-or legs as they are commonly called. The result is that 
+or *legs* as they are commonly called. The result is that 
 CTs on the other leg must be oriented  the opposite way to
 be in phase with the opposite voltage reference.  This can be 
 accomplished by physically installing them reversed, or by 
@@ -198,8 +205,8 @@ convention is to use RED and BLACK wires or BLACK and WHITE for
 ^^^^^^^^^
 
 When I say *pure* 240V circuits, I mean circuits that are 
-usually a single load, and do not have a third common wire 
-to use either leg for 120V.  Examples of *pure* 240V 
+usually a single load, and do not have a third neutral wire 
+to use either leg independantly for 120V.  Examples of *pure* 240V 
 circuits would be a resistive water-heater, well-pump, and 
 baseboard electric heater. A common giveaway for these circuits
 is that they don't have a neutral wire, and usually use two 
@@ -214,9 +221,9 @@ correct power and amperage.
 ^^^^^^^^^^^^^^^^^
 
 Like the *pure* 240V circuits above, these circuits use two 
-adjascent circuit-breakers, but also have a common conductor. 
+adjascent circuit-breakers, but also have a neutral conductor. 
 They usually have RED and BLACK conductors on the circuit-breaker 
-and a white common conductor that connects to the common bussbar. 
+and a white neutral conductor that connects to the neutral bussbar. 
 Typical appliances are ranges, ovens, and clothes-dryers.  Circuits
 feeding sub-panels are usually of this type as well.
 
@@ -259,4 +266,3 @@ splitter and fed into a single IotaWatt input. When combining
 this way, both CTs must be the same model with an individual 
 capacity sufficient to measure the combined capacity of the two 
 circuit breakers.
-  
