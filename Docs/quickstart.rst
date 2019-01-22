@@ -3,7 +3,7 @@ Quickstart
 ==========
 
 So now you have your new IoTaWatt and can't wait to hook it up and
-start monitoring. But couldn't find the quickstart guide
+start monitoring - but you couldn't find the quickstart guide
 in the box.  That's because there is no quickstart guide per-se.
 
 However...  The first few topics that follow contain all you
