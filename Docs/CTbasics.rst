@@ -109,7 +109,7 @@ When installing, we use the notion of a *source* and a *load*.
 The source can be conceptualized as *where the power comes from* 
 and the load as *where the power goes*.
 
-So for the mains, or incomming power to a service, the *source* would 
+So for the mains, or incoming power to a service, the *source* would 
 be the meter side, or incoming power feed.  The *load* would be the 
 main circuit breaker or fuse side.
 
