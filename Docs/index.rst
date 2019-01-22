@@ -6,6 +6,7 @@ IoTaWatt documentation
     :maxdepth: 2
     :caption: Contents:
 
+    Quickstart <quickstart>
     Installation <installation>
     Connecting to WiFi <connectWiFi>
     Device Configuration <devConfig>
