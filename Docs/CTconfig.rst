@@ -39,6 +39,9 @@ Most CTs have an arrow or other marking to aid in consistent orientation.
 Not to worry, in the event some end up backward, IoTaWatt will still work, 
 will tell you which ones appear to be backward, and provides a way to correct virtually.
 
+You can find more detailed information about physical installation of CTs 
+in the `CT Basics <CTbasics.html>`_ section.
+
 Configuring the Input Channels
 ------------------------------
 

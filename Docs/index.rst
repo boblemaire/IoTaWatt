@@ -6,6 +6,7 @@ IoTaWatt documentation
     :maxdepth: 2
     :caption: Contents:
 
+    Quickstart <quickstart>
     Installation <installation>
     Connecting to WiFi <connectWiFi>
     Device Configuration <devConfig>
@@ -18,8 +19,10 @@ IoTaWatt documentation
     Configure Emoncms <Emoncms>
     Configure influxDB <influxDB>
     Three-phase power <threePhase>
+    CT Basics <CTbasics>
     Graphing the Data <graphing>
     File Manager and Editor <fileManager>
     Message Log <messageLog>
     Troubleshooting <troubleshooting>
+    
 
