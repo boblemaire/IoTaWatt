@@ -179,7 +179,7 @@ outlets, while still providing high voltage for
 workhorse appliances like water-heaters, ranges, 
 and clothes dryers.
 
-In these systems, while possible to use two voltage refrences,
+In these systems, while possible to use two voltage references,
 typical IoTaWatt installations use a single reference
 that reflects the phase and voltage of one of the sides, 
 or *legs* as they are commonly called. The result is that 
@@ -198,15 +198,15 @@ systems in the next chapter.
 As explained above, split-phase systems can provide 
 high-voltage for large appliances. These circuits are connected 
 to two adjascent CTs that are on different legs.  The usual
-convention is to use RED and BLACK wires or BLACK and WHITE for
-*pure* 240V circuits.
+convention is to use RED and BLACK wires or, as explained below, 
+BLACK and WHITE for *pure* 240V circuits.
 
 240V only
 ^^^^^^^^^
 
 When I say *pure* 240V circuits, I mean circuits that are 
 usually a single load, and do not have a third neutral wire 
-to use either leg independantly for 120V.  Examples of *pure* 240V 
+to use either leg independently for 120V.  Examples of *pure* 240V 
 circuits would be a resistive water-heater, well-pump, and 
 baseboard electric heater. A common giveaway for these circuits
 is that they don't have a neutral wire, and usually use two 

@@ -106,6 +106,11 @@ Emoncms is another open-source time series database that was specifically
 designed to handle energy monitoring data with robust set of
 visualization tools.
 
+.. image:: pics/quellaDash.png
+    :scale: 30 %
+    :align: center
+    :alt: **An Emoncms Dashboard**
+
 Like influxDB, it can be local hosted on almost any machine, including 
 Raspberry Pi, but also is available as a  relatively inexpensive
 pay-as-you-go cloud service at emoncms.org.
