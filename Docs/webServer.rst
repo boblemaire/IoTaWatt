@@ -77,7 +77,7 @@ Both solar generation and energy consumption data can be
 combined to provide a live 'Net' view of energy being  
 generated and consumed.
 
-.. figure:: pics/pvoutputDisplay.png
+.. figure:: pics/PVoutputDisplay.png
     :scale: 50 %
     :align: center
     :alt: **PVoutput Display**
