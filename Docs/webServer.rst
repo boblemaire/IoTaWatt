@@ -77,10 +77,12 @@ Both solar generation and energy consumption data can be
 combined to provide a live 'Net' view of energy being  
 generated and consumed.
 
-.. image:: pics/pvoutputDisplay.png
+.. figure:: pics/PVoutputDisplay.png
     :scale: 50 %
     :align: center
     :alt: **PVoutput Display**
+
+    PVoutput Graphic Display
 
 `influxDB <influxDB.html>`_
 ---------------------------
@@ -105,6 +107,13 @@ to visualize and report the data.
 Emoncms is another open-source time series database that was specifically
 designed to handle energy monitoring data with robust set of
 visualization tools.
+
+.. figure:: pics/quellaDash.png
+    :scale: 30 %
+    :align: center
+    :alt: **An Emoncms Dashboard**
+
+    An Emoncms Dashboard
 
 Like influxDB, it can be local hosted on almost any machine, including 
 Raspberry Pi, but also is available as a  relatively inexpensive
