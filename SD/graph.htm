@@ -86,21 +86,25 @@
 
         <div id="navigation" style="padding-bottom:5px;">
             <button class="btn" id="sidebar-open"><i class="icon-list"></i></button>
-            <button class='btn graph_time' type='button' time='60'>1m</button>
-            <button class='btn graph_time' type='button' time='180'>3m</button>
-            <button class='btn graph_time' type='button' time='300'>5m</button>
-            <button class='btn graph_time' type='button' time='600'>10m</button>
-            <button class='btn graph_time' type='button' time='900'>15m</button>
-            <button class='btn graph_time' type='button' time='1800'>30m</button>
-            <button class='btn graph_time' type='button' time='3600'>1H</button>
-            <button class='btn graph_time' type='button' time='10800'>3H</button>
-            <button class='btn graph_time' type='button' time='21600'>6H</button>
-            <button class='btn graph_time' type='button' time='43200'>12H</button>
-            <button class='btn graph_time' type='button' time='86400'>1D</button>
-            <button class='btn graph_time' type='button' time='604800'>7D</button>
-            <button class='btn graph_time' type='button' time='2592000'>30D</button>
-            <button class='btn graph_time' type='button' time='7776000'>90D</button>
-            <button class='btn graph_time' type='button' time='31536000'>365D</button>
+            <select  class="btn" name="options">
+                <option class='sel graph_time' time='60'>Last 1 min</option>
+                <option class='sel graph_time' time='180'>Last 3 min</option>
+                <option class='sel graph_time' time='300'>Last 5 min</option>
+                <option class='sel graph_time' time='600'>Last 10 min</option>
+                <option class='sel graph_time' time='900'>Last 15 min</option>
+                <option class='sel graph_time' time='1800'>Last 30 min</option>
+                <option class='sel graph_time' time='3600' selected>Last 1 hour</option>
+                <option class='sel graph_time' time='10800'>Last 3 hours</option>
+                <option class='sel graph_time' time='21600'>Last 6 hours</option>
+                <option class='sel graph_time' time='43200'>Last 12 hours</option>
+                <option class='sel graph_time' time='86400'>Last 1 day</option>
+                <option class='sel graph_time' time='259200'>Last 3 days</option>
+                <option class='sel graph_time' time='604800'>Last 7 days</option>
+                <option class='sel graph_time' time='2592000'>Last 30 days</option>
+                <option class='sel graph_time' time='7776000'>Last 90 days</option>
+                <option class='sel graph_time' time='15552000'>Last 180 days</option>
+                <option class='sel graph_time' time='31536000'>Last 365 days</option>
+            </select>
             <button id='graph_zoomin' class='btn'>+</button>
             <button id='graph_zoomout' class='btn'>-</button>
             <button id='graph_left' class='btn'><</button>
