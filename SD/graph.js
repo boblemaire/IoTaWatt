@@ -34,9 +34,10 @@ $("#graph_zoomout").click(function () {floatingtime=0; view.zoomout(); graph_rel
 $("#graph_zoomin").click(function () {floatingtime=0; view.zoomin(); graph_reload();});
 $('#graph_right').click(function () {floatingtime=0; view.panright(); graph_reload();});
 $('#graph_left').click(function () {floatingtime=0; view.panleft(); graph_reload();});
-$('.graph_time').click(function () {
+$('.graph_time').change(function () {
     floatingtime=1; 
-    view.timewindow($(this).attr("time")); 
+    view.timewindow($(this).val());
+    $(this).blur();
     graph_reload();
 });
 

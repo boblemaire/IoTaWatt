@@ -86,24 +86,25 @@
 
         <div id="navigation" style="padding-bottom:5px;">
             <button class="btn" id="sidebar-open"><i class="icon-list"></i></button>
-            <select  class="btn" name="options">
-                <option class='sel graph_time' time='60'>Last 1 min</option>
-                <option class='sel graph_time' time='180'>Last 3 min</option>
-                <option class='sel graph_time' time='300'>Last 5 min</option>
-                <option class='sel graph_time' time='600'>Last 10 min</option>
-                <option class='sel graph_time' time='900'>Last 15 min</option>
-                <option class='sel graph_time' time='1800'>Last 30 min</option>
-                <option class='sel graph_time' time='3600' selected>Last 1 hour</option>
-                <option class='sel graph_time' time='10800'>Last 3 hours</option>
-                <option class='sel graph_time' time='21600'>Last 6 hours</option>
-                <option class='sel graph_time' time='43200'>Last 12 hours</option>
-                <option class='sel graph_time' time='86400'>Last 1 day</option>
-                <option class='sel graph_time' time='259200'>Last 3 days</option>
-                <option class='sel graph_time' time='604800'>Last 7 days</option>
-                <option class='sel graph_time' time='2592000'>Last 30 days</option>
-                <option class='sel graph_time' time='7776000'>Last 90 days</option>
-                <option class='sel graph_time' time='15552000'>Last 180 days</option>
-                <option class='sel graph_time' time='31536000'>Last 365 days</option>
+            <select id="select-time" class="btn sel graph_time" name="options" style="width: 150px">
+                    <option value="1" disabled>Select period</option>
+                    <option value='60'>Last 1 min</option>
+                    <option value='180'>Last 3 min</option>
+                    <option value='300'>Last 5 min</option>
+                    <option value='600'>Last 10 min</option>
+                    <option value='900'>Last 15 min</option>
+                    <option value='1800'>Last 30 min</option>
+                    <option value='3600' selected>Last 1 hour</option>
+                    <option value='10800'>Last 3 hours</option>
+                    <option value='21600'>Last 6 hours</option>
+                    <option value='43200'>Last 12 hours</option>
+                    <option value='86400'>Last 1 day</option>
+                    <option value='259200'>Last 3 days</option>
+                    <option value='604800'>Last 7 days</option>
+                    <option value='2592000'>Last 30 days</option>
+                    <option value='7776000'>Last 90 days</option>
+                    <option value='15552000'>Last 180 days</option>
+                    <option value='31536000'>Last 365 days</option>
             </select>
             <button id='graph_zoomin' class='btn'>+</button>
             <button id='graph_zoomout' class='btn'>-</button>
@@ -213,6 +214,11 @@
   end:0,
   fixinterval:false,
 
+  'clearTimeSelect':function ()
+  {
+    $("#select-time").val(1);
+  },
+
   'zoomout':function ()
   {
     var time_window = this.end - this.start;
@@ -221,6 +227,7 @@
     this.start = middle - (time_window/2);
     this.end = middle + (time_window/2);
     this.calc_interval();
+    this.clearTimeSelect();
   },
 
   'zoomin':function ()
@@ -231,6 +238,7 @@
     this.start = middle - (time_window/2);
     this.end = middle + (time_window/2);
     this.calc_interval();
+    this.clearTimeSelect();
   },
 
   'panright':function ()
