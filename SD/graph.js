@@ -51,6 +51,7 @@ $('#placeholder').bind("plotselected", function (event, ranges)
     view.start = ranges.xaxis.from;
     view.end = ranges.xaxis.to;
     view.calc_interval();
+    view.clearTimeSelect();
     
     graph_reload();
 });
