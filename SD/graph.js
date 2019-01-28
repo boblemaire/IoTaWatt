@@ -19,6 +19,8 @@ var showlegend = true;
 var floatingtime=1;
 var yaxismin="auto";
 var yaxismax="auto";
+var y2axismin="auto";
+var y2axismax="auto";
 var showtag = true;
 
 var previousPoint = 0;
@@ -373,6 +375,16 @@ function graph_init_editor()
         graph_draw();
     });
 
+    $("body").on("change","#y2axis-min",function(){
+        y2axismin = $(this).val();
+        graph_draw();
+    });
+
+    $("body").on("change","#y2axis-max",function(){
+        y2axismax = $(this).val();
+        graph_draw();
+    });
+
 
     $("#csvtimeformat").change(function(){
         printcsv();
@@ -538,10 +550,13 @@ function graph_draw()
     }
     
     if (showlegend) options.legend.show = true;
-    
-    if (yaxismin!='auto' && yaxismin!='') { options.yaxes[0].min = yaxismin; options.yaxes[1].min = yaxismin; }
-    if (yaxismax!='auto' && yaxismax!='') { options.yaxes[0].max = yaxismax; options.yaxes[1].max = yaxismax; }
-    
+
+    if (yaxismin!='auto' && yaxismin!='') { options.yaxes[0].min = yaxismin }
+    if (yaxismax!='auto' && yaxismax!='') { options.yaxes[0].max = yaxismax }
+
+    if (y2axismin!='auto' && y2axismin!='') { options.yaxes[1].min = y2axismin }
+    if (y2axismax!='auto' && y2axismax!='') { options.yaxes[1].max = y2axismax; }
+
     var time_in_window = (view.end - view.start) / 1000;
     var hours = Math.floor(time_in_window / 3600);
     var mins = Math.round(((time_in_window / 3600) - hours)*60);
@@ -837,7 +852,9 @@ $("#graph-select").change(function() {
     floatingtime = savedgraphs[index].floatingtime,
     yaxismin = savedgraphs[index].yaxismin;
     yaxismax = savedgraphs[index].yaxismax;
-    
+    y2axismin = savedgraphs[index].y2axismin || yaxismin;
+    y2axismax = savedgraphs[index].y2axismax || yaxismax;
+
     // show settings
     showmissing = savedgraphs[index].showmissing;
     showtag = savedgraphs[index].showtag;
@@ -855,6 +872,8 @@ $("#graph-select").change(function() {
 
     $("#yaxis-min").val(yaxismin);
     $("#yaxis-max").val(yaxismax);
+    $("#y2axis-min").val(y2axismin);
+    $("#y2axis-max").val(y2axismax);
     $("#request-fixinterval")[0].checked = view.fixinterval;
     $("#request-limitinterval")[0].checked = view.limitinterval;
     $("#showmissing")[0].checked = showmissing;
@@ -911,6 +930,8 @@ $("#graph-save").click(function() {
         floatingtime: floatingtime,
         yaxismin: yaxismin,
         yaxismax: yaxismax,
+        y2axismin: y2axismin,
+        y2axismax: y2axismax,
         showmissing: showmissing,
         showtag: showtag,
         showlegend: showlegend,
