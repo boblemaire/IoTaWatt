@@ -550,13 +550,13 @@ function graph_draw()
     }
     
     if (showlegend) options.legend.show = true;
-
+    
     if (yaxismin!='auto' && yaxismin!='') { options.yaxes[0].min = yaxismin }
     if (yaxismax!='auto' && yaxismax!='') { options.yaxes[0].max = yaxismax }
-
+    
     if (y2axismin!='auto' && y2axismin!='') { options.yaxes[1].min = y2axismin }
     if (y2axismax!='auto' && y2axismax!='') { options.yaxes[1].max = y2axismax; }
-
+    
     var time_in_window = (view.end - view.start) / 1000;
     var hours = Math.floor(time_in_window / 3600);
     var mins = Math.round(((time_in_window / 3600) - hours)*60);
@@ -854,7 +854,7 @@ $("#graph-select").change(function() {
     yaxismax = savedgraphs[index].yaxismax;
     y2axismin = savedgraphs[index].y2axismin || yaxismin;
     y2axismax = savedgraphs[index].y2axismax || yaxismax;
-
+    
     // show settings
     showmissing = savedgraphs[index].showmissing;
     showtag = savedgraphs[index].showtag;
