@@ -80,7 +80,7 @@
 
     <div id="page-content-wrapper" style="max-width:1280px">
         
-        <h3>Data viewer</h3> 
+        <h3 id="heading">Data viewer</h3> 
 
         <div id="error" style="display:none"></div>
 
@@ -206,7 +206,7 @@
     </div>
 </div>
 
-<!- copy of https://emoncms.org/Modules/graph/vis.helper.js -->
+<!-- copy of https://emoncms.org/Modules/graph/vis.helper.js -->
 <script>
   var view =
 {
@@ -399,13 +399,31 @@ function parseTimepickerTime(timestr){
 
     return new Date(date[2],date[1]-1,date[0],time[0],time[1],time[2],0).getTime() / 1000;
 }
+
+function readFile(path, responseHandler){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      if(this.getResponseHeader("X-configSHA256") !== null){
+        configSHA256 = this.getResponseHeader("X-configSHA256");
+      }
+      responseHandler(this.responseText);
+    }
+  };
+  xmlHttp.open("GET", path, true);
+  xmlHttp.send();
+}
+
+function EbyId(id) {return document.getElementById(id)};
+
 </script>
 
 <script language="javascript" type="text/javascript" src="graph.js"></script>
 
 <script>
     var path = "http://" + location.host; // + "/";
-	  var getbackup = false;
+	var getbackup = false;
+    var configFileURL = "config.txt";
     
     sidebar_resize();
     graph_init_editor();
@@ -427,6 +445,14 @@ function parseTimepickerTime(timestr){
     view.end = now;
     view.calc_interval();
     
+    if (document.domain != "iotawatt.com") {
+        readFile(configFileURL, function(response){
+        var config = JSON.parse(response);
+        if (config.device.name !== null) {
+            EbyId("heading").innerHTML = config.device.name + " Data Viewer";
+        }
+        });
+    }
     
     graph_reload();
     

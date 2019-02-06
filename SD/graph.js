@@ -578,8 +578,8 @@ function graph_draw()
         if (showtag) label += feedlist[z].tag+": ";
         label += feedlist[z].name;
         if (yaxisUsed == 3) {
-            if (feedlist[z].yaxis == 1) {label += " &larr;"};
-            if (feedlist[z].yaxis == 2) {label += " &rarr;"};    
+            if (feedlist[z].yaxis == 1) {label += " &#10229;"}; // Long Left Arrow
+            if (feedlist[z].yaxis == 2) {label += " &#10230;"}; // Long Right Arrow 
         }
 
         var plot = {label:label, data:data, yaxis:feedlist[z].yaxis, color: feedlist[z].color};
