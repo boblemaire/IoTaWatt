@@ -63,7 +63,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     log("timeSync: service started.");
     lastNTPupdate = UTCtime();
     started = true; 
-  }
+  } 
  
           // The ms clock will rollover after ~49 days.  To be on the safe side,
           // restart the ESP after about 42 days to reset the ms clock.
@@ -100,7 +100,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     } 
     else {
       trace(T_timeSync, 33);
-      return RTCrunning ? (UTCtime() + 60) : 1;
+      return UTCtime() + RTCrunning ? 60 : 5;
     }
   }
   
@@ -112,7 +112,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     if(millis() - sendMillis > (RTCrunning ? 3000 : 10000)){
       trace(T_timeSync, 42);
       udp.stop();
-      return RTCrunning ? (UTCtime() + 60) : 1;
+      return UTCtime() + RTCrunning ? 60 : 5;
     }
   }
 
@@ -133,7 +133,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
   trace(T_timeSync, 6);
   if(packetSize < sizeof(ntpPacket) || recvMillis - sendMillis > (RTCrunning ? 3000 : 10000)){
-    return RTCrunning ? (UTCtime() + 60) : 1;
+    return UTCtime() + RTCrunning ? 60 : 5;
   }
 
         // Check for Kiss-o'-Death packet
@@ -142,17 +142,17 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   if(packet.stratum == 0){
     log("timesync: Kiss-o'-Death, code %c%c%c%c, ip: %s", 
     packet.referenceID[0], packet.referenceID[1], packet.referenceID[2], packet.referenceID[3], timeServerIP.toString().c_str());
-    return UTCtime() + 15;
+    return UTCtime() + RTCrunning ? 60 : 15;
   } 
 
   trace(T_timeSync, 8);
   if(packet.origin_ts_sec != origin_sec || packet.origin_ts_frac != origin_frac){
     trace(T_timeSync, 81);
-    return RTCrunning ? (UTCtime() + 60) : 1;
+    return UTCtime() + RTCrunning ? 60 : 5;
   }
   if(packet.trans_ts_sec < NTP2018 || packet.trans_ts_sec > NTP2028){
     trace(T_timeSync, 82);
-    return RTCrunning ? (UTCtime() + 60) : 1;
+    return UTCtime() + RTCrunning ? 60 : 5;
   }
 
         // compute time as NTP transmit time + 1/2 transaction duration.
@@ -170,18 +170,18 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     trace(T_timeSync, 91);
     prevDiff = presDiff; 
     prevIP = timeServerIP;
-    return RTCrunning ? (UTCtime() + 60) : 1;
+    return UTCtime() + RTCrunning ? 60 : 1;
   }
-  if(prevDiff){
-    trace(T_timeSync, 92);
-    if(prevIP == timeServerIP){
-      trace(T_timeSync, 93);
-      return RTCrunning ? (UTCtime() + 60) : 1;
-    }
-    //log("IPs: %s, %s, prevDiff: %d", prevIP.toString().c_str(), timeServerIP.toString().c_str(), prevDiff);
+  // if(prevDiff){
+  //   trace(T_timeSync, 92);
+  //   if(prevIP == timeServerIP){
+  //     trace(T_timeSync, 93);
+  //     return UTCtime() + 20;
+  //   }
+  //   log("IPs: %s, %s, prevDiff: %d", prevIP.toString().c_str(), timeServerIP.toString().c_str(), prevDiff);
     //log("packet sec: %u, frac: %u",packet.trans_ts_sec, packet.trans_ts_frac);
     //log("Comput sec: %u, frac: %u, duration: %d", current_ts_sec, current_ts_frac, duration);
-  } 
+  // } 
   prevDiff = 0;
   
         // Set/adjust internal clock
