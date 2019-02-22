@@ -3,7 +3,7 @@
     <head>
         <meta http-equiv="content-type" content="text/html; charset=UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Emoncms - graph</title>
+        <title>IotaWatt - graph</title>
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="black">
             <!-- Latest compiled and minified CSS -->
@@ -165,6 +165,7 @@
                 </span>
             </div>
             
+            <br/>
             <div class="input-prepend input-append">
                 <span class="add-on" style="width:50px">Y-axis:</span>
                 <span class="add-on" style="width:30px">min</span>
@@ -172,8 +173,17 @@
 
                 <span class="add-on" style="width:30px">max</span>
                 <input id="yaxis-max" type="text" style="width:50px" value="auto"/>
+            </div>
                 
-                <button id="reload" class="btn">Reload</button>
+            <div class="input-prepend input-append">
+                    <span class="add-on" style="width:50px">Y2-axis:</span>
+                    <span class="add-on" style="width:30px">min</span>
+                    <input id="y2axis-min" type="text" style="width:50px" value="auto"/>
+
+                    <span class="add-on" style="width:30px">max</span>
+                    <input id="y2axis-max" type="text" style="width:50px" value="auto"/>
+
+                    <button id="reload" class="btn">Reload</button>
             </div>
             
             <div id="window-info" style=""></div><br>
