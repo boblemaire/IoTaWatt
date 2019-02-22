@@ -449,7 +449,7 @@ function EbyId(id) {return document.getElementById(id)};
     load_feed_selector();
     graph_resize();
     
-    var timeWindow = 3600000*1; //default to 1 hour
+    var timeWindow = 3600000*24; //default to 1 hour
     var now = Math.round(+new Date * 0.001)*1000;
     view.start = now - timeWindow;
     view.end = now;
