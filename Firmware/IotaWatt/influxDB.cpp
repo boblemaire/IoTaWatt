@@ -478,7 +478,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
             // Check for unsuccessful post.
 
-        if(request->responseHTTPcode() != 210){
+        if(request->responseHTTPcode() != 204){
           if(++retryCount == 10){
             DynamicJsonBuffer Json;
             JsonObject& results = Json.parseObject(request->responseText().c_str());
