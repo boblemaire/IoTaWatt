@@ -34,9 +34,10 @@ $("#graph_zoomout").click(function () {floatingtime=0; view.zoomout(); graph_rel
 $("#graph_zoomin").click(function () {floatingtime=0; view.zoomin(); graph_reload();});
 $('#graph_right').click(function () {floatingtime=0; view.panright(); graph_reload();});
 $('#graph_left').click(function () {floatingtime=0; view.panleft(); graph_reload();});
-$('.graph_time').click(function () {
+$('.graph_time').change(function () {
     floatingtime=1; 
-    view.timewindow($(this).attr("time")); 
+    view.timewindow($(this).val());
+    $(this).blur();
     graph_reload();
 });
 
@@ -50,6 +51,7 @@ $('#placeholder').bind("plotselected", function (event, ranges)
     view.start = ranges.xaxis.from;
     view.end = ranges.xaxis.to;
     view.calc_interval();
+    view.clearTimeSelect();
     
     graph_reload();
 });
@@ -554,6 +556,11 @@ function graph_draw()
     if (!embed) $("#window-info").html("<b>Window:</b> "+printdate(view.start)+" > "+printdate(view.end)+", <b>Length:</b> "+hours+"h"+mins+" ("+time_in_window+" seconds)");
     
     plotdata = [];
+    var yaxisUsed = 0;
+    for (var z in feedlist){
+        yaxisUsed |= feedlist[z].yaxis;
+    }
+
     for (var z in feedlist) {
         
         var data = feedlist[z].data;
@@ -570,6 +577,11 @@ function graph_draw()
         var label = "";
         if (showtag) label += feedlist[z].tag+": ";
         label += feedlist[z].name;
+        if (yaxisUsed == 3) {
+            if (feedlist[z].yaxis == 1) {label += " &#10229;"}; // Long Left Arrow
+            if (feedlist[z].yaxis == 2) {label += " &#10230;"}; // Long Right Arrow 
+        }
+
         var plot = {label:label, data:data, yaxis:feedlist[z].yaxis, color: feedlist[z].color};
         
         if (feedlist[z].plottype=='lines') plot.lines = { show: true, fill: feedlist[z].fill };
@@ -863,6 +875,7 @@ $("#graph-select").change(function() {
     
     load_feed_selector();
 
+    view.clearTimeSelect();
     graph_reload();
 });
 

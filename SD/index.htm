@@ -2588,6 +2588,7 @@ function getConfig(callback){
     config = JSON.parse(response);
     checkConfig();
     document.title = config.device.name;
+    EbyId("heading").innerHTML = config.device.name + " Power Monitor";
     if(callback !== undefined) callback();
     });
     EbyId("mainMenu").style.display = "block";
@@ -2664,7 +2665,7 @@ function setup(){
   if(document.domain == "iotawatt.com"){
     demo = true;
     EbyId("heading").innerHTML += " Demo Mode";
-  } 
+  }
   resetDisplay();
 }
 

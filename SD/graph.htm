@@ -80,16 +80,32 @@
 
     <div id="page-content-wrapper" style="max-width:1280px">
         
-        <h3>Data viewer</h3> 
+        <h3 id="heading">Data viewer</h3> 
 
         <div id="error" style="display:none"></div>
 
         <div id="navigation" style="padding-bottom:5px;">
             <button class="btn" id="sidebar-open"><i class="icon-list"></i></button>
-            <button class='btn graph_time' type='button' time='1'>D</button>
-            <button class='btn graph_time' type='button' time='7'>W</button>
-            <button class='btn graph_time' type='button' time='30'>M</button>
-            <button class='btn graph_time' type='button' time='365'>Y</button>
+            <select id="select-time" class="btn sel graph_time" name="options" style="width: 150px">
+                    <option value="1" disabled>Select period</option>
+                    <option value='60'>Last 1 min</option>
+                    <option value='180'>Last 3 min</option>
+                    <option value='300'>Last 5 min</option>
+                    <option value='600'>Last 10 min</option>
+                    <option value='900'>Last 15 min</option>
+                    <option value='1800'>Last 30 min</option>
+                    <option value='3600' selected>Last 1 hour</option>
+                    <option value='10800'>Last 3 hours</option>
+                    <option value='21600'>Last 6 hours</option>
+                    <option value='43200'>Last 12 hours</option>
+                    <option value='86400'>Last 1 day</option>
+                    <option value='259200'>Last 3 days</option>
+                    <option value='604800'>Last 7 days</option>
+                    <option value='2592000'>Last 30 days</option>
+                    <option value='7776000'>Last 90 days</option>
+                    <option value='15552000'>Last 180 days</option>
+                    <option value='31536000'>Last 365 days</option>
+            </select>
             <button id='graph_zoomin' class='btn'>+</button>
             <button id='graph_zoomout' class='btn'>-</button>
             <button id='graph_left' class='btn'><</button>
@@ -190,13 +206,18 @@
     </div>
 </div>
 
-<!- copy of https://emoncms.org/Modules/graph/vis.helper.js -->
+<!-- copy of https://emoncms.org/Modules/graph/vis.helper.js -->
 <script>
   var view =
 {
   start:0,
   end:0,
   fixinterval:false,
+
+  'clearTimeSelect':function ()
+  {
+    $("#select-time").val(1);
+  },
 
   'zoomout':function ()
   {
@@ -206,6 +227,7 @@
     this.start = middle - (time_window/2);
     this.end = middle + (time_window/2);
     this.calc_interval();
+    this.clearTimeSelect();
   },
 
   'zoomin':function ()
@@ -216,6 +238,7 @@
     this.start = middle - (time_window/2);
     this.end = middle + (time_window/2);
     this.calc_interval();
+    this.clearTimeSelect();
   },
 
   'panright':function ()
@@ -238,7 +261,8 @@
 
   'timewindow':function(time)
   {
-    this.start = ((new Date()).getTime())-(3600000*24*time);	//Get start time
+    //time is now in seconds
+    this.start = ((new Date()).getTime())-(1000*time);	//Get start time
     this.end = (new Date()).getTime();	//Get end time
     this.calc_interval();
   },
@@ -375,13 +399,31 @@ function parseTimepickerTime(timestr){
 
     return new Date(date[2],date[1]-1,date[0],time[0],time[1],time[2],0).getTime() / 1000;
 }
+
+function readFile(path, responseHandler){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      if(this.getResponseHeader("X-configSHA256") !== null){
+        configSHA256 = this.getResponseHeader("X-configSHA256");
+      }
+      responseHandler(this.responseText);
+    }
+  };
+  xmlHttp.open("GET", path, true);
+  xmlHttp.send();
+}
+
+function EbyId(id) {return document.getElementById(id)};
+
 </script>
 
 <script language="javascript" type="text/javascript" src="graph.js"></script>
 
 <script>
     var path = "http://" + location.host; // + "/";
-	  var getbackup = false;
+	var getbackup = false;
+    var configFileURL = "config.txt";
     
     sidebar_resize();
     graph_init_editor();
@@ -397,12 +439,20 @@ function parseTimepickerTime(timestr){
     load_feed_selector();
     graph_resize();
     
-    var timeWindow = 3600000*24.0;
+    var timeWindow = 3600000*1; //default to 1 hour
     var now = Math.round(+new Date * 0.001)*1000;
     view.start = now - timeWindow;
     view.end = now;
     view.calc_interval();
     
+    if (document.domain != "iotawatt.com") {
+        readFile(configFileURL, function(response){
+        var config = JSON.parse(response);
+        if (config.device.name !== null) {
+            EbyId("heading").innerHTML = config.device.name + " Data Viewer";
+        }
+        });
+    }
     
     graph_reload();
     
