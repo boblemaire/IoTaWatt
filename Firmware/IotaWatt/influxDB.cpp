@@ -177,38 +177,59 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       }
       retryCount = 0;
       trace(T_influx,5);
-      
+
+            // Check for authentication error
+
+      if(HTTPcode == 401){
+        log("influxDB: Authentication failed. Stopping influx service.");
+        influxStop = true;
+        state = post;
+        return 1;
+      }
+
+            // Check for invalid request.
+
+      if(HTTPcode != 200){
+        log("influxDB: Last entry query failed.");
+        log("influxDB: HTTPcode %d, %.60s", HTTPcode, response.c_str());
+        influxStop = true;
+        state = post;
+        return 1;
+      }
+
             // Json parse the response to get the columns and values arrays
             // and extract time
 
-      DynamicJsonBuffer Json;
-      JsonObject& results = Json.parseObject(response);
-      if(results.success()){ 
-        const char* error = results.get<const char*>("error");
-        if(error){
-          log("influxDB: last entry query failed %d %s", HTTPcode, error);
-          influxStop = true;
-          state = post;
-          return 1;
-        }
-        JsonArray& columns = results["results"][0]["series"][0]["columns"];
-        JsonArray& values = results["results"][0]["series"][0]["values"][0];
-        if(columns.success() && values.success()){
-          for(int i=0; i<columns.size(); i++){
-            if(strcmp("time",columns[i].as<char*>()) == 0){
-              if(values[i].as<unsigned long>() > influxLastPost){
-                influxLastPost = values[i].as<unsigned long>();
-              }
-              break;
-            }
-          }
-        } else {
-          const char* error = results["results"][0]["error"].as<const char*>();
+      {
+        DynamicJsonBuffer Json;
+        JsonObject& results = Json.parseObject(response);
+        if(results.success()){ 
+          const char* error = results.get<const char*>("error");
           if(error){
             log("influxDB: last entry query failed %d %s", HTTPcode, error);
             influxStop = true;
             state = post;
             return 1;
+          }
+          JsonArray& columns = results["results"][0]["series"][0]["columns"];
+          JsonArray& values = results["results"][0]["series"][0]["values"][0];
+          if(columns.success() && values.success()){
+            for(int i=0; i<columns.size(); i++){
+              if(strcmp("time",columns[i].as<char*>()) == 0){
+                if(values[i].as<unsigned long>() > influxLastPost){
+                  influxLastPost = values[i].as<unsigned long>();
+                }
+                break;
+              }
+            }
+          } else {
+            const char* error = results["results"][0]["error"].as<const char*>();
+            if(error){
+              log("influxDB: last entry query failed %d %s", HTTPcode, error);
+              influxStop = true;
+              state = post;
+              return 1;
+            }
           }
         }
       }
@@ -445,7 +466,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(request && request->readyState() == 4){
         HTTPrelease(HTTPtoken);
         trace(T_influx,9);
-        if(request->responseHTTPcode() != 204){
+        if(request->responseHTTPcode() < 0){
           if(++retryCount == 50){
             log("influxDB: Post Failed: %d", request->responseHTTPcode());
           }
@@ -454,6 +475,25 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           state = getLastRecord;
           return UTCtime() + (retryCount < 30 ? 1 : retryCount / 10);
         }
+
+            // Check for unsuccessful post.
+
+        if(request->responseHTTPcode() != 210){
+          if(++retryCount == 10){
+            DynamicJsonBuffer Json;
+            JsonObject& results = Json.parseObject(request->responseText().c_str());
+            if(results.success()){ 
+              log("influxDB: Post Failed: %d %s", request->responseHTTPcode(), results.get<const char*>("error"));
+            } else {
+              log("influxDB: Post Failed: %d", request->responseHTTPcode());
+            }
+          }
+          delete request;
+          request = nullptr; 
+          state = getLastRecord;
+          return UTCtime() + (retryCount < 10 ? 1 : 30);
+        }
+
         trace(T_influx,9);
         retryCount = 0;
         influxLastPost = lastRequestTime; 
