@@ -38,7 +38,7 @@ that new name will be the password required in this step.
 
 After connecting, a page will be rendered with several choices.  Select ``Configure WiFi``.
 
-.. image:: pics/captivePortal.jpg
+.. image:: pics/CaptivePortal.jpg
     :scale: 50 %
     :align: center
     :alt: captive portal image
