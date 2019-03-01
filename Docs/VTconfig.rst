@@ -132,6 +132,6 @@ step `Configuring Power Channel CTs <CTconfig.html>`_
     :scale: 50 %
     :alt: **Save**
 
-.. |calibrate| image:: pics/calibrateButton.png
+.. |calibrate| image:: pics/CalibrateButton.png
     :scale: 50 %
     :alt: **Calibrate**
