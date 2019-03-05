@@ -697,8 +697,8 @@ function configInputs(){
       if(config.inputs[i].turns != undefined){
         config.inputs[i].cal = config.inputs[i].turns / config.device.burden[i];
       }
-      newColumn.innerHTML += ", cal:<strong>" + Number(config.inputs[i].cal).toFixed(2) + "</strong>";
-      newColumn.innerHTML += ", lead:<strong>" + Number(config.inputs[i].phase).toFixed(2) + "&#176</strong>";
+      //newColumn.innerHTML += ", cal:<strong>" + Number(config.inputs[i].cal).toFixed(2) + "</strong>";
+      //newColumn.innerHTML += ", lead:<strong>" + Number(config.inputs[i].phase).toFixed(2) + "&#176</strong>";
       if(config.inputs[i].vchan !== undefined){
         vchanUsed[config.inputs[i].vchan] = true;
         if(config.inputs[i].vchan != 0){
@@ -827,13 +827,16 @@ function refreshInputEdit(){
     (inputEditObject.type == "CT" && config.device.burden[inputEditChannel] == 0))){
     inputCal = addTableRow(table, "Cal: ", "inputCal", "input", 5);
     inputCal.setAttribute("onblur","inputEditObject.cal=this.value.trim(); refreshInputEdit();");
-    inputCal.value = inputEditObject.cal;
-    if(Number.isNaN(inputCal.value)){
-      inputEditMsg(inputCal,"Numeric value required");
+     if(inputEditObject.cal === undefined){
       complete = false;
-    }
-    else{
+    } 
+    else {
+      inputCal.value = inputEditObject.cal;
       inputCal.value = parseFloat(inputCal.value).toPrecision(4);
+      if(inputCal.value == 0){
+        inputEditMsg(inputCal,"Cannot be zero");
+        complete = false;
+      }
     }
   }
   
@@ -856,17 +859,15 @@ function refreshInputEdit(){
       }
     }
   }
- 
+  
+ //************************************************************************************************************************************
   if(inputEditObject.model == "generic"){
     inputPhase = addTableRow(table, "Phase lead: ", "inputPhase", "input", 4);
-    inputPhase.setAttribute("onblur","inputEditObject.phase = this.value.trim(); refreshInputEdit();");
-    inputPhase.value = inputEditObject.phase;
-    if(Number.isNaN(inputPhase.value)){
+    inputPhase.setAttribute("onblur","inputEditObject.phase = this.value; refreshInputEdit();");
+    inputPhase.value = (inputEditObject.phase !== undefined) ? inputEditObject.phase : 0;
+    if(isNaN(inputEditObject.phase)){
       inputEditMsg(inputPhase, "Numeric value required");
       complete = false;
-    }
-    else {
-      inputPhase.value = Number(inputPhase.value).toFixed(2);
     }
   }
   

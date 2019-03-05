@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.   
 ***********************************************************************************/
-#define IOTAWATT_VERSION "02_03_21"
+#define IOTAWATT_VERSION "02_04_00"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -209,7 +209,8 @@ extern serviceBlock* serviceQueue;     // Head of ordered list of services
 #define MAXINPUTS 15                          // Compile time input channels, can't be changed easily 
 extern IotaInputChannel* *inputChannel;       // -->s to incidences of input channels (maxInputs entries)
 extern uint8_t  maxInputs;                    // channel limit based on configured hardware (set in Config)
-extern uint16_t deviceVersion;                // high byte major version low byte minor version
+extern uint8_t  deviceMajorVersion;           // Major version of hardware 
+extern uint8_t  deviceMinorVersion;           // Minor version of hardware 
 extern float    VrefVolts;                    // Voltage reference shunt value used to calibrate
                                               // the ADCs. (can be specified in config.device.refvolts)
 #define Vadj_3 13                             // Voltage channel attenuation ratio
@@ -221,6 +222,7 @@ extern float    VrefVolts;                    // Voltage reference shunt value u
       // handlers if the statistics are used.
 
 extern float   frequency;                             // Split the difference to start
+extern float   configFrequency;                       // Frequency at last config (phase corrrection basis)         
 extern float   samplesPerCycle;                       // Here as well
 extern float   cycleSampleRate;
 extern int16_t cycleSamples;
@@ -285,9 +287,13 @@ extern const char     base64codes_P[];
       // ************************ ADC sample pairs ************************************
 
 #define MAX_SAMPLES 1000
-extern int16_t samples;                           // Number of samples taken in last sampling
-extern int16_t Vsample [MAX_SAMPLES];             // voltage/current pairs during sampling
-extern int16_t Isample [MAX_SAMPLES];
+
+extern uint32_t sumVsq;                           // sampleCycle will compute these while collecting samples    
+extern uint32_t sumIsq;
+extern int32_t  sumVI;
+extern int16_t  samples;                          // Number of samples taken in last sampling
+extern int16_t  Vsample [MAX_SAMPLES];            // voltage/current pairs during sampling
+extern int16_t  Isample [MAX_SAMPLES];
 
       // ************************ Declare global functions
 void      setup();

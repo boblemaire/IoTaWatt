@@ -88,7 +88,8 @@
  *   10/27/18 02_03_18 Improvements to influx, set WiFi hostname
  *   12/09/18 02_03_19 Add PVoutput support, local-time with DST, reduce use of WiFi Manager
  *   12/14/18 02_03_20 Upload live status only in PVoutput 
- *   01/18/19 02_03_21 EEprom, influx error recovery+, RTC battery warning, graph from IoTaWatt.com                          
+ *   01/18/19 02_03_21 EEprom, influx error recovery+, RTC battery warning, graph from IoTaWatt.com 
+ *   03/05/19 02_04_00 Frequency and current based phase correction                         
  * 
  *****************************************************************************************************/
 
@@ -101,7 +102,7 @@ IotaLog currLog(5,365);                     // current data log  (1 year)
 IotaLog histLog(60,3652);                   // history data log  (10 years)  
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
-messageLog msglog;
+messageLog msglog;                          // Message log handler    
 
       // Define filename Strings of system files.          
 
@@ -138,8 +139,9 @@ IotaInputChannel* *inputChannel;      // -->s to incidences of input channels (m
 uint8_t maxInputs = 0;                        // channel limit based on configured hardware (set in Config)      
 ScriptSet* outputs;                   // -> scriptSet for output channels
 
-uint16_t  deviceVersion = (4 << 8) + 8;  // Default to 4.8
-float     VrefVolts = 2.5;            // Voltage reference shunt value used to calibrate
+uint8_t  deviceMajorVersion = 4;      // Default to 4.8
+uint8_t  deviceMinorVersion = 8;                 
+float    VrefVolts = 2.5;             // Voltage reference shunt value used to calibrate
 
       // ****************************************************************************
       // statService maintains current averages of the channel values
@@ -148,6 +150,7 @@ float     VrefVolts = 2.5;            // Voltage reference shunt value used to c
       // handlers if the statistics are used.
 
 float   frequency = 55;                  // Split the difference to start
+float   configFrequency;                 // Frequency at last config (phase corrrection basis)    
 float   samplesPerCycle = 550;           // Here as well
 float   cycleSampleRate = 0;
 int16_t cycleSamples = 0;
@@ -216,7 +219,10 @@ const char hexcodes_P[] PROGMEM = "0123456789abcdef";
 const char base64codes_P[] PROGMEM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";  
 
       // ************************ ADC sample pairs ************************************
- 
+
+uint32_t  sumVsq;                                   // sampleCycle will compute these while collecting samples    
+uint32_t  sumIsq;
+int32_t   sumVI; 
 int16_t   samples = 0;                              // Number of samples taken in last sampling
 int16_t   Vsample [MAX_SAMPLES];                    // voltage/current pairs during sampling
 int16_t   Isample [MAX_SAMPLES];

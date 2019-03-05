@@ -2,10 +2,21 @@
 
 struct phaseTableEntry {
     phaseTableEntry* next;
-    char modelHash[8];
-    float value;
-    phaseTableEntry() {next = nullptr; value = 0.0;}
-    ~phaseTableEntry(){delete next;}
+    char        modelHash[8];
+    float       phase;
+    int16_t*    p50;
+    int16_t*    p60;
+    phaseTableEntry()
+    :next(nullptr)
+    ,phase(0)
+    ,p50(nullptr)
+    ,p60(nullptr)
+    {}
+    ~phaseTableEntry(){
+      delete[] p50;
+      delete[] p60;
+      delete next;
+    }
   }; 
 
 bool configDevice(const char*);
@@ -15,6 +26,8 @@ bool configOutputs(const char*);
 void hashFile(uint8_t* sha, File file);
 void buildPhaseTable(phaseTableEntry**);
 void phaseTableAdd(phaseTableEntry**, JsonArray&);
+int16_t* buildPtable(JsonArray& table, const char* model);
+int16_t* copyPtable(int16_t* Ptable);
 String old2newScript(JsonArray& script);
 
 boolean getConfig(void){
@@ -81,7 +94,36 @@ boolean getConfig(void){
     char* inputsStr = JsonDetail(ConfigFile, inputsArray);
     configInputs(inputsStr);
     delete[] inputsStr;
-  }  
+  }
+
+    // Print the inputs
+
+  // for(int i=0; i<MAXINPUTS; i++){
+  //   IotaInputChannel* input = inputChannel[i];
+  //   if(input->_active){
+  //       Serial.printf("Name %s, Model %s\r\nphase %.2f\r\n", input->_name, input->_model, input->_phase );
+  //       if(input->_p60){
+  //         Serial.print("p60");
+  //         int16_t* array = input->_p60;
+  //         while(*(array+1)){
+  //           Serial.printf(" %.2f, %.2f,",(float)*array/100.0, (float)*(array+1)/100.0);
+  //           array += 2;
+  //         } 
+  //         Serial.printf(" %.2f, %.2f\r\n",(float)*array/100.0, (float)*(array+1)/100.0);
+  //       }
+  //       if(input->_p50){
+  //         Serial.print("p50");
+  //         int16_t* array = input->_p50;
+  //         while(*(array+1)){
+  //           Serial.printf(" %.2f, %.2f,",(float)*array/100.0, (float)*(array+1)/100.0);
+  //           array += 2;
+  //         } 
+  //         Serial.printf(" %.2f, %.2f\r\n",(float)*array/100.0, (float)*(array+1)/100.0);
+  //       }
+  //   }
+  // }
+    
+
         // ************************************ configure output channels *************************
   trace(T_CONFIG,8);
   delete outputs;
@@ -313,6 +355,10 @@ bool configInputs(const char* JsonStr){
       inputChannel[i]->_name = charstar(input["name"].as<char*>());
       delete inputChannel[i]->_model;
       inputChannel[i]->_model = charstar(input["model"].as<char*>());
+      // Fix name change that removed (USA) in table
+      if(strcmp(inputChannel[i]->_model,"TDC DA-10-09(USA)") == 0){
+        inputChannel[i]->_model[12] = 0;
+      }
       inputChannel[i]->_turns = input["turns"].as<float>();
       inputChannel[i]->_calibration = input["cal"].as<float>();
       if(inputChannel[i]->_turns && inputChannel[i]->_burden){
@@ -323,22 +369,21 @@ bool configInputs(const char* JsonStr){
       inputChannel[i]->_vchannel = input.containsKey("vref") ? input["vref"].as<int>() : 0;
       inputChannel[i]->active(true);
       String type = input["type"];
-      String _hashName = hashName(input["model"].as<char*>());
+      String _hashName = hashName(inputChannel[i]->_model);
       phaseTableEntry* entry = phaseTable;
       while(entry){
         if(memcmp(entry->modelHash, _hashName.c_str(), 8) == 0){
-          inputChannel[i]->_phase = entry->value;
+          inputChannel[i]->_phase = entry->phase;
+          inputChannel[i]->_p50 = copyPtable(entry->p50);
+          inputChannel[i]->_p60 = copyPtable(entry->p60);
           break;
         }
         entry = entry->next;
       }
       inputChannel[i]->_reverse = input["reverse"] | false;
       if(type == "VT") {
-        inputChannel[i]->_type = channelTypeVoltage;
+        inputChannel[i]->_type = channelTypeVoltage; 
         inputChannel[i]->_vchannel = i;
-        if(deviceVersion >= (4*256+9)){
-          inputChannel[i]->_phase -= 1.44;
-        }
       }
       else if (type == "CT"){
         inputChannel[i]->_type = channelTypePower;
@@ -408,6 +453,7 @@ void buildPhaseTable(phaseTableEntry** phaseTable){
   if(!Table.success()) return;
   if(Table.containsKey("VT")) phaseTableAdd(phaseTable, Table["VT"]);
   if(Table.containsKey("CT")) phaseTableAdd(phaseTable, Table["CT"]);
+  configFrequency = frequency;
   return;  
 }
 
@@ -421,9 +467,42 @@ void phaseTableAdd(phaseTableEntry** phaseTable, JsonArray& table){
       phaseTableEntry* tableEntry = new phaseTableEntry;
       tableEntry->next = *phaseTable;
       *phaseTable = tableEntry;
-      tableEntry->value = entry["phase"].as<float>();
       String _hashName = hashName(entry["model"].as<char*>());
       memcpy(tableEntry->modelHash, _hashName.c_str(), 8);
+      tableEntry->phase = entry["phase"].as<float>();
+      if(entry.containsKey("p50")){
+        tableEntry->p50 = buildPtable(entry["p50"], entry["model"].as<char*>());
+      }
+      if(entry.containsKey("p60")){
+        tableEntry->p60 = buildPtable(entry["p60"], entry["model"].as<char*>());
+      }
     }
   }
+}
+
+int16_t* buildPtable(JsonArray& table, const char* model){
+  int16_t size = table.size();
+  if(size % 2 == 0){
+    log("Invalid phase table for model %s", model);
+    return nullptr;
+  }
+  int16_t* array = new int16_t[table.size()+1];
+  for(int i=0; i<size; i++){
+    array[i] = table[i].as<float>() * 100.0 + 0.5;
+  }
+  array[size] = 0;
+  return array;
+}
+
+int16_t* copyPtable(int16_t* Ptable){
+  if( ! Ptable) return nullptr;
+  size_t size = 2;
+  while(Ptable[size-1]){
+    size += 2;
+  }
+  int16_t* array = new int16_t[size];
+  for(int i=0; i<size; i++){
+    array[i] = Ptable[i];
+  }
+  return array;
 }
