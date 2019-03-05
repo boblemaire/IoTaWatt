@@ -108,23 +108,20 @@ void setup()
   traceEntry.seq = 0;
   for(int i=0; i<32; i++) trace(0,0);
 
-
-
 //*************************************** Process the EEPROM ****************************************
-
-
 
 EEprom* EE = new EEprom;
 uint8_t* EEbytes = (uint8_t*) EE;
 size_t EEsize = sizeof(EEprom);
 
-  // Create the EEprom
+    // Initialize the EEprom for testing
+    // Ordinarily to be done in manufacturing.
 
 // EEPROM.begin(EEsize);
 // memcpy(EE->id, "IoTaWatt", 8);
 // EE->EEversion = 0;
-// EE->deviceMajorVersion = 4;
-// EE->deviceMinorVersion = 9;
+// EE->deviceMajorVersion = 5;
+// EE->deviceMinorVersion = 0;
 // EE->mfgDate = 0;
 // EE->mfgLot = 0;
 // EE->mfgBurden = 20;
@@ -142,18 +139,18 @@ if( ! memcmp(EE->id, "IoTaWatt", 8)){
   if(EE->EEversion > 0){
     log("EEPROM unrecognized version %d", EE->EEversion);
   } else {
-    deviceVersion = EE->deviceMajorVersion * 256 + EE->deviceMinorVersion;
+    deviceMajorVersion = EE->deviceMajorVersion;
+    deviceMinorVersion  = EE->deviceMinorVersion;
     VrefVolts = (float)EE->mfgRefVolts / 1000.0;
   }
-}
+} 
 EEPROM.end();
 delete EE;
 EE = nullptr;
 
 //**************************************** Display software version *********************************
 
-  log("IoTaWatt revision %d.%d, firmware version %s", deviceVersion/256, deviceVersion%256, IOTAWATT_VERSION);
-  copyUpdate(String(IOTAWATT_VERSION));
+log("IoTaWatt %d.%s, Firmware version %s", deviceMajorVersion, deviceMajorVersion < 5 ? "x" : String(deviceMinorVersion).c_str(), IOTAWATT_VERSION);
 
 //*************************************** Mount the SPIFFS ******************************************
 

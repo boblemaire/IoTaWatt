@@ -12,7 +12,6 @@ union dataBuckets {
         double accum1;
         double accum2;
 		    uint32 timeThen;
-        
       };
       struct {
         double  volts;
@@ -32,7 +31,7 @@ union dataBuckets {
       ,accum1(0)
       ,accum2(0)
       ,timeThen(millis()){}
-      };
+};
 	
 class IotaInputChannel {
   public:
@@ -43,6 +42,9 @@ class IotaInputChannel {
     float        _calibration;                // Calibration factor
     float        _phase;                      // Phase correction in degrees (+lead, - lag);
     float        _vphase;                     // Phase offset for 3-phase voltage reference
+    float        _lastPhase; 
+    int16_t*     _p50;                        // -> 50Hz phase correction array
+    int16_t*     _p60;                        // -> 60Hz phase correction array
     uint16_t     _turns;                      // Turns ratio of current type CT	
     uint16_t     _offset;                     // ADC bias 
     uint8_t      _channel;                    // Internal identifying number
@@ -68,70 +70,33 @@ class IotaInputChannel {
     ,_calibration(0)
     ,_phase(0)
     ,_vphase(0)
+    ,_p50(nullptr)
+    ,_p60(nullptr)
     ,_turns(0)
 	  ,_active(false)
     ,_reversed(false)
     ,_signed(false)
     ,_reverse(false)
     ,_double(false)
-   {}
-	~IotaInputChannel(){
-		
-	}
+    {}
 
-	void reset(){
-    delete[] _name;
-	  _name = nullptr;
-    delete[] _model;
-	  _model = nullptr;
-	  _vchannel = 0;
-	  _burden = 0;
-    _calibration = 0;
-    _phase = 0;
-	  _active = false;
-    _reversed = false;
-    _signed = false;
-    _reverse = false;
-    _double = false;
-	}
-	
-  void ageBuckets(uint32_t timeNow) {
-		double elapsedHrs = double((uint32_t)(timeNow - dataBucket.timeThen)) / 3600000E0;
-		dataBucket.accum1 += dataBucket.value1 * elapsedHrs;
-		dataBucket.accum2 += dataBucket.value2 * elapsedHrs;
-		dataBucket.timeThen = timeNow;    
-  }
+	  ~IotaInputChannel(){}
 
-	void setVoltage(float volts, float Hz){
-		if(_type != channelTypeVoltage) return;
-		dataBucket.Hz = Hz;	
-		setVoltage(volts);
-
-	}	
-  void setVoltage(float volts){
-		if(_type != channelTypeVoltage) return;
-		dataBucket.volts = volts;
-		ageBuckets(millis());
-  }
-	
-	void setHz(float Hz){
-		if(_type != channelTypeVoltage) return;
-		dataBucket.Hz = Hz;
-    }
-	
-	void setPower(float watts, float VA){
-		if(_type != channelTypePower) return;
-		dataBucket.watts = watts;
-		dataBucket.VA = VA;
-		ageBuckets(millis());
-	}
-	
-	bool   isActive(){return _active;}
-	void   active(bool _active_){_active = _active_;}
-	double getVoltage(){return dataBucket.volts;}	
-	double getPower(){return dataBucket.watts;}
-	double getPf(){return dataBucket.watts / dataBucket.VA;}
+    void    reset();
+    void    ageBuckets(uint32_t timeNow);
+    void    setVoltage(float volts, float Hz);
+    void    setVoltage(float volts);
+    void    setHz(float Hz);
+    void    setPower(float watts, float VA);	
+    bool    isActive(){return _active;}
+    void    active(bool _active_){_active = _active_;}
+    double  getVoltage(){return dataBucket.volts;}	
+    double  getPower(){return dataBucket.watts;}
+    double  getPf(){return dataBucket.watts / dataBucket.VA;}
+    float   getPhase(float var);
+    float   lookupPhase(int16_t* pArray, float var);
 	
   private:
 };
+
 #endif

@@ -486,6 +486,7 @@ void handleStatus(){
         if(inputChannel[i]->_type == channelTypeVoltage){
           channelObject.set(F("Vrms"),statRecord.accum1[i]);
           channelObject.set(F("Hz"),statRecord.accum2[i]);
+          channelObject.set("phase", inputChannel[i]->getPhase(inputChannel[i]->dataBucket.volts));
         }
         else if(inputChannel[i]->_type == channelTypePower){
           if(statRecord.accum1[i] > -2 && statRecord.accum1[i] < 2) statRecord.accum1[i] = 0;
@@ -498,6 +499,10 @@ void handleStatus(){
           if(inputChannel[i]->_reversed){
             channelObject.set(F("reversed"),true);
           }
+          double volts = inputChannel[inputChannel[i]->_vchannel]->dataBucket.volts;
+          double amps = (volts < 50) ? 0 : inputChannel[i]->dataBucket.VA / volts;
+          channelObject.set("phase", inputChannel[i]->getPhase(amps));
+          channelObject.set("lastphase", inputChannel[i]->_lastPhase);
         }
         channelArray.add(channelObject);
       }
@@ -577,7 +582,7 @@ void handleStatus(){
   }
 
   String response = "";
-  root.printTo(response);
+  root.prettyPrintTo(response);
   server.send(200, txtJson_P, response);  
 }
 
@@ -617,7 +622,9 @@ void handleCommand(){
     if(server.hasArg(F("shift"))){
       shift = server.arg(F("shift")).toInt();
     }
-    server.send(200, txtPlain_P, samplePhase(refChan, chan, shift));
+    char response[100];
+    sprintf(response, "Phase Shift chan %d ref %d, %.2f", chan, refChan, samplePhase(refChan, chan, shift));
+    server.send(200, txtPlain_P, response);
     return; 
   }
   if(server.hasArg(F("sample"))){
