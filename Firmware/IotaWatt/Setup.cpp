@@ -152,6 +152,10 @@ EE = nullptr;
 
 log("IoTaWatt %d.%s, Firmware version %s", deviceMajorVersion, deviceMajorVersion < 5 ? "x" : String(deviceMinorVersion).c_str(), IOTAWATT_VERSION);
 
+//**************************************** Install any pending updates ******************************
+
+copyUpdate(String(IOTAWATT_VERSION));
+
 //*************************************** Mount the SPIFFS ******************************************
 
 if(spiffsBegin()){
