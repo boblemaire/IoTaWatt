@@ -100,7 +100,7 @@ consumption or both.
 **generation** 
     Specify this if you have a solar PV system.
     Select the IoTaWatt input that measures your inverter output.
-
+    
 **consumption**
     This is the amount of power you use. 
     There are two general cases for this depending on where
@@ -111,10 +111,7 @@ consumption or both.
             (main_1 + main_2)
     *   If the inverter feeds in after the mains breaker,
         i.e. into a breaker inside your panel,
-        then your consumption is the sum of the mains and the solar.
-        However, that number will be negative when you are generating
-        more than you are consuming, so you need to use the max function
-        of the calculator to only show positive consumption::
+        then your consumption is the sum of the mains and the solar::
             (main_1 + main_2 + solar) max 0
 
 **voltage**
