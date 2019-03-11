@@ -110,8 +110,6 @@ char* deviceName;
 const char* IotaLogFile = "iotawatt/iotalog";
 const char* historyLogFile = "iotawatt/histLog";
 const char* IotaMsgLog = "iotawatt/iotamsgs.txt";
-const char* ntpServerName = "pool.ntp.org";
-
                        
 uint8_t ADC_selectPin[2] = {pin_CS_ADC0,    // indexable reference for ADC select pins
                             pin_CS_ADC1};  

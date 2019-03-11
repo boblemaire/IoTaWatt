@@ -89,7 +89,6 @@ extern char* deviceName;
 extern const char* IotaLogFile;
 extern const char* historyLogFile;
 extern const char* IotaMsgLog;
-extern const char*  ntpServerName;
 
         // Define the hardware pins
 

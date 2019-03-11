@@ -53,6 +53,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   static bool started = false;
   static uint32_t prevDiff = 0;
   static IPAddress prevIP;
+  static uint8_t  serverIndex = 0;     
   uint32_t sendMillis = 0;
   uint32_t origin_sec = 0;
   uint32_t origin_frac = 0;
@@ -82,26 +83,30 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     lastNTPupdate = UTCtime();
   }
 
+  if( ! WiFi.isConnected()){ 
+    trace(T_timeSync, 3);
+    return UTCtime() + (RTCrunning ? 5 : 1);
+  }
+
         // Send an SNTP request.
 
-  trace(T_timeSync, 3);
-  if(WiFi.isConnected()){
-    trace(T_timeSync, 31);
-    if(WiFi.hostByName(ntpServerName, timeServerIP) == 1){    // get a random server from the pool
-      trace(T_timeSync, 32);
-      ntpPacket packet;
-      sendMillis = millis();
-      packet.trans_ts_sec = origin_sec = sendMillis / 1000;
-      packet.trans_ts_frac = origin_frac = sendMillis % 1000;
-      udp.begin(ntpPort);
-      udp.beginPacket(timeServerIP, 123);
-      udp.write((uint8_t*)&packet, sizeof(ntpPacket));        // send an NTP packet to a time server
-      udp.endPacket();
-    } 
-    else {
-      trace(T_timeSync, 33);
-      return UTCtime() + RTCrunning ? 60 : 5;
-    }
+  trace(T_timeSync, 31);
+  String serverName("time1.google.com");
+  serverName[4] += (++serverIndex % 4);    
+  if(WiFi.hostByName(serverName.c_str(), timeServerIP) == 1){    // get a random server from the pool
+    trace(T_timeSync, 32);
+    ntpPacket packet;
+    sendMillis = millis();
+    packet.trans_ts_sec = origin_sec = sendMillis / 1000;
+    packet.trans_ts_frac = origin_frac = sendMillis % 1000;
+    udp.begin(ntpPort);
+    udp.beginPacket(timeServerIP, 123);
+    udp.write((uint8_t*)&packet, sizeof(ntpPacket));        // send an NTP packet to a time server
+    udp.endPacket();
+  } 
+  else {
+    trace(T_timeSync, 33);
+    return UTCtime() + (RTCrunning ? 60 : 5);
   }
   
         // Poll for completion
@@ -112,7 +117,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     if(millis() - sendMillis > (RTCrunning ? 3000 : 10000)){
       trace(T_timeSync, 42);
       udp.stop();
-      return UTCtime() + RTCrunning ? 60 : 5;
+      return UTCtime() + (RTCrunning ? 60 : 5);
     }
   }
 
@@ -133,7 +138,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
   trace(T_timeSync, 6);
   if(packetSize < sizeof(ntpPacket) || recvMillis - sendMillis > (RTCrunning ? 3000 : 10000)){
-    return UTCtime() + RTCrunning ? 60 : 5;
+    return UTCtime() + (RTCrunning ? 60 : 5);
   }
 
         // Check for Kiss-o'-Death packet
@@ -142,17 +147,17 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   if(packet.stratum == 0){
     log("timesync: Kiss-o'-Death, code %c%c%c%c, ip: %s", 
     packet.referenceID[0], packet.referenceID[1], packet.referenceID[2], packet.referenceID[3], timeServerIP.toString().c_str());
-    return UTCtime() + RTCrunning ? 60 : 15;
+    return UTCtime() + (RTCrunning ? 60 : 15);
   } 
 
   trace(T_timeSync, 8);
   if(packet.origin_ts_sec != origin_sec || packet.origin_ts_frac != origin_frac){
     trace(T_timeSync, 81);
-    return UTCtime() + RTCrunning ? 60 : 5;
+    return UTCtime() + (RTCrunning ? 60 : 5);
   }
   if(packet.trans_ts_sec < NTP2018 || packet.trans_ts_sec > NTP2028){
     trace(T_timeSync, 82);
-    return UTCtime() + RTCrunning ? 60 : 5;
+    return UTCtime() + (RTCrunning ? 60 : 5);
   }
 
         // compute time as NTP transmit time + 1/2 transaction duration.
@@ -170,7 +175,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     trace(T_timeSync, 91);
     prevDiff = presDiff; 
     prevIP = timeServerIP;
-    return UTCtime() + RTCrunning ? 60 : 1;
+    return UTCtime() + (RTCrunning ? 60 : 1);
   }
   // if(prevDiff){
   //   trace(T_timeSync, 92);
