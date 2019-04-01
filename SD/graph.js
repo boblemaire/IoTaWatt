@@ -6,6 +6,8 @@ var plotdata = [];
 var reloading = false;
 var reload = false;
 var reloadId = [];
+var reloadList = [];
+var reloadData = [];
 
 var embed = false;
 var skipmissing = 0;
@@ -331,6 +333,7 @@ function graph_init_editor()
         requesttype = type;
         
         // Intervals are set here for bar graph bar width sizing
+        if (type=="hourly") view.interval = 3600;
         if (type=="daily") view.interval = 86400;
         if (type=="weekly") view.interval = 86400*7;
         if (type=="monthly") view.interval = 86400*30;
@@ -414,6 +417,10 @@ function graph_reload() {
       return;
     }
     
+    // This is the first part of the asynchronous reload logic.
+    // It's a basic semaphore that queues the request for later.
+    // If there is a reload in progress, set reload = true to trigger another reload when the current one completes.
+    
     if(reloading) {
       reload = true;
       return;
@@ -421,8 +428,6 @@ function graph_reload() {
       reload = false;
     }
     reloading = true;
-    
-    
     
     var intervalms = view.interval * 1000;
     view.start = Math.round(view.start / intervalms) * intervalms;
@@ -435,18 +440,28 @@ function graph_reload() {
     
     var errorstr = ""; 
     
-    reloadId = [];
-    for (var z in feedlist) {
-      reloadId.push(feedlist[z].id);
-    }
-    
     var mode = "&interval="+view.interval+"&skipmissing="+skipmissing+"&limitinterval="+view.limitinterval;
     if (requesttype!="interval") mode = "&mode="+requesttype;
     var method = "data";
     var backup_param = "";
     if (getbackup) backup_param = "&backup=true";
-    var request = path+"/feed/"+method+".json?id="+reloadId+"&start="+view.start+"&end="+view.end + mode + backup_param;
-    
+    var request = path+"/query?format=json&header=no&missing=null&begin="+view.start*.001+"&end="+view.end*.001+"&columns=[time.utc.unix";
+    for(var i=0; i<feedlist.length; i++){
+      request += "," + feedlist[i].name;
+      if(feedlist[i].tag == "Energy"){
+        request += ".kwh";
+      }
+      if(feedlist[i].delta){
+        request += ".delta";
+      }
+      feedlist[i].dataindex = i + 1;
+    }
+    request += "]&group=";
+    if(requesttype == "daily")request+="1d";
+    else if(requesttype == "weekly")request+="1w";
+    else if(requesttype == "monthly")request+="1mo";
+    else if(requesttype == "yearly")request+="1y";
+    else request+=view.interval+"s";
     
     $.ajax({                                      
         url: request,
@@ -456,71 +471,35 @@ function graph_reload() {
             // 1) Check validity of json data, or show error
             var valid = true;
             try {
-                var response = JSON.parse(data_in);
-                if (response.success!=undefined) valid = false;
+                reloadData = JSON.parse(data_in);
+                if (reloadData.success!=undefined) valid = false;
             } catch (e) {
                 valid = false;
             }
             
             if (!valid) errorstr += "<div class='alert alert-danger'><b>Request error</b> "+data_in+"</div>";
-            else {
-              for(i in reloadId){
-                for(z in feedlist){
-                  if(reloadId[i] == feedlist[z].id){
-                    feedlist[z].data = new Array(response.length);
-                    var time = view.start;
-                    for (var t = 0; t < response.length; t++){
-                      feedlist[z].data[t] = [time, response[t][i]];
-                      time += intervalms;
-                    }
-                  }
-                }
-              }
-            }
-            
-            for (var z in feedlist) {
-      
-                if (feedlist[z].delta) {
-                    for (var i=1; i<feedlist[z].data.length; i++) {
-                        if (feedlist[z].data[i][1]!=null && feedlist[z].data[i-1][1]!=null) {
-                            var delta = feedlist[z].data[i][1] - feedlist[z].data[i-1][1];
-                            feedlist[z].data[i-1][1] = delta;
-                        } else {
-                            feedlist[z].data[i][1] = 0;
-                            feedlist[z].data[i-1][1] = null;
-                        }
-                    }
-                    feedlist[z].data[feedlist[z].data.length-1][1] = null;
-                }
-                
-                // Apply a scale to feed values
-                var scale = $(".scale[feedid="+feedlist[z].id+"]").val();
-                if (scale!=undefined) feedlist[z].scale = scale;
-                
-                if (feedlist[z].scale!=undefined && feedlist[z].scale!=1.0) {
-                    for (var i=0; i<feedlist[z].data.length; i++) {
-                        if (feedlist[z].data[i][1]!=null) {
-                            feedlist[z].data[i][1] = feedlist[z].data[i][1] * feedlist[z].scale;
-                        }
-                    }
-                }
-            }
             if (errorstr!="") {
                 $("#error").html(errorstr).show();
             } else {
                 $("#error").hide();
                 graph_draw();
             }
+            
+            // This is the second part of the asynchronous reload logic.
+            // Change state to indicate reload no longer in progress.
+            // If a reload was requested during this reload, start a new reload.
+            
             reloading = false;
             if(reload){
               graph_reload();
-            } else {
-              $.ajax({                                      
-              url: path+"/nullreq",
-              async: true,
-              dataType: "json",
-              success: function(result) {}
-              });
+            //don't remember why I did this, seems to work w/o it but leaving here just in case.  
+            // } else {
+            //   $.ajax({                                      
+            //   url: path+"/nullreq",
+            //   async: true,
+            //   dataType: "json",
+            //   success: function(result) {}
+            //   });
             }
         }
     });
@@ -572,36 +551,35 @@ function graph_draw()
     
     plotdata = [];
     var yaxisUsed = 0;
-    for (var z in feedlist){
-        yaxisUsed |= feedlist[z].yaxis;
+    for (var z in reloadList){
+        yaxisUsed |= reloadList[z].yaxis;
     }
 
     for (var z in feedlist) {
-        
-        var data = feedlist[z].data;
-        
-        // Hide missing data (only affects the plot view)
-        if (!showmissing) {
-            var tmp = [];
-            for (var n in data) {
-                if (data[n][1]!=null) tmp.push(data[n]);
+        if(feedlist[z].dataindex != undefined){
+          var dataindex = feedlist[z].dataindex;
+          var data = [];
+          for(var i=0; i<reloadData.length; i++){
+            if(reloadData[dataindex][i]!=null || !showmissing){
+              data.push([reloadData[i][0]*1000, reloadData[i][dataindex]]);
             }
-            data = tmp;
+          }
+          
+          // Add series to plot
+          var label = "";
+          if (showtag) label += feedlist[z].tag+": ";
+          label += feedlist[z].name;
+          if (yaxisUsed == 3) {
+              if (feedlist[z].yaxis == 1) {label += " &#10229;"}; // Long Left Arrow
+              if (feedlist[z].yaxis == 2) {label += " &#10230;"}; // Long Right Arrow 
+          }
+  
+          var plot = {label:label, data:data, yaxis:feedlist[z].yaxis, color: feedlist[z].color};
+          
+          if (feedlist[z].plottype=='lines') plot.lines = { show: true, fill: feedlist[z].fill };
+          if (feedlist[z].plottype=='bars') plot.bars = { show: true, barWidth: view.interval * 1000 * 0.75 };
+          plotdata.push(plot);
         }
-        // Add series to plot
-        var label = "";
-        if (showtag) label += feedlist[z].tag+": ";
-        label += feedlist[z].name;
-        if (yaxisUsed == 3) {
-            if (feedlist[z].yaxis == 1) {label += " &#10229;"}; // Long Left Arrow
-            if (feedlist[z].yaxis == 2) {label += " &#10230;"}; // Long Right Arrow 
-        }
-
-        var plot = {label:label, data:data, yaxis:feedlist[z].yaxis, color: feedlist[z].color};
-        
-        if (feedlist[z].plottype=='lines') plot.lines = { show: true, fill: feedlist[z].fill };
-        if (feedlist[z].plottype=='bars') plot.bars = { show: true, barWidth: view.interval * 1000 * 0.75 };
-        plotdata.push(plot);
     }
     $.plot($('#placeholder'), plotdata, options);
     
@@ -694,20 +672,17 @@ function printcsv()
     var nullvalues = $("#csvnullvalues").val();
     
     var csvout = "";
-
-    var value = [];
-    var lastvalue = [];
-    var start_time = feedlist[0].data[0][0];
-    for (var z in feedlist[0].data) {
-        var line = [];
-        // Different time format options for csv output
+    var start_time = reloadData[0][0];
+    for(var i=0; i<reloadData.length; i++){
+        var line = "";
+          // Different time format options for csv output
         if (timeformat=="unix") {
-            line.push(Math.round(feedlist[0].data[z][0] / 1000));
+            line += reloadData[i][0];
         } else if (timeformat=="seconds") {
-            line.push(Math.round((feedlist[0].data[z][0]-start_time)/1000));
+            line += (reloadData[i][0] - start_time);
         } else if (timeformat=="datestr") {
             // Create date time string
-            var t = new Date(feedlist[0].data[z][0]);
+            var t = new Date(reloadData[i][0]*1000);
             var year = t.getFullYear();
             var month = t.getMonth()+1;
             if (month<10) month = "0"+month;
@@ -720,28 +695,17 @@ function printcsv()
             var seconds = t.getSeconds();
             if (seconds<10) seconds = "0"+seconds;
             
-            var formatted = year+"-"+month+"-"+day+" "+hours+":"+minutes+":"+seconds;
-            line.push(formatted);
+            line += year+"-"+month+"-"+day+" "+hours+":"+minutes+":"+seconds;
         }
-        
-        var nullfound = false;
+          
         for (var f in feedlist) {
-            if (value[f]==undefined) value[f] = null;
-            lastvalue[f] = value[f];
-            if (feedlist[f].data[z]!=undefined) {
-            if (feedlist[f].data[z][1]==null) nullfound = true;
-            if (feedlist[f].data[z][1]!=null || nullvalues=="show") value[f] = feedlist[f].data[z][1];
-            if (value[f]!=null) value[f] = (value[f]*1.0).toFixed(feedlist[f].dp);
-            line.push(value[f]+"");
-            }
+            dataindex = feedlist[f].dataindex;
+            line += ", " + reloadData[i][dataindex];
         }
         
-        if (nullvalues=="remove" && nullfound) {
-            // pass
-        } else { 
-            csvout += line.join(", ")+"\n";
-        }
+        csvout += line+"\n";
     }
+
     $("#csv").val(csvout);
 }
 
