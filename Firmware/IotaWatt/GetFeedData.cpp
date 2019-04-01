@@ -166,7 +166,7 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
           // Setup buffer to do it "chunky-style"
       
       server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-      server.send(200,"application/json","");
+      server.send(200,"application/octet-stream","");
       *replyData= "[";
       UnixTime = startUnixTime;
       state = process;

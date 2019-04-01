@@ -82,6 +82,9 @@ void handleRequest(){
   if(serverOn(authUser, F("/graph/getall"), HTTP_GET, handleGraphGetall)) return;
   if(serverOn(authAdmin, F("/auth"), HTTP_POST, handlePasswords)) return;
   if(serverOn(authUser, F("/nullreq"), HTTP_GET, returnOK)) return;
+  if(serverOn(authUser, F("/query"), HTTP_GET, handleQuery)) return;
+  if(serverOn(authUser, F("/DSTtest"), HTTP_GET, handleDSTtest)) return;
+
 
   if(loadFromSdCard(uri)){
     return;
@@ -144,9 +147,7 @@ bool loadFromSdCard(String path){
     dataFile = SD.open(path.c_str());
   }
 
-  if (!dataFile){
-    return false;
-  }
+ 
 
           // If reading user directory,
           // authenticate as user
@@ -158,7 +159,17 @@ bool loadFromSdCard(String path){
   }
   if( ! authenticate(level)) return true;
 
-  if (server.hasArg("download")) dataType = F("application/octet-stream");
+  if (server.hasArg("download")){
+    if(server.arg(F("download")) == "true") dataType = F("application/octet-stream");  
+    else if(server.arg(F("download")) == "yes"){
+      handleQuery();
+      return true;
+    }
+  } 
+
+  if (!dataFile){
+    return false;
+  }
 
   if(server.hasArg("textpos")){
     sendMsgFile(dataFile, server.arg("textpos").toInt());
@@ -790,6 +801,64 @@ void handleGetConfig(){
   server.send(400, txtPlain_P, "Bad Request.");
 }
 
+void handleQuery(){
+  CSVquery* query = new CSVquery();
+  if( ! query->setup()){
+    returnFail("invalid query");
+    Serial.println("invalid query");
+  } else {
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    if(server.hasArg(F("download"))){
+      server.send(200,"application/octet-stream","");
+    }
+    else if(query->isJson()){
+      server.send(200, appJson_P, "");
+    }
+    else {
+      server.send(200, txtPlain_P, "");
+    }
+      
+    uint8_t* buf = new uint8_t[1460];
+    int read = 0;
+    size_t size = 0;
+    while(read = query->readResult(buf+6, 1460-8)){
+      sendChunk((char*)buf, read+6);
+      // Serial.write(buf+6, read);
+      size += read;
+      // if(size > 10000){
+      //   Serial.printf("\r\n size exceeded \r\n");
+      //   break;
+      // }
+      yield();
+    }
+    sendChunk((char*)buf, 6);
+    delete buf;
+    Serial.println();
+  }
+  delete query;
+}
+
+void handleDSTtest(){
+    uint32_t begin = server.arg(F("begin")).toInt();
+    uint32_t end = server.arg(F("end")).toInt();
+    xbuf buf;
+    while(begin <= end){
+      buf.printf("UTC %d, %s, Local %d, %s, UTC %d, %s",
+        begin, datef(begin).c_str(),
+        localTime(begin), datef(localTime(begin)).c_str(),
+        UTCtime(localTime(begin)), datef(UTCtime(localTime(begin))).c_str());
+      if(begin != UTCtime(localTime(begin))){
+        buf.print(" FAILED");
+      }
+      buf.println();
+      begin += 60;
+      if(buf.available() > 8000){
+        buf.println("too big");
+        break;
+      }
+    }
+    server.send(200, txtPlain_P, buf.readString().c_str());
+}
         // Seems to work better when sending chunk as a single write
         // including chunk header, body, and footer (\r\n).
         // This function accepts a char* buffer and length to send.
