@@ -445,7 +445,11 @@ function graph_reload() {
     var method = "data";
     var backup_param = "";
     if (getbackup) backup_param = "&backup=true";
-    var request = path+"/query?format=json&header=no&missing=null&begin="+view.start*.001+"&end="+view.end*.001+"&columns=[time.utc.unix";
+    var request = path+"/query?format=json&header=no&missing=null" + 
+                        "&begin=" + periodTable[view.period].begin + 
+                        "&end=" + periodTable[view.period].end + 
+                        "&columns=[time.utc.unix";
+    //var request = path+"/query?format=json&header=no&missing=null&begin="+view.start*.001+"&end="+view.end*.001+"&columns=[time.utc.unix";
     for(var i=0; i<feedlist.length; i++){
       request += "," + feedlist[i].name;
       if(feedlist[i].tag == "Energy"){
@@ -461,7 +465,8 @@ function graph_reload() {
     else if(requesttype == "weekly")request+="1w";
     else if(requesttype == "monthly")request+="1mo";
     else if(requesttype == "yearly")request+="1y";
-    else request+=view.interval+"s";
+    else request += periodTable[view.period].group;
+    //else request+=view.interval+"s";
     
     $.ajax({                                      
         url: request,
@@ -481,6 +486,8 @@ function graph_reload() {
             if (errorstr!="") {
                 $("#error").html(errorstr).show();
             } else {
+                view.start = reloadData[0][0];
+                view.end = reloadData[reloadData.length-1][0];
                 $("#error").hide();
                 graph_draw();
             }
@@ -492,14 +499,6 @@ function graph_reload() {
             reloading = false;
             if(reload){
               graph_reload();
-            //don't remember why I did this, seems to work w/o it but leaving here just in case.  
-            // } else {
-            //   $.ajax({                                      
-            //   url: path+"/nullreq",
-            //   async: true,
-            //   dataType: "json",
-            //   success: function(result) {}
-            //   });
             }
         }
     });
@@ -514,15 +513,20 @@ function graph_draw()
     var options = {
         lines: { fill: false },
         xaxis: { 
-            mode: "time", timezone: "browser", 
-            min: view.start, max: view.end
+            mode: "time",
+            timezone: "browser",
+            //timebase: "seconds",
+            min: view.start,
+            max: view.end
         },
-	      yaxes: [ { }, {
-			      // align if we are to the right
-			      alignTicksWithAxis: 1,
-			      position: "right"
-			      //tickFormatter: euroFormatter
-		    } ],
+	      yaxes: [
+	          {   // Left Yaxis
+	          },
+	          {   // Right Y axis
+			        alignTicksWithAxis: 1,
+			        position: "right"
+	          }
+		    ],
         grid: {hoverable: true, clickable: true},
         selection: { mode: "x" },
         legend: { show: false, position: "nw", toggle: true },
@@ -555,6 +559,7 @@ function graph_draw()
         yaxisUsed |= reloadList[z].yaxis;
     }
 
+    
     for (var z in feedlist) {
         if(feedlist[z].dataindex != undefined){
           var dataindex = feedlist[z].dataindex;
@@ -581,12 +586,19 @@ function graph_draw()
           plotdata.push(plot);
         }
     }
+    
+    if(reloadData[0] != undefined){
+      options.xaxis.min = reloadData[0][0] * 1000;
+      options.xaxis.max = reloadData[reloadData.length-1][0] * 1000;
+    }
     $.plot($('#placeholder'), plotdata, options);
     
     if (!embed) {
         
         for (var z in feedlist) {
-            feedlist[z].stats = stats(feedlist[z].data);
+            if(feedlist[z].dataindex != undefined){
+              feedlist[z].stats = stats(feedlist[z].dataindex);
+            }
         }
         
         var default_linecolor = "000";

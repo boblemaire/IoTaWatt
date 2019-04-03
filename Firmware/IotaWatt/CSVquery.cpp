@@ -29,16 +29,22 @@ bool    CSVquery::setup(){
     }
     String group = server.arg(F("group"));
     group.toLowerCase();
-    _groupMult = MAX(1, group.toInt());
-    if(group.endsWith("s")) _groupUnits = tUnitsSeconds;
-    else if(group.endsWith("m")) _groupUnits = tUnitsMinutes;
-    else if(group.endsWith("h")) _groupUnits = tUnitsHours;
-    else if(group.endsWith("d")) _groupUnits = tUnitsDays;
-    else if(group.endsWith("w")) _groupUnits = tUnitsWeeks;
-    else if(group.endsWith("mo")) _groupUnits = tUnitsMonths;
-    else if(group.endsWith("y")) _groupUnits = tUnitsYears;
-    else if(_groupMult > 0 && _groupMult % 5 == 0) _groupUnits = tUnitsSeconds;
-    else return false;
+    if(group.startsWith("/")){
+        _groupUnits = tUnitsAuto;
+        _groupMult = group.substring(1).toInt();
+        if(_groupMult <= 0) return false;
+    } else {
+        _groupMult = MAX(1, group.toInt());
+        if(group.endsWith("s")) _groupUnits = tUnitsSeconds;
+        else if(group.endsWith("m")) _groupUnits = tUnitsMinutes;
+        else if(group.endsWith("h")) _groupUnits = tUnitsHours;
+        else if(group.endsWith("d")) _groupUnits = tUnitsDays;
+        else if(group.endsWith("w")) _groupUnits = tUnitsWeeks;
+        else if(group.endsWith("mo")) _groupUnits = tUnitsMonths;
+        else if(group.endsWith("y")) _groupUnits = tUnitsYears;
+        else if(_groupMult > 0 && _groupMult % 5 == 0) _groupUnits = tUnitsSeconds;
+        else return false;
+    }
     _begin = parseTimeArg(server.arg(F("begin")));
     _end = parseTimeArg(server.arg(F("end")));
     if(_end == 0 || _begin == 0 || _end < _begin) return false;
@@ -468,6 +474,13 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
 
 time_t  CSVquery::nextGroup(time_t time, tUnits units, int32_t inc){
     time_t result;
+    if(units == tUnitsAuto){
+        int interval = (_end - _begin) / inc;
+        if(interval % 5){
+            interval += 5 - (interval & 5);
+        }
+        result = time + interval;
+    }
     if(units == tUnitsSeconds){
         result = time + inc;
     }
@@ -620,7 +633,7 @@ time_t  CSVquery::parseTimeArg(String timeArg){
     _tm->tm_sec -= _tm->tm_sec % 5;
     switch (*ptr){
         default: return 0;
-        case 'y': _tm->tm_mon = 1;
+        case 'y': _tm->tm_mon = 0;
         case 'M': _tm->tm_mday = 1;
         case 'd': _tm->tm_hour = 0;
         case 'h': _tm->tm_min = 0;

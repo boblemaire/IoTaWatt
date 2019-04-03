@@ -14,7 +14,8 @@ class  CSVquery {
 
     private:
 
-        enum        tUnits {tUnitsSeconds,      // time units 
+        enum        tUnits {tUnitsAuto,
+                            tUnitsSeconds,      // time units 
                             tUnitsMinutes,
                             tUnitsHours,
                             tUnitsDays,
