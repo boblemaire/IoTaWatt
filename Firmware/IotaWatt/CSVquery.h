@@ -32,8 +32,8 @@ class  CSVquery {
 
         uint32_t    _begin;                     // Beginning time - UTC
         uint32_t    _end;                       // Ending time - UTC
+        uint32_t    _groupMult;                 // Group unit muliplier as in 7d
         tUnits      _groupUnits;                // Basic group time unit
-        int         _groupMult;                 // Group unit muliplier as in 7d
         format      _format;                    // Output format (Json or CSV)
         tm*         _tm;                        // -> external tm struct
         bool        _setup;                     // True if successful setup

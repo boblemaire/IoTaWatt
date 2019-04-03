@@ -27,12 +27,25 @@ bool    CSVquery::setup(){
            server.hasArg(F("group")) && server.hasArg(F("columns")))){
         return false;       
     }
+    
+    _begin = parseTimeArg(server.arg(F("begin")));
+    _end = parseTimeArg(server.arg(F("end")));
+    if(_end == 0 || _begin == 0 || _end < _begin) return false;
+    trace(T_CSVquery,10);
+    
     String group = server.arg(F("group"));
     group.toLowerCase();
-    if(group.startsWith("/")){
-        _groupUnits = tUnitsAuto;
-        _groupMult = group.substring(1).toInt();
-        if(_groupMult <= 0) return false;
+    if(group.equals("auto")){
+        uint32_t interval = (_end - _begin) / 720;
+        if(interval <= 5) interval = 5;
+        else if(interval <= 10) interval = 10;
+        else if(interval <= 15) interval = 15;
+        else if(interval <= 20) interval = 20;
+        else if(interval <= 30) interval = 30;
+        else if(interval <= 60) interval = 60;
+        else interval += 60 - (interval % 60);
+        _groupMult = interval;
+        _groupUnits = tUnitsSeconds;
     } else {
         _groupMult = MAX(1, group.toInt());
         if(group.endsWith("s")) _groupUnits = tUnitsSeconds;
@@ -45,10 +58,7 @@ bool    CSVquery::setup(){
         else if(_groupMult > 0 && _groupMult % 5 == 0) _groupUnits = tUnitsSeconds;
         else return false;
     }
-    _begin = parseTimeArg(server.arg(F("begin")));
-    _end = parseTimeArg(server.arg(F("end")));
-    if(_end == 0 || _begin == 0 || _end < _begin) return false;
-    trace(T_CSVquery,10);
+
     if(server.hasArg(F("missing"))){
         String arg = server.arg(F("missing"));
         _missingSkip = (arg.equalsIgnoreCase("skip")) ? true : false;
