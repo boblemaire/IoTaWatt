@@ -86,7 +86,26 @@
 
         <div id="navigation" style="padding-bottom:5px;">
             <button class="btn" id="sidebar-open"><i class="icon-list"></i></button>
-            <select id="select-time" class="btn sel graph_time" name="options" style="width: 150px"></select>
+            <select id="select-time" class="btn sel graph_time" name="options" style="width: 150px">
+                    <option value="1" disabled>Select period</option>
+                    <option value='60'>Last 1 min</option>
+                    <option value='180'>Last 3 min</option>
+                    <option value='300'>Last 5 min</option>
+                    <option value='600'>Last 10 min</option>
+                    <option value='900'>Last 15 min</option>
+                    <option value='1800'>Last 30 min</option>
+                    <option value='3600'>Last 1 hour</option>
+                    <option value='10800'>Last 3 hours</option>
+                    <option value='21600'>Last 6 hours</option>
+                    <option value='43200'>Last 12 hours</option>
+                    <option value='86400' selected>Last 1 day</option>
+                    <option value='259200'>Last 3 days</option>
+                    <option value='604800'>Last 7 days</option>
+                    <option value='2592000'>Last 30 days</option>
+                    <option value='7776000'>Last 90 days</option>
+                    <option value='15552000'>Last 180 days</option>
+                    <option value='31536000'>Last 365 days</option>
+            </select>
             <button id='graph_zoomin' class='btn'>+</button>
             <button id='graph_zoomout' class='btn'>-</button>
             <button id='graph_left' class='btn'><</button>
@@ -133,7 +152,6 @@
                 <span class="add-on" style="width:50px">Type</span>
                 <select id="request-type" style="width:120px">
                     <option value="interval">Fixed Interval</option>
-                    <option>Hourly</option>
                     <option>Daily</option>
                     <option>Weekly</option>
                     <option>Monthly</option>
@@ -200,20 +218,7 @@
 
 <!-- copy of https://emoncms.org/Modules/graph/vis.helper.js -->
 <script>
-
-var periodTable = [
-    {label:'last 1 hour', begin:'s-3600s', end:'s', group:'5s', interval:3600},
-    {label:'last 3 hours', begin:'s-10800s', end:'s', group:'15s', interval:10800},
-    {label:'last 6 hours', begin:'s-21600s', end:'s', group:'30s', interval:21600},
-    {label:'last 12 hours', begin:'s-43200s', end:'s', group:'60s', interval:43200},
-    {label:'last 24 hours', begin:'s-86400s', end:'s', group:'120s', interval:86400, selected:true},
-    {label:'today', begin:'d', end:'s', group:'60s', interval:86400},
-    {label:'yesterday', begin:'d-1d', end:'d', group:'120s', interval:86400},
-    {label:'this year', begin:'y', end:'d', group:'2d', interval:31536000},
-    ];
-
-
-var view =
+  var view =
 {
   start:0,
   end:0,
@@ -264,10 +269,9 @@ var view =
     this.calc_interval();
   },
 
-  'timewindow':function(period)
+  'timewindow':function(time)
   {
-    this.period = period;
-    var time = periodTable[period].interval;
+    //time is now in seconds
     this.start = ((new Date()).getTime())-(1000*time);	//Get start time
     this.end = (new Date()).getTime();	//Get end time
     this.calc_interval();
@@ -307,7 +311,7 @@ var view =
   }
 }
 
-function stats(dataindex)
+function stats(data)
 {
     var sum = 0;
     var i=0;
@@ -315,30 +319,33 @@ function stats(dataindex)
     var maxval = 0;
     var npoints = 0;
     var npointsnull = 0;
+    
     var val = null;
-    for (var z in reloadData){
-      if (reloadData[z][dataindex]!=null){ 
-        val = reloadData[z][dataindex];
-        if (i==0) {
-            maxval = val;
-            minval = val;
+    for (var z in data)
+    {
+        // var val = data[z][1];                   // 1) only calculated based on present values
+        if (data[z][1]!=null) val = data[z][1];    // 2) if value is missing use last value
+        if (val!=null) 
+        {
+            if (i==0) {
+                maxval = val;
+                minval = val;
+            }
+            if (val>maxval) maxval = val;
+            if (val<minval) minval = val;
+            sum += val;
+            i++;
         }
-        if (val>maxval) maxval = val;
-        if (val<minval) minval = val;
-        sum += val;
-        i++;
-      }
-      else npointsnull++;
-      npoints ++;
+        if (data[z][1]==null) npointsnull++;
+        
+        npoints ++;
     }
     var mean = sum / i;
     sum = 0, i=0;
-    for (z in reloadData)
+    for (z in data)
     {
-      if (reloadData[z][dataindex]!=null){ 
-        sum += (reloadData[z][dataindex] - mean) * (reloadData[z][dataindex] - mean);
+        sum += (data[z][1] - mean) * (data[z][1] - mean);
         i++;
-      }
     }
     var stdev = Math.sqrt(sum / i);
     
@@ -437,15 +444,6 @@ function EbyId(id) {return document.getElementById(id)};
         feedid = parseInt(urlparts[1]);
         f = getfeed(feedid);
         feedlist.push({id:feedid, name:f.name, tag:f.tag, yaxis:1, fill:0, scale: 1.0, delta:false, dp:1, plottype:'lines'});
-    }
-    
-    for(t in periodTable){
-      var selected = "";
-      if(periodTable[t].selected != undefined && periodTable[t].selected){
-        selected = " selected=true";
-        view.timewindow(t);
-      }
-      $("#select-time").append("<option value=" + t + selected + ">" + periodTable[t].label + "</option>");
     }
     
     load_feed_selector();

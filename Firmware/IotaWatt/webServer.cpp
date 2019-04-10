@@ -466,7 +466,16 @@ void handlePasswords(){
 void handleStatus(){
   trace(T_WEB,0); 
   DynamicJsonBuffer jsonBuffer;
-  JsonObject& root = jsonBuffer.createObject(); 
+  JsonObject& root = jsonBuffer.createObject();
+
+  if(server.hasArg(F("device"))){
+    JsonObject& device = jsonBuffer.createObject();
+    device.set(F("name"), deviceName);
+    device.set(F("timediff"), localTimeDiff);
+    device.set(F("allowdst"), timezoneRule?true:false);
+    device.set(F("update"), updateClass);
+    root.set(F("device"),device);
+  }
   
   if(server.hasArg(F("stats"))){
     trace(T_WEB,14);
@@ -804,8 +813,7 @@ void handleGetConfig(){
 void handleQuery(){
   CSVquery* query = new CSVquery();
   if( ! query->setup()){
-    returnFail("invalid query");
-    Serial.println("invalid query");
+    server.send(400, txtPlain_P, "Bad Request.");
   } else {
     server.setContentLength(CONTENT_LENGTH_UNKNOWN);
     if(server.hasArg(F("download"))){
@@ -833,7 +841,6 @@ void handleQuery(){
     }
     sendChunk((char*)buf, 6);
     delete buf;
-    Serial.println();
   }
   delete query;
 }

@@ -1,0 +1,383 @@
+<!doctype html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>IotaWatt - graph</title>
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+            <!-- Latest compiled and minified CSS -->
+            <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css">
+            
+            <!-- jQuery library -->
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+            
+            <!-- Popper JS -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+            
+            <!-- Latest compiled JavaScript -->
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+            
+      </head>
+    <body>
+        <div id="wrap">
+
+                <div class = "container-fluid"><div class="row-fluid"><div class="span12">
+
+<script language="javascript" type="text/javascript" src="https://iotawatt.com/flot/flot.min.js"></script>            
+<script language="javascript" type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery.flot@0.8.3/jquery.flot.time.min.js"></script>
+
+<style>
+#wrapper {
+  padding:0px;
+  margin:0px;
+  padding-left: 250px;
+}
+
+#sidebar-wrapper {
+  margin-top:-10px;
+  margin-left: -250px;
+  left: 250px;
+  width: 250px;
+  background: #eee;
+  position: fixed;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+#page-content-wrapper {
+  width: 100%;
+  padding-left:0px;
+}
+
+
+</style>
+
+<div id="wrapper">
+    <div id="sidebar-wrapper">
+            <div style="padding-left:10px;">
+                <div id="sidebar-close" style="float:right; cursor:pointer; padding:10px;"><i class="icon-remove"></i></div>
+                <h3>Feeds</h3>
+                
+            </div>
+            <div style="overflow-x: hidden; background-color:#f3f3f3; width:100%">
+                <table class="table" id="feeds">
+                </table>
+            </div>
+            
+            <div style="padding:10px;">
+                <h4>My Graphs</h4>
+                
+                <select id="graph-select" style="width:215px">
+                </select>
+                
+                <br><br>
+                <b>Graph Name:</b><br>
+                <input id="graph-name" type="text" style="width:200px" />
+                <button id="graph-delete" class="btn" style="display:none">Delete</button>
+                <button id="graph-save" class="btn">Save</button>
+            </div>
+    </div>
+
+    <div id="page-content-wrapper" style="max-width:1280px">
+        
+        <h3 id="heading">Data viewer</h3> 
+
+        <div id="error" style="display:none"></div>
+
+        <div id="navigation" style="padding-bottom:5px;">
+            <button class="btn" id="sidebar-open"><i class="icon-list"></i></button>
+            <select id="select-time" class="btn sel graph_time" name="options" style="width: 180px"></select>
+            <button class='btn zoom' value=.5>+</button>
+            <button class='btn zoom' value=2>-</button>
+            <button class='btn pan' value=-1><<</button>
+            <button class='btn pan' value=-0.5><</button>
+            <button class='btn pan' value=+0.5>></button>
+            <button class='btn pan' value=+1>>></button>
+            <button id="reload" class="btn">Reload</button>
+            
+            <div class="input-prepend input-append" style="float:right; margin-right:22px">
+            <span class="add-on">Show</span>
+            <span class="add-on">legend: <input type="checkbox" id="showlegend" style="margin-top:1px" /></span>
+            <span class="add-on">feed tag: <input type="checkbox" id="showtag" style="margin-top:1px" /></span>
+            </div>
+            <div style="clear:both"></div>
+            
+            
+        </div>
+        <div class="input-prepend input-append" style="padding-right:5px">
+            <span class="add-on" style="width:40px">Start</span>
+            <input id="request-start" type="date" style="width:110px" />
+
+            <span class="add-on" style="width:40px">End</span>
+            <input id="request-end" type="date" style="width:110px" />
+
+            <span class="add-on" style="width:50px">Group</span>
+            <select id="group" style="width:100px">
+                <option>auto</option>
+                <option>Hourly</option>
+                <option>Daily</option>
+                <option>Weekly</option>
+                <option>Monthly</option>
+                <option>Annual</option>
+            </select>
+            <span id="interval" class="add-on" style="width:70px"></span>
+            
+            
+        </div>
+        
+        <div id="placeholder_bound" style="width:100%; height:400px;">
+            <div id="placeholder"></div>
+        </div>
+
+        <div id="info" style="padding:20px; display:none">
+          
+            <div id="window-info" style=""></div><br>
+            
+            <div id="y1axis-menu" class="input-prepend input-append">
+                <span class="add-on" style="width:50px">Y-axis:</span>
+                <span class="add-on" style="width:30px">min</span>
+                <input id="yaxis-min" type="text" style="width:50px" value="auto"/>
+                <span class="add-on" style="width:30px">max</span>
+                <input id="yaxis-max" type="text" style="width:50px" value="auto"/>
+            </div>
+              
+            <div id="y2axis-menu" class="input-prepend input-append">
+                <span class="add-on" style="width:50px">Y2-axis:</span>
+                <span class="add-on" style="width:30px">min</span>
+                <input id="y2axis-min" type="text" style="width:50px" value="auto"/>
+                <span class="add-on" style="width:30px">max</span>
+                <input id="y2axis-max" type="text" style="width:50px" value="auto"/>
+            </div>
+            
+            <table class="table">
+                <tr><th>Feed</th><th>Type</th><th>Color</th><th>Fill</th><th>Quality</th><th>Min</th><th>Max</th><th>Diff</th><th>Mean</th><th>Stdev</th><th>Wh</th><th style='text-align:center'>Scale</th><th style='text-align:center'>Delta</th><th>DP</th></tr>
+                <tbody id="stats"></tbody>
+            </table>
+            
+            <div class="input-prepend input-append">
+                <button class="btn" id="showcsv" >Show CSV Output</button>
+                <span class="add-on csvoptions">Time format:</span>
+                <select id="csvtimeformat" class="csvoptions">
+                    <option value="unix">Unix timestamp</option>
+                    <option value="seconds">Seconds since start</option>
+                    <option value="datestr">Date-time string</option>
+                </select>
+                <span class="add-on csvoptions">Null values:</span>
+                <select id="csvnullvalues" class="csvoptions">
+                    <option value="show">Show</option>
+                    <option value="lastvalue">Replace with last value</option>
+                    <option value="remove">Remove whole line</option>
+                </select>
+            </div> 
+            
+            
+            <textarea id="csv" style="width:98%; height:500px; display:none; margin-top:10px"></textarea>
+        </div>
+    </div>
+</div>
+
+<!-- copy of https://emoncms.org/Modules/graph/vis.helper.js -->
+<script>
+
+var periodTable = [
+    {label:'custom dates'},
+    {label:'last 10 minutes', begin:'s-600s', end:'s', group:'5s'},
+    {label:'last 30 minutes', begin:'s-1800s', end:'s', group:'5s'},
+    {label:'last 1 hour', begin:'s-3600s', end:'s', group:'5s'},
+    {label:'last 3 hours', begin:'s-10800s', end:'s', group:'15s'},
+    {label:'last 6 hours', begin:'s-21600s', end:'s', group:'30s'},
+    {label:'last 12 hours', begin:'s-43200s', end:'s', group:'60s'},
+    {label:'last 24 hours', begin:'s-86400s', end:'s', group:'120s', selected:true},
+    {label:'last 2 days to date', begin:'d-1d', end:'s', group:'auto'},
+    {label:'last 3 days to date', begin:'d-2d', end:'s', group:'auto'},
+    {label:'today', begin:'d', end:'s', group:'auto'},
+    {label:'yesterday', begin:'d-1d', end:'d', group:'120s'},
+    {label:'this week to date', begin:'w', end:'s', group:'auto'},
+    {label:'last week', begin:'w-1w', end:'w', group:'840s'},
+    {label:'this month to date', begin:'mo', end:'s', group:'auto'},
+    {label:'last month', begin:'mo-1mo', end:'mo', group:'auto'},
+    {label:'this year to date', begin:'y', end:'s', group:'auto'}
+    ];
+
+
+var view =
+{
+  custom:false,
+  start:0,
+  end:0,
+  period:0,
+  group:'auto',
+
+  'zoom':function(x)
+  {
+    this.custom = true;
+    var time_adj = (this.end - this.start) * (1-x)/2 ;
+    this.start += time_adj;
+    this.end -= time_adj;
+  },
+  
+  'pan':function(x)
+  {
+    this.custom = true;
+    var time_adj = (this.end - this.start) * x;
+    this.start += time_adj;
+    this.end += time_adj;
+  },
+
+  'timewindow':function(period)
+  {
+    this.period = period;
+    this.custom = false;
+  }
+}
+
+function stats(dataindex)
+{
+    var sum = 0;
+    var i=0;
+    var minval = 0;
+    var maxval = 0;
+    var npoints = 0;
+    var npointsnull = 0;
+    var val = null;
+    for (var z in queryData){
+      if (queryData[z][dataindex]!=null){ 
+        val = queryData[z][dataindex];
+        if (i==0) {
+            maxval = val;
+            minval = val;
+        }
+        if (val>maxval) maxval = val;
+        if (val<minval) minval = val;
+        sum += val;
+        i++;
+      }
+      else npointsnull++;
+      npoints ++;
+    }
+    var mean = sum / i;
+    sum = 0, i=0;
+    for (z in queryData)
+    {
+      if (queryData[z][dataindex]!=null){ 
+        sum += (queryData[z][dataindex] - mean) * (queryData[z][dataindex] - mean);
+        i++;
+      }
+    }
+    var stdev = Math.sqrt(sum / i);
+    
+    return {
+        "minval":minval,
+        "maxval":maxval,
+        "diff":maxval-minval,
+        "mean":mean,
+        "stdev":stdev,
+        "npointsnull":npointsnull,
+        "npoints":npoints
+    };
+};
+
+// http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values/901144#901144
+var urlParams;
+(window.onpopstate = function () {
+    var match,
+        pl = /\+/g, // Regex for replacing addition symbol with a space
+        search = /([^&=]+)=?([^&]*)/g,
+        decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+        query = window.location.search.substring(1);
+
+    urlParams = {};
+    while (match = search.exec(query))
+       urlParams[decode(match[1])] = decode(match[2]);
+})();
+
+function tooltip(x, y, contents, bgColour)
+{
+    var offset = 15; // use higher values for a little spacing between `x,y` and tooltip
+    var elem = $('<div id="tooltip">' + contents + '</div>').css({
+        position: 'absolute',
+        display: 'none',
+        'font-weight':'bold',
+        border: '1px solid rgb(255, 221, 221)',
+        padding: '2px',
+        'background-color': bgColour,
+        opacity: '0.8'
+    }).appendTo("body").fadeIn(200);
+
+    var elemY = y - elem.height() - offset;
+    var elemX = x - elem.width()  - offset;
+    if (elemY < 0) { elemY = 0; } 
+    if (elemX < 0) { elemX = 0; } 
+    elem.css({
+        top: elemY,
+        left: elemX
+    });
+};
+
+function setTitle(){
+  var xmlHttp = new XMLHttpRequest();
+  xmlHttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      deviceinfo = JSON.parse(xmlHttp.responseText);
+      document.title = deviceinfo.device.name + " Graph2"
+      $("#heading").html(deviceinfo.device.name + " Data Viewer");
+    }
+  }
+  xmlHttp.open("GET","/status?device=yes");
+  xmlHttp.send(null);
+}
+
+</script>
+
+<script language="javascript" type="text/javascript" src="graph.js"></script>
+
+<script>
+    var path = "http://" + location.host; // + "/";
+	  var getbackup = false;
+    var configFileURL = "config.txt";
+    
+    sidebar_resize();
+    graph_init_editor();
+    
+    // Assign active feedid from URL
+    var urlparts = window.location.pathname.split("graph/");
+    if (urlparts.length==2) {
+        feedid = parseInt(urlparts[1]);
+        f = getfeed(feedid);
+        feedlist.push({id:feedid, name:f.name, tag:f.tag, yaxis:1, fill:0, scale: 1.0, delta:false, dp:1, plottype:'lines'});
+    }
+    
+    for(t in periodTable){
+      var selected = "";
+      if(periodTable[t].selected != undefined && periodTable[t].selected){
+        selected = " selected=true";
+        view.timewindow(t);
+      }
+      $("#select-time").append("<option value=" + t + selected + ">" + periodTable[t].label + "</option>");
+    }
+    
+    setTitle();
+    load_feed_selector();
+    graph_resize();
+    
+    var timeWindow = 3600000*24; //default to 1 hour
+    var now = Math.round(+new Date * 0.001)*1000;
+    view.start = now - timeWindow;
+    view.end = now;
+    
+    graph_reload();
+    
+</script>
+
+        </div></div></div>
+        
+        <div style="clear:both; height:60px;"></div>
+        </div>
+
+        <div id="footer">
+            Powered by             <a href="http://openenergymonitor.org">openenergymonitor.org</a>
+            <span></span>
+        </div>
+    </body>
+</html>

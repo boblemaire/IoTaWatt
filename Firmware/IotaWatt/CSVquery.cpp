@@ -42,8 +42,7 @@ bool    CSVquery::setup(){
         else if(interval <= 15) interval = 15;
         else if(interval <= 20) interval = 20;
         else if(interval <= 30) interval = 30;
-        else if(interval <= 60) interval = 60;
-        else interval += 60 - (interval % 60);
+        else if(interval % 60) interval += 60 - (interval % 60);
         _groupMult = interval;
         _groupUnits = tUnitsSeconds;
     } else {
@@ -186,15 +185,21 @@ bool    CSVquery::setup(){
                 if(method.equals("iso")) col->unit = 'I';
                 if(method.equals("unix")) col->unit = 'U';
             }
-            else if(method.equals("kwh")){
-                if(col->unit != 'P') return false;
+
+            else if(col->unit == 'P' && method.equals("kwh")){
                 col->unit = 'E';
                 col->decimals = 3;
             }
+
+            else if(col->unit == 'E' && method.equals("delta")){
+                col->delta = true;
+            }
+
             else if(method.startsWith("d")){
                 if(method.length() != 2 | method[1] < '0' | method[1] > '9') return false;
                 col->decimals = method[1] - '0';
             }
+
             else {
                 return false;
             }
@@ -344,7 +349,7 @@ void CSVquery::buildLine(){
                 value = (_newRec->accum1[col->input] - _oldRec->accum1[col->input]) / elapsedHours;
             }
             else if(col->unit == 'E') {
-                value = (_newRec->accum1[col->input] - _oldRec->accum1[col->input]) / 1000.0;
+                value = (_newRec->accum1[col->input] - (col->delta ? _oldRec->accum1[col->input] : 0)) / 1000.0;
             } 
             _buffer.printf("%.*f", col->decimals, value);
         }
@@ -358,7 +363,7 @@ void CSVquery::buildLine(){
                 value = col->script->run(_oldRec, _newRec, elapsedHours);
             }
             else if(col->unit == 'E') {
-                value = col->script->run(_oldRec, _newRec, 1000.0);
+                value = col->script->run((col->delta ? _oldRec : nullptr), _newRec, 1000.0);
             }
             else { //if(col->unit == 'O'){
                 value = col->script->run(_oldRec, _newRec, elapsedHours);
@@ -466,7 +471,6 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                         _buffer.print("\r\n");
                     }
                 }
-                _firstLine = false;
 
                 if(_format == formatJson){
                     _buffer.print('[');
@@ -477,6 +481,8 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                 if(_format == formatJson){
                     _buffer.print(']');
                 }
+
+                _firstLine = false;
             }
         }
     }
@@ -639,7 +645,7 @@ time_t  CSVquery::parseTimeArg(String timeArg){
         // Check for starting identifier
 
     ptr = arg;
-   _tm = gmtime(&local);
+    _tm = gmtime(&local);
     _tm->tm_sec -= _tm->tm_sec % 5;
     switch (*ptr){
         default: return 0;

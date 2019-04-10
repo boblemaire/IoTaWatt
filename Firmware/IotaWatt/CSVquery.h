@@ -46,19 +46,23 @@ class  CSVquery {
 
         struct column {                         // Output column descriptor - built lifo then made fifo    
                     column* next;               // -> next in chain
+                    double  lastValue;          // Used for delta function.
                     char    source;             // Data source 'T'=time, 'I'=input, 'O'=output
                     char    unit;               // Unit 'V'=voltage, 'P'=power(Watts), 'E'=energy(kWh)
                     int8_t  decimals;           // Overide decimal positions    
                     bool    timeLocal;          // output local time if source=='T'
+                    bool    delta;              // Output change in value;
                     union{                      // Multi-purpose
                         Script*     script;     // -> Script if source=='O'
                         int32_t     input;      // input number if source=='I'
                         };
                     column()
                         :next(nullptr)
+                        ,lastValue(0)
                         ,source(' ')
                         ,unit(' ')
                         ,timeLocal(true)
+                        ,delta(false)
                         ,decimals(1)
                         ,input(0)
                         {}
