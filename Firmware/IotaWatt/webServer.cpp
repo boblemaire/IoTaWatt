@@ -831,12 +831,7 @@ void handleQuery(){
     size_t size = 0;
     while(read = query->readResult(buf+6, 1460-8)){
       sendChunk((char*)buf, read+6);
-      // Serial.write(buf+6, read);
       size += read;
-      // if(size > 10000){
-      //   Serial.printf("\r\n size exceeded \r\n");
-      //   break;
-      // }
       yield();
     }
     sendChunk((char*)buf, 6);

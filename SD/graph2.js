@@ -357,6 +357,11 @@ function graph_init_editor()
     }); 
 }
 
+function pushfeedlist(feedid, yaxis) {
+    var index = getfeedindex(feedid);
+    feedlist.push({id:feedid, name:feeds[index].name, tag:feeds[index].tag, yaxis:yaxis, fill:0, scale: 1.0, delta:false, getaverage:false, dp:1, plottype:'lines'});
+}
+
 function graph_reload() {
     
       // This is the first part of the asynchronous reload logic.
@@ -468,6 +473,13 @@ function graph_reload() {
         }
         
     });
+}
+
+function requestTimeFormat(time){
+  var date = new Date(time);
+  var month = date.getMonth()+1;
+  var day = date.getDate();
+  return date.getFullYear() + '-' + (month <= 9 ? '0': "") + month + '-' + (day <= 9 ? '0' : "") + day;
 }
 
 function graph_draw()
@@ -890,13 +902,6 @@ function load_feed_selector() {
         if (feedlist[z].yaxis==1) { $(".feed-select-left[feedid="+feedid+"]")[0].checked = true; $(".tagbody[tag='"+tag+"']").show(); }
         if (feedlist[z].yaxis==2) { $(".feed-select-right[feedid="+feedid+"]")[0].checked = true; $(".tagbody[tag='"+tag+"']").show(); }
     }
-}
-
-function requestTimeFormat(time){
-  var date = new Date(time);
-  var month = date.getMonth()+1;
-  var day = date.getDate();
-  return date.getFullYear() + '-' + (month <= 9 ? '0': "") + month + '-' + (day <= 9 ? '0' : "") + day;
 }
 
 function printdate(timestamp)
