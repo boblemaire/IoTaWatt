@@ -859,7 +859,7 @@ void handleDSTtest(){
         break;
       }
     }
-    server.send(200, txtPlain_P, buf.readString().c_str());
+    server.send(200, txtPlain_P, buf.readString(buf.available()).c_str());
 }
         // Seems to work better when sending chunk as a single write
         // including chunk header, body, and footer (\r\n).
