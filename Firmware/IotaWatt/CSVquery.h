@@ -38,6 +38,7 @@ class  CSVquery {
         tm*         _tm;                        // -> external tm struct
         bool        _setup;                     // True if successful setup
         bool        _header;                    // True if header == yes
+        bool        _highRes;
         bool        _firstLine;                 // True when no lines have been generated
         bool        _lastLine;                  // True when last line has been generated
         bool        _missingSkip;               // Omit output line when no data
@@ -70,6 +71,7 @@ class  CSVquery {
                     };
 
         column*     _columns;                   // List head
+        uint16_t    _intervals[16];
 
                 // Private functions
 

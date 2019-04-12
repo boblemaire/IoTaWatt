@@ -5,7 +5,8 @@ var plotdata = [];
 
 var reloading = false;
 var reload = false;
-var reloadId = [];
+var highRes = false;
+var highResTimer;
 var queryData = [];
 
 var embed = false;
@@ -411,6 +412,16 @@ function graph_reload() {
     else if(view.group == "Yearly")request+="1y";
     else request += 'auto';
     
+    if(highRes){
+      request += "&resolution=high";
+      highRes = false;
+    } else {
+      if(highRes != undefined){
+        clearTimeout(highResTimer);
+      }
+      highResTimer = setTimeout(function(){highRes = true; graph_reload();}, 2500);
+    }
+    
       // Send the query
     
     $.ajax({                                      
@@ -454,6 +465,8 @@ function graph_reload() {
                   $("#interval").html((view.interval / 1000) + "s").show();
                 }
                 $("#error").hide();
+                
+                
                 
                 graph_draw();
             }

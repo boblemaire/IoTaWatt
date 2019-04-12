@@ -8,10 +8,12 @@ CSVquery::CSVquery()
     ,_format(formatJson)
     ,_setup(false)
     ,_header(false)
+    ,_highRes(false)
     ,_missingSkip(false)
     ,_missingNull(true)
     ,_missingZero(false)
     ,_columns(nullptr)
+    ,_intervals{5,10,15,20,30,60,120,300,600,1200,1800,3600,7200,14400,21600,28800}
     {}
 
 CSVquery::~CSVquery(){
@@ -32,17 +34,36 @@ bool    CSVquery::setup(){
     _end = parseTimeArg(server.arg(F("end")));
     if(_end == 0 || _begin == 0 || _end < _begin) return false;
     trace(T_CSVquery,10);
-    
+
+    if(server.hasArg(F("resolution"))){
+        String arg = server.arg(F("resolution"));
+        if(arg.equalsIgnoreCase("low")){
+             _highRes = false;
+        }
+        else if(arg.equalsIgnoreCase("high")){
+             _highRes = true;
+        }
+        else return false;
+    }
+    trace(T_CSVquery,10);
+
     String group = server.arg(F("group"));
     group.toLowerCase();
     if(group.equals("auto")){
-        uint32_t interval = (_end - _begin) / 720;
-        if(interval <= 5) interval = 5;
-        else if(interval <= 10) interval = 10;
-        else if(interval <= 15) interval = 15;
-        else if(interval <= 20) interval = 20;
-        else if(interval <= 30) interval = 30;
-        else if(interval % 60) interval += 60 - (interval % 60);
+        uint32_t rawInterval = (_end - _begin) / (_highRes ? 800 : 400);
+        uint32_t interval = 86400;
+        for(int i=0; i<16; i++){
+            if(rawInterval <= _intervals[i]){
+                interval = _intervals[i];
+                break;
+            }
+        }
+        // if(interval <= 5) interval = 5;
+        // else if(interval <= 10) interval = 10;
+        // else if(interval <= 15) interval = 15;
+        // else if(interval <= 20) interval = 20;
+        // else if(interval <= 30) interval = 30;
+        // else if(interval % 60) interval += 60 - (interval % 60);
         _groupMult = interval;
         _groupUnits = tUnitsSeconds;
     } else {
@@ -76,6 +97,7 @@ bool    CSVquery::setup(){
         }
         if(arg.equalsIgnoreCase("CSV")) _format = formatCSV;
     }
+    
     trace(T_CSVquery,10);
 
         // Parse the columns array and build list of column table entries.
