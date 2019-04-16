@@ -26,6 +26,7 @@
 #define MAX(a,b) ((a>b)?a:b)
 
 #include <Arduino.h>
+#include <time.h>
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <WiFiManager.h>
@@ -66,6 +67,7 @@
 #include "spiffs.h"
 #include "timeServices.h"
 #include "pvoutput.h"
+#include "CSVquery.h"
 
 
       // Declare instances of major classes
@@ -164,7 +166,8 @@ struct EEprom {
 #define T_WiFi 21          // WiFi service
 #define T_PVoutput 22      // PVoutput class 
 #define T_samplePhase 23   // Sample phase (within samplePower) 
-#define T_RTCWDT 24        // Dead man pedal service         
+#define T_RTCWDT 24        // Dead man pedal service
+#define T_CSVquery 25      // CSVquery            
 
       // LED codes
 

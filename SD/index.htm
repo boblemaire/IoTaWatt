@@ -14,6 +14,7 @@
   
   <div id="mainMenu" class="menu color_menu" display="block">
     <table id="bigIdeasTable">
+      <tr><th width="50%"></th><th width="50%"></th></tr>
       <tr>
         <td class="dropdown">
           <button class="mainMenuButton buttonUp dropbtn"
@@ -33,7 +34,7 @@
                 title="Specify data export to external servers">Web Server</button>
           </span>
         </td>
-        <td width="50%"><button class="mainMenuButton" onclick="mainMenuButton(this,statusBegin)"
+        <td><button class="mainMenuButton buttonUp" onclick="mainMenuButton(this,statusBegin)"
             title="Display current measurements, outputs and device status">Status</button></td>
       </tr>
       <tr>
@@ -53,8 +54,18 @@
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsPhase)">Phase Measurement</button> -->
           </span>
         </td>
-        <td width="50%"><button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph)"
-            title="Graphically visualize and compare accumulated data">Graphs</button></td>
+        <td>
+          <span class="dropdown">
+            <button class="mainMenuButton buttonUp dropbtn"
+              title="Graphically visualize and compare accumulated data">Graphs</button>
+            <span class="dropContent">
+              <button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph)"
+                  title="Original graph utility">Original Graph</button>
+              <button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph2)"
+                  title="Enhanced graph utility">Enhanced Graph</button>
+            </span> 
+          </span>
+        </td>
       </tr>
     </table>
   </div>
@@ -398,6 +409,7 @@ var burdenFileURL = "/esp_spiffs/config/device/burden.txt";
 var configTablesURL = "tables.txt";
 var editURL = "edit.htm";
 var graphURL = "graph.htm";
+var graph2URL = "graph2.htm";
 var msgsFileURL = "/iotawatt/iotamsgs.txt?textpos=-10000";
 var demo = false;
 var demoConfig = null;
@@ -2559,14 +2571,22 @@ function loadGraph(){
   var myWindow = window.open(graphURL, "_self");
   resetDisplay();
 }
+
+function loadGraph2(){
+  var myWindow = window.open(graph2URL, "_self");
+  resetDisplay();
+}
+
 function loadEdit(){
   resetDisplay();
   var myWindow = window.open(editURL, "_self");
 }
+
 function showMsgs(){
   resetDisplay();
   var myWindow = window.open(msgsFileURL, "_self");
 }
+
 function toggleDisplay(id){
   var element = EbyId(id);
   if(! editing){

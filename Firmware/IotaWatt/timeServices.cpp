@@ -290,11 +290,19 @@ uint32_t NTPtime() {
   
 uint32_t UTCtime() {
   return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000 - SEVENTY_YEAR_SECONDS;
- }
+}
+
+uint32_t UTCtime(uint32_t localtime){
+  return local2UTC(localtime);
+}
 
 uint32_t localTime() {
   return UTC2Local(UTCtime());
-} 
+}
+
+uint32_t localTime(uint32_t utctime){
+  return UTC2Local(utctime);
+}
  
 uint32_t millisAtUTCTime(uint32_t UnixTime){                  
   return (uint32_t)timeRefMs + 1000 * (UnixTime - SEVENTY_YEAR_SECONDS - timeRefNTP);
