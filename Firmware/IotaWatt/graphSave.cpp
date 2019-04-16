@@ -86,7 +86,6 @@ void handleGraphGetall(){
       response += ",\"id\":\"";
       response += graphFile.name();
       response += "\"}";
-      Serial.println(response);
     }
     graphFile.close();
     graphFile = directory.openNextFile();
