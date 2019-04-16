@@ -603,7 +603,7 @@ time_t  CSVquery::parseTimeArg(String timeArg){
     arg[31] = 0;
     char* ptr = arg;
 
-        // Check for UNIXtime.
+        // Check for UNIXtime. 
 
     uint32_t unixtime = 0;
     int digits = 0;
@@ -613,7 +613,7 @@ time_t  CSVquery::parseTimeArg(String timeArg){
         }
         ptr++;
     }
-    if(*ptr == 0 && (digits == 10 || digits == 13)) return unixtime;
+    if(*ptr == 0 && (digits == 10 || digits == 13)) return UTCtime(unixtime);
     
         // Check for date
 

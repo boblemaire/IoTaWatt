@@ -28,6 +28,17 @@ var previousPoint = 0;
 
 var active_histogram_feed = 0;
 
+ $("#graph-reset").click(function(){
+  view.reset();
+  feedlist = [];
+  queryData = [];
+  graph_load_savedgraphs();
+  $("#graph-name").val("");
+  $(".feed-select-left").prop("checked",false);
+  $(".feed-select-right").prop("checked",false);
+  graph_reload();
+});
+    
 $("#info").show();
 if ($("#showtag")[0]!=undefined) $("#showtag")[0].checked = showtag;
 if ($("#showlegend")[0]!=undefined) $("#showlegend")[0].checked = showlegend;
@@ -112,11 +123,10 @@ function graph_resize() {
 function graph_init_editor()
 {
     graph_load_savedgraphs();
-    $('#group').prop({"selectedIndex":0});
-    $('#select-time').prop({"value":0, "selectedIndex":view.period});
-    
+    $("#graph-name").val("");
     
     // Load user feeds for editor
+    
     $.ajax({                                      
         url: path+"/feed/list.json",
         async: false,
@@ -168,11 +178,10 @@ function graph_init_editor()
         }
     });
     
-    
     $("#reload").click(function(){
         graph_reload();
     });
-
+    
     $("#showcsv").click(function(){
         if ($("#showcsv").html()=="Show CSV Output") {
             printcsv()
@@ -187,6 +196,7 @@ function graph_init_editor()
             $("#showcsv").html("Show CSV Output");
         }
     });
+    
     $(".csvoptions").hide();
 
     $("body").on("click",".delta",function(){
@@ -276,8 +286,7 @@ function graph_init_editor()
     
     $("body").on("click",".tagheading",function(){
         var tag = $(this).attr("tag");
-        var e = $(".tagbody[tag='"+tag+"']");
-        if (e.is(":visible")) e.hide(); else e.show();
+        $(".tagbody[tag='"+tag+"']").toggle();
     });
 
     $("#showlegend").click(function(){
@@ -355,7 +364,7 @@ function graph_init_editor()
     $('body').on("click",".legendColorBox",function(d){
           var country = $(this).html().toLowerCase();
           console.log(country);
-    }); 
+    });
 }
 
 function pushfeedlist(feedid, yaxis) {
@@ -376,6 +385,9 @@ function graph_reload() {
       reload = false;
     }
     reloading = true;
+    if(highRes != undefined){
+      clearTimeout(highResTimer);
+    }
     
       // Build the query
     
@@ -391,7 +403,7 @@ function graph_reload() {
     var request = path+"/query?format=json&header=no&missing=null" + 
                         "&begin=" + begin + 
                         "&end=" + end + 
-                        "&columns=[time.utc.unix";
+                        "&columns=[time.local.unix";
                         
     for(var i=0; i<feedlist.length; i++){
       request += "," + feedlist[i].name;
@@ -410,16 +422,14 @@ function graph_reload() {
     else if(view.group == "Weekly")request+="1w";
     else if(view.group == "Monthly")request+="1mo";
     else if(view.group == "Yearly")request+="1y";
-    else request += 'auto';
-    
-    if(highRes){
-      request += "&resolution=high";
-      highRes = false;
-    } else {
-      if(highRes != undefined){
-        clearTimeout(highResTimer);
+    else {
+      request += 'auto';
+      if(highRes){
+        request += "&resolution=high";
+        highRes = false;
+      } else {
+        highResTimer = setTimeout(function(){highRes = true; graph_reload();}, 2500);
       }
-      highResTimer = setTimeout(function(){highRes = true; graph_reload();}, 2500);
     }
     
       // Send the query
@@ -490,9 +500,9 @@ function graph_reload() {
 
 function requestTimeFormat(time){
   var date = new Date(time);
-  var month = date.getMonth()+1;
-  var day = date.getDate();
-  return date.getFullYear() + '-' + (month <= 9 ? '0': "") + month + '-' + (day <= 9 ? '0' : "") + day;
+  var month = date.getUTCMonth()+1;
+  var day = date.getUTCDate();
+  return date.getUTCFullYear() + '-' + (month <= 9 ? '0': "") + month + '-' + (day <= 9 ? '0' : "") + day;
 }
 
 function graph_draw()
@@ -506,7 +516,7 @@ function graph_draw()
         touch: { pan: "x", scale: "x" },
         xaxis: { 
             mode: "time",
-            timezone: "browser",
+            //timezone: "browser",
             min: view.start,
             max: view.end + view.interval,
         },
@@ -690,16 +700,16 @@ function printcsv()
         } else if (timeformat=="datestr") {
             // Create date time string
             var t = new Date(queryData[i][0]);
-            var year = t.getFullYear();
-            var month = t.getMonth()+1;
+            var year = t.getUTCFullYear();
+            var month = t.getUTCMonth()+1;
             if (month<10) month = "0"+month;
-            var day = t.getDate();
+            var day = t.getUTCDate();
             if (day<10) day = "0"+day;
-            var hours = t.getHours();
+            var hours = t.getUTCHours();
             if (hours<10) hours = "0"+hours;
-            var minutes = t.getMinutes();
+            var minutes = t.getUTCMinutes();
             if (minutes<10) minutes = "0"+minutes;
-            var seconds = t.getSeconds();
+            var seconds = t.getUTCSeconds();
             if (seconds<10) seconds = "0"+seconds;
             
             line += year+"-"+month+"-"+day+" "+hours+":"+minutes+":"+seconds;
@@ -719,6 +729,14 @@ function printcsv()
 //----------------------------------------------------------------------------------------
 // Saved graph's feature
 //----------------------------------------------------------------------------------------
+function graph_index_from_name(name) {
+    var index = -1;
+    for (var z in savedgraphs) {
+        if (savedgraphs[z].name==name) index = z;
+    }
+    return index;
+}
+
 $("#graph-select").change(function() {
     var name = $(this).val();
     $("#graph-name").val(name);
@@ -734,11 +752,21 @@ $("#graph-select").change(function() {
     view.interval = savedgraphs[index].interval;
     view.custom = savedgraphs[index].custom;
     view.group = savedgraphs[index].group;
-    view.period = savedgraphs[index].period;
     yaxismin = savedgraphs[index].yaxismin;
     yaxismax = savedgraphs[index].yaxismax;
     y2axismin = savedgraphs[index].y2axismin || yaxismin;
     y2axismax = savedgraphs[index].y2axismax || yaxismax;
+  
+    // Lookup the period literally in case the options have changed
+    for(p in periodTable){
+      if(savedgraphs[index].periodlabel == periodTable[p].label ){
+        view.period = p;
+        break;
+      }
+      else if(periodTable[p].selected != undefined){
+        view.period = p;
+      }
+    }
     
     // show settings
     showmissing = savedgraphs[index].showmissing;
@@ -747,14 +775,9 @@ $("#graph-select").change(function() {
     
     // feedlist
     feedlist = savedgraphs[index].feedlist;
+    $(".feed-select-left").prop("checked",false);
+    $(".feed-select-right").prop("checked",false);
     
-    if (floatingtime) {
-        var timewindow = view.end - view.start;
-        var now = Math.round(+new Date * 0.001)*1000;
-        view.end = now;
-        view.start = view.end - timewindow;
-    }
-
     $("#yaxis-min").val(yaxismin);
     $("#yaxis-max").val(yaxismax);
     $("#y2axis-min").val(y2axismin);
@@ -769,7 +792,15 @@ $("#graph-select").change(function() {
       }
     }
     
-    
+    for(z in feedlist){
+      var a = $("[feedid='"+feedlist[z].id+"']");
+      if(a.length){
+        a[feedlist[z].yaxis-1].checked=true;
+      }
+      else {
+        feedlist.splice(z,1);
+      }
+    }
     graph_reload();
 });
 
@@ -809,7 +840,7 @@ $("#graph-save").click(function() {
         start: view.start,
         end: view.end,
         group: view.group,
-        period: view.period,
+        periodlabel: periodTable[view.period].label,
         interval: view.interval,
         yaxismin: yaxismin,
         yaxismax: yaxismax,
@@ -824,7 +855,7 @@ $("#graph-save").click(function() {
     }
     $.ajax({         
         method: "POST",                             
-        url: path+"/graph/create",
+        url: path+"/graph/create?version=2",
         data: "data="+JSON.stringify(graph_to_save),
         async: true,
         dataType: "json",
@@ -839,13 +870,13 @@ $("#graph-save").click(function() {
 function graph_load_savedgraphs()
 {
     $.ajax({                                      
-        url: path+"/graph/getall",
+        url: path+"/graph/getall?version=2",
         async: true,
         dataType: "json",
         success: function(result) {
             savedgraphs = result;
             
-            var out = "<option>Select graph:</option>";
+            var out = "<option selected=true>Select graph:</option>";
             for (var z in savedgraphs) {
                var name = savedgraphs[z].name;
                out += "<option>"+name+"</option>";
@@ -859,7 +890,7 @@ function graph_delete(id) {
     // Save 
     $.ajax({         
         method: "POST",                             
-        url: path+"/graph/delete",
+        url: path+"/graph/delete?version=2",
         data: "id="+id,
         async: true,
         dataType: "json",
@@ -869,6 +900,7 @@ function graph_delete(id) {
     });
     graph_load_savedgraphs();
 }
+
 
 // ----------------------------------------------------------------------------------------
 // Sidebar
@@ -920,12 +952,12 @@ function load_feed_selector() {
 function printdate(timestamp)
 {
     var date = new Date();
-    var thisyear = date.getFullYear();
+    var thisyear = date.getUTCFullYear();
     var date = new Date(timestamp);
-    var year = date.getFullYear();
-    var datestr = date.toDateString().substr(0, (thisyear == year) ? 11 : 16);
-    datestr += ((date.getHours()<10) ? " 0" : " ") + date.getHours() + ":" + ((date.getMinutes()<10) ? "0" : "") + date.getMinutes();
-    if(date.getSeconds()) datestr += ":" + ((date.getSeconds()<10) ? "0" : "") + date.getSeconds();
+    var year = date.getUTCFullYear();
+    var datestr = date.toUTCString().substr(0, (thisyear == year) ? 11 : 16);
+    datestr += ((date.getUTCHours()<10) ? " 0" : " ") + date.getUTCHours() + ":" + ((date.getUTCMinutes()<10) ? "0" : "") + date.getUTCMinutes();
+    if(date.getUTCSeconds()) datestr += ":" + ((date.getUTCSeconds()<10) ? "0" : "") + date.getUTCSeconds();
     
     //var datestr = date.getHours()+":"+minutes+" "+day+" "+month;
     //if (thisyear!=year) datestr +=" "+year;

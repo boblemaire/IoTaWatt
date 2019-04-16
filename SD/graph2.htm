@@ -76,6 +76,7 @@
                 <input id="graph-name" type="text" style="width:200px" />
                 <button id="graph-delete" class="btn" style="display:none">Delete</button>
                 <button id="graph-save" class="btn">Save</button>
+                <button id="graph-reset" class="btn">Reset</button>
             </div>
     </div>
 
@@ -114,7 +115,7 @@
 
             <span class="add-on" style="width:50px">Group</span>
             <select id="group" style="width:100px">
-                <option>auto</option>
+                <option id="group-auto">auto</option>
                 <option>Hourly</option>
                 <option>Daily</option>
                 <option>Weekly</option>
@@ -208,11 +209,28 @@ var view =
   end:0,
   period:0,
   group:'auto',
+  
+  'reset':function(){
+    view.custom = false;
+    view.start = 0;
+    view.end = 0;
+    view.group = 'auto';
+    $("#group-auto").prop("selected",true);
+    $("#select-time").empty();
+    for(t in periodTable){
+      var selected = "";
+      if(periodTable[t].selected != undefined && periodTable[t].selected){
+        selected = " selected=true";
+        view.timewindow(t);
+      }
+      $("#select-time").append("<option value=" + t + selected + ">" + periodTable[t].label + "</option>");
+    }
+  },
 
   'zoom':function(x)
   {
     this.custom = true;
-    var time_adj = (this.end - this.start) * (1-x)/2 ;
+    var time_adj = view.round2group((this.end - this.start) * (1-x)/2);
     this.start += time_adj;
     this.end -= time_adj;
   },
@@ -220,7 +238,7 @@ var view =
   'pan':function(x)
   {
     this.custom = true;
-    var time_adj = (this.end - this.start) * x;
+    var time_adj = view.round2group((this.end - this.start) * x);
     this.start += time_adj;
     this.end += time_adj;
   },
@@ -229,6 +247,13 @@ var view =
   {
     this.period = period;
     this.custom = false;
+  },
+  
+  'round2group':function(time_adj){
+    var group = 24*3600*1000;
+    if(view.group == "Hourly") group = 3600*1000;
+    else if(view.group == "auto") group = 5*1000;
+    return time_adj - time_adj % group;
   }
 }
 
@@ -348,23 +373,25 @@ function setTitle(){
         feedlist.push({id:feedid, name:f.name, tag:f.tag, yaxis:1, fill:0, scale: 1.0, delta:false, dp:1, plottype:'lines'});
     }
     
-    for(t in periodTable){
-      var selected = "";
-      if(periodTable[t].selected != undefined && periodTable[t].selected){
-        selected = " selected=true";
-        view.timewindow(t);
-      }
-      $("#select-time").append("<option value=" + t + selected + ">" + periodTable[t].label + "</option>");
-    }
+    view.reset();
+    
+    // for(t in periodTable){
+    //   var selected = "";
+    //   if(periodTable[t].selected != undefined && periodTable[t].selected){
+    //     selected = " selected=true";
+    //     view.timewindow(t);
+    //   }
+    //   $("#select-time").append("<option value=" + t + selected + ">" + periodTable[t].label + "</option>");
+    // }
     
     setTitle();
     load_feed_selector();
     graph_resize();
     
-    var timeWindow = 3600000*24; //default to 1 hour
-    var now = Math.round(+new Date * 0.001)*1000;
-    view.start = now - timeWindow;
-    view.end = now;
+    // var timeWindow = 3600000*24; //default to 1 hour
+    // var now = Math.round(+new Date * 0.001)*1000;
+    // view.start = now - timeWindow;
+    // view.end = now;
     
     graph_reload();
     
