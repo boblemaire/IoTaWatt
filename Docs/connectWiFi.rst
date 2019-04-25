@@ -60,3 +60,16 @@ the `troubleshooting <troubleshooting.html>`__ section.
 
 When the LED glows dull green, proceed to the next step
 `Device Configuration  <devConfig.html>`__
+
+Resetting WiFi to Defaults
+--------------------------
+
+If you wish to change the SSID that the IoTaWatt is connected to (you might have done some testing in the lab and want to deploy 'live' somewhere where the SSID is different) BEFORE moving the device you need to reset the WiFi.
+
+In the URL bar of your browser type:
+
+ > ``IoTaWatt.local/command?disconnect=yes``
+
+You could replace IoTaWatt.local with the IP address of your device.
+
+Then power cycle and it should restart with the RED-GREEN-GREEN led sequence like a new IoTaWatt. 
