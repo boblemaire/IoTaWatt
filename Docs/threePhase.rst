@@ -42,15 +42,20 @@ it's necessary to install two additional
 VTs (total of three), and to plug each of them into a 
 receptacle that is supplied by a unique phase. 
 
-Version 4.9 of IoTaWatt, available second quarter 2019,
+Version 5 of IoTaWatt, available second quarter 2019,
 will have native plugs to connect the additional VTs.
-This tutorial will assume you have the new version 4.9
+This tutorial will assume you have the new version 5
 IoTaWatt.
 
 The additional VTs will plug into two sockets at the rear
 of the unit.  They are labelled VT-13 and VT-14.
 When these are used, the standard channel 13 and 14
 jacks should not be used.
+
+.. image:: pics/V5VTinputs.jpg
+    :scale: 10 %
+    :align: center
+    :alt: **V5 VT Inputs**
 
 Configuring the voltage inputs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
