@@ -1,6 +1,6 @@
-=================
+=============================
 Three-phase Power
-=================
+=============================
 
 IoTaWatt has the capability to measure power in polyphase systems. 
 In the interest of keeping the user interface simple for the majority 
@@ -9,6 +9,11 @@ until needed. There has been a lot of interest in using IoTaWatt
 for three-phase monitoring, particularly in three phase countries like
 Australia and Germany. For home energy monitoring, the *derived reference*
 method is very popular.
+
+This chapter explains two methods for measuring a so calld "four wire"
+or "wye" system, by far the most common implementation of three-phase.
+IoTaWatt can also be used with "three wire" or "delta" systems using 
+different methods.
 
 As explained in the introductory single phase section, 
 a voltage reference is needed to measure real power. 
