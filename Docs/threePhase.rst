@@ -57,7 +57,7 @@ of the unit.  They are labelled VT-13 and VT-14.
 When these are used, the standard channel 13 and 14
 jacks should not be used.
 
-.. image:: pics/V5VTinputs.jpg
+.. image:: pics/V5inputs.jpg
     :scale: 10 %
     :align: center
     :alt: **V5 VT Inputs**
