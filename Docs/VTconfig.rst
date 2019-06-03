@@ -57,7 +57,7 @@ that will get you in the ball park for your 9-12Vac adapter.
 If your country is 230V or 240V select "generic240V". 
 Now you must perform the `Voltage Calibration`_  procedure below.
 
-TDC DA-09-10 model ambiguity
+TDC DA-10-09 model ambiguity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are two different voltage transformers available with the model designation TDC DA-10-09.
@@ -66,16 +66,16 @@ These models are quite different and need to be properly configured.
 .. figure:: pics/TDC-DA-09-10.jpg
     :scale: 10 %
     :align: left
-    :alt: TDC DA-09-10
+    :alt: TDC DA-10-09
 
-    use model: TDC DA-09-10
+    use model: TDC DA-10-09
 
 .. figure:: pics/TDC-DA-09-10-E6.jpg
     :scale: 10 %
     :align: center
-    :alt: TDC DA-09-10-E6
+    :alt: TDC DA-10-09-E6
 
-    use model: TDC DA-09-10-E6
+    use model: TDC DA-10-09-E6
 
 
 Voltage Calibration
