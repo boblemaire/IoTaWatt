@@ -58,18 +58,18 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
       // Temporary addition of time-wait limit code from me-no-dev's fix.
       // Will remove when fix is in general release.
   
-  uint32_t twCount = 0;
-  tcp_pcb* tmp = tcp_tw_pcbs;
-  if(tmp){
-    while(tmp->next){
-      if(twCount > 5){
-        tcp_abort(tmp->next);
-      } else {
-        tmp = tmp->next;
-        twCount++;
-      }      
-    }
-  }
+  // uint32_t twCount = 0;
+  // tcp_pcb* tmp = tcp_tw_pcbs;
+  // if(tmp){
+  //   while(tmp->next){
+  //     if(twCount > 5){
+  //       tcp_abort(tmp->next);
+  //     } else {
+  //       tmp = tmp->next;
+  //       twCount++;
+  //     }      
+  //   }
+  // }
  
   return UTCtime() + 1;  
 }

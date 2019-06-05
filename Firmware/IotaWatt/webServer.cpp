@@ -119,31 +119,31 @@ bool loadFromSdCard(String path){
   trace(T_WEB,13);
   if( ! path.startsWith("/")) path = '/' + path;
   String dataType = txtPlain_P;
-  if(path.endsWith("/")) path += "index.htm";
-  if(path == "/edit" || path == "/graph"){
-    path += ".htm";
+  if(path.endsWith("/")) path += F("index.htm");
+  if(path == F("/edit") || path == F("/graph")){
+    path += F(".htm");
   }
   
-  if(path.endsWith(".src")) path = path.substring(0, path.lastIndexOf("."));
-  else if(path.endsWith(".htm")) dataType = F("text/html");
-  else if(path.endsWith(".css")) dataType = F("text/css");
-  else if(path.endsWith(".js"))  dataType = F("application/javascript");
-  else if(path.endsWith(".png")) dataType = F("image/png");
-  else if(path.endsWith(".gif")) dataType = F("image/gif");
-  else if(path.endsWith(".jpg")) dataType = F("image/jpeg");
-  else if(path.endsWith(".ico")) dataType = F("image/x-icon");
-  else if(path.endsWith(".xml")) dataType = F("text/xml");
-  else if(path.endsWith(".pdf")) dataType = F("application/pdf");
-  else if(path.endsWith(".zip")) dataType = F("application/zip");
+  if(path.endsWith(F(".src"))) path = path.substring(0, path.lastIndexOf("."));
+  else if(path.endsWith(F(".htm"))) dataType = F("text/html");
+  else if(path.endsWith(F(".css"))) dataType = F("text/css");
+  else if(path.endsWith(F(".js")))  dataType = F("application/javascript");
+  else if(path.endsWith(F(".png"))) dataType = F("image/png");
+  else if(path.endsWith(F(".gif"))) dataType = F("image/gif");
+  else if(path.endsWith(F(".jpg"))) dataType = F("image/jpeg");
+  else if(path.endsWith(F(".ico"))) dataType = F("image/x-icon");
+  else if(path.endsWith(F(".xml"))) dataType = F("text/xml");
+  else if(path.endsWith(F(".pdf"))) dataType = F("application/pdf");
+  else if(path.endsWith(F(".zip"))) dataType = F("application/zip");
 
-  if(path.startsWith("/esp_spiffs/")){
+  if(path.startsWith(F("/esp_spiffs/"))){
     return loadFromSpiffs(path.substring(11), dataType);
   }
 
   File dataFile = SD.open(path.c_str());
   if(dataFile.isDirectory()){
-    path += "/index.htm";
-    dataType = "text/html";
+    path += F("/index.htm");
+    dataType = F("text/html");
     dataFile = SD.open(path.c_str());
   }
 
@@ -154,12 +154,12 @@ bool loadFromSdCard(String path){
           // otherwise require admin.
 
   authLevel level = authAdmin;
-  if(path.startsWith("/user/")){
+  if(path.startsWith(F("/user/"))){
     level = authUser;
   }
   if( ! authenticate(level)) return true;
 
-  if (server.hasArg("download")){
+  if (server.hasArg(F("download"))){
     if(server.arg(F("download")) == "true") dataType = F("application/octet-stream");  
     else if(server.arg(F("download")) == "yes"){
       handleQuery();
@@ -171,13 +171,13 @@ bool loadFromSdCard(String path){
     return false;
   }
 
-  if(server.hasArg("textpos")){
-    sendMsgFile(dataFile, server.arg("textpos").toInt());
+  if(server.hasArg(F("textpos"))){
+    sendMsgFile(dataFile, server.arg(F("textpos")).toInt());
   }
 
   else {
-    if(path.equalsIgnoreCase("/config.txt")){
-      server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
+    if(path.equalsIgnoreCase(F("/config.txt"))){
+      server.sendHeader(F("X-configSHA256"), base64encode(configSHA256, 32));
     }
     size_t sent = server.streamFile(dataFile, dataType);
     if ( sent != dataFile.size()) {
@@ -206,22 +206,22 @@ void handleFileUpload(){
     upload.filename = String('/') + upload.filename;
   }
   upload.filename.toLowerCase();
-  if(upload.filename.startsWith("/esp_spiffs/")){
+  if(upload.filename.startsWith(F("/esp_spiffs/"))){
     handleSpiffsUpload();
   }
   if(upload.status == UPLOAD_FILE_START){
     if( ! authenticate(authAdmin)) return;
-      if(upload.filename.equals("/config.txt")){
+      if(upload.filename.equals(F("/config.txt"))){
       if(server.hasHeader(F("X-configSHA256"))){
         if(server.header(F("X-configSHA256")) != base64encode(configSHA256, 32)){
-          server.send(409, txtPlain_P, "Config not current");
+          server.send(409, txtPlain_P, F("Config not current"));
           return;
         }
       }
     }
     if(SD.exists((char *)upload.filename.c_str())) SD.remove((char *)upload.filename.c_str());
     if(uploadFile = SD.open(upload.filename.c_str(), FILE_WRITE)){
-      DBG_OUTPUT_PORT.print("Upload: START, filename: "); DBG_OUTPUT_PORT.println(upload.filename);
+      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
     }
 
   } else if(upload.status == UPLOAD_FILE_WRITE){
@@ -232,7 +232,7 @@ void handleFileUpload(){
   } else if(upload.status == UPLOAD_FILE_END){
     if(uploadFile){
       uploadFile.close();
-      DBG_OUTPUT_PORT.print("Upload: END, Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
+      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
       if(upload.filename.equals("/config.txt")){
         uploadFile = SD.open(upload.filename.c_str(), FILE_READ);
         hashFile(configSHA256, uploadFile);
@@ -249,14 +249,14 @@ void handleSpiffsUpload(){
   if(upload.status == UPLOAD_FILE_START){
 
     if( ! authenticate(authAdmin)) return;
-      DBG_OUTPUT_PORT.print("Upload: START, filename: "); DBG_OUTPUT_PORT.println(upload.filename);
+      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
       spiffsWrite(upload.filename.substring(11).c_str(), "", 0);        // Create a null file
 
   } else if(upload.status == UPLOAD_FILE_WRITE){
       spiffsWrite(upload.filename.substring(11).c_str(), upload.buf, upload.currentSize, true);   // append to the file (true)
 
   } else if(upload.status == UPLOAD_FILE_END){
-      DBG_OUTPUT_PORT.print("Upload: END, Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
+      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
   }
 }
 
@@ -291,7 +291,7 @@ void handleDelete(){
   trace(T_WEB,9); 
   if(server.args() == 0) return returnFail("BAD ARGS");
   String path = server.arg(0);
-  if(path.startsWith("/esp_spiffs")){
+  if(path.startsWith(F("/esp_spiffs"))){
     spiffsRemove(path.substring(11).c_str());
     returnOK();
     return;
@@ -300,7 +300,7 @@ void handleDelete(){
     returnFail("BAD PATH");
     return;
   }
-  if(path == "/config.txt" ||
+  if(path == F("/config.txt") ||
      path.startsWith(IotaLogFile) ||
      path.startsWith(historyLogFile)){
     returnFail("Restricted File");
@@ -315,7 +315,7 @@ void handleCreate(){
   if(server.args() == 0) return returnFail("BAD ARGS");
   String path = server.arg(0);
 
-  if(path.startsWith("/esp_spiffs")){
+  if(path.startsWith(F("/esp_spiffs"))){
     if(spiffsFileExists(path.substring(11).c_str())) return returnFail("BAD PATH");
     spiffsWrite(path.substring(11).c_str(),"");
     returnOK();
@@ -369,7 +369,7 @@ void printDirectory() {
     if(path == "/"){
       JsonObject& object = jsonBuffer.createObject();
       object["type"] = "dir";
-      object["name"] = String("esp_spiffs");
+      object["name"] = "esp_spiffs";
       array.add(object);
     }
     array.printTo(response);
@@ -420,7 +420,7 @@ void handlePasswords(){
   DynamicJsonBuffer Json;
   JsonObject& request = Json.parseObject(body);
   if( ! request.success()){
-    server.send(400, txtPlain_P, "Json parse failed.");
+    server.send(400, txtPlain_P, F("Json parse failed."));
     return;
   }
   if(adminH1){
@@ -431,18 +431,18 @@ void handlePasswords(){
     }
   }
   
-  if(request.containsKey("newadmin")){
+  if(request.containsKey(F("newadmin"))){
     delete[] adminH1;
     adminH1 = nullptr;
     delete[] userH1;
     userH1 = nullptr;
-    String newAdmin = request["newadmin"].as<char*>();
+    String newAdmin = request[F("newadmin")].as<char*>();
     if(newAdmin.length()){
       String newAdminH1 = calcH1("admin", deviceName, request["newadmin"].as<char*>());
       adminH1 = new uint8_t[16];
       hex2bin(adminH1, newAdminH1.c_str(), 16);
     } 
-    if(request.containsKey("newuser")){
+    if(request.containsKey(F("newuser"))){
       String newAdmin = request["newuser"].as<char*>();
       if(newAdmin.length()){
         String newUserH1 = calcH1("user", deviceName, request["newuser"].as<char*>());
@@ -598,7 +598,7 @@ void handleStatus(){
     JsonObject& passwords = jsonBuffer.createObject();
     passwords.set(F("admin"),adminH1 != nullptr);
     passwords.set(F("user"),userH1 != nullptr);  
-    root["passwords"] = passwords;
+    root[F("passwords")] = passwords;
   }
 
   String response = "";
@@ -643,7 +643,7 @@ void handleCommand(){
       shift = server.arg(F("shift")).toInt();
     }
     char response[100];
-    sprintf(response, "Phase Shift chan %d ref %d, %.2f", chan, refChan, samplePhase(refChan, chan, shift));
+    sprintf_P(response, PSTR("Phase Shift chan %d ref %d, %.2f"), chan, refChan, samplePhase(refChan, chan, shift));
     server.send(200, txtPlain_P, response);
     return; 
   }
@@ -845,7 +845,7 @@ void handleDSTtest(){
     uint32_t end = server.arg(F("end")).toInt();
     xbuf buf;
     while(begin <= end){
-      buf.printf("UTC %d, %s, Local %d, %s, UTC %d, %s",
+      buf.printf_P(PSTR("UTC %d, %s, Local %d, %s, UTC %d, %s"),
         begin, datef(begin).c_str(),
         localTime(begin), datef(localTime(begin)).c_str(),
         UTCtime(localTime(begin)), datef(UTCtime(localTime(begin))).c_str());

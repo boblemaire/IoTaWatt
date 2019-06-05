@@ -124,7 +124,7 @@ uint32_t PVoutput::tickInitialize(){
 
 uint32_t PVoutput::tickGetSystemService(){
     trace(T_PVoutput,20);
-    reqData.print("donations=1");
+    reqData.print(F("donations=1"));
     HTTPPost(F("getsystem.jsp"), checkSystemService);
     return 1;
 }
@@ -464,13 +464,13 @@ uint32_t PVoutput::tickCheckUploadStatus(){
 
 //*********************************************************************************************************************
 
-const char reqHeaderApikey[] = "X-Pvoutput-Apikey";
-const char reqHeaderRate[] = "X-Rate-Limit";
-const char reqHeaderSystemId[] = "X-Pvoutput-SystemId";
-const char respHeaderRemaining[] = "X-Rate-Limit-Remaining";
-const char respHeaderLimit[] = "X-Rate-Limit-Limit";
-const char respHeaderReset[] = "X-Rate-Limit-Reset";
-const char reqHeaderContentType[] = "Content-type";
+const char reqHeaderApikey[] PROGMEM = "X-Pvoutput-Apikey";
+const char reqHeaderRate[] PROGMEM = "X-Rate-Limit";
+const char reqHeaderSystemId[] PROGMEM = "X-Pvoutput-SystemId";
+const char respHeaderRemaining[] PROGMEM = "X-Rate-Limit-Remaining";
+const char respHeaderLimit[] PROGMEM = "X-Rate-Limit-Limit";
+const char respHeaderReset[] PROGMEM = "X-Rate-Limit-Reset";
+const char reqHeaderContentType[] PROGMEM = "Content-type";
 
 //void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, const __FlashStringHelper *contentType){
     
@@ -485,7 +485,7 @@ void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, 
     if(contentType){
         _POSTrequest->contentType = charstar(contentType);
     } else {
-        _POSTrequest->contentType = charstar("application/x-www-form-urlencoded");
+        _POSTrequest->contentType = charstar(F("application/x-www-form-urlencoded"));
     }
     _POSTrequest->completionState = completionState;
     _state = HTTPpost;
@@ -516,11 +516,11 @@ uint32_t PVoutput::tickHTTPPost(){
         HTTPrelease(_HTTPtoken);
         return UTCtime() + 10;
     }
-    request->setReqHeader(reqHeaderApikey, _apiKey);
-    request->setReqHeader(reqHeaderSystemId, _systemID);
-    request->setReqHeader(reqHeaderRate, "1");
+    request->setReqHeader(FPSTR(reqHeaderApikey), _apiKey);
+    request->setReqHeader(FPSTR(reqHeaderSystemId), _systemID);
+    request->setReqHeader(FPSTR(reqHeaderRate), "1");
     if(_POSTrequest->contentType){
-        request->setReqHeader(reqHeaderContentType, _POSTrequest->contentType);
+        request->setReqHeader(FPSTR(reqHeaderContentType), _POSTrequest->contentType);
     }
     if(reqData.available()){
         request->send(&reqData, reqData.available());
@@ -545,14 +545,14 @@ uint32_t PVoutput::tickHTTPWait(){
             // Get the flow control headers from PVoutput
 
     trace(T_PVoutput,120);
-    if(request->respHeaderExists(respHeaderLimit)){
-        _rateLimitLimit = strtol(request->respHeaderValue(respHeaderLimit),nullptr,10);
+    if(request->respHeaderExists(FPSTR(respHeaderLimit))){
+        _rateLimitLimit = strtol(request->respHeaderValue(FPSTR(respHeaderLimit)),nullptr,10);
     }
-    if(request->respHeaderExists(respHeaderRemaining)){
-        _rateLimitRemaining = strtol(request->respHeaderValue(respHeaderRemaining),nullptr,10);
+    if(request->respHeaderExists(FPSTR(respHeaderRemaining))){
+        _rateLimitRemaining = strtol(request->respHeaderValue(FPSTR(respHeaderRemaining)),nullptr,10);
     }
-    if(request->respHeaderExists(respHeaderReset)){
-        _rateLimitReset = strtoul(request->respHeaderValue(respHeaderReset),nullptr,10);
+    if(request->respHeaderExists(FPSTR(respHeaderReset))){
+        _rateLimitReset = strtoul(request->respHeaderValue(FPSTR(respHeaderReset)),nullptr,10);
     }
     trace(T_PVoutput,122);
 
