@@ -13,15 +13,20 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
   static uint32_t lastDisconnect = millis();          // Time of last disconnect
   const uint32_t restartInterval = 60;              // Restart ESP if disconnected this many minutes  
 
+  trace(T_WiFi,0);
   if(WiFi.status() == WL_CONNECTED){
+    trace(T_WiFi,1);
     if(!wifiConnected){
+      trace(T_WiFi,1);
       wifiConnected = true;
       String ip = WiFi.localIP().toString();
       log("WiFi connected. SSID=%s, IP=%s, channel=%d, RSSI %ddb", WiFi.SSID().c_str(), ip.c_str(), WiFi.channel(), WiFi.RSSI());
     }
   }
   else {
+    trace(T_WiFi,2);
     if(wifiConnected){
+      trace(T_WiFi,2);
       wifiConnected = false;
       lastDisconnect = millis();
       log("WiFi disconnected.");
@@ -35,7 +40,9 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
 
     // Check for degraded heap.
 
+  trace(T_WiFi,10);
   if(ESP.getFreeHeap() < 10000){
+    trace(T_WiFi,10);
     log("Heap memory has degraded below safe minimum, restarting.");
     delay(500);
     ESP.restart();
@@ -43,8 +50,11 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
 
       // Check for expired HTTP request.
 
+  trace(T_WiFi,20);
   for(int i=0; i<HTTPrequestMax; i++){
+    trace(T_WiFi,21,i);
     if(HTTPrequestStart[i] && (millis() - HTTPrequestStart[i]) > 900000UL){
+      trace(T_WiFi,22,i);
       log("Incomplete HTTP request detected, id %d, restarting.", HTTPrequestId[i]);
       delay(500);
       ESP.restart();
@@ -53,6 +63,7 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
 
       // Purge any timed out authorization sessions.
 
+  trace(T_WiFi,30);
   purgeAuthSessions();
 
       // Temporary addition of time-wait limit code from me-no-dev's fix.
@@ -71,13 +82,16 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
   //   }
   // }
  
+  trace(T_WiFi,99);
   return UTCtime() + 1;  
 }
 
 uint32_t HTTPreserve(uint16_t id, bool lock){
+  trace(T_WiFi,100);
   if(HTTPrequestFree == 0 || HTTPlock) return 0;
   HTTPrequestFree--;
   for(int i=0; i<HTTPrequestMax; i++){
+    trace(T_WiFi,101,i);
     if(HTTPrequestStart[i] == 0){
       HTTPrequestStart[i] = millis();
       HTTPrequestId[i] = id;
@@ -91,7 +105,9 @@ uint32_t HTTPreserve(uint16_t id, bool lock){
 }
 
 void HTTPrelease(uint32_t HTTPtoken){
+  trace(T_WiFi,110);
   for(int i=0; i<HTTPrequestMax; i++){
+    trace(T_WiFi,110,0);
     if(HTTPrequestStart[i] == HTTPtoken){
       HTTPrequestStart[i] = 0;
       HTTPrequestFree++;
