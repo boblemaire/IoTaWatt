@@ -20,7 +20,7 @@ int strcmp_ci(const char* str1, const char* str2){
  * ************************************************************************************************/
 char* charstar(const __FlashStringHelper * str){
   if( ! str) return nullptr;
-  char* ptr = new char[strlen_P((PGM_P)str)];
+  char* ptr = new char[strlen_P((PGM_P)str)+1];
   strcpy_P(ptr, (PGM_P)str);
   return ptr;
 }
