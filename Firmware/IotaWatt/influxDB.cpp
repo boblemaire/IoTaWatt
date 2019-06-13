@@ -49,7 +49,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static asyncHTTPrequest* request = nullptr;   // -> instance of asyncHTTPrequest
   static uint32_t postFirstTime = UTCtime();   // First measurement in outstanding post request
   static uint32_t postLastTime = UTCtime();    // Last measurement in outstanding post request
-  static size_t reqDataLimit = 4000;            // transaction yellow light size
+  static size_t reqDataLimit = 3000;            // transaction yellow light size
   static uint32_t HTTPtoken = 0;                // HTTP resource reservation token
   static Script* script = nullptr;              // current Script
 
