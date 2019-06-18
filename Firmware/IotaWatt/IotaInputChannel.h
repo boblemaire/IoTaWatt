@@ -48,8 +48,8 @@ class IotaInputChannel {
     uint16_t     _turns;                      // Turns ratio of current type CT	
     uint16_t     _offset;                     // ADC bias 
     uint8_t      _channel;                    // Internal identifying number
-    uint8_t      _addr;                       // Highbyte ADC, Lowbyte port on ADC
-    uint8_t      _aRef;                       // Reference voltage address (Highbyte ADC, Lowbyte port on ADC)
+    uint8_t      _addr;                       // 0x08-bit ADC, 0x07 bits port on ADC
+    uint8_t      _aRef;                       // Reference voltage address (_addr format)
     byte         _vchannel;                   // Voltage [input] channel associated with a power channel;
     channelTypes _type;                       // voltage, power, etc.
 	  bool		     _active;	
