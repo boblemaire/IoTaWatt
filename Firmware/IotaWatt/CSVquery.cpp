@@ -418,7 +418,9 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
         _oldRec = new IotaLogRecord;
         _newRec = new IotaLogRecord;
         _newRec->UNIXtime = _begin;
-        logReadKey(_newRec);
+        if(_newRec->UNIXtime >= histLog.firstKey() || _newRec->UNIXtime >= currLog.firstKey()){
+            logReadKey(_newRec);
+        }
         _firstLine = true;
         _lastLine = false;
     }
@@ -476,7 +478,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                 // Read group end record
 
             _newRec->UNIXtime = (uint32_t)nextGroup((time_t)_oldRec->UNIXtime, _groupUnits, _groupMult);
-            if(_newRec->UNIXtime >= histLog.firstKey()){
+            if(_newRec->UNIXtime >= histLog.firstKey() || _newRec->UNIXtime >= currLog.firstKey()){
                 logReadKey(_newRec);
             }
 
