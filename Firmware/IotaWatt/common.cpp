@@ -196,7 +196,8 @@ uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for soft
 bool     hasRTC = false;
 bool     RTCrunning = false;
 bool     powerFailRestart = false;
-bool     RTClowBat = false;                  // RTC Battery is low   
+bool     RTClowBat = false;                  // RTC Battery is low
+bool     sampling = false;                   // All channels have been sampled     
 
 char     ledColor[12];                       // Pattern to display led, each char is 500ms color - R, G, Blank
 uint8_t  ledCount;                           // Current index into cycle

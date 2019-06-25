@@ -26,6 +26,7 @@ void loop()
     samplePower(nextChannel, 0);
     trace(T_LOOP,2);
     nextCrossMs = lastCrossMs + 490 / int(frequency);
+    if(nextChannel <= lastChannel) sampling = true;
     lastChannel = nextChannel;
   }
 
