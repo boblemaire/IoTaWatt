@@ -274,6 +274,7 @@ extern bool     hasRTC;
 extern bool     RTCrunning;
 extern bool     powerFailRestart;               // Set true on power fail restart (detected by RTC)  
 extern bool     RTClowBat;                      // Set true when battery is low
+extern bool     sampling;                       // All channels have been sampled  
 
 extern char     ledColor[12];                   // Pattern to display led, each char is 500ms color - R, G, Blank
 extern uint8_t  ledCount;                       // Current index into cycle

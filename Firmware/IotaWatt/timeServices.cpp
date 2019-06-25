@@ -305,7 +305,7 @@ uint32_t localTime(uint32_t utctime){
 }
  
 uint32_t millisAtUTCTime(uint32_t UnixTime){                  
-  return (uint32_t)timeRefMs + 1000 * (UnixTime - SEVENTY_YEAR_SECONDS - timeRefNTP);
+  return (uint32_t)timeRefMs + 1000 * (UnixTime + SEVENTY_YEAR_SECONDS - timeRefNTP);
  }
 
 uint32_t UTC2Local(uint32_t UTCtime){
