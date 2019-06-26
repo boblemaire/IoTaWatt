@@ -187,24 +187,20 @@
 
 uint32_t logReadKey(IotaLogRecord* callerRecord) {
   uint32_t key = callerRecord->UNIXtime;
-  if( ! histLog.isOpen() || key < histLog.firstKey()){
+  if( ! histLog.isOpen()){
     return currLog.readKey(callerRecord);
   }
   if(key % histLog.interval()){               // not multiple of histLog interval
-    if(key >= currLog.firstKey()){            // in iotaLog
+    if(key >= currLog.firstKey() || key < histLog.firstKey()){   // in iotaLog
       return currLog.readKey(callerRecord);
     }
-    if(key <= histLog.lastKey()){             // in histLog
-      return histLog.readKey(callerRecord);
-    }
+    return histLog.readKey(callerRecord);     // in histLog
   }
   else {                                      // multiple of histLog interval
-    if(key <= histLog.lastKey()){             // in histLog
+    if(key >= histLog.firstKey() && key <= histLog.lastKey()){   // in histLog
       return histLog.readKey(callerRecord);
     }
-    if(key >= currLog.firstKey()){            // in IotaLog
-      return currLog.readKey(callerRecord);
-    }
+    return currLog.readKey(callerRecord);     // in IotaLog
   }
   callerRecord->UNIXtime = histLog.lastKey(); // between the two logs (rare)
   histLog.readKey(callerRecord);

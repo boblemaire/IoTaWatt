@@ -811,33 +811,44 @@ void handleGetConfig(){
 }
 
 void handleQuery(){
+  trace(T_WEB,50);
   CSVquery* query = new CSVquery();
   if( ! query->setup()){
+    trace(T_WEB,51);
     server.send(400, txtPlain_P, "Bad Request.");
   } else {
+    trace(T_WEB,52);
     server.setContentLength(CONTENT_LENGTH_UNKNOWN);
     if(server.hasArg(F("download"))){
+      trace(T_WEB,53);
       server.send(200,"application/octet-stream","");
     }
     else if(query->isJson()){
+      trace(T_WEB,54);
       server.send(200, appJson_P, "");
     }
     else {
+      trace(T_WEB,55);
       server.send(200, txtPlain_P, "");
     }
       
     uint8_t* buf = new uint8_t[1460];
     int read = 0;
     size_t size = 0;
+    trace(T_WEB,56);
     while(read = query->readResult(buf+6, 1460-8)){
+      trace(T_WEB,57);
       sendChunk((char*)buf, read+6);
       size += read;
+      trace(T_WEB,58);
       yield();
     }
+    trace(T_WEB,56);
     sendChunk((char*)buf, 6);
     delete buf;
   }
   delete query;
+  trace(T_WEB,59);
 }
 
 void handleDSTtest(){
