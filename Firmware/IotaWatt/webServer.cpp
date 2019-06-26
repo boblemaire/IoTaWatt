@@ -464,146 +464,148 @@ void handlePasswords(){
 }
 
 void handleStatus(){
-  trace(T_WEB,0); 
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& root = jsonBuffer.createObject();
-
-  if(server.hasArg(F("device"))){
-    JsonObject& device = jsonBuffer.createObject();
-    device.set(F("name"), deviceName);
-    device.set(F("timediff"), localTimeDiff);
-    device.set(F("allowdst"), timezoneRule?true:false);
-    device.set(F("update"), updateClass);
-    root.set(F("device"),device);
-  }
-  
-  if(server.hasArg(F("stats"))){
-    trace(T_WEB,14);
-    JsonObject& stats = jsonBuffer.createObject();
-    stats.set(F("cyclerate"), samplesPerCycle);
-    trace(T_WEB,14);
-    stats.set(F("chanrate"),cycleSampleRate);
-    trace(T_WEB,14);
-    stats.set(F("runseconds"), UTCtime()-programStartTime);
-    trace(T_WEB,14);
-    stats.set(F("stack"),ESP.getFreeHeap());
-    trace(T_WEB,14);
-    stats.set(F("version"),IOTAWATT_VERSION);
-    trace(T_WEB,14);
-    stats.set(F("frequency"),frequency);
-    trace(T_WEB,14);
-    stats.set(F("lowbat"), RTClowBat);
-    root.set(F("stats"),stats);
-  }
-  
-  if(server.hasArg(F("inputs"))){
-    trace(T_WEB,15);
-    JsonArray& channelArray = jsonBuffer.createArray();
-    for(int i=0; i<maxInputs; i++){
-      if(inputChannel[i]->isActive()){
-        JsonObject& channelObject = jsonBuffer.createObject();
-        channelObject.set(F("channel"),inputChannel[i]->_channel);
-        if(inputChannel[i]->_type == channelTypeVoltage){
-          channelObject.set(F("Vrms"),statRecord.accum1[i]);
-          channelObject.set(F("Hz"),statRecord.accum2[i]);
-          channelObject.set("phase", inputChannel[i]->getPhase(inputChannel[i]->dataBucket.volts));
-        }
-        else if(inputChannel[i]->_type == channelTypePower){
-          if(statRecord.accum1[i] > -2 && statRecord.accum1[i] < 2) statRecord.accum1[i] = 0;
-          channelObject.set(F("Watts"),String(statRecord.accum1[i],0));
-          double pf = statRecord.accum2[i];
-          if(pf != 0){
-            pf = statRecord.accum1[i] / pf;
-          }
-          channelObject.set("Pf",pf);
-          if(inputChannel[i]->_reversed){
-            channelObject.set(F("reversed"),true);
-          }
-          double volts = inputChannel[inputChannel[i]->_vchannel]->dataBucket.volts;
-          double amps = (volts < 50) ? 0 : inputChannel[i]->dataBucket.VA / volts;
-          channelObject.set("phase", inputChannel[i]->getPhase(amps));
-          channelObject.set("lastphase", inputChannel[i]->_lastPhase);
-        }
-        channelArray.add(channelObject);
-      }
-    }
-    root["inputs"] = channelArray;
-  }
-
-  if(server.hasArg(F("outputs"))){
-    trace(T_WEB,16);
-    JsonArray& outputArray = jsonBuffer.createArray();
-    Script* script = outputs->first();
-    while(script){
-      JsonObject& channelObject = jsonBuffer.createObject();
-      channelObject.set(F("name"),script->name());
-      channelObject.set(F("units"),script->getUnits());
-      double value = script->run((IotaLogRecord*)nullptr, &statRecord, 1.0);
-      channelObject.set(F("value"),value);
-      outputArray.add(channelObject);
-      script = script->next();
-    }
-    root["outputs"] = outputArray;
-  }
-
-  if(server.hasArg(F("influx"))){
-    trace(T_WEB,17);
-    JsonObject& influx = jsonBuffer.createObject();
-    influx.set(F("running"),influxStarted);
-    influx.set(F("lastpost"),influxLastPost);  
-    root["influx"] = influx;
-  }
-
-  if(server.hasArg(F("emon"))){
-    trace(T_WEB,22);
-    JsonObject& emon = jsonBuffer.createObject();
-    emon.set(F("running"),EmonStarted);
-    emon.set(F("lastpost"),EmonLastPost);  
-    root["emon"] = emon;
-  }
-
-  if(server.hasArg(F("pvoutput"))){
-    trace(T_WEB,23);
-    JsonObject& status = jsonBuffer.createObject();
-    if(!pvoutput){
-      status.set(F("state"),"stopped");
-    } else {
-      pvoutput->getStatusJson(status);
-    }
-    root["pvoutput"] = status;
-  }
-
-  if(server.hasArg(F("datalogs"))){
-    trace(T_WEB,17);
-    JsonObject& datalogs = jsonBuffer.createObject();
-    JsonObject& currlog = jsonBuffer.createObject();
-    currlog.set(F("firstkey"),currLog.firstKey());
-    currlog.set(F("lastkey"),currLog.lastKey());
-    currlog.set(F("size"),currLog.fileSize());
-    currlog.set(F("interval"),currLog.interval());
-    //currlog.set("wrap",currLog._wrap ? true : false);
-    datalogs.set(F("currlog"),currlog);
-    JsonObject& histlog = jsonBuffer.createObject();
-    histlog.set(F("firstkey"),histLog.firstKey());
-    histlog.set(F("lastkey"),histLog.lastKey());
-    histlog.set(F("size"),histLog.fileSize());
-    histlog.set(F("interval"),histLog.interval());
-    //histlog.set("wrap",histLog._wrap ? true : false);
-    datalogs.set(F("histlog"),histlog);
-    root.set(F("datalogs"),datalogs);
-  }
-
-  if(server.hasArg(F("passwords"))){
-    trace(T_WEB,18);
-    JsonObject& passwords = jsonBuffer.createObject();
-    passwords.set(F("admin"),adminH1 != nullptr);
-    passwords.set(F("user"),userH1 != nullptr);  
-    root[F("passwords")] = passwords;
-  }
-
+  trace(T_WEB,0);
+  uint32_t heapEntry = ESP.getFreeHeap();
   String response = "";
-  root.prettyPrintTo(response);
-  server.send(200, txtJson_P, response);  
+  {
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+
+    if(server.hasArg(F("device"))){
+      JsonObject& device = jsonBuffer.createObject();
+      device.set(F("name"), deviceName);
+      device.set(F("timediff"), localTimeDiff);
+      device.set(F("allowdst"), timezoneRule?true:false);
+      device.set(F("update"), updateClass);
+      root.set(F("device"),device);
+    }
+    
+    if(server.hasArg(F("stats"))){
+      trace(T_WEB,14);
+      JsonObject& stats = jsonBuffer.createObject();
+      stats.set(F("cyclerate"), samplesPerCycle);
+      trace(T_WEB,14);
+      stats.set(F("chanrate"),cycleSampleRate);
+      trace(T_WEB,14);
+      stats.set(F("runseconds"), UTCtime()-programStartTime);
+      trace(T_WEB,14);
+      stats.set(F("stack"),ESP.getFreeHeap());
+      trace(T_WEB,14);
+      stats.set(F("version"),IOTAWATT_VERSION);
+      trace(T_WEB,14);
+      stats.set(F("frequency"),frequency);
+      trace(T_WEB,14);
+      stats.set(F("lowbat"), RTClowBat);
+      root.set(F("stats"),stats);
+    }
+    
+    if(server.hasArg(F("inputs"))){
+      trace(T_WEB,15);
+      JsonArray& channelArray = jsonBuffer.createArray();
+      for(int i=0; i<maxInputs; i++){
+        if(inputChannel[i]->isActive()){
+          JsonObject& channelObject = jsonBuffer.createObject();
+          channelObject.set(F("channel"),inputChannel[i]->_channel);
+          if(inputChannel[i]->_type == channelTypeVoltage){
+            channelObject.set(F("Vrms"),statRecord.accum1[i]);
+            channelObject.set(F("Hz"),statRecord.accum2[i]);
+            channelObject.set("phase", inputChannel[i]->getPhase(inputChannel[i]->dataBucket.volts));
+          }
+          else if(inputChannel[i]->_type == channelTypePower){
+            if(statRecord.accum1[i] > -2 && statRecord.accum1[i] < 2) statRecord.accum1[i] = 0;
+            channelObject.set(F("Watts"),String(statRecord.accum1[i],0));
+            double pf = statRecord.accum2[i];
+            if(pf != 0){
+              pf = statRecord.accum1[i] / pf;
+            }
+            channelObject.set("Pf",pf);
+            if(inputChannel[i]->_reversed){
+              channelObject.set(F("reversed"),true);
+            }
+            double volts = inputChannel[inputChannel[i]->_vchannel]->dataBucket.volts;
+            double amps = (volts < 50) ? 0 : inputChannel[i]->dataBucket.VA / volts;
+            channelObject.set("phase", inputChannel[i]->getPhase(amps));
+            channelObject.set("lastphase", inputChannel[i]->_lastPhase);
+          }
+          channelArray.add(channelObject);
+        }
+      }
+      root["inputs"] = channelArray;
+    }
+
+    if(server.hasArg(F("outputs"))){
+      trace(T_WEB,16);
+      JsonArray& outputArray = jsonBuffer.createArray();
+      Script* script = outputs->first();
+      while(script){
+        JsonObject& channelObject = jsonBuffer.createObject();
+        channelObject.set(F("name"),script->name());
+        channelObject.set(F("units"),script->getUnits());
+        double value = script->run((IotaLogRecord*)nullptr, &statRecord, 1.0);
+        channelObject.set(F("value"),value);
+        outputArray.add(channelObject);
+        script = script->next();
+      }
+      root["outputs"] = outputArray;
+    }
+
+    if(server.hasArg(F("influx"))){
+      trace(T_WEB,17);
+      JsonObject& influx = jsonBuffer.createObject();
+      influx.set(F("running"),influxStarted);
+      influx.set(F("lastpost"),influxLastPost);  
+      root["influx"] = influx;
+    }
+
+    if(server.hasArg(F("emon"))){
+      trace(T_WEB,22);
+      JsonObject& emon = jsonBuffer.createObject();
+      emon.set(F("running"),EmonStarted);
+      emon.set(F("lastpost"),EmonLastPost);  
+      root["emon"] = emon;
+    }
+
+    if(server.hasArg(F("pvoutput"))){
+      trace(T_WEB,23);
+      JsonObject& status = jsonBuffer.createObject();
+      if(!pvoutput){
+        status.set(F("state"),"stopped");
+      } else {
+        pvoutput->getStatusJson(status);
+      }
+      root["pvoutput"] = status;
+    }
+
+    if(server.hasArg(F("datalogs"))){
+      trace(T_WEB,17);
+      JsonObject& datalogs = jsonBuffer.createObject();
+      JsonObject& currlog = jsonBuffer.createObject();
+      currlog.set(F("firstkey"),currLog.firstKey());
+      currlog.set(F("lastkey"),currLog.lastKey());
+      currlog.set(F("size"),currLog.fileSize());
+      currlog.set(F("interval"),currLog.interval());
+      //currlog.set("wrap",currLog._wrap ? true : false);
+      datalogs.set(F("currlog"),currlog);
+      JsonObject& histlog = jsonBuffer.createObject();
+      histlog.set(F("firstkey"),histLog.firstKey());
+      histlog.set(F("lastkey"),histLog.lastKey());
+      histlog.set(F("size"),histLog.fileSize());
+      histlog.set(F("interval"),histLog.interval());
+      //histlog.set("wrap",histLog._wrap ? true : false);
+      datalogs.set(F("histlog"),histlog);
+      root.set(F("datalogs"),datalogs);
+    }
+
+    if(server.hasArg(F("passwords"))){
+      trace(T_WEB,18);
+      JsonObject& passwords = jsonBuffer.createObject();
+      passwords.set(F("admin"),adminH1 != nullptr);
+      passwords.set(F("user"),userH1 != nullptr);  
+      root[F("passwords")] = passwords;
+    }
+    root.printTo(response);
+  }
+  server.send(200, txtJson_P, response);
 }
 
 void handleVcal(){
@@ -699,70 +701,71 @@ void handleCommand(){
 
 void handleGetFeedList(){ 
   trace(T_WEB,18);
-  DynamicJsonBuffer jsonBuffer;
-  JsonArray& array = jsonBuffer.createArray();
-  for(int i=0; i<maxInputs; i++){
-    if(inputChannel[i]->isActive()){
-      if(inputChannel[i]->_type == channelTypeVoltage){
-        JsonObject& voltage = jsonBuffer.createObject();
-        voltage["id"] = String("IV") + String(inputChannel[i]->_name);
-        voltage["tag"] = F("Voltage");
-        voltage["name"] = inputChannel[i]->_name;
-        array.add(voltage);
-      } 
-      else
-        if(inputChannel[i]->_type == channelTypePower){
-        JsonObject& power = jsonBuffer.createObject();
-        power["id"] = String("IP") + String(inputChannel[i]->_name);
-        power["tag"] = F("Power");
-        power["name"] = inputChannel[i]->_name;
-        array.add(power);
-        JsonObject& energy = jsonBuffer.createObject();
-        energy["id"] = String("IE") + String(inputChannel[i]->_name);
-        energy["tag"] = F("Energy");
-        energy["name"] = inputChannel[i]->_name;
-        array.add(energy);
-      }
-    }
-  }
-  trace(T_WEB,18);
-  Script* script = outputs->first();
-  int outndx = 100;
-  while(script){
-    if(String(script->name()).indexOf(' ') == -1){
-      String units = script->getUnits();
-      if(units.equalsIgnoreCase("volts")){
-        JsonObject& voltage = jsonBuffer.createObject();
-        voltage["id"] = String("OV") + String(script->name());
-        voltage["tag"] = F("Voltage");
-        voltage["name"] = script->name();
-        array.add(voltage);
-      } 
-      else if(units.equalsIgnoreCase("watts")) {
-        JsonObject& power = jsonBuffer.createObject();
-        power["id"] = String("OP") + String(script->name());
-        power["tag"] = F("Power");
-        power["name"] = script->name();
-        array.add(power);
-        JsonObject& energy = jsonBuffer.createObject();
-        energy["id"] = String("OE") + String(script->name());
-        energy["tag"] = F("Energy");
-        energy["name"] = script->name();
-        array.add(energy);
-      }
-      else {
-        JsonObject& other = jsonBuffer.createObject();
-        other["id"] = String("OO") + String(script->name());
-        other["tag"] = F("Outputs");
-        other["name"] = script->name();
-        array.add(other);
-      }
-    }
-    script = script->next();
-  }
-  
   String response;
-  array.printTo(response);
+  {
+    DynamicJsonBuffer jsonBuffer;
+    JsonArray& array = jsonBuffer.createArray();
+    for(int i=0; i<maxInputs; i++){
+      if(inputChannel[i]->isActive()){
+        if(inputChannel[i]->_type == channelTypeVoltage){
+          JsonObject& voltage = jsonBuffer.createObject();
+          voltage["id"] = String("IV") + String(inputChannel[i]->_name);
+          voltage["tag"] = F("Voltage");
+          voltage["name"] = inputChannel[i]->_name;
+          array.add(voltage);
+        } 
+        else
+          if(inputChannel[i]->_type == channelTypePower){
+          JsonObject& power = jsonBuffer.createObject();
+          power["id"] = String("IP") + String(inputChannel[i]->_name);
+          power["tag"] = F("Power");
+          power["name"] = inputChannel[i]->_name;
+          array.add(power);
+          JsonObject& energy = jsonBuffer.createObject();
+          energy["id"] = String("IE") + String(inputChannel[i]->_name);
+          energy["tag"] = F("Energy");
+          energy["name"] = inputChannel[i]->_name;
+          array.add(energy);
+        }
+      }
+    }
+    trace(T_WEB,18);
+    Script* script = outputs->first();
+    int outndx = 100;
+    while(script){
+      if(String(script->name()).indexOf(' ') == -1){
+        String units = script->getUnits();
+        if(units.equalsIgnoreCase("volts")){
+          JsonObject& voltage = jsonBuffer.createObject();
+          voltage["id"] = String("OV") + String(script->name());
+          voltage["tag"] = F("Voltage");
+          voltage["name"] = script->name();
+          array.add(voltage);
+        } 
+        else if(units.equalsIgnoreCase("watts")) {
+          JsonObject& power = jsonBuffer.createObject();
+          power["id"] = String("OP") + String(script->name());
+          power["tag"] = F("Power");
+          power["name"] = script->name();
+          array.add(power);
+          JsonObject& energy = jsonBuffer.createObject();
+          energy["id"] = String("OE") + String(script->name());
+          energy["tag"] = F("Energy");
+          energy["name"] = script->name();
+          array.add(energy);
+        }
+        else {
+          JsonObject& other = jsonBuffer.createObject();
+          other["id"] = String("OO") + String(script->name());
+          other["tag"] = F("Outputs");
+          other["name"] = script->name();
+          array.add(other);
+        }
+      }
+      script = script->next();
+    }
+    array.printTo(response);
+  }
   server.send(200, appJson_P,response);
 }
 
