@@ -5,7 +5,7 @@
  * 
  * The log records contain 2 double precision value*hours accumulators for each channel.
  * Currently the two are Volt*Hrs / hz.Hrs for VT channels and
- * Watt*Hrs / Irms*Hrs for CT channels.
+ * Watt*Hrs / VA*Hrs for CT channels.
  * 
  * Given any two log records, the average volts, hz, watts or Irms for the period between them
  * can be determined, in addition to the basic metric like WattHrs.  Power factor (average) can 
@@ -74,7 +74,11 @@
         log("dataLog: Last log entry %s", datef(UTC2Local(currLog.lastKey())).c_str());
       }
 
+      // If not at current log interval, return until then.  
+
       state = checkClock;
+      uint32_t syncDelay = UTCtime() % currLog.interval();
+      if(syncDelay) return syncDelay;
 
       // Fall through to checkClock
 
