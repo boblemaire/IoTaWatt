@@ -431,8 +431,8 @@ function EbyId(id) {return document.getElementById(id)};
 <script language="javascript" type="text/javascript" src="graph.js"></script>
 
 <script>
-    var path = "http://" + location.host; // + "/";
-	var getbackup = false;
+    var path = location.protocol + "//" + location.host; // + "/";
+    var getbackup = false;
     var configFileURL = "config.txt";
     
     sidebar_resize();
