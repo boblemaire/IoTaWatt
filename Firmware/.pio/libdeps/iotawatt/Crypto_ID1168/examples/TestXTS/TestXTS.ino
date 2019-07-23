@@ -25,13 +25,18 @@ This example runs tests on the XTS implementation to verify correct behaviour.
 */
 
 #include <Crypto.h>
+#include <CryptoLW.h>
 #include <AES.h>
 #include <Speck.h>
 #include <SpeckSmall.h>
 #include <SpeckTiny.h>
 #include <XTS.h>
 #include <string.h>
+#if defined(ESP8266) || defined(ESP32)
+#include <pgmspace.h>
+#else
 #include <avr/pgmspace.h>
+#endif
 
 #define MAX_SECTOR_SIZE 64
 
@@ -207,6 +212,8 @@ void _printProgMem(const char *str)
 
 void testXTS(XTSCommon *cipher, const struct TestVector *test)
 {
+    crypto_feed_watchdog();
+
     memcpy_P(&testVector, test, sizeof(testVector));
 
     Serial.print(testVector.name);
@@ -261,6 +268,8 @@ void perfEncrypt(const char *name, XTSCommon *cipher, const struct TestVector *t
     unsigned long elapsed;
     int count;
 
+    crypto_feed_watchdog();
+
     memcpy_P(&testVector, test, sizeof(testVector));
 
     Serial.print(name);
@@ -288,6 +297,8 @@ void perfDecrypt(const char *name, XTSCommon *cipher, const struct TestVector *t
     unsigned long elapsed;
     int count;
 
+    crypto_feed_watchdog();
+
     memcpy_P(&testVector, test, sizeof(testVector));
 
     Serial.print(name);
@@ -314,6 +325,8 @@ void perfSetKey(const char *name, XTSCommon *cipher, const struct TestVector *te
     unsigned long elapsed;
     int count;
 
+    crypto_feed_watchdog();
+
     memcpy_P(&testVector, test, sizeof(testVector));
 
     Serial.print(name);
@@ -336,6 +349,8 @@ void perfSetTweak(const char *name, XTSCommon *cipher, const struct TestVector *
     unsigned long start;
     unsigned long elapsed;
     int count;
+
+    crypto_feed_watchdog();
 
     memcpy_P(&testVector, test, sizeof(testVector));
 

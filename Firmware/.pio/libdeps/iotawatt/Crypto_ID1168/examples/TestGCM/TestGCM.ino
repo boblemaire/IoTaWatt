@@ -25,12 +25,17 @@ This example runs tests on the GCM implementation to verify correct behaviour.
 */
 
 #include <Crypto.h>
+#include <CryptoLW.h>
 #include <AES.h>
 #include <Speck.h>
 #include <SpeckTiny.h>
 #include <GCM.h>
 #include <string.h>
+#if defined(ESP8266) || defined(ESP32)
+#include <pgmspace.h>
+#else
 #include <avr/pgmspace.h>
+#endif
 
 // There isn't enough memory to test both AES and Speck on the Uno,
 // so disable Speck testing on AVR platforms unless explicitly enabled.
@@ -270,6 +275,8 @@ bool testCipher_N(AuthenticatedCipher *cipher, const struct TestVector *test, si
     size_t posn, len;
     uint8_t tag[16];
 
+    crypto_feed_watchdog();
+
     cipher->clear();
     if (!cipher->setKey(test->key, cipher->keySize())) {
         Serial.print("setKey ");
@@ -367,6 +374,8 @@ void perfCipherSetKey(AuthenticatedCipher *cipher, const struct TestVector *test
     unsigned long elapsed;
     int count;
 
+    crypto_feed_watchdog();
+
     memcpy_P(&testVector, test, sizeof(TestVector));
     test = &testVector;
 
@@ -391,6 +400,8 @@ void perfCipherEncrypt(AuthenticatedCipher *cipher, const struct TestVector *tes
     unsigned long start;
     unsigned long elapsed;
     int count;
+
+    crypto_feed_watchdog();
 
     memcpy_P(&testVector, test, sizeof(TestVector));
     test = &testVector;
@@ -418,6 +429,8 @@ void perfCipherDecrypt(AuthenticatedCipher *cipher, const struct TestVector *tes
     unsigned long elapsed;
     int count;
 
+    crypto_feed_watchdog();
+
     memcpy_P(&testVector, test, sizeof(TestVector));
     test = &testVector;
 
@@ -443,6 +456,8 @@ void perfCipherAddAuthData(AuthenticatedCipher *cipher, const struct TestVector 
     unsigned long start;
     unsigned long elapsed;
     int count;
+
+    crypto_feed_watchdog();
 
     memcpy_P(&testVector, test, sizeof(TestVector));
     test = &testVector;
@@ -470,6 +485,8 @@ void perfCipherComputeTag(AuthenticatedCipher *cipher, const struct TestVector *
     unsigned long start;
     unsigned long elapsed;
     int count;
+
+    crypto_feed_watchdog();
 
     memcpy_P(&testVector, test, sizeof(TestVector));
     test = &testVector;

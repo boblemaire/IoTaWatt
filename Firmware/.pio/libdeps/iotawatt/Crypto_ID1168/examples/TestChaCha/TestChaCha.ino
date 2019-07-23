@@ -27,7 +27,11 @@ This example runs tests on the ChaCha implementation to verify correct behaviour
 #include <Crypto.h>
 #include <ChaCha.h>
 #include <string.h>
+#if defined(ESP8266) || defined(ESP32)
+#include <pgmspace.h>
+#else
 #include <avr/pgmspace.h>
+#endif
 
 #define MAX_PLAINTEXT_SIZE  64
 #define MAX_CIPHERTEXT_SIZE 64

@@ -1,6 +1,6 @@
 {
     "name": "RTClib", 
-    "version": "1.2.1", 
+    "version": "1.2.4", 
     "keywords": [
         "timing"
     ], 
@@ -13,11 +13,14 @@
         "atmelsam", 
         "espressif32", 
         "espressif8266", 
+        "infineonxmc", 
         "intel_arc32", 
+        "kendryte210", 
         "microchippic32", 
         "nordicnrf51", 
         "nordicnrf52", 
         "ststm32", 
+        "ststm8", 
         "teensy", 
         "timsp430"
     ], 

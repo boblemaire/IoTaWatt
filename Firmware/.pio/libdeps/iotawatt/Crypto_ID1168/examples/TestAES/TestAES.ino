@@ -76,6 +76,7 @@ byte buffer[16];
 
 void testCipher(BlockCipher *cipher, const struct TestVector *test)
 {
+    crypto_feed_watchdog();
     Serial.print(test->name);
     Serial.print(" Encryption ... ");
     cipher->setKey(test->key, cipher->keySize());
@@ -99,6 +100,8 @@ void perfCipher(BlockCipher *cipher, const struct TestVector *test)
     unsigned long start;
     unsigned long elapsed;
     int count;
+
+    crypto_feed_watchdog();
 
     Serial.print(test->name);
     Serial.print(" Set Key ... ");

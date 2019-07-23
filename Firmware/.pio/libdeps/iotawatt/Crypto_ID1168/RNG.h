@@ -55,8 +55,10 @@ public:
 private:
     uint32_t block[16];
     uint32_t stream[16];
-    uint16_t credits : 15;
+    uint16_t credits : 13;
     uint16_t firstSave : 1;
+    uint16_t initialized : 1;
+    uint16_t trngPending : 1;
     unsigned long timer;
     unsigned long timeout;
     NoiseSource *noiseSources[4];
@@ -64,6 +66,7 @@ private:
     uint8_t trngPosn;
 
     void rekey();
+    void mixTRNG();
 };
 
 extern RNGClass RNG;

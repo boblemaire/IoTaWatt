@@ -934,6 +934,7 @@ void Curve25519::mul(limb_t *result, const limb_t *x, const limb_t *y)
     mulNoReduce(temp, x, y);
     reduce(result, temp, NUM_LIMBS_256BIT);
     strict_clean(temp);
+    crypto_feed_watchdog();
 }
 
 /**

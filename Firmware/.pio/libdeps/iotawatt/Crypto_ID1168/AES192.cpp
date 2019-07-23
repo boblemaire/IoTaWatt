@@ -24,6 +24,8 @@
 #include "Crypto.h"
 #include <string.h>
 
+#if defined(CRYPTO_AES_DEFAULT) || defined(CRYPTO_DOC)
+
 /**
  * \class AES192 AES.h <AES.h>
  * \brief AES block cipher with 192-bit keys.
@@ -96,3 +98,5 @@ bool AES192::setKey(const uint8_t *key, size_t len)
 
     return true;
 }
+
+#endif // CRYPTO_AES_DEFAULT

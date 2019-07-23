@@ -34,7 +34,11 @@ AVR platforms with 32K or less of flash memory.
 #include <RNG.h>
 #include <RNG.h>
 #include <string.h>
+#if defined(ESP8266) || defined(ESP32)
+#include <pgmspace.h>
+#else
 #include <avr/pgmspace.h>
+#endif
 
 void printNumber(const char *name, const uint8_t *x, size_t len)
 {

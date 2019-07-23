@@ -50,6 +50,8 @@ AsyncClient::AsyncClient(tcp_pcb* pcb):
   , _error_cb_arg(0)
   , _recv_cb(0)
   , _recv_cb_arg(0)
+  , _pb_cb(0)
+  , _pb_cb_arg(0)
   , _timeout_cb(0)
   , _timeout_cb_arg(0)
   , _pcb_busy(false)
@@ -199,7 +201,8 @@ int8_t AsyncClient::abort(){
 }
 
 void AsyncClient::close(bool now){
-  tcp_recved(_pcb, _rx_ack_len);
+  if(_pcb)
+    tcp_recved(_pcb, _rx_ack_len);
   if(now)
     _close();
   else
@@ -364,10 +367,14 @@ void AsyncClient::_ssl_error(int8_t err){
 #endif
 
 err_t AsyncClient::_sent(tcp_pcb* pcb, uint16_t len) {
+#if ASYNC_TCP_SSL_ENABLED
+  if (_pcb_secure && !_handshake_done)
+    return ERR_OK;
+#endif
   _rx_last_packet = millis();
-  ASYNC_TCP_DEBUG("_sent: %u\n", len);
   _tx_unacked_len -= len;
   _tx_acked_len += len;
+  ASYNC_TCP_DEBUG("_sent: %u (%d %d)\n", len, _tx_unacked_len, _tx_acked_len);
   if(_tx_unacked_len == 0){
     _pcb_busy = false;
     if(_sent_cb)
@@ -393,7 +400,7 @@ err_t AsyncClient::_recv(tcp_pcb* pcb, pbuf* pb, err_t err) {
         ASYNC_TCP_DEBUG("_recv err: %d\n", read_bytes);
         _close();
       }
-      return read_bytes;
+      //return read_bytes;
     }
     return ERR_OK;
   }
@@ -402,16 +409,20 @@ err_t AsyncClient::_recv(tcp_pcb* pcb, pbuf* pb, err_t err) {
     //we should not ack before we assimilate the data
     _ack_pcb = true;
     pbuf *b = pb;
-    ASYNC_TCP_DEBUG("_recv: %d\n", b->len);
-    if(_recv_cb)
-      _recv_cb(_recv_cb_arg, this, b->payload, b->len);
-    if(!_ack_pcb)
-      _rx_ack_len += b->len;
-    else
-      tcp_recved(pcb, b->len);
     pb = b->next;
     b->next = NULL;
-    pbuf_free(b);
+    ASYNC_TCP_DEBUG("_recv: %d\n", b->len);
+    if(_pb_cb){
+      _pb_cb(_pb_cb_arg, this, b);
+    } else {
+      if(_recv_cb)
+        _recv_cb(_recv_cb_arg, this, b->payload, b->len);
+      if(!_ack_pcb)
+        _rx_ack_len += b->len;
+      else
+        tcp_recved(pcb, b->len);
+      pbuf_free(b);
+    }
   }
   return ERR_OK;
 }
@@ -690,6 +701,11 @@ void AsyncClient::onData(AcDataHandler cb, void* arg){
   _recv_cb_arg = arg;
 }
 
+void AsyncClient::onPacket(AcPacketHandler cb, void* arg){
+  _pb_cb = cb;
+  _pb_cb_arg = arg;
+}
+
 void AsyncClient::onTimeout(AcTimeoutHandler cb, void* arg){
   _timeout_cb = cb;
   _timeout_cb_arg = arg;
@@ -724,27 +740,51 @@ size_t AsyncClient::space(){
   return 0;
 }
 
-const char * AsyncClient::errorToString(int8_t error){
-  switch(error){
-    case 0: return "OK";
-    case -1: return "Out of memory error";
-    case -2: return "Buffer error";
-    case -3: return "Timeout";
-    case -4: return "Routing problem";
-    case -5: return "Operation in progress";
-    case -6: return "Illegal value";
-    case -7: return "Operation would block";
-    case -8: return "Connection aborted";
-    case -9: return "Connection reset";
-    case -10: return "Connection closed";
-    case -11: return "Not connected";
-    case -12: return "Illegal argument";
-    case -13: return "Address in use";
-    case -14: return "Low-level netif error";
-    case -15: return "Already connected";
-    case -55: return "DNS failed";
-    default: return "UNKNOWN";
+void AsyncClient::ackPacket(struct pbuf * pb){
+  if(!pb){
+    return;
   }
+  tcp_recved(_pcb, pb->len);
+  pbuf_free(pb);
+}
+
+const char * AsyncClient::errorToString(int8_t error) {
+    switch (error) {
+    case ERR_OK: 
+		return "OK";
+    case ERR_MEM: 
+		return "Out of memory error";
+    case ERR_BUF: 
+		return "Buffer error";
+    case ERR_TIMEOUT: 
+		return "Timeout";
+    case ERR_RTE: 
+		return "Routing problem";
+    case ERR_INPROGRESS: 
+		return "Operation in progress";
+    case ERR_VAL: 
+		return "Illegal value";
+    case ERR_WOULDBLOCK: 
+		return "Operation would block";
+    case ERR_ABRT:
+		return "Connection aborted";
+    case ERR_RST: 
+		return "Connection reset";
+    case ERR_CLSD: 
+		return "Connection closed";
+    case ERR_CONN: 
+		return "Not connected";
+    case ERR_ARG: 
+		return "Illegal argument";
+    case ERR_USE: 
+		return "Address in use";
+    case ERR_IF: 
+		return "Low-level netif error";
+    case ERR_ISCONN: 
+		return "Connection already established";
+    default: 
+		return "Unknown error";
+    }
 }
 
 const char * AsyncClient::stateToString(){
@@ -864,7 +904,6 @@ void AsyncServer::beginSecure(const char *cert, const char *key, const char *pas
 void AsyncServer::end(){
   if(_pcb){
     //cleanup all connections?
-    tcp_abort(_pcb);
     tcp_arg(_pcb, NULL);
     tcp_accept(_pcb, NULL);
     if(tcp_close(_pcb) != ERR_OK){

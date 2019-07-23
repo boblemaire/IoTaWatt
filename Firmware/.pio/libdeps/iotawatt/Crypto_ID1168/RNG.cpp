@@ -37,8 +37,31 @@
 #include <avr/wdt.h>
 #include <avr/io.h>
 #define RNG_EEPROM_ADDRESS (E2END + 1 - RNGClass::SEED_SIZE)
+#elif defined(ESP8266)
+// ESP8266 does not have EEPROM but it does have SPI flash memory.
+// It also has a TRNG register for generating "true" random numbers.
+// For now we use the TRNG but don't save the seed in flash memory.
+#define RNG_WORD_TRNG 1
+#define RNG_WORD_TRNG_GET() (ESP8266_DREG(0x20E44))
+#elif defined(ESP32)
+// ESP32 has a word-based TRNG and an API for Non-Volatile Storage (NVS).
+#define RNG_WORD_TRNG 1
+#define RNG_WORD_TRNG_GET() (esp_random())
+#define RNG_ESP_NVS 1
+#include <nvs.h>
 #endif
 #include <string.h>
+
+// Throw a warning if there is no built-in hardware random number source.
+// If this happens, then you need to do one of two things:
+//    1. Edit RNG.cpp to add your platform's hardware TRNG.
+//    2. Provide a proper noise source like TransistorNoiseSource
+//       in your sketch and then comment out the #warning line below.
+#if !defined(RNG_DUE_TRNG) && \
+    !defined(RNG_WATCHDOG) && \
+    !defined(RNG_WORD_TRNG)
+#warning "no hardware random number source detected for this platform"
+#endif
 
 /**
  * \class RNGClass RNG.h <RNG.h>
@@ -150,7 +173,7 @@ RNGClass RNG;
 #define RNG_REKEY_BLOCKS    16
 
 // Maximum entropy credit that can be contained in the pool.
-#define RNG_MAX_CREDITS     384
+#define RNG_MAX_CREDITS     384u
 
 /** @cond */
 
@@ -238,6 +261,8 @@ ISR(WDT_vect)
 RNGClass::RNGClass()
     : credits(0)
     , firstSave(1)
+    , initialized(0)
+    , trngPending(0)
     , timer(0)
     , timeout(3600000UL)    // 1 hour in milliseconds
     , count(0)
@@ -359,6 +384,10 @@ static void eraseAndWriteSeed()
  */
 void RNGClass::begin(const char *tag)
 {
+    // Bail out if we have already done this.
+    if (initialized)
+        return;
+
     // Initialize the ChaCha20 input block from the saved seed.
     memcpy_P(block, tagRNG, sizeof(tagRNG));
     memcpy_P(block + 4, initRNG, sizeof(initRNG));
@@ -374,11 +403,10 @@ void RNGClass::begin(const char *tag)
     }
 #elif defined(RNG_DUE_TRNG)
     // Do we have a seed saved in the last page of flash memory on the Due?
-    int posn, counter;
     if (crypto_crc8('S', ((const uint32_t *)RNG_SEED_ADDR) + 1, SEED_SIZE)
             == ((const uint32_t *)RNG_SEED_ADDR)[0]) {
         // XOR the saved seed with the initialization block.
-        for (posn = 0; posn < 12; ++posn)
+        for (int posn = 0; posn < 12; ++posn)
             block[posn + 4] ^= ((const uint32_t *)RNG_SEED_ADDR)[posn + 1];
     }
 
@@ -388,19 +416,27 @@ void RNGClass::begin(const char *tag)
     pmc_enable_periph_clk(ID_TRNG);
     REG_TRNG_CR = TRNG_CR_KEY(0x524E47) | TRNG_CR_ENABLE;
     REG_TRNG_IDR = TRNG_IDR_DATRDY; // Disable interrupts - we will poll.
-    for (posn = 0; posn < 12; ++posn) {
-        // According to the documentation the TRNG should produce a new
-        // 32-bit random value every 84 clock cycles.  If it still hasn't
-        // produced a value after 200 iterations, then assume that the
-        // TRNG is not producing output and stop.
-        for (counter = 0; counter < 200; ++counter) {
-            if ((REG_TRNG_ISR & TRNG_ISR_DATRDY) != 0)
-                break;
+    mixTRNG();
+#endif
+#if defined(RNG_ESP_NVS)
+    // Do we have a seed saved in ESP non-volatile storage (NVS)?
+    nvs_handle handle = 0;
+    if (nvs_open("rng", NVS_READONLY, &handle) == 0) {
+        size_t len = 0;
+        if (nvs_get_blob(handle, "seed", NULL, &len) == 0 && len == SEED_SIZE) {
+            uint32_t seed[12];
+            if (nvs_get_blob(handle, "seed", seed, &len) == 0) {
+                for (int posn = 0; posn < 12; ++posn)
+                    block[posn + 4] ^= seed[posn];
+            }
+            clean(seed);
         }
-        if (counter >= 200)
-            break;
-        block[posn + 4] ^= REG_TRNG_ODATA;
+        nvs_close(handle);
     }
+#endif
+#if defined(RNG_WORD_TRNG)
+    // Mix in some output from a word-based TRNG to initialize the state.
+    mixTRNG();
 #endif
 
     // No entropy credits for the saved seed.
@@ -420,6 +456,17 @@ void RNGClass::begin(const char *tag)
     // Stir in the unique identifier for the CPU so that different
     // devices will give different outputs even without seeding.
     stirUniqueIdentifier();
+#elif defined(ESP8266)
+    // ESP8266's have a 32-bit CPU chip ID and 32-bit flash chip ID
+    // that we can use as a device unique identifier.
+    uint32_t ids[2];
+    ids[0] = ESP.getChipId();
+    ids[1] = ESP.getFlashChipId();
+    stir((const uint8_t *)ids, sizeof(ids));
+#elif defined(ESP32)
+    // ESP32's have a MAC address that can be used as a device identifier.
+    uint64_t mac = ESP.getEfuseMac();
+    stir((const uint8_t *)&mac, sizeof(mac));
 #else
     // AVR devices don't have anything like a serial number so it is
     // difficult to make every device unique.  Use the compilation
@@ -450,6 +497,9 @@ void RNGClass::begin(const char *tag)
     // that if the system is reset without a call to save() that we won't
     // accidentally generate the same sequence of random data again.
     save();
+
+    // The RNG has now been initialized.
+    initialized = 1;
 }
 
 /**
@@ -515,11 +565,28 @@ void RNGClass::setAutoSaveTime(uint16_t minutes)
  */
 void RNGClass::rand(uint8_t *data, size_t len)
 {
+    // Make sure that the RNG is initialized in case the application
+    // forgot to call RNG.begin() at startup time.
+    if (!initialized)
+        begin(0);
+
     // Decrease the amount of entropy in the pool.
-    if (len > (credits / 8))
+    if (len > (credits / 8u))
         credits = 0;
     else
         credits -= len * 8;
+
+    // If we have pending TRNG data from the loop() function,
+    // then force a stir on the state.  Otherwise mix in some
+    // fresh data from the TRNG because it is possible that
+    // the application forgot to call RNG.loop().
+    if (trngPending) {
+        stir(0, 0, 0);
+        trngPending = 0;
+        trngPosn = 0;
+    } else {
+        mixTRNG();
+    }
 
     // Generate the random data.
     uint8_t count = 0;
@@ -595,7 +662,7 @@ bool RNGClass::available(size_t len) const
     if (len >= (RNG_MAX_CREDITS / 8))
         return credits >= RNG_MAX_CREDITS;
     else
-        return len <= (credits / 8);
+        return len <= (credits / 8u);
 }
 
 /**
@@ -714,6 +781,15 @@ void RNGClass::save()
     for (posn = 13; posn < (RNG_FLASH_PAGE_SIZE / 4); ++posn)
         ((uint32_t *)(RNG_SEED_ADDR))[posn + 13] = 0xFFFFFFFF;
     eraseAndWriteSeed();
+#elif defined(RNG_ESP_NVS)
+    // Save the seed into ESP non-volatile storage (NVS).
+    nvs_handle handle = 0;
+    if (nvs_open("rng", NVS_READWRITE, &handle) == 0) {
+        nvs_erase_all(handle);
+        nvs_set_blob(handle, "seed", stream, SEED_SIZE);
+        nvs_commit(handle);
+        nvs_close(handle);
+    }
 #endif
     rekey();
     timer = millis();
@@ -761,7 +837,20 @@ void RNGClass::loop()
             // up more data before passing it to the application.
             ++credits;
         }
+        trngPending = 1;
     }
+#elif defined(RNG_WORD_TRNG)
+    // Read a word from the TRNG and XOR it into the state.
+    block[4 + trngPosn] ^= RNG_WORD_TRNG_GET();
+    if (++trngPosn >= 12)
+        trngPosn = 0;
+    if (credits < RNG_MAX_CREDITS) {
+        // Credit 1 bit of entropy for the word.  The TRNG should be
+        // better than this but it is so fast that we want to collect
+        // up more data before passing it to the application.
+        ++credits;
+    }
+    trngPending = 1;
 #elif defined(RNG_WATCHDOG)
     // Read the 32 bit buffer from the WDT interrupt.
     cli();
@@ -777,15 +866,21 @@ void RNGClass::loop()
         value ^= rightShift11(value);
         value += leftShift15(value);
 
+        // Credit 1 bit of entropy for each byte of input.  It can take
+        // between 30 and 40 seconds to accumulate 256 bits of credit.
+        credits += 4;
+        if (credits > RNG_MAX_CREDITS)
+            credits = RNG_MAX_CREDITS;
+
         // XOR the word with the state.  Stir once we accumulate 48 bytes,
         // which happens about once every 6.4 seconds.
         block[4 + trngPosn] ^= value;
         if (++trngPosn >= 12) {
             trngPosn = 0;
-
-            // Credit 1 bit of entropy for each byte of input.  It can take
-            // between 30 and 40 seconds to accumulate 256 bits of credit.
-            stir(0, 0, 48);
+            trngPending = 0;
+            stir(0, 0, 0);
+        } else {
+            trngPending = 1;
         }
     } else {
         sei();
@@ -828,7 +923,15 @@ void RNGClass::destroy()
     for (unsigned posn = 0; posn < (RNG_FLASH_PAGE_SIZE / 4); ++posn)
         ((uint32_t *)(RNG_SEED_ADDR))[posn] = 0xFFFFFFFF;
     eraseAndWriteSeed();
+#elif defined(RNG_ESP_NVS)
+    nvs_handle handle = 0;
+    if (nvs_open("rng", NVS_READWRITE, &handle) == 0) {
+        nvs_erase_all(handle);
+        nvs_commit(handle);
+        nvs_close(handle);
+    }
 #endif
+    initialized = 0;
 }
 
 /**
@@ -850,4 +953,52 @@ void RNGClass::rekey()
     // then this may not help very much.  It is still necessary to stir in
     // high quality entropy data on a regular basis using stir().
     block[13] ^= micros();
+}
+
+/**
+ * \brief Mix in fresh data from the TRNG when rand() is called.
+ */
+void RNGClass::mixTRNG()
+{
+#if defined(RNG_DUE_TRNG)
+    // Mix in 12 words from the Due's TRNG.
+    for (int posn = 0; posn < 12; ++posn) {
+        // According to the documentation the TRNG should produce a new
+        // 32-bit random value every 84 clock cycles.  If it still hasn't
+        // produced a value after 200 iterations, then assume that the
+        // TRNG is not producing output and stop.
+        int counter;
+        for (counter = 0; counter < 200; ++counter) {
+            if ((REG_TRNG_ISR & TRNG_ISR_DATRDY) != 0)
+                break;
+        }
+        if (counter >= 200)
+            break;
+        block[posn + 4] ^= REG_TRNG_ODATA;
+    }
+#elif defined(RNG_WORD_TRNG)
+    // Read 12 words from the TRNG and XOR them into the state.
+    for (uint8_t index = 4; index < 16; ++index)
+        block[index] ^= RNG_WORD_TRNG_GET();
+#elif defined(RNG_WATCHDOG)
+    // Read the pending 32 bit buffer from the WDT interrupt and mix it in.
+    cli();
+    if (outBits >= 32) {
+        uint32_t value = hash;
+        hash = 0;
+        outBits = 0;
+        sei();
+
+        // Final steps of the Jenkin's one-at-a-time hash function.
+        // https://en.wikipedia.org/wiki/Jenkins_hash_function
+        value += leftShift3(value);
+        value ^= rightShift11(value);
+        value += leftShift15(value);
+
+        // XOR the word with the state.
+        block[4] ^= value;
+    } else {
+        sei();
+    }
+#endif
 }

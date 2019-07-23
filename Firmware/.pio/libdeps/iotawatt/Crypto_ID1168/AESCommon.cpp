@@ -24,6 +24,8 @@
 #include "Crypto.h"
 #include "utility/ProgMemUtil.h"
 
+#if defined(CRYPTO_AES_DEFAULT) || defined(CRYPTO_DOC)
+
 /**
  * \class AESCommon AES.h <AES.h>
  * \brief Abstract base class for AES block ciphers.
@@ -43,7 +45,7 @@
  * \sa ChaCha, AES128, AES192, AES256
  */
 
-/** @cond */
+/** @cond sbox */
 
 // AES S-box (http://en.wikipedia.org/wiki/Rijndael_S-box)
 static uint8_t const sbox[256] PROGMEM = {
@@ -179,7 +181,9 @@ static uint8_t const K[8] = {
 #define OUT(col, row)   output[(col) * 4 + (row)]
 #define IN(col, row)    input[(col) * 4 + (row)]
 
-static void subBytesAndShiftRows(uint8_t *output, const uint8_t *input)
+/** @cond aes_funcs */
+
+void AESCommon::subBytesAndShiftRows(uint8_t *output, const uint8_t *input)
 {
     OUT(0, 0) = pgm_read_byte(sbox + IN(0, 0));
     OUT(0, 1) = pgm_read_byte(sbox + IN(1, 1));
@@ -199,7 +203,7 @@ static void subBytesAndShiftRows(uint8_t *output, const uint8_t *input)
     OUT(3, 3) = pgm_read_byte(sbox + IN(2, 3));
 }
 
-static void inverseShiftRowsAndSubBytes(uint8_t *output, const uint8_t *input)
+void AESCommon::inverseShiftRowsAndSubBytes(uint8_t *output, const uint8_t *input)
 {
     OUT(0, 0) = pgm_read_byte(sbox_inverse + IN(0, 0));
     OUT(0, 1) = pgm_read_byte(sbox_inverse + IN(3, 1));
@@ -219,7 +223,7 @@ static void inverseShiftRowsAndSubBytes(uint8_t *output, const uint8_t *input)
     OUT(3, 3) = pgm_read_byte(sbox_inverse + IN(0, 3));
 }
 
-static void mixColumn(uint8_t *output, uint8_t *input)
+void AESCommon::mixColumn(uint8_t *output, uint8_t *input)
 {
     uint16_t t; // Needed by the gmul2 macro.
     uint8_t a = input[0];
@@ -236,7 +240,7 @@ static void mixColumn(uint8_t *output, uint8_t *input)
     output[3] = a2 ^ a ^ b ^ c ^ d2;
 }
 
-static void inverseMixColumn(uint8_t *output, const uint8_t *input)
+void AESCommon::inverseMixColumn(uint8_t *output, const uint8_t *input)
 {
     uint16_t t; // Needed by the gmul2, gmul4, and gmul8 macros.
     uint8_t a = input[0];
@@ -260,6 +264,8 @@ static void inverseMixColumn(uint8_t *output, const uint8_t *input)
     output[2] = a8 ^ a4 ^ a ^ b8 ^ b ^ c8 ^ c4 ^ c2 ^ d8 ^ d2 ^ d;
     output[3] = a8 ^ a2 ^ a ^ b8 ^ b4 ^ b ^ c8 ^ c ^ d8 ^ d4 ^ d2;
 }
+
+/** @endcond */
 
 void AESCommon::encryptBlock(uint8_t *output, const uint8_t *input)
 {
@@ -328,7 +334,7 @@ void AESCommon::clear()
     clean(schedule, (rounds + 1) * 16);
 }
 
-/** @cond */
+/** @cond aes_keycore */
 
 void AESCommon::keyScheduleCore(uint8_t *output, const uint8_t *input, uint8_t iteration)
 {
@@ -353,3 +359,5 @@ void AESCommon::applySbox(uint8_t *output, const uint8_t *input)
 }
 
 /** @endcond */
+
+#endif // CRYPTO_AES_DEFAULT

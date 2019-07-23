@@ -397,20 +397,25 @@ uint32_t PVoutput::tickUploadStatus(){
             // Add the collected data to the status
 
     trace(T_PVoutput,88);
+    reqData.print(",");
+    if(energyGeneration >= 0){
+        reqData.printf("%.0f", energyGeneration);
+    }
+    reqData.print(",");
     if(powerGeneration >= 0){
-        reqData.printf(",%.0f,%.0f", energyGeneration, powerGeneration);
-    } else {
-        reqData.print(",,");
+        reqData.printf("%.0f", powerGeneration);
     }
+    reqData.print(",");
+    if(energyConsumption >= 0){
+        reqData.printf("%.0f", energyConsumption);
+    }
+    reqData.print(",");
     if(powerConsumption >= 0){
-        reqData.printf(",%.0f,%.0f", energyConsumption, powerConsumption);
-    } else {
-        reqData.print(",,");
+        reqData.printf("%.0f", powerConsumption);
     }
+    reqData.print(",,");
     if(voltage >= 0){
-        reqData.printf(",,%.1f", voltage);
-    } else {
-        reqData.print(",,");
+        reqData.printf("%.1f", voltage);
     }
     if(_donator && lastExtended >= 0){
         for(int ndx=0; ndx<=lastExtended; ndx++){

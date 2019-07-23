@@ -3,3 +3,4 @@
 .clang_complete
 .gcc-flags.json
 .vscode
+.pio

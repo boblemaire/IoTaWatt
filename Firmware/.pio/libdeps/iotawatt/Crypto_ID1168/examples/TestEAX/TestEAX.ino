@@ -25,12 +25,17 @@ This example runs tests on the EAX implementation to verify correct behaviour.
 */
 
 #include <Crypto.h>
+#include <CryptoLW.h>
 #include <EAX.h>
 #include <AES.h>
 #include <Speck.h>
 #include <SpeckTiny.h>
 #include <string.h>
+#if defined(ESP8266) || defined(ESP32)
+#include <pgmspace.h>
+#else
 #include <avr/pgmspace.h>
+#endif
 
 #define MAX_PLAINTEXT_LEN 64
 
@@ -244,6 +249,8 @@ bool testCipher_N(AuthenticatedCipher *cipher, const struct TestVector *test, si
     size_t posn, len;
     uint8_t tag[16];
 
+    crypto_feed_watchdog();
+
     cipher->clear();
     if (!cipher->setKey(test->key, 16)) {
         Serial.print("setKey ");
@@ -344,6 +351,8 @@ void perfCipherSetKey(AuthenticatedCipher *cipher, const struct TestVector *test
     unsigned long elapsed;
     int count;
 
+    crypto_feed_watchdog();
+
     memcpy_P(&testVector, test, sizeof(TestVector));
     test = &testVector;
 
@@ -370,6 +379,8 @@ void perfCipherEncrypt(AuthenticatedCipher *cipher, const struct TestVector *tes
     unsigned long start;
     unsigned long elapsed;
     int count;
+
+    crypto_feed_watchdog();
 
     memcpy_P(&testVector, test, sizeof(TestVector));
     test = &testVector;
@@ -399,6 +410,8 @@ void perfCipherDecrypt(AuthenticatedCipher *cipher, const struct TestVector *tes
     unsigned long elapsed;
     int count;
 
+    crypto_feed_watchdog();
+
     memcpy_P(&testVector, test, sizeof(TestVector));
     test = &testVector;
 
@@ -426,6 +439,8 @@ void perfCipherAddAuthData(AuthenticatedCipher *cipher, const struct TestVector 
     unsigned long start;
     unsigned long elapsed;
     int count;
+
+    crypto_feed_watchdog();
 
     memcpy_P(&testVector, test, sizeof(TestVector));
     test = &testVector;
@@ -455,6 +470,8 @@ void perfCipherComputeTag(AuthenticatedCipher *cipher, const struct TestVector *
     unsigned long start;
     unsigned long elapsed;
     int count;
+
+    crypto_feed_watchdog();
 
     memcpy_P(&testVector, test, sizeof(TestVector));
     test = &testVector;
@@ -524,7 +541,7 @@ void setup()
     Serial.println();
     delete eax;
     eax256 = new EAX<AES256>();
-    perfCipher(eax, &testVectorEAX1, "AES-256");
+    perfCipher(eax256, &testVectorEAX1, "AES-256");
     Serial.println();
     delete eax256;
     eaxSpeck = new EAX<Speck>();

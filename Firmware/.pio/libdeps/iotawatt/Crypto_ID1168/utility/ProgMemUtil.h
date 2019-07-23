@@ -31,7 +31,7 @@
         ((uint64_t)pgm_read_dword(_temp)) | \
         (((uint64_t)pgm_read_dword(_temp + 1)) << 32); \
     }))
-#elif defined(ESP8266)
+#elif defined(ESP8266) || defined(ESP32)
 #include <pgmspace.h>
 #define pgm_read_qword(x)   \
     (__extension__ ({ \

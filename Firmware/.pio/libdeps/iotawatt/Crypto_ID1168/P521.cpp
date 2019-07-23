@@ -965,6 +965,7 @@ void P521::mul(limb_t *result, const limb_t *x, const limb_t *y)
     mulNoReduce(temp, x, y);
     reduce(result, temp);
     strict_clean(temp);
+    crypto_feed_watchdog();
 }
 
 /**
