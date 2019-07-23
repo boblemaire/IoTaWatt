@@ -246,7 +246,7 @@ extern boolean  serverAvailable;          // Set false when asynchronous handler
 extern boolean  wifiConnected;
 extern uint8_t  configSHA256[32];         // Hash of config file
 
-#define HTTPrequestMax 1                  // Maximum number of concurrent HTTP requests  
+#define HTTPrequestMax 2                  // Maximum number of concurrent HTTP requests  
 extern int16_t  HTTPrequestFree;          // Request semaphore
 extern uint32_t HTTPrequestStart[HTTPrequestMax]; // request start time tokens
 extern uint16_t HTTPrequestId[HTTPrequestMax];    // Module ID of requestor
