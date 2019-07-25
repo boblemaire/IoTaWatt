@@ -19,6 +19,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.   
 ***********************************************************************************/
 #define IOTAWATT_VERSION "02_04_01"
+#define DEVICE_NAME "IotaWatt"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -272,7 +273,8 @@ extern uint32_t updaterServiceInterval;        // Interval (sec) to check for so
 
 extern bool     hasRTC;
 extern bool     RTCrunning;
-extern bool     powerFailRestart;               // Set true on power fail restart (detected by RTC)  
+extern bool     powerFailRestart;               // Set true on power fail restart (detected by RTC)
+extern bool     validConfig;                    // Config exists and Json parses first level     
 extern bool     RTClowBat;                      // Set true when battery is low
 extern bool     sampling;                       // All channels have been sampled  
 

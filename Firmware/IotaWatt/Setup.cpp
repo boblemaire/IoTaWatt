@@ -172,10 +172,9 @@ if(spiffsBegin()){
 }
 
 //************************************* Process Config file *****************************************
-  if(!getConfig()) {
-    log("Configuration failed");
-    dropDead();
-  }
+  deviceName = charstar(F(DEVICE_NAME));
+  updateClass = charstar(F("NONE"));
+  validConfig = getConfig();
   log("Local time zone: %+d:%02d", (int)localTimeDiff/60, (int)localTimeDiff%60);
   if(timezoneRule){
     log("Using Daylight Saving Time (BST) when in effect.");
@@ -249,6 +248,10 @@ if(spiffsBegin()){
   NewService(updater, T_UPDATE);
   NewService(dataLog, T_datalog);
   NewService(historyLog, T_history);
+
+  if(! validConfig){
+    setLedCycle(LED_BAD_CONFIG);
+  }
   
 }  // setup()
 /***************************************** End of Setup **********************************************/
@@ -286,9 +289,11 @@ void ledBlink(){
 }
 
 void setLedState(){
-  digitalWrite(greenLed, HIGH);
-  digitalWrite(redLed, LOW);
-  if( !RTCrunning || WiFi.status() != WL_CONNECTED){
-    digitalWrite(redLed, HIGH);
+  if(validConfig){
+    digitalWrite(greenLed, HIGH);
+    digitalWrite(redLed, LOW);
+    if( !RTCrunning || WiFi.status() != WL_CONNECTED){
+      digitalWrite(redLed, HIGH);
+    }
   }
 }

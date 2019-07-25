@@ -42,7 +42,7 @@ boolean getConfig(void){
   ConfigFile = SD.open(ConfigFileURL, FILE_READ);
   if(!ConfigFile) {
     log("Config file open failed.");
-    dropDead(LED_NO_CONFIG);
+    return false;
   }
   hashFile(configSHA256, ConfigFile);
   String configSummary = JsonSummary(ConfigFile, 1);
@@ -50,7 +50,7 @@ boolean getConfig(void){
   trace(T_CONFIG,4);
   if (!Config.success()) {
     log("Config file parse failed.");
-    dropDead(LED_BAD_CONFIG);
+    return false;
   }
   
   //************************************** Process misc first level stuff **************************
@@ -125,98 +125,107 @@ boolean getConfig(void){
     
 
         // ************************************ configure output channels *************************
-  trace(T_CONFIG,8);
-  delete outputs;
-  JsonArray& outputsArray = Config["outputs"];
-  if(outputsArray.success()){
-    char* outputsStr = JsonDetail(ConfigFile, outputsArray);
+
+  {      
+    trace(T_CONFIG,8);
+    delete outputs;
+    outputs = nullptr;
+    JsonArray& outputsArray = Config["outputs"];
+    char* outputsStr;
+    if(outputsArray.success()){
+      outputsStr = JsonDetail(ConfigFile, outputsArray);
+    } else {
+      outputsStr = charstar("[]");
+    }
     configOutputs(outputsStr);
     delete[] outputsStr;
-  }   
+  }
+
          // ************************************** configure Emoncms **********************************
 
-  trace(T_CONFIG,9);
-  char* EmonStr = nullptr;
-  JsonArray& EmonArray = Config["emoncms"];
-  if(EmonArray.success()){
-    EmonStr = JsonDetail(ConfigFile, EmonArray);
-  } else // Accept old format ~ 02_03_17
-  {      
-    JsonArray& serverArray = Config["server"];
-    if(serverArray.success()){
-      EmonStr = JsonDetail(ConfigFile, serverArray);
+  {
+    trace(T_CONFIG,9);
+    char* EmonStr = nullptr;
+    JsonArray& EmonArray = Config["emoncms"];
+    if(EmonArray.success()){
+      EmonStr = JsonDetail(ConfigFile, EmonArray);
+    } else // Accept old format ~ 02_03_17
+    {      
+      JsonArray& serverArray = Config["server"];
+      if(serverArray.success()){
+        EmonStr = JsonDetail(ConfigFile, serverArray);
+      }
     }
-  }
-  if(EmonStr){
-    if( ! EmonConfig(EmonStr)){
-      log("EmonService: Invalid configuration.");
+    if(EmonStr){
+      if( ! EmonConfig(EmonStr)){
+        log("EmonService: Invalid configuration.");
+      }
+      delete[] EmonStr;
+    }   
+    else {
+      EmonStop = true;
     }
-    delete[] EmonStr;
-  }   
-  else {
-    EmonStop = true;
   }
 
         // ************************************** configure influxDB **********************************
 
-  trace(T_CONFIG,10);
-  JsonArray& influxArray = Config[F("influxdb")];
-  if(influxArray.success()){
-    char* influxStr = JsonDetail(ConfigFile, influxArray);
-    if( ! influxConfig(influxStr)){
-      log("influxService: Invalid configuration.");
+  {
+    trace(T_CONFIG,10);
+    JsonArray& influxArray = Config[F("influxdb")];
+    if(influxArray.success()){
+      char* influxStr = JsonDetail(ConfigFile, influxArray);
+      if( ! influxConfig(influxStr)){
+        log("influxService: Invalid configuration.");
+      }
+      delete[] influxStr;
+    }   
+    else {
+      influxStop = true;
     }
-    delete[] influxStr;
-  }   
-  else {
-    influxStop = true;
   }
-  
       // ************************************** configure PVoutput **********************************
 
-  trace(T_CONFIG,11);
-  JsonArray& PVoutputArray = Config[F("pvoutput")];
-  if(PVoutputArray.success()){
-    char* PVoutputStr = JsonDetail(ConfigFile, PVoutputArray);
-    if(! pvoutput){
-      pvoutput = new PVoutput();
-    }
-    if( ! pvoutput->config(PVoutputStr)){
-      log("PVoutput: Invalid configuration."); 
+  {
+    trace(T_CONFIG,11);
+    JsonArray& PVoutputArray = Config[F("pvoutput")];
+    if(PVoutputArray.success()){
+      char* PVoutputStr = JsonDetail(ConfigFile, PVoutputArray);
+      if(! pvoutput){
+        pvoutput = new PVoutput();
+      }
+      if( ! pvoutput->config(PVoutputStr)){
+        log("PVoutput: Invalid configuration."); 
+      } 
+      delete[] PVoutputStr;
+    }   
+    else if(pvoutput){
+      pvoutput->end();
     } 
-    delete[] PVoutputStr;
-  }   
-  else if(pvoutput){
-    pvoutput->end();
-  } 
-  
-  ConfigFile.close();
-  trace(T_CONFIG,12);
-  return true;
-
+    
+    ConfigFile.close();
+    trace(T_CONFIG,12);
+    return true;
+  }
 }                                       // End of getConfig
 
 
 //************************************** configDevice() ********************************************
 bool configDevice(const char* JsonStr){
-  DynamicJsonBuffer Json;
-  JsonObject& device = Json.parseObject(JsonStr);
-  if( ! device.success()){
-    log("device: Json parse failed");
-  }
-  delete[] deviceName;
-  if(device.containsKey(F("name"))){
-    deviceName = charstar(device[F("name")].as<char*>());
-  }
-  else {
-    deviceName = charstar(F("IotaWatt"));
-  }
 
   hasRTC = true;
   VrefVolts = 2.5;
   ADC_selectPin[0] = pin_CS_ADC0;
   ADC_selectPin[1] = pin_CS_ADC1;
-  int channels = 15;
+
+  int channels = 15; DynamicJsonBuffer Json;
+  JsonObject& device = Json.parseObject(JsonStr);
+  if( ! device.success()){
+    log("device: Json parse failed");
+  }
+  if(device.containsKey(F("name"))){
+    delete[] deviceName;
+    deviceName = charstar(device[F("name")].as<char*>());
+  }
       
   if(device.containsKey(F("refvolts"))){
     VrefVolts = device[F("refvolts")].as<float>();

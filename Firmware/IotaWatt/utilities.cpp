@@ -150,8 +150,8 @@ String  JsonSummary(File file, int depth){
     bool    escape = false;
     int     varBeg = 0;
     int     varLen = 0;
-    String  JsonOut;
-
+    xbuf    JsonOut;
+    
     while(file.available()){
         _char = file.read();
         if(escape){
@@ -192,17 +192,14 @@ String  JsonSummary(File file, int depth){
             else if(_char == delim[level]){
                 level--;
                 if(level == depth - 1){
-                    JsonOut += '[';
-                    JsonOut += String(varBeg);
-                    JsonOut += ',';
-                    JsonOut += String(varLen+1);
+                    JsonOut.printf_P(PSTR("[%d,%d"), varBeg, varLen+1);
                     _char = ']';
                 }
             }
         }
-        if(level < depth) JsonOut += _char;
+        if(level < depth) JsonOut.print(_char);
     }
-    return JsonOut;
+    return JsonOut.readString();
 }
 
 char*  JsonDetail(File file, JsonArray& locator){

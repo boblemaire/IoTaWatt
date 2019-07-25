@@ -201,6 +201,13 @@
     margin: auto;
   }
   
+  #panicMessageDiv{
+    width: 100%;
+    border: 2px solid;
+    padding: 1px 4px 1px 4px;
+    margin: auto;
+  }
+  
   #configMenu{
     width: 100%;
   }
