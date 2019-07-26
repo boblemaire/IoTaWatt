@@ -5,7 +5,7 @@
  * 
  * The log records contain 2 double precision value*hours accumulators for each channel.
  * Currently the two are Volt*Hrs / hz.Hrs for VT channels and
- * Watt*Hrs / Irms*Hrs for CT channels.
+ * Watt*Hrs / VA*Hrs for CT channels.
  * 
  * Given any two log records, the average volts, hz, watts or Irms for the period between them
  * can be determined, in addition to the basic metric like WattHrs.  Power factor (average) can 
@@ -74,7 +74,11 @@
         log("dataLog: Last log entry %s", datef(UTC2Local(currLog.lastKey())).c_str());
       }
 
+      // If not at current log interval, return until then.  
+
       state = checkClock;
+      uint32_t syncDelay = UTCtime() % currLog.interval();
+      if(syncDelay) return syncDelay;
 
       // Fall through to checkClock
 
@@ -187,24 +191,20 @@
 
 uint32_t logReadKey(IotaLogRecord* callerRecord) {
   uint32_t key = callerRecord->UNIXtime;
-  if( ! histLog.isOpen() || key < histLog.firstKey()){
+  if( ! histLog.isOpen()){
     return currLog.readKey(callerRecord);
   }
   if(key % histLog.interval()){               // not multiple of histLog interval
-    if(key >= currLog.firstKey()){            // in iotaLog
+    if(key >= currLog.firstKey() || key < histLog.firstKey()){   // in iotaLog
       return currLog.readKey(callerRecord);
     }
-    if(key <= histLog.lastKey()){             // in histLog
-      return histLog.readKey(callerRecord);
-    }
+    return histLog.readKey(callerRecord);     // in histLog
   }
   else {                                      // multiple of histLog interval
-    if(key <= histLog.lastKey()){             // in histLog
+    if(key >= histLog.firstKey() && key <= histLog.lastKey()){   // in histLog
       return histLog.readKey(callerRecord);
     }
-    if(key >= currLog.firstKey()){            // in IotaLog
-      return currLog.readKey(callerRecord);
-    }
+    return currLog.readKey(callerRecord);     // in IotaLog
   }
   callerRecord->UNIXtime = histLog.lastKey(); // between the two logs (rare)
   histLog.readKey(callerRecord);
