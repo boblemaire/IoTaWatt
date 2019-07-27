@@ -19,6 +19,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   static uint32_t lastVersionCheck = 0;
   static uint32_t HTTPtoken = 0;
 
+  trace(T_UPDATE,0); 
   if( ! WiFi.isConnected()){
     return UTCtime() + 1;
   }
@@ -26,6 +27,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   switch(state){
 
     case initialize: {
+      trace(T_UPDATE,1); 
       log("Updater: service started. Auto-update class is %s", updateClass);
       _updateClass = charstar(updateClass);
       state = checkAutoUpdate;
@@ -33,6 +35,10 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
 
     case checkAutoUpdate: {
+      trace(T_UPDATE,2); 
+      if( ! updateClass){
+        updateClass = charstar("NONE");
+      }
       if(strcmp(updateClass, _updateClass) != 0){
         delete[] _updateClass;
         _updateClass = charstar(updateClass);
@@ -53,6 +59,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
 
     case getVersion: {
+      trace(T_UPDATE,3); 
       if( ! WiFi.isConnected()){
         return UTCtime() + 1;
       }
@@ -84,6 +91,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
 
     case waitVersion: {
+      trace(T_UPDATE,4); 
       if(request->readyState() != 4){
         return UTCtime() + 1;
       }
@@ -121,6 +129,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
 
     case createFile: {
+      trace(T_UPDATE,5); 
       log("Updater: download %s", updateVersion.c_str());
       deleteRecursive("download");
       if( ! SD.mkdir("download")){
@@ -140,7 +149,8 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       return 1;
     }
       
-    case download: {  
+    case download: {
+      trace(T_UPDATE,6);   
       if( ! WiFi.isConnected()){
         return UTCtime() + 1;
       }
@@ -195,6 +205,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
 
     case install: {
+      trace(T_UPDATE,7); 
       if(unpackUpdate(updateVersion)){
         if(installUpdate(updateVersion)){
           log ("Firmware updated, restarting.");

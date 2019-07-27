@@ -237,6 +237,7 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
               operand = sqrt(VA*VA - W*W);
             }
             else if(type == 'A'){
+              if(*token % 32 >= maxInputs) return 0.0;
               double VA = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0)) / elapsedHours;
               int vchannel = inputChannel[*token % 32]->_vchannel;
               operand = ((newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0.0)) / elapsedHours);
@@ -248,6 +249,7 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
               }
             }
             else if(type == 'H'){
+              if(*token % 32 >= maxInputs) return 0.0;
               int vchannel = inputChannel[*token % 32]->_vchannel;
               operand = (newRec->accum2[vchannel] - (oldRec ? oldRec->accum2[vchannel] : 0.0)) / elapsedHours;
             }

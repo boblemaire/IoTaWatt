@@ -533,21 +533,24 @@ void handleStatus(){
       root["inputs"] = channelArray;
     }
 
-    if(server.hasArg(F("outputs"))){
-      trace(T_WEB,16);
-      JsonArray& outputArray = jsonBuffer.createArray();
-      Script* script = outputs->first();
-      while(script){
-        JsonObject& channelObject = jsonBuffer.createObject();
-        channelObject.set(F("name"),script->name());
-        channelObject.set(F("units"),script->getUnits());
-        double value = script->run((IotaLogRecord*)nullptr, &statRecord, 1.0);
-        channelObject.set(F("value"),value);
-        outputArray.add(channelObject);
-        script = script->next();
-      }
-      root["outputs"] = outputArray;
+  if(server.hasArg(F("outputs"))){
+    trace(T_WEB,16);
+    JsonArray& outputArray = jsonBuffer.createArray();
+    Script* script = outputs->first();
+    while(script){
+      trace(T_WEB,16,1);
+      JsonObject& channelObject = jsonBuffer.createObject();
+      channelObject.set(F("name"),script->name());
+      channelObject.set(F("units"),script->getUnits());
+      double value = script->run((IotaLogRecord*)nullptr, &statRecord, 1.0);
+      channelObject.set(F("value"),value);
+      outputArray.add(channelObject);
+      script = script->next();
     }
+    trace(T_WEB,16,2);
+    root["outputs"] = outputArray;
+  }
+
 
     if(server.hasArg(F("influx"))){
       trace(T_WEB,17);
@@ -729,7 +732,9 @@ void handleGetFeedList(){
         }
       }
     }
-    trace(T_WEB,18);
+  }
+  trace(T_WEB,18);
+  if(outputs){
     Script* script = outputs->first();
     int outndx = 100;
     while(script){
@@ -764,8 +769,9 @@ void handleGetFeedList(){
       }
       script = script->next();
     }
-    array.printTo(response);
+    
   }
+  array.printTo(response);
   server.send(200, appJson_P,response);
 }
 
@@ -805,7 +811,7 @@ void handleGetConfig(){
       ESP.restart();
     }
     else if(server.arg(F("update")) == "reload"){
-      getConfig(); 
+      validConfig = getConfig();
       server.send(200, txtPlain_P, "OK");
       return;  
     }

@@ -15,7 +15,7 @@ void loop()
 
   // ------- If AC zero crossing approaching, go sample a channel.
   static int lastChannel = 0;
-  if((uint32_t)(millis() - lastCrossMs) >= (430 / int(frequency))){
+  if(maxInputs && (uint32_t)(millis() - lastCrossMs) >= (430 / int(frequency))){
     trace(T_LOOP,1,lastChannel);
     int nextChannel = (lastChannel + 1) % maxInputs;
     while( (! inputChannel[nextChannel]->isActive()) && nextChannel != lastChannel){

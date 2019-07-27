@@ -134,8 +134,8 @@ uint32_t nextCrossMs = 0;             // Time just before next zero crossing (ms
       // Various queues and lists of resources.
 
 serviceBlock* serviceQueue;           // Head of active services list in order of dispatch time.       
-IotaInputChannel* *inputChannel;      // -->s to incidences of input channels (maxInputs entries) 
-uint8_t maxInputs = 0;                        // channel limit based on configured hardware (set in Config)      
+IotaInputChannel* *inputChannel = nullptr; // -->s to incidences of input channels (maxInputs entries) 
+uint8_t maxInputs = 0;                // channel limit based on configured hardware (set in Config)      
 ScriptSet* outputs;                   // -> scriptSet for output channels
 
 uint8_t  deviceMajorVersion = 4;      // Default to 4.8
@@ -197,6 +197,7 @@ uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for soft
 bool     hasRTC = false;
 bool     RTCrunning = false;
 bool     powerFailRestart = false;
+bool     validConfig = false;                // Config exists and Json parses first level
 bool     RTClowBat = false;                  // RTC Battery is low
 bool     sampling = false;                   // All channels have been sampled     
 
