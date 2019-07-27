@@ -150,7 +150,8 @@ private:
                         RATE_LIMIT,
                         NO_STATUS,
                         MOON_POWERED,
-                        HTTP_FAILURE
+                        HTTP_FAILURE,
+                        UNRECOGNIZED
                     } _HTTPresponse;
 
         // Parameters supplied to HTTPost                

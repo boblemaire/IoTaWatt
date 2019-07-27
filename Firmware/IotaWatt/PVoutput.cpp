@@ -134,7 +134,8 @@ uint32_t PVoutput::tickCheckSystemService(){
     switch (_HTTPresponse) {
         default:{
             log("PVoutput: Unrecognized HTTP completion, getSystemService %.40s", response->peek(40).c_str());
-            return 0;
+            _state = getSystemService;
+            return UTCtime() + 3600;
         }
         case OK: {
             trace(T_PVoutput,30);
@@ -168,7 +169,8 @@ uint32_t PVoutput::tickGotStatus(){
     switch (_HTTPresponse) {
         default: {
             log("PVoutput: Unrecognized HTTP completion, gotStatus %.40s", response->peek(40).c_str());
-            return 0;
+            _state = getSystemService;
+            return UTCtime() + 3600;
         }
         case LOAD_IN_PROGRESS:
         case RATE_LIMIT:
@@ -397,25 +399,20 @@ uint32_t PVoutput::tickUploadStatus(){
             // Add the collected data to the status
 
     trace(T_PVoutput,88);
-    reqData.print(",");
-    if(energyGeneration >= 0){
-        reqData.printf("%.0f", energyGeneration);
-    }
-    reqData.print(",");
     if(powerGeneration >= 0){
-        reqData.printf("%.0f", powerGeneration);
+        reqData.printf(",%.0f,%.0f", energyGeneration, powerGeneration);
+    } else {
+        reqData.print(",,");
     }
-    reqData.print(",");
-    if(energyConsumption >= 0){
-        reqData.printf("%.0f", energyConsumption);
-    }
-    reqData.print(",");
     if(powerConsumption >= 0){
-        reqData.printf("%.0f", powerConsumption);
+        reqData.printf(",%.0f,%.0f", energyConsumption, powerConsumption);
+    } else {
+        reqData.print(",,");
     }
-    reqData.print(",,");
     if(voltage >= 0){
-        reqData.printf("%.1f", voltage);
+        reqData.printf(",,%.1f", voltage);
+    } else {
+        reqData.print(",,");
     }
     if(_donator && lastExtended >= 0){
         for(int ndx=0; ndx<=lastExtended; ndx++){
@@ -437,8 +434,9 @@ uint32_t PVoutput::tickCheckUploadStatus(){
     trace(T_PVoutput,90);
     switch (_HTTPresponse) {
         default:{
-            log("PVoutput: Unrecognized HTTP completion, uploadMissing %.40s", response->peek(40).c_str());
-            return 0;
+            log("PVoutput: Unrecognized HTTP completion, upload %.40s", response->peek(40).c_str());
+            _state = getSystemService;
+            return UTCtime() + 3600;
         }
         case DATE_TOO_OLD:
         case DATE_IN_FUTURE:
@@ -567,7 +565,7 @@ uint32_t PVoutput::tickHTTPWait(){
     trace(T_PVoutput,120);
     if(request->responseHTTPcode() < 0){
         _HTTPresponse = HTTP_FAILURE;
-        return UTCtime() + 1;
+        return UTCtime() + 3;
     }
     trace(T_PVoutput,122);
 
@@ -617,11 +615,11 @@ uint32_t PVoutput::tickHTTPWait(){
         }
     }
 
-                // No recovery from other responses.
-    
-    log("PVoutput: Fatal response %s", request->responseText().c_str());
+                // Unrecognized response.
+
     Serial.println(response->peek(response->length()));
-    return 0;
+    _HTTPresponse = UNRECOGNIZED;
+    return 1;
 }
 
 uint32_t PVoutput::tickLimitWait(){
