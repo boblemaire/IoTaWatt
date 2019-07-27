@@ -732,46 +732,45 @@ void handleGetFeedList(){
         }
       }
     }
-  }
-  trace(T_WEB,18);
-  if(outputs){
-    Script* script = outputs->first();
-    int outndx = 100;
-    while(script){
-      if(String(script->name()).indexOf(' ') == -1){
-        String units = script->getUnits();
-        if(units.equalsIgnoreCase("volts")){
-          JsonObject& voltage = jsonBuffer.createObject();
-          voltage["id"] = String("OV") + String(script->name());
-          voltage["tag"] = F("Voltage");
-          voltage["name"] = script->name();
-          array.add(voltage);
-        } 
-        else if(units.equalsIgnoreCase("watts")) {
-          JsonObject& power = jsonBuffer.createObject();
-          power["id"] = String("OP") + String(script->name());
-          power["tag"] = F("Power");
-          power["name"] = script->name();
-          array.add(power);
-          JsonObject& energy = jsonBuffer.createObject();
-          energy["id"] = String("OE") + String(script->name());
-          energy["tag"] = F("Energy");
-          energy["name"] = script->name();
-          array.add(energy);
+    trace(T_WEB,18);
+    if(outputs){
+      Script* script = outputs->first();
+      int outndx = 100;
+      while(script){
+        if(String(script->name()).indexOf(' ') == -1){
+          String units = script->getUnits();
+          if(units.equalsIgnoreCase("volts")){
+            JsonObject& voltage = jsonBuffer.createObject();
+            voltage["id"] = String("OV") + String(script->name());
+            voltage["tag"] = F("Voltage");
+            voltage["name"] = script->name();
+            array.add(voltage);
+          } 
+          else if(units.equalsIgnoreCase("watts")) {
+            JsonObject& power = jsonBuffer.createObject();
+            power["id"] = String("OP") + String(script->name());
+            power["tag"] = F("Power");
+            power["name"] = script->name();
+            array.add(power);
+            JsonObject& energy = jsonBuffer.createObject();
+            energy["id"] = String("OE") + String(script->name());
+            energy["tag"] = F("Energy");
+            energy["name"] = script->name();
+            array.add(energy);
+          }
+          else {
+            JsonObject& other = jsonBuffer.createObject();
+            other["id"] = String("OO") + String(script->name());
+            other["tag"] = F("Outputs");
+            other["name"] = script->name();
+            array.add(other);
+          }
         }
-        else {
-          JsonObject& other = jsonBuffer.createObject();
-          other["id"] = String("OO") + String(script->name());
-          other["tag"] = F("Outputs");
-          other["name"] = script->name();
-          array.add(other);
-        }
+        script = script->next();
       }
-      script = script->next();
     }
-    
+    array.printTo(response);
   }
-  array.printTo(response);
   server.send(200, appJson_P,response);
 }
 
