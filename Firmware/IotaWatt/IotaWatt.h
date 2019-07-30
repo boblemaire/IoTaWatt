@@ -328,7 +328,7 @@ void      setLedState();
 void      dropDead(void);
 void      dropDead(const char*);
 
-boolean   getConfig(void);
+boolean   getConfig(const char* configPath);
 
 size_t    sendChunk(char* buf, size_t bufPos);
 

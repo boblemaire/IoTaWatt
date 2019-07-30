@@ -30,16 +30,14 @@ int16_t* buildPtable(JsonArray& table, const char* model);
 int16_t* copyPtable(int16_t* Ptable);
 String old2newScript(JsonArray& script);
 
-boolean getConfig(void){
+boolean getConfig(const char* configPath){
 
   DynamicJsonBuffer Json;              
-  File ConfigFile;
-  String ConfigFileURL = "config.txt";
-      
+        
   //************************************** Load and parse Json Config file ************************
 
   trace(T_CONFIG,0);
-  ConfigFile = SD.open(ConfigFileURL, FILE_READ);
+  File ConfigFile = SD.open(configPath, FILE_READ);
   if(!ConfigFile) {
     log("Config file open failed.");
     return false;
