@@ -174,7 +174,7 @@ if(spiffsBegin()){
 //************************************* Process Config file *****************************************
   deviceName = charstar(F(DEVICE_NAME));
   updateClass = charstar(F("NONE"));
-  validConfig = getConfig();
+  validConfig = getConfig("config.txt");
   log("Local time zone: %+d:%02d", (int)localTimeDiff/60, (int)localTimeDiff%60);
   if(timezoneRule){
     log("Using Daylight Saving Time (BST) when in effect.");

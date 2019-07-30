@@ -810,7 +810,10 @@ void handleGetConfig(){
       ESP.restart();
     }
     else if(server.arg(F("update")) == "reload"){
-      validConfig = getConfig();
+      validConfig = getConfig("config.txt");
+      if(validConfig){
+        copyFile("/esp_spiffs/config.txt", "config.txt");
+      }
       server.send(200, txtPlain_P, "OK");
       return;  
     }

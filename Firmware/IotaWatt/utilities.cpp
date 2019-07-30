@@ -346,3 +346,43 @@ void hashFile(uint8_t* sha, File file){
   sha256.finalize(sha,32);
   file.seek(pos);
 }
+
+/**************************************************************************************************
+ *     copyFile(dest, source) Make a copy of a file                                               *  
+ * ***********************************************************************************************/
+bool copyFile(const char* dest, const char* source){
+    bool outSPIFFS = false;
+    File outFile;
+    String sourcePath = source;
+    sourcePath.toLowerCase();
+    File inFile = SD.open(sourcePath, FILE_READ);
+    if( ! inFile) return false;
+    String destPath = dest;
+    destPath.toLowerCase();
+    if(destPath.startsWith(F("/esp_spiffs/"))){
+        outSPIFFS = true;
+        spiffsWrite(destPath.substring(11).c_str(), "", false);        // Create a null file
+    } else {
+        if(SD.exists(dest)) SD.remove(dest);
+        File outFile = SD.open(destPath, FILE_WRITE);
+        if( ! outFile){
+            inFile.close();
+            return false;
+        }
+    }
+    uint8_t* buff = new uint8_t[512];
+    int read = 0;
+    while(int read = inFile.read(buff, 512)) {
+        if(outSPIFFS){
+            spiffsWrite(destPath.substring(11).c_str(), buff, read, true);     // append to the file
+        } else {
+            outFile.write(buff, read);
+        }
+    }
+    delete[] buff;
+    inFile.close();
+    if( ! outSPIFFS){
+        outFile.close();
+    }
+    return true;
+}
