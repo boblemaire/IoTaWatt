@@ -84,6 +84,7 @@ void handleRequest(){
   if(serverOn(authUser, F("/nullreq"), HTTP_GET, returnOK)) return;
   if(serverOn(authUser, F("/query"), HTTP_GET, handleQuery)) return;
   if(serverOn(authUser, F("/DSTtest"), HTTP_GET, handleDSTtest)) return;
+  if(serverOn(authAdmin, F("/update"), HTTP_GET, handleUpdate)) return;
 
 
   if(loadFromSdCard(uri)){
@@ -861,6 +862,31 @@ void handleQuery(){
   delete query;
   trace(T_WEB,59);
 }
+
+void handleUpdate(){
+  if( ! server.hasArg(F("release"))){
+    server.send(400, txtPlain_P, F("No release specified."));
+    return;
+  }
+  String release = server.arg(F("release"));
+  if(unpackUpdate(release)){
+    if(installUpdate(release)){
+      log ("Updater: Firmware updated, restarting.");
+      server.send(200, txtPlain_P, F("Firmware updated, restarting."));
+      delay(1000);
+      ESP.restart();
+    }
+    else {
+      server.send(400, txtPlain_P, F("Firmware update failed."));
+    }
+  }
+  else {
+    server.send(400, txtPlain_P, F("Release file not validated."));
+    return;
+  }
+}
+  
+    
 
 void handleDSTtest(){
     uint32_t begin = server.arg(F("begin")).toInt();

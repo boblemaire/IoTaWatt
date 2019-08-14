@@ -37,6 +37,7 @@ void sendMsgFile(File &dataFile, int32_t relPos);
 void handleGetConfig();
 void handlePasswords();
 void handleQuery();
+void handleUpdate();
 void handleDSTtest();
 
 #endif
