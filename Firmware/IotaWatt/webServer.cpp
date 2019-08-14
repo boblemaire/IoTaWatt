@@ -84,6 +84,7 @@ void handleRequest(){
   if(serverOn(authUser, F("/nullreq"), HTTP_GET, returnOK)) return;
   if(serverOn(authUser, F("/query"), HTTP_GET, handleQuery)) return;
   if(serverOn(authUser, F("/DSTtest"), HTTP_GET, handleDSTtest)) return;
+  if(serverOn(authAdmin, F("/update"), HTTP_GET, handleUpdate)) return;
 
 
   if(loadFromSdCard(uri)){
@@ -533,21 +534,24 @@ void handleStatus(){
       root["inputs"] = channelArray;
     }
 
-    if(server.hasArg(F("outputs"))){
-      trace(T_WEB,16);
-      JsonArray& outputArray = jsonBuffer.createArray();
-      Script* script = outputs->first();
-      while(script){
-        JsonObject& channelObject = jsonBuffer.createObject();
-        channelObject.set(F("name"),script->name());
-        channelObject.set(F("units"),script->getUnits());
-        double value = script->run((IotaLogRecord*)nullptr, &statRecord, 1.0);
-        channelObject.set(F("value"),value);
-        outputArray.add(channelObject);
-        script = script->next();
-      }
-      root["outputs"] = outputArray;
+  if(server.hasArg(F("outputs"))){
+    trace(T_WEB,16);
+    JsonArray& outputArray = jsonBuffer.createArray();
+    Script* script = outputs->first();
+    while(script){
+      trace(T_WEB,16,1);
+      JsonObject& channelObject = jsonBuffer.createObject();
+      channelObject.set(F("name"),script->name());
+      channelObject.set(F("units"),script->getUnits());
+      double value = script->run((IotaLogRecord*)nullptr, &statRecord, 1.0);
+      channelObject.set(F("value"),value);
+      outputArray.add(channelObject);
+      script = script->next();
     }
+    trace(T_WEB,16,2);
+    root["outputs"] = outputArray;
+  }
+
 
     if(server.hasArg(F("influx"))){
       trace(T_WEB,17);
@@ -730,39 +734,41 @@ void handleGetFeedList(){
       }
     }
     trace(T_WEB,18);
-    Script* script = outputs->first();
-    int outndx = 100;
-    while(script){
-      if(String(script->name()).indexOf(' ') == -1){
-        String units = script->getUnits();
-        if(units.equalsIgnoreCase("volts")){
-          JsonObject& voltage = jsonBuffer.createObject();
-          voltage["id"] = String("OV") + String(script->name());
-          voltage["tag"] = F("Voltage");
-          voltage["name"] = script->name();
-          array.add(voltage);
-        } 
-        else if(units.equalsIgnoreCase("watts")) {
-          JsonObject& power = jsonBuffer.createObject();
-          power["id"] = String("OP") + String(script->name());
-          power["tag"] = F("Power");
-          power["name"] = script->name();
-          array.add(power);
-          JsonObject& energy = jsonBuffer.createObject();
-          energy["id"] = String("OE") + String(script->name());
-          energy["tag"] = F("Energy");
-          energy["name"] = script->name();
-          array.add(energy);
+    if(outputs){
+      Script* script = outputs->first();
+      int outndx = 100;
+      while(script){
+        if(String(script->name()).indexOf(' ') == -1){
+          String units = script->getUnits();
+          if(units.equalsIgnoreCase("volts")){
+            JsonObject& voltage = jsonBuffer.createObject();
+            voltage["id"] = String("OV") + String(script->name());
+            voltage["tag"] = F("Voltage");
+            voltage["name"] = script->name();
+            array.add(voltage);
+          } 
+          else if(units.equalsIgnoreCase("watts")) {
+            JsonObject& power = jsonBuffer.createObject();
+            power["id"] = String("OP") + String(script->name());
+            power["tag"] = F("Power");
+            power["name"] = script->name();
+            array.add(power);
+            JsonObject& energy = jsonBuffer.createObject();
+            energy["id"] = String("OE") + String(script->name());
+            energy["tag"] = F("Energy");
+            energy["name"] = script->name();
+            array.add(energy);
+          }
+          else {
+            JsonObject& other = jsonBuffer.createObject();
+            other["id"] = String("OO") + String(script->name());
+            other["tag"] = F("Outputs");
+            other["name"] = script->name();
+            array.add(other);
+          }
         }
-        else {
-          JsonObject& other = jsonBuffer.createObject();
-          other["id"] = String("OO") + String(script->name());
-          other["tag"] = F("Outputs");
-          other["name"] = script->name();
-          array.add(other);
-        }
+        script = script->next();
       }
-      script = script->next();
     }
     array.printTo(response);
   }
@@ -805,7 +811,10 @@ void handleGetConfig(){
       ESP.restart();
     }
     else if(server.arg(F("update")) == "reload"){
-      getConfig(); 
+      validConfig = getConfig("config.txt");
+      if(validConfig){
+        copyFile("/esp_spiffs/config.txt", "config.txt");
+      }
       server.send(200, txtPlain_P, "OK");
       return;  
     }
@@ -853,6 +862,31 @@ void handleQuery(){
   delete query;
   trace(T_WEB,59);
 }
+
+void handleUpdate(){
+  if( ! server.hasArg(F("release"))){
+    server.send(400, txtPlain_P, F("No release specified."));
+    return;
+  }
+  String release = server.arg(F("release"));
+  if(unpackUpdate(release)){
+    if(installUpdate(release)){
+      log ("Updater: Firmware updated, restarting.");
+      server.send(200, txtPlain_P, F("Firmware updated, restarting."));
+      delay(1000);
+      ESP.restart();
+    }
+    else {
+      server.send(400, txtPlain_P, F("Firmware update failed."));
+    }
+  }
+  else {
+    server.send(400, txtPlain_P, F("Release file not validated."));
+    return;
+  }
+}
+  
+    
 
 void handleDSTtest(){
     uint32_t begin = server.arg(F("begin")).toInt();

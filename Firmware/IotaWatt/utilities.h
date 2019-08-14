@@ -30,4 +30,6 @@ uint32_t YYYYMMDD2Unixtime(const char* YYYYMMDD);   // Convert character string 
 String datef(uint32_t unixtime, const char* format = "MM/DD/YY hh:mm:ss");
 int32_t HHMMSS2daytime(const char* HHMMSS, const char* format = "%2d:%2d:%2d");
 
+bool    copyFile(const char* dest, const char* source);  // Copy a file
+
 void hashFile(uint8_t* sha, File file);             // Get SHA256 hash of a file    

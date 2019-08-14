@@ -13,11 +13,16 @@
   <h3 id="heading">IoTaWatt Power Monitor</h3>
   
   <div id="mainMenu" class="menu color_menu" display="block">
+    
+    <!-- ************************************************************************************************************************
+                                                      MAIN MENU BUTTONS
+         *********************************************************************************************************************-->
+    
     <table id="bigIdeasTable">
       <tr><th width="50%"></th><th width="50%"></th></tr>
       <tr>
         <td class="dropdown">
-          <button class="mainMenuButton buttonUp dropbtn"
+          <button id="setupButton" class="mainMenuButton buttonUp dropbtn"
               title="Select setup category">Setup</button>
           <span class="dropContent">
             <button class="mainMenuButton" onclick="mainMenuButton(this,configDevice)"
@@ -46,12 +51,14 @@
                 title="manage and edit files on the SDcard">File Manager and Editor</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,showMsgs)"
                 title="View recent entries in the message log">Message Log</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsWiFi)">WIFi</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsRestart)"
                 title="Restart the IoTaWatt">Restart</button>
+                
        <!-- <button class="mainMenuButton" onclick="mainMenuButton(this,toolsDatalogs)">Datalogs</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsWiFi)">WIFi</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsUpdate)">Software Update</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsPhase)">Phase Measurement</button> -->
+            
           </span>
         </td>
         <td>
@@ -70,18 +77,26 @@
     </table>
   </div>
   
-  <div id="mainBody" class="color_body" style="display:none">
+  <!-- ************************************************************************************************************************
+                                                      PANIC MESSAGES
+         *********************************************************************************************************************-->
+
+  <div id="panicMessageDiv" class="body color_body" style="display:none">
+    <div id="panicList">
+    </div>
+  </div> 
   
-    <div id="configMenu" style="display:none">
-      <table><tr><th width="33%"></th><th width="33%"></th><th width="33%"></th></tr>
-        <tr>
-          <td><button id="tabDevice" class="configButton buttonUp" onclick="configButton(this,configDevice)">Device</button></td>
-          <td><button id="tabInputs" class="configButton buttonUp" onclick="configButton(this,configInputs)">Inputs</button></td>
-          <td><button id="tabOutputs" class="configButton buttonUp" onclick="configButton(this,configOutputs)">Outputs</button></td>
-        </tr>
-      </table>
-    </div> <!-- configMenu -->
-     
+  <!-- ************************************************************************************************************************
+                                                      MAIN BODY AREA
+         *********************************************************************************************************************-->
+    
+  <div id="mainBody" class="color_body" style="display:none">
+    
+    <!-- ************************************************************************************************************************
+                                                      SETUP MENUS
+         *********************************************************************************************************************-->
+                                     
+   
                   <!-- *************** Device configuration ******************-->  
         
     <div id="configDevice" class="body color_body" style="display: none">
@@ -92,54 +107,7 @@
         <button class="actionSave" id="deviceSave" onclick="deviceSave()">save</button>
       </p>
     </div> 
-    
-                  <!-- *************** Password configuration ******************-->  
-        
-    <div id="setPasswords" class="body color_body" style="display: none">
-      <h3>Configure Optional IoTaWatt Passwords</h3>
-      <p>
-        The initial configuration places no restrictions on who can modify or otherwise access the device.
-      If the device is in a home and connected to a well protected WiFi LAN, that may be adequate to protect
-      the integrity of the device and privacy of the data collected.  If the LAN does not provide suitable protection,
-      or there is a need to provide port-forward passthough to the internet, access control is recommended.
-      </p><p>
-        IoTaWatt supports two levels of authorization using digest password authorization. This isn't the most secure method
-        of authorization, nor is it the least.  Given the limitations of an IoT device, you may find it is a reasonable balance
-        between exposure and data value.
-      </p><p>
-        To enable authorization, specify an Admin password.  Once there is an admin password, all configuration and access,
-        except for User level acess described below, will require the password to initiate the session.  Be sure to
-        carefully note the password that you set, as IoTaWatt does not store the actual value and it cannot be recovered. There is a
-        procedure to remove the Admin password, but it involves physically removing the SDcard.
-      </p><p>
-        The optional User level password is effectively a <i>read only</i> password for use by apps that visualize data. 
-      The User password does not allow access to the configuration or SD file system, except for a special /user/ directory
-      </p>
-      <table id="pwdTable"></table>
-      <p>
-        <button class="actionCancel" id="pwdCancel" onclick="pwdCancel()">cancel</button>
-        <button class="actionSave" id="pwdSave" onclick="pwdSave()">save</button>
-        <button class="actionSave" id="pwdCheck" onclick="pwdValidate()">Validate Current Password</button>
-      </p>
-    </div> 
-    
-                  <!-- *************** Burden configuration ******************--> 
-    
-    <div id="configBurden" class="body color_body" style="display: none">
-      <h3>Specify on-board burden resistors</h3>
-      <p>Burden resistors are internal components that allow IoTaWatt to convert the input current to a voltage that can be measured.
-      The factory supplied burden values were selected to work best with the range of CTs that can be connected and most users will 
-      never have a need to modify them or the corresponding values in this menu.</p>
-      <p>For the benefit of advanced users that have a need to remove or change the factory resistors, this menu has been provided
-      so that a changed value can be specified and IoTaWatt can calculate the correct current using the new value.</p>
-      <table id="burdenTable"></table>
-      <p>
-        <button class="actionCancel" id="burdenCancel" onclick="burdenCancel()">cancel</button>
-        <button class="actionSave" id="burdenSave" onclick="burdenSave()">save</button>
-      </p>
-    </div>
-    
-
+   
               <!-- *************** Inputs configuration ******************-->  
   
     <div id="configInputs" class="body" style="display: none">
@@ -188,6 +156,51 @@
       </div>
     </div>
     
+                  <!-- *************** Burden configuration ******************--> 
+    
+    <div id="configBurden" class="body color_body" style="display: none">
+      <h3>Specify on-board burden resistors</h3>
+      <p>Burden resistors are internal components that allow IoTaWatt to convert the input current to a voltage that can be measured.
+      The factory supplied burden values were selected to work best with the range of CTs that can be connected and most users will 
+      never have a need to modify them or the corresponding values in this menu.</p>
+      <p>For the benefit of advanced users that have a need to remove or change the factory resistors, this menu has been provided
+      so that a changed value can be specified and IoTaWatt can calculate the correct current using the new value.</p>
+      <table id="burdenTable"></table>
+      <p>
+        <button class="actionCancel" id="burdenCancel" onclick="burdenCancel()">cancel</button>
+        <button class="actionSave" id="burdenSave" onclick="burdenSave()">save</button>
+      </p>
+    </div>
+    
+                  <!-- *************** Password configuration ******************-->  
+        
+    <div id="setPasswords" class="body color_body" style="display: none">
+      <h3>Configure Optional IoTaWatt Passwords</h3>
+      <p>
+        The initial configuration places no restrictions on who can modify or otherwise access the device.
+      If the device is in a home and connected to a well protected WiFi LAN, that may be adequate to protect
+      the integrity of the device and privacy of the data collected.  If the LAN does not provide suitable protection,
+      or there is a need to provide port-forward passthough to the internet, access control is recommended.
+      </p><p>
+        IoTaWatt supports two levels of authorization using digest password authorization. This isn't the most secure method
+        of authorization, nor is it the least.  Given the limitations of an IoT device, you may find it is a reasonable balance
+        between exposure and data value.
+      </p><p>
+        To enable authorization, specify an Admin password.  Once there is an admin password, all configuration and access,
+        except for User level acess described below, will require the password to initiate the session.  Be sure to
+        carefully note the password that you set, as IoTaWatt does not store the actual value and it cannot be recovered. There is a
+        procedure to remove the Admin password, but it involves physically removing the SDcard.
+      </p><p>
+        The optional User level password is effectively a <i>read only</i> password for use by apps that visualize data. 
+      The User password does not allow access to the configuration or SD file system, except for a special /user/ directory
+      </p>
+      <table id="pwdTable"></table>
+      <p>
+        <button class="actionCancel" id="pwdCancel" onclick="pwdCancel()">cancel</button>
+        <button class="actionSave" id="pwdSave" onclick="pwdSave()">save</button>
+        <button class="actionSave" id="pwdCheck" onclick="pwdValidate()">Validate Current Password</button>
+      </p>
+    </div>  
                 <!-- ************* WebServer ********************--> 
     
     <div class="body color_body" id="divWebServer" style="display:none">
@@ -234,9 +247,10 @@
       </p>
     </div>
               
-    
-    <!-- ****************************** divStatus **********************************--> 
-    
+        <!-- ************************************************************************************************************************
+                                                      STATUS DISPLAY
+         *********************************************************************************************************************-->
+
     <div id="divStatus" class="body color_body" style="display:none">
       <button id="tabIO" class="groupTab" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs Status</button>
         <div id="statusIODiv" class="statusDiv" style="display: block;">
@@ -275,14 +289,24 @@
         <div id="statusLogsDiv" class="statusDiv" style="display: none;"></div>
     </div> <!-- divStatus -->
   
-    <!--*************************************************************************************************
+        <!-- ************************************************************************************************************************
+                                                      TOOLS MENUS
+         *********************************************************************************************************************-->
   
-                                    Tools
-  
-     ***************************************************************************************************-->
+    <!-- ****************************** WiFi **********************************--> 
+      
+    <div id="divWiFi" class="body tools color_body" style="display:none">
+      <h3>Disconnect WiFi</h3>
+      <p>
+        Use this tool to permanently disconnect from the current WiFi network.<br>
+      </p>
+      <h3 id="WiFiMsg"></h3>
+      <button id="WiFiButton" class="actionDelete" onclick="sendDisconnect()">Disconnect</button>
+      <button class="actionCancel" onclick="currentBodyPop()">cancel</button>
+    </div> 
   
     <!-- ****************************** Restart **********************************--> 
-      
+    
     <div id="divRestart" class="body tools color_body" style="display:none">
       <h3>Reset IoTaWatt!</h3>
       <p>
@@ -293,17 +317,6 @@
       <h3 id="restartMsg"></h3>
       <button id="restartButton" onclick="sendRestart()">Restart</button>
     </div> <!-- divrestart -->
-    
-    <!-- ****************************** WiFi **********************************--> 
-      
-    <div id="divWiFi" class="body tools color_body" style="display:none">
-      <h3>Manage WiFi</h3>
-      <p>
-        Use this tool to permanently disconnect from the current WiFi network.<br>
-      </p>
-      <h3 id="WiFiMsg"></h3>
-      <button id="WiFiButton" onclick="sendDisconnect()">Disconnect</button>
-    </div> 
     
     <!-- **************************** Datalogs ****************************** --> 
       
@@ -339,11 +352,9 @@
       </div>
     </div> <!--
   
-    <!- *************************************************************************************************
-  
-                                    Calculator
-  
-    ****************************************************************************************************-->
+        <!-- ************************************************************************************************************************
+                                                      CALCULATOR
+         *********************************************************************************************************************-->
     
     <div id="divCalc" class="color_body" style="display:none">
       <div id="calcBody" class="color_inputcontainer">
@@ -411,10 +422,9 @@ var editURL = "edit.htm";
 var graphURL = "graph.htm";
 var graph2URL = "graph2.htm";
 var msgsFileURL = "/iotawatt/iotamsgs.txt?textpos=-10000";
-var demo = false;
-var demoConfig = null;
 var currentBody = [];
 var configSHA256;
+var noConfig = true;
 
 var config;                         // configuration as Js Object
 var tables;                         // tables as Js Object
@@ -455,6 +465,8 @@ var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:
  *                       Shorthand functions
 * ************************************************************************************************/
 function EbyId(id) {return document.getElementById(id)};
+function hide(id) {document.getElementById(id).style.display = "none";}
+function show(id) {document.getElementById(id).style.display = "block";}
 
 /***************************************************************************************************
  *                       setPasswords
@@ -474,17 +486,19 @@ function setPasswords() {
         var oldAdmin = addTableRow(pwdTable, "Current Admin password", "oldAdminPwd", "input", 16);
         oldAdmin.setAttribute("onblur","pwdValidate();");
         oldAdmin.title = "Required to proceed";
-        EbyId("pwdCheck").style.display = "inline";
+        show("pwdCheck");
+        //EbyId("pwdCheck").style.display = "inline";
       } else {
-        EbyId("pwdCheck").style.display = "none";
+        hide("pwdCheck");
+        //EbyId("pwdCheck").style.display = "none";
         pwdValid();
       }
     }
   }
   xmlHttp.open("GET","/status?passwords=yes", true);
   xmlHttp.send(null);
-  
-  EbyId("pwdSave").style.display = "none";
+  hide("pwdCheck");
+  //EbyId("pwdSave").style.display = "none";
 }
   
 function pwdValidate(){
@@ -964,8 +978,11 @@ function refreshInputEdit(){
       inputCal.setAttribute("onclick","calVTvoltage();");
     }
   }
+  
+  if(complete) show("inputEditSave");
+  else hide("inputEditSave");
 
-  EbyId("inputEditSave").style.display = complete ? "inline" : "none";
+  //EbyId("inputEditSave").style.display = complete ? "inline" : "none";
 }
 
 function addInfo(element, title){
@@ -2254,10 +2271,6 @@ function statusBegin(){
 }
 
 function statusGet(){
-  if(demo){
-    statusDisplay(demoStatus());
-    return;
-  }
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
@@ -2511,27 +2524,6 @@ function old2newScript(oldScript){
   return newScript;
 }
 
-function demoStatus(){
-  var status = {};
-  status.stats = {cyclerate:635, chanrate:38.4, runseconds:3046, stack:17632, frequency:60.0, version:"2:02:09"};
-  status.inputs = [];
-  status.outputs = [];
-  for(i in config.inputs){
-    if(config.inputs[i] != null){
-      if(config.inputs[i].type == "VT"){
-       status.inputs.push({channel:i,Vrms:120.4});
-      }
-      else {
-       status.inputs.push({channel:i,Watts:0});
-      }
-    }
-  }
-  for(i in config.outputs){
-    status.outputs.push({name:config.outputs[i].name, Watts:0});
-  }
-  return JSON.stringify(status);
-}
-  
 /********************************************************************************************
  *                       Main menu navigation.
  * *****************************************************************************************/
@@ -2599,20 +2591,33 @@ function toggleDisplay(id){
  * *******************************************************************************************/
 
 function getConfig(callback){
-  if(demo && demoConfig != null){
-    config = JSON.parse(demoConfig);
-    checkConfig();
-    if(callback !== undefined) callback();
-    return;
-  }
+  EbyId("panicMessageDiv").style.display = "none";
   readFile(configFileURL, function(response){
-    config = JSON.parse(response);
-    checkConfig();
-    document.title = config.device.name;
-    EbyId("heading").innerHTML = config.device.name + " Power Monitor";
-    if(callback !== undefined) callback();
-    });
-    EbyId("mainMenu").style.display = "block";
+                            if(response == undefined){
+                              panic("configuration not found.");
+                            }
+                            else {
+                              try {
+                                config = JSON.parse(response);
+                              }
+                              catch (e) {
+                                panic("configuration parse failed: " + e.message);
+                                return;
+                              }
+                              noConfig = false;
+                              checkConfig();
+                              document.title = config.device.name;
+                              EbyId("heading").innerHTML = config.device.name + " Power Monitor";
+                              if(callback !== undefined) callback();
+                              EbyId("mainMenu").style.display = "block";
+                            }
+                          })
+}
+
+function panic(message){
+  EbyId("panicList").innerHTML = "<p>" + message + "</p>";
+  EbyId("panicMessageDiv").style.display = "block";
+  noConfig = true;
 }
 
 function getTables(){
@@ -2622,11 +2627,16 @@ function getTables(){
 function readFile(path, responseHandler){
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      if(this.getResponseHeader("X-configSHA256") !== null){
-        configSHA256 = this.getResponseHeader("X-configSHA256");
+    if (this.readyState == 4) {
+      if(this.status == 200){
+        if(this.getResponseHeader("X-configSHA256") !== null){
+          configSHA256 = this.getResponseHeader("X-configSHA256");
+        }
+        responseHandler(this.responseText);
+      } 
+      else {
+        responseHandler(undefined);
       }
-      responseHandler(this.responseText);
     }
   };
   xmlHttp.open("GET", path, true);
@@ -2634,6 +2644,7 @@ function readFile(path, responseHandler){
 }
 
 function uploadConfig(callback, action="reload"){
+  if(noConfig) return;
   writeFile(JSON.stringify(config, null, "\t"), configNewURL, function(){
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() {
@@ -2647,11 +2658,6 @@ function uploadConfig(callback, action="reload"){
 }
 
 function writeFile(fileString, url, responseHandler){
-  if(demo){
-    demoConfig = fileString;
-    responseHandler();
-    return;
-  }
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4) {
@@ -2683,10 +2689,6 @@ function writeFile(fileString, url, responseHandler){
 function setup(){
   getTables();
   getConfig();
-  if(document.domain == "iotawatt.com"){
-    demo = true;
-    EbyId("heading").innerHTML += " Demo Mode";
-  }
   resetDisplay();
 }
 
