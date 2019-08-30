@@ -1,4 +1,4 @@
-#include "iotawatt.h"
+#include "IotaWatt.h"
 
 /******************************************************************************************************
 *    PVoutput server class, modeled after framework by Brendon Costa and updated to

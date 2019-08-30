@@ -1,4 +1,4 @@
-#include <iotawatt.h>
+#include <IotaWatt.h>
 
 void IotaInputChannel::reset(){
     delete[] _name;
