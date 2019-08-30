@@ -362,7 +362,7 @@
           <h3  style="text-align:center">Configure Output</h3>
           <table id="calcTable"><tr><th width="30%"></th><th></th></tr></table>
         
-        <h3 id="calcDisplay">0</h3>  
+        <h3 id="calcDisplay">0</h3>
           <table id="calcKeypad"><tr><th></th><th></th><th></th><th></th></tr>
           <tr><td><button class="calcButton calcClr" onclick="keyClearAll()" title="Clear all" value="C">C</button></td>
           <td><button class="calcButton calcBack" onclick="keyClearEntry()" title="Clear last entry" value="CE">CE</button></td>
@@ -374,17 +374,17 @@
               <p onclick="keyInput(this)">Input_2</p>
             </span>
           </td></tr>
-          <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="1">1</button></td>
-          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="2">2</button></td>
-          <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="3">3</button></td>
+          <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="7">7</button></td>
+          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="8">8</button></td>
+          <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="9">9</button></td>
           <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="+">+</button></td></tr>
           <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="4">4</button></td>
           <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="5">5</button></td>
           <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="6">6</button></td>
           <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="-">-</button></td></tr>
-          <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="7">7</button></td>
-          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="8">8</button></td>
-          <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="9">9</button></td>
+          <tr><td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="1">1</button></td>
+          <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="2">2</button></td>
+          <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="3">3</button></td>
           <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="*">x</button></td></tr>
           <tr><td><button class="calcButton calcNumeric" onclick="keyDecimal()" value=".">.</button></td>
           <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="0">0</button></td>
@@ -443,7 +443,8 @@ var parenLevel = 0;
 var inputEditChannel;
 var voltageChannels = [];
 var vchanUsed = [];
-var vphaseNames = ["A", "B", "C"];
+var derivedTable = [{phase:"A",vphase:0,vmult:1},{phase:"B",vphase:120,vmult:1},{phase:"C",vphase:240,vmult:1},
+                   {phase:"A-B",vphase:30,vmult:1.732},{phase:"B-C",vphase:270,vmult:1.732},{phase:"C-A",vphase:150,vmult:1.732}];
 var scriptEditTable;
 var scriptEditSet;
 var scriptEditIndex = -1;
@@ -723,8 +724,6 @@ function configInputs(){
       if(config.inputs[i].turns != undefined){
         config.inputs[i].cal = config.inputs[i].turns / config.device.burden[i];
       }
-      //newColumn.innerHTML += ", cal:<strong>" + Number(config.inputs[i].cal).toFixed(2) + "</strong>";
-      //newColumn.innerHTML += ", lead:<strong>" + Number(config.inputs[i].phase).toFixed(2) + "&#176</strong>";
       if(config.inputs[i].vchan !== undefined){
         vchanUsed[config.inputs[i].vchan] = true;
         if(config.inputs[i].vchan != 0){
@@ -733,8 +732,18 @@ function configInputs(){
       }
       
       if(config.derive3ph){
-        var phase = (config.inputs[i].vphase === undefined) ? vphaseNames[0] : vphaseNames[config.inputs[i].vphase/120];
-        newColumn.innerHTML += ", phase:<strong>" + phase + "</strong>";
+        if(config.inputs[i].vphase === undefined){
+          config.inputs[i].vphase = 0;
+        }
+        if(config.inputs[i].vmult === undefined){
+          config.inputs[i].vmult = 1;
+        }
+        for(j in derivedTable){
+          if(derivedTable[j].vphase == config.inputs[i].vphase){
+            newColumn.innerHTML += ", phase:<strong>" + derivedTable[j].phase + "</strong>";
+            break;
+          }
+        }
       }
     }
   }
@@ -913,16 +922,17 @@ function refreshInputEdit(){
     }
     if(config.derive3ph){
       inputVchan = addTableRow(table, "Mains Phase", "inputVphase", "select");
-      inputVchan.setAttribute("oninput","inputEditObject.vphase = Number(this.value); refreshInputEdit();");
-      for(i in vphaseNames){
+      inputVchan.setAttribute("oninput",
+        "inputEditObject.vphase=derivedTable[this.value].vphase; inputEditObject.vmult=derivedTable[this.value].vmult; refreshInputEdit();");
+      for(i in derivedTable){
         option = document.createElement("option");
-        option.value = i * 120;
-        option.innerHTML = vphaseNames[i];
-        if(i > 0){
-          option.innerHTML += " (+" + option.value + "&#176)";
+        option.value = Number(i);
+        option.innerHTML = derivedTable[i].phase;
+        if(derivedTable[i].vphase != 0){
+          option.innerHTML += " (+" + derivedTable[i].vphase + "&#176)";
         }
         inputVchan.add(option);
-        if(inputEditObject.vphase !== undefined && inputEditObject.vphase == option.value){
+        if(inputEditObject.vphase !== undefined && inputEditObject.vphase == derivedTable[i].vphase){
           option.selected = true;
         } 
       }
@@ -943,15 +953,17 @@ function refreshInputEdit(){
       inputEditObject.signed = undefined;
     }
     
-    inputDouble = addTableRow(table, "", "inputMult", "input");
-    inputDouble.parentNode.appendChild(document.createTextNode("Double"));
-    addInfo(inputDouble, "Double measured power.  Use with balanced 240V circuit with CT on one conductor.");
-    inputDouble.setAttribute("type","checkbox");
-    inputDouble.setAttribute("onchange","inputEditObject.double = this.checked; refreshInputEdit();");
-    if(inputEditObject.double != undefined && inputEditObject.double){
-      inputDouble.checked = true;
-    } else {
-      inputEditObject.double = undefined;
+    if( ! config.derive3ph || inputEditObject.double != undefined){
+      inputDouble = addTableRow(table, "", "inputMult", "input");
+      inputDouble.parentNode.appendChild(document.createTextNode("Double"));
+      addInfo(inputDouble, "Double measured power.  Use with balanced 240V circuit with CT on one conductor.");
+      inputDouble.setAttribute("type","checkbox");
+      inputDouble.setAttribute("onchange","inputEditObject.double = this.checked; refreshInputEdit();");
+      if(inputEditObject.double != undefined && inputEditObject.double){
+        inputDouble.checked = true;
+      } else {
+        inputEditObject.double = undefined;
+      }
     }
     
     EbyId("inputEditDelete").style.display = (config.inputs[inputEditChannel] == null) ? "none" : "inline";
@@ -981,8 +993,6 @@ function refreshInputEdit(){
   
   if(complete) show("inputEditSave");
   else hide("inputEditSave");
-
-  //EbyId("inputEditSave").style.display = complete ? "inline" : "none";
 }
 
 function addInfo(element, title){
@@ -1372,6 +1382,10 @@ function calVTsave(obj){
     }
     return calcDisplay;
   }
+  
+  function keyPress(key){
+    EbyId("keyChar").innerHTML = key;
+  }
 
   function keyClearAll(){
     while(tokens.length > 1){
@@ -1410,7 +1424,7 @@ function calVTsave(obj){
   }
   
   function keyDigit(digit){
-    if(RegExp("^#0").test(tokens[tokens.length-1])){
+    if(RegExp("^#0$").test(tokens[tokens.length-1])){
       tokens[tokens.length-1] = "#" + digit;
     }
     else if(RegExp("^#").test(tokens[tokens.length-1])){
