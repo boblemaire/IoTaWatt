@@ -1,4 +1,4 @@
-#include "iotaWatt.h"
+#include "IotaWatt.h"
 
             messageLog::messageLog()
                 :bufPos(0)

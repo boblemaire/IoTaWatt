@@ -67,7 +67,7 @@
 #include "auth.h"
 #include "spiffs.h"
 #include "timeServices.h"
-#include "pvoutput.h"
+#include "PVoutput.h"
 #include "CSVquery.h"
 
 
