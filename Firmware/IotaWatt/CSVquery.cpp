@@ -31,7 +31,13 @@ bool    CSVquery::setup(){
     }
     
     _begin = parseTimeArg(server.arg(F("begin")));
+    if(_begin % currLog.interval()){
+        _begin += currLog.interval() - (_begin % currLog.interval());
+    }
     _end = parseTimeArg(server.arg(F("end")));
+    if(_end % currLog.interval()){
+        _end -= _end % currLog.interval();
+    }
     if(_end == 0 || _begin == 0 || _end < _begin) return false;
     trace(T_CSVquery,10);
 
@@ -58,12 +64,6 @@ bool    CSVquery::setup(){
                 break;
             }
         }
-        // if(interval <= 5) interval = 5;
-        // else if(interval <= 10) interval = 10;
-        // else if(interval <= 15) interval = 15;
-        // else if(interval <= 20) interval = 20;
-        // else if(interval <= 30) interval = 30;
-        // else if(interval % 60) interval += 60 - (interval % 60);
         _groupMult = interval;
         _groupUnits = tUnitsSeconds;
     } else {
@@ -260,7 +260,7 @@ bool    CSVquery::setup(){
     _setup = true;
     return true;
 }
-
+ 
 bool    CSVquery::isJson(){
     return _format == formatJson;
 }
@@ -274,7 +274,7 @@ bool    CSVquery::isCSV(){
 void CSVquery::buildHeader(){
 
     if(_format == formatJson){
-        _buffer.print("{\"header\":[");
+        _buffer.printf_P(PSTR("{\"range\":[%d,%d],\"labels\":["), _begin, _end);
     }
     column* col = _columns;
     bool first = true;
@@ -372,8 +372,8 @@ void CSVquery::buildLine(){
             }
             else if(col->unit == 'E') {
                 value = (_newRec->accum1[col->input] - (col->delta ? _oldRec->accum1[col->input] : 0)) / 1000.0;
-            } 
-            _buffer.printf("%.*f", col->decimals, value);
+            }
+            printValue(value, col->decimals);
         }
 
         else if(col->source == 'O'){
@@ -390,12 +390,22 @@ void CSVquery::buildLine(){
             else { //if(col->unit == 'O'){
                 value = col->script->run(_oldRec, _newRec, elapsedHours);
             }
-            _buffer.printf("%.*f", col->decimals, value);
+            printValue(value, col->decimals);
         }
 
     col = col->next;
     }
 
+}
+
+void CSVquery::printValue(const double value, const int8_t decimals){
+    char str[12];
+    snprintf(str,12,"%#.*f",decimals,value);
+    int len = strlen(str);
+    while(str[--len] == '0');
+    if(str[len] == '.') --len;
+    str[len+1] = 0;
+    _buffer.write(str);
 }
 
 //*****************************************************************************************
@@ -410,8 +420,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
         
         if(_header){
             buildHeader();
-        //    _header = false;
-        } 
+        }
         if(_format == formatJson){
             _buffer.print('[');
         }
@@ -428,6 +437,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
 
     int written = 0;
     while(true){
+        //Serial.printf("old:%d, new:%d, end:%d\r\n",_oldRec->UNIXtime, _newRec->UNIXtime, _end);
 
             // Transfer _buffer to caller buffer
 
@@ -512,13 +522,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
 
 time_t  CSVquery::nextGroup(time_t time, tUnits units, int32_t inc){
     time_t result;
-    if(units == tUnitsAuto){
-        int interval = (_end - _begin) / inc;
-        if(interval % 5){
-            interval += 5 - (interval & 5);
-        }
-        result = time + interval;
-    }
+
     if(units == tUnitsSeconds){
         result = time + inc;
     }
@@ -613,7 +617,7 @@ time_t  CSVquery::parseTimeArg(String timeArg){
         }
         ptr++;
     }
-    if(*ptr == 0 && (digits == 10 || digits == 13)) return UTCtime(unixtime);
+    if(*ptr == 0 && (digits == 10 || digits == 13)) return unixtime;
     
         // Check for date
 

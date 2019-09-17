@@ -848,7 +848,7 @@ void handleQuery(){
     int read = 0;
     size_t size = 0;
     trace(T_WEB,56);
-    while(read = query->readResult(buf+6, 1460-8)){
+    while((read = query->readResult(buf+6, 1460-8)) && size < 32768){
       trace(T_WEB,57);
       sendChunk((char*)buf, read+6);
       size += read;

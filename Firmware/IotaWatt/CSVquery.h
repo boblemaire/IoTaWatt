@@ -14,8 +14,7 @@ class  CSVquery {
 
     private:
 
-        enum        tUnits {tUnitsAuto,
-                            tUnitsSeconds,      // time units 
+        enum        tUnits {tUnitsSeconds,      // time units 
                             tUnitsMinutes,
                             tUnitsHours,
                             tUnitsDays,
@@ -37,7 +36,7 @@ class  CSVquery {
         format      _format;                    // Output format (Json or CSV)
         tm*         _tm;                        // -> external tm struct
         bool        _setup;                     // True if successful setup
-        bool        _header;                    // True if header == yes
+        bool        _header;                    // True if header = yes
         bool        _highRes;
         bool        _firstLine;                 // True when no lines have been generated
         bool        _lastLine;                  // True when last line has been generated
@@ -77,6 +76,7 @@ class  CSVquery {
 
         void        buildHeader();
         void        buildLine();
+        void        printValue(const double value, const int8_t decimals);
         time_t      nextGroup(time_t time, tUnits units, int32_t mult);
         time_t      parseTimeArg(String timeArg);
         int         parseInt(char** ptr);

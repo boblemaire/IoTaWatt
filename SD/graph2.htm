@@ -1,185 +1,401 @@
 <!doctype html>
 <html>
-    <head>
-        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>IotaWatt - graph</title>
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-status-bar-style" content="black">
-            <!-- Latest compiled and minified CSS -->
-            <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css">
-            
-            <!-- jQuery library -->
-            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-            
-            <!-- Popper JS -->
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
-            
-            <!-- Latest compiled JavaScript -->
-            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
-            
-      </head>
-    <body>
-        <div id="wrap">
-
-                <div class = "container-fluid"><div class="row-fluid"><div class="span12">
-
-<script language="javascript" type="text/javascript" src="https://iotawatt.com/flot/flot.min.js"></script>            
-<script language="javascript" type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery.flot@0.8.3/jquery.flot.time.min.js"></script>
-
-<style>
-#wrapper {
-  padding:0px;
-  margin:0px;
-  padding-left: 250px;
-}
-
-#sidebar-wrapper {
-  margin-top:-10px;
-  margin-left: -250px;
-  left: 250px;
-  width: 250px;
-  background: #eee;
-  position: fixed;
-  overflow-y: auto;
-  z-index: 1000;
-}
-
-#page-content-wrapper {
-  width: 100%;
-  padding-left:0px;
-}
-
-
-</style>
-
-<div id="wrapper">
-    <div id="sidebar-wrapper">
-            <div style="padding-left:10px;">
-                <div id="sidebar-close" style="float:right; cursor:pointer; padding:10px;"><i class="icon-remove"></i></div>
-                <h3>Feeds</h3>
-                
-            </div>
-            <div style="overflow-x: hidden; background-color:#f3f3f3; width:100%">
-                <table class="table" id="feeds">
-                </table>
-            </div>
-            
-            <div style="padding:10px;">
-                <h4>My Graphs</h4>
-                
-                <select id="graph-select" style="width:215px">
-                </select>
-                
-                <br><br>
-                <b>Graph Name:</b><br>
-                <input id="graph-name" type="text" style="width:200px" />
-                <button id="graph-delete" class="btn" style="display:none">Delete</button>
-                <button id="graph-save" class="btn">Save</button>
-                <button id="graph-reset" class="btn">Reset</button>
-            </div>
-    </div>
-
-    <div id="page-content-wrapper" style="max-width:1280px">
-        
-        <h3 id="heading">Data viewer</h3> 
-
-        <div id="error" style="display:none"></div>
-
-        <div id="navigation" style="padding-bottom:5px;">
-            <button class="btn" id="sidebar-open"><i class="icon-list"></i></button>
-            <select id="select-time" class="btn sel graph_time" name="options" style="width: 180px"></select>
-            <button class='btn zoom' value=.5>+</button>
-            <button class='btn zoom' value=2>-</button>
-            <button class='btn pan' value=-1><<</button>
-            <button class='btn pan' value=-0.5><</button>
-            <button class='btn pan' value=+0.5>></button>
-            <button class='btn pan' value=+1>>></button>
-            <button id="reload" class="btn">Reload</button>
-            
-            <div class="input-prepend input-append" style="float:right; margin-right:22px">
-            <span class="add-on">Show</span>
-            <span class="add-on">legend: <input type="checkbox" id="showlegend" style="margin-top:1px" /></span>
-            <span class="add-on">feed tag: <input type="checkbox" id="showtag" style="margin-top:1px" /></span>
-            </div>
-            <div style="clear:both"></div>
-            
-            
-        </div>
-        <div class="input-prepend input-append" style="padding-right:5px">
-            <span class="add-on" style="width:40px">Start</span>
-            <input id="request-start" type="date" style="width:110px" />
-
-            <span class="add-on" style="width:40px">End</span>
-            <input id="request-end" type="date" style="width:110px" />
-
-            <span class="add-on" style="width:50px">Group</span>
-            <select id="group" style="width:100px">
-                <option id="group-auto">auto</option>
-                <option>Hourly</option>
-                <option>Daily</option>
-                <option>Weekly</option>
-                <option>Monthly</option>
-                <option>Annual</option>
-            </select>
-            <span id="interval" class="add-on" style="width:70px"></span>
-            
-            
-        </div>
-        
-        <div id="placeholder_bound" style="width:100%; height:400px;">
-            <div id="placeholder"></div>
-        </div>
-
-        <div id="info" style="padding:20px; display:none">
+  <head>
+    
+      <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>IotaWatt - graph</title>
+      <meta name="apple-mobile-web-app-capable" content="yes">
+      <meta name="apple-mobile-web-app-status-bar-style" content="black">
           
-            <div id="window-info" style=""></div><br>
-            
-            <div id="y1axis-menu" class="input-prepend input-append">
-                <span class="add-on" style="width:50px">Y-axis:</span>
-                <span class="add-on" style="width:30px">min</span>
-                <input id="yaxis-min" type="text" style="width:50px" value="auto"/>
-                <span class="add-on" style="width:30px">max</span>
-                <input id="yaxis-max" type="text" style="width:50px" value="auto"/>
-            </div>
-              
-            <div id="y2axis-menu" class="input-prepend input-append">
-                <span class="add-on" style="width:50px">Y2-axis:</span>
-                <span class="add-on" style="width:30px">min</span>
-                <input id="y2axis-min" type="text" style="width:50px" value="auto"/>
-                <span class="add-on" style="width:30px">max</span>
-                <input id="y2axis-max" type="text" style="width:50px" value="auto"/>
-            </div>
-            
-            <table class="table">
-                <tr><th>Feed</th><th>Type</th><th>Color</th><th>Fill</th><th>Quality</th><th>Min</th><th>Max</th><th>Diff</th><th>Mean</th><th>Stdev</th><th>Wh</th><th style='text-align:center'>Scale</th><th style='text-align:center'>Delta</th><th>DP</th></tr>
-                <tbody id="stats"></tbody>
-            </table>
-            
-            <div class="input-prepend input-append">
-                <button class="btn" id="showcsv" >Show CSV Output</button>
-                <span class="add-on csvoptions">Time format:</span>
-                <select id="csvtimeformat" class="csvoptions">
-                    <option value="unix">Unix timestamp</option>
-                    <option value="seconds">Seconds since start</option>
-                    <option value="datestr">Date-time string</option>
-                </select>
-                <span class="add-on csvoptions">Null values:</span>
-                <select id="csvnullvalues" class="csvoptions">
-                    <option value="show">Show</option>
-                    <option value="lastvalue">Replace with last value</option>
-                    <option value="remove">Remove whole line</option>
-                </select>
-            </div> 
-            
-            
-            <textarea id="csv" style="width:98%; height:500px; display:none; margin-top:10px"></textarea>
-        </div>
-    </div>
-</div>
+  </head>
+    
+  <style>
+      #wrapper {
+        padding:0px;
+        margin:0px;
+        padding-left: 250px;
+      }
+      
+      #sidebar-wrapper {
+        margin-top:0px;
+        margin-left: -250px;
+        left: 250px;
+        width: 250px;
+        background: #eee;
+        position: fixed;
+        overflow-y: auto;
+        z-index: 1000;
+      }
+      
+      #body-wrapper {
+        margin-top:-15px;
 
-<!-- copy of https://emoncms.org/Modules/graph/vis.helper.js -->
+      }
+      
+      button {
+        height: 35px;
+        min-width: 30px;
+        border: 1px solid;
+        border-radius: 4px;
+        text-align: center;
+      }
+      
+      .yaxis {
+        height: 34px;
+        width: 50px;
+        border: 1px solid Silver;
+      }
+      
+      
+      .pad-bottom-5 {
+        padding-bottom: 5px;
+      }
+      
+      td {
+        text-align: center;
+      }
+      .table-toggle {
+        text-align: right;
+      }
+      
+      #select-period,
+      #group,
+      #graph-select,
+      #graph-name {
+        border: 1px solid Silver;
+        border-radius: 4px;
+        background: white;
+      }
+      
+      .table-top {
+        border-style: solid solid none solid;
+        border-color: silver;
+        border-width: 1px;
+        border-radius: 4px 4px 0px 0px;
+        border-color: Silver;
+        background: #eee;
+        font-size: 14px;
+      }
+      
+      .table-header {
+        border-style: none solid solid solid;
+        border-color: silver;
+        border-width: 1px;
+        border-color: Silver;
+        background: #eee;
+      }
+      
+      .table-input {
+        height: 20px;
+        border:1px solid Silver;
+        border-radius: 4px;
+      }
+      
+      .table-border {
+        border-style: none solid solid solid;
+        border-width: 1px;
+        border-color: Silver;
+        border-radius: 0px 0px 4px 4px;
+      }
+      
+  </style>
+    
+  <body onload = initialize()>
+                  
+    <!--<link href="https://emoncms.org/Theme/basic/emon-blue.css?v=3" rel="stylesheet">-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.1/css/bootstrap.min.css" integrity="sha256-1pnzA5kM6b19fJfpvTytakbs8lMvR1zyKuWCEyN4Ibk=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" integrity="sha256-yMjaV542P+q1RnH6XByCPDfUFhmOafWbeLPmqKh11zo=" crossorigin="anonymous" />		<script type="text/javascript" src="//code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment.min.js" integrity="sha256-Cjux44IGDGmZwm+qw4rtfj1swD9zdqmja4gaflupI8o=" crossorigin="anonymous"></script>    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js" integrity="sha256-5YmaxAwMjIpMrVlK84Y/+NjCpKnFYa8bWWBbUHSBGfU=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.1/js/bootstrap.min.js" integrity="sha256-+XG5Aa655VsH1HKv7gm9WuBRWeERnb0W2ZPkc1Zef8A=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js" integrity="sha256-5YmaxAwMjIpMrVlK84Y/+NjCpKnFYa8bWWBbUHSBGfU=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js" integrity="sha256-LMe2LItsvOs1WDRhgNXulB8wFpq885Pib0bnrjETvfI=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.stack.min.js" integrity="sha256-ktoUUP+bAQB7GIVsROjHJhc0t7wdfGJV7/V3xvewiYk=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.selection.min.js" integrity="sha256-1Zrfof7MBfulEOIkj6Y0yLhQkbT7Cq2WtO3xlRGUF9c=" crossorigin="anonymous"></script>
+    <script language="javascript" type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery.flot@0.8.3/jquery.flot.time.min.js"></script>
+
+    <div id="wrapper" style="max-width:1600px">
+      
+         <!---------------------------------------------------------------------------------------------
+                            Sidebar - Feedlist and Graph Save 
+          ---------------------------------------------------------------------------------------------->
+      <div id="sidebar-wrapper">
+          <div style="padding-left:10px;">
+              <div id="sidebar-close" style="float:right; cursor:pointer; padding:10px;"><i class="glyphicon glyphicon-remove"></i></div>
+              <h3>Data Source</h3>
+              
+          </div>
+          <div style="overflow-x: hidden; background-color:#f3f3f3; width:100%">
+              <table class="table" id="feeds">
+              </table>
+          </div>
+          
+          <div style="padding:10px;">
+            
+              <div class="input-group pad-bottom-5">
+                  <label for="graph-select">Saved Graphs:</label>
+                  <select id="graph-select" class="form-control" style="width:200px">
+              </select>
+              </div>
+            
+              <div class="input-group pad-bottom-5">
+                  <label for="graph-name">Graph name:</label>
+                  <input id="graph-name" type="text" class="form-control" style="width:200px" />
+              </div>
+              
+              <div class="btn-group pad-bottom-5">
+                  <button id="graph-delete" class="btn-warning" style="display:none">Delete</button>
+                  <button id="graph-save" class="btn-default">Save</button>
+                  <button id="graph-reset" class="btn-default">Reset</button>
+              </div>
+          </div>
+        
+      </div>
+    
+       <!---------------------------------------------------------------------------------------------
+                        Main content 
+      ---------------------------------------------------------------------------------------------->
+      
+      <div id="body-wrapper">
+        
+        <!---------------------------------------------------------------------------------------------
+                        Header
+      ---------------------------------------------------------------------------------------------->
+          <div id="page-header" class="container" style="width:100%; padding-bottom:5px;">
+            <div class="row">
+              <div class="col-xs-9">
+                <h3 id="Graph" class="text-left">Data viewer</h3>
+              </div>
+              <div class="col-xs-3">
+                <h3 id="iotaname" class="text-right">IoTaWatt</h3>
+              </div>
+              <div class-xs-3>
+                <span> </span>
+              </div>
+            </div>
+          </div>
+          
+          <div id="error" style="display:none"></div>
+      
+         
+      
+          <!---------------------------------------------------------------------------------------------
+                            Main content 
+          ---------------------------------------------------------------------------------------------->
+          
+          
+            
+               <div id="error" style="display:none"></div>
+          <!---------------------------------------------------------------------------------------------
+                            Period, Group, zoom, pan, reload 
+          ---------------------------------------------------------------------------------------------->
+              
+              <div class="container form-inline" style="width:100%; padding-bottom:5px;">
+                  <div class="btn-group pad-bottom-5">
+                    <button class="btn-default" id="sidebar-open"><i class="glyphicon glyphicon-list-alt"></i></button>
+                  </div>   
+                  <div class="input-group pad-bottom-5">
+                    <select id="select-period" class="form-control select-period" name="options" style="width: 190px"></select>
+                  </div>
+                
+                  <div class="btn-group pad-bottom-5">
+                    <button class='btn-default zoom' value=.5>+</button>
+                    <button class='btn-default zoom' value=2>-</button>
+                    <button class='btn-default pan' value=-1><<</button>
+                    <button class='btn-default pan' value=-0.5><</button>
+                    <button class='btn-default pan' value=+0.5>></button>
+                    <button class='btn-default pan' value=+1>>></button>
+                    <button id="reload" class="btn-default">Reload</button>
+                  </div>
+  
+              </div>   
+
+          <!---------------------------------------------------------------------------------------------
+                            Graph placeholder
+          ---------------------------------------------------------------------------------------------->
+      
+              <div id="placeholder_bound" class="container" style="width:100%; height:400px; padding-bottom:5px;">
+                  <div id="placeholder"></div>
+              </div>
+              
+          <!---------------------------------------------------------------------------------------------
+                        Start Date, End Date, Group, Y-Axis range
+          ---------------------------------------------------------------------------------------------->
+          
+              <div class="container" style="width:100%; padding-bottom:5px;">
+                <form class="form-inline">
+                  <div class="input-group pad-bottom-5">
+                    <label for="request-start" class="input-group-addon" style="text-align:right; width:50px;">Start:</label>
+                    <span id='datetimepicker1' class="input-group" style="width: 210px">
+                        <input type='text' class="form-control" id="request-start" />
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                    </span>
+                  </div>
+      
+                  <div class="input-group pad-bottom-5">
+                    <label for="request-end" class="input-group-addon" style="text-align:right; width:50px">End:</label>
+                    <span id='datetimepicker2' class="input-group" style="width: 210px">
+                        <input type='text' class="form-control" id="request-end" />
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar"></span>
+                        </span>
+                    </span>
+                  </div>
+                    
+                  <div class="input-group pad-bottom-5">
+                    <label for="group" class="input-group-addon">Group:</label>
+                    <select id="group" class="form-control" style="width: 150px">
+                        <option id="group-auto">auto</option>
+                        <option>Hourly</option>
+                        <option>Daily</option>
+                        <option>Weekly</option>
+                        <option>Monthly</option>
+                        <option>Annual</option>
+                    </select>
+                  </div>
+                  
+                  <div id="yaxisLmenu" class="input-group pad-bottom-5">
+                      <span class="input-group-addon">Left Axis:</span>
+                      <label for="yaxisLmin" class="input-group-addon">min</label>
+                      <input id="yaxisLmin" type="text" class="text-center text-lowercase yaxis" value="auto"/>
+                      <label for="yaxisLmax" class="input-group-addon">max</label>
+                      <input id="yaxisLmax" type="text" class="text-center text-lowercase yaxis" value="auto"/>
+                  </div>
+                
+                  <div id="yaxisRmenu" class="input-group pad-bottom-5">
+                      <span class="input-group-addon">Right Axis:</span>
+                      <label for="yaxisRmin" class="input-group-addon">min</label>
+                      <input id="yaxisRmin" type="text" class="text-center text-lowercase yaxis" value="auto"/>
+                      <label for="yaxisRmax" class="input-group-addon">max</label>
+                      <input id="yaxisRmax" type="text" class="text-center text-lowercase yaxis" value="auto"/>
+                  </div>
+                  
+                </form>
+              </div> 
+              
+                    <!-- Initialize the datetimepickers and link start/end -->
+    
+              <script>
+                var widgetOpen = false;
+                $('#datetimepicker1').datetimepicker({
+                  format: 'MMM D,YYYY h:mm a'
+                });
+                $('#datetimepicker2').datetimepicker({
+                  format: 'MMM D,YYYY h:mm a',
+                  useCurrent: false 
+                });
+                $('#datetimepicker1').on("dp.change", function(e) {
+                  $('#datetimepicker2').data('DateTimePicker').minDate(e.date);
+                  if(view.userChange){
+                    view.custom = true;
+                  }
+                });
+                $('#datetimepicker2').on("dp.change", function(e) {
+                  $('#datetimepicker1').data('DateTimePicker').maxDate(e.date);
+                  if(view.userChange){
+                    view.custom = true;
+                  }
+                });
+                $('#datetimepicker1,#datetimepicker2').on("dp.show", function(e) {
+                  widgetOpen = true;
+                });
+                $('#datetimepicker1,#datetimepicker2').on("dp.hide", function(e) {
+                  widgetOpen = false;
+                  if(view.custom){
+                    graph_reload();
+                  }
+                });
+                
+                var beginDate = $('#datetimepicker1').data('DateTimePicker');
+                var endDate = $('#datetimepicker2').data('DateTimePicker');
+              </script>
+          
+         
+          <!---------------------------------------------------------------------------------------------
+                            Data Table
+          ---------------------------------------------------------------------------------------------->
+          
+              <div class="container data-tables" style="width:100%; padding-bottom:5px;">
+                <div class="table-responsive border" style="max-width:768px;">
+                  <div>
+                    <button type='button' class='btn-block table-top text-right'><strong>Show Statistics</button>
+                  </div>
+                  <table id="sourceOptionsTable" class="table">
+                    <tr class="table-header">
+                      <th></th>
+                      <th style="text-align:left">Source</th>
+                      <th style='text-align:center'>Color</th>
+                      <th style='text-align:center'>Line/Bar</th>
+                      <th style='text-align:center'>Fill</th>
+                      <th style='text-align:center'>Stack</th>
+                      <th style='text-align:center'>Delta</th>
+                      <th style='text-align:center'>Decimals</th>
+                      <th style='text-align:center'>Scale</th>
+                    </tr>
+                    <tbody id="sourceOptionsBody" class="table-border"></tbody>
+                  </table>
+                  <table id="sourceStatsTable" class="table">
+                    <tr class="table-header">
+                      <th></th>
+                      <th style="text-align:left">Source</th>
+                      <th style='text-align:center'>Quality</th>
+                      <th style='text-align:center'>Min</th>
+                      <th style='text-align:center'>Max</th>
+                      <th style='text-align:center'>Diff</th>
+                      <th style='text-align:center'>Average</th>
+                      <th style='text-align:center'></th>
+                    </tr>
+                    <tbody id="sourceStatsBody" class="table-border"></tbody>
+                  </table>
+                </div>
+                <button id="showcsv" class="btn-default" value="hide">Show CSV Output</button>
+              </div>
+          
+          <!---------------------------------------------------------------------------------------------
+                            CSV options and area
+          ---------------------------------------------------------------------------------------------->
+          
+              <div class="container form-inline data-tables" style="width:100%; padding-bottom:5px;">
+                      <div class="input-group pad-bottom-5 csvoptions">
+                          <label for="csvtimeformat" class="input-group-addon">Time format:</label>
+                          <select id="csvtimeformat" class="form-control" style="width: 150px">
+                              <option value="seconds">Seconds since start</option>
+                              <option value="datestr" selected>Date-time string</option>
+                          </select>
+                      </div>
+                      <div class="input-group pad-bottom-5 csvoptions">
+                          <label for="csvnullvalues" class="input-group-addon">Null values::</label>
+                          <select id="csvnullvalues" class="form-control" style="width: 150px">
+                              <option value="show" selected>Show</option>
+                              <option value="remove">Remove line</option>
+                          </select>
+                      </div>
+                      <div class="btn-group pad-bottom-5 csvoptions">
+                          <button id="copycsv" class="btn-default">Copy</button>
+                          <!--<button id="downloadcsv" class="btn-default">Download</button>-->
+                      </div>
+              </div>
+              <div class="container data-tables" style="width:100%; padding-bottom:5px;">
+                  <textarea id="csv" class="csvoptions" download="iotawatt.csv" style="width:98%; height:500px; margin-top:10px"></textarea>
+              </div>
+
+      <!--------------------------------------------------------------------------------------------->
+  
+        </div>
+      </div>
+    </div>      <!-- page-content-wrapper -->
+  </div>          <!-- wrapper -->
+</body>
+
 <script>
+
+    /**********************************************************************************************
+                     Predefined reporting periods that can be selected
+    **********************************************************************************************/
 
 var periodTable = [
     {label:'custom dates'},
@@ -189,7 +405,7 @@ var periodTable = [
     {label:'last 3 hours', begin:'s-10800s', end:'s', group:'15s'},
     {label:'last 6 hours', begin:'s-21600s', end:'s', group:'30s'},
     {label:'last 12 hours', begin:'s-43200s', end:'s', group:'60s'},
-    {label:'last 24 hours', begin:'s-86400s', end:'s', group:'120s', selected:true},
+    {label:'last 24 hours', begin:'s-86400s', end:'s', group:'120s'},
     {label:'last 2 days to date', begin:'d-1d', end:'s', group:'auto'},
     {label:'last 3 days to date', begin:'d-2d', end:'s', group:'auto'},
     {label:'today', begin:'d', end:'s', group:'auto'},
@@ -201,63 +417,58 @@ var periodTable = [
     {label:'this year to date', begin:'y', end:'s', group:'auto'}
     ];
 
-
-var view =
-{
-  custom:false,
-  start:0,
-  end:0,
-  period:0,
-  group:'auto',
-  
+var view = {
+    custom:false,
+    userChange:true,
+    periodIndex:0,
+    group:'auto',
+    interval:120,
+    windowTime:0,
+    
   'reset':function(){
     view.custom = false;
-    view.start = 0;
-    view.end = 0;
     view.group = 'auto';
     $("#group-auto").prop("selected",true);
-    $("#select-time").empty();
+    $("#select-period").empty();
     for(t in periodTable){
-      var selected = "";
-      if(periodTable[t].selected != undefined && periodTable[t].selected){
-        selected = " selected=true";
-        view.timewindow(t);
-      }
-      $("#select-time").append("<option value=" + t + selected + ">" + periodTable[t].label + "</option>");
+      $("#select-period").append("<option value=" + t + ">" + periodTable[t].label + "</option>");
     }
+    $('.select-period option:contains("today")').prop('selected',true);
+    $('.select-period option:contains("today")').change();
   },
-
+  
   'zoom':function(x)
   {
     this.custom = true;
-    var time_adj = view.round2group((this.end - this.start) * (1-x)/2);
-    this.start += time_adj;
-    this.end -= time_adj;
+    var time_adj = this.round2group(view.windowTime * (1-x)/2);
+    this.set(response.range[0]+time_adj, response.range[1]-time_adj);
   },
   
   'pan':function(x)
   {
     this.custom = true;
-    var time_adj = view.round2group((this.end - this.start) * x);
-    this.start += time_adj;
-    this.end += time_adj;
-  },
-
-  'timewindow':function(period)
-  {
-    this.period = period;
-    this.custom = false;
+    var time_adj = view.round2group(view.windowTime * x);
+    this.set(response.range[0]+time_adj, response.range[1]+time_adj);
   },
   
+  'set':function(begin,end)
+  {
+    view.userChange = false;
+    beginDate.maxDate(new Date(begin*1000));
+    beginDate.date(new Date(begin*1000));
+    endDate.date(new Date(end*1000));
+    view.userChange = true;
+  },
+
   'round2group':function(time_adj){
-    var group = 24*3600*1000;
-    if(view.group == "Hourly") group = 3600*1000;
-    else if(view.group == "auto") group = 5*1000;
-    return time_adj - time_adj % group;
+    var group = 24*3600;
+    if(view.group == "Hourly") group = 3600;
+    else if(view.group == "auto") group = 5;
+    return (time_adj - time_adj % group);
   }
 }
 
-function stats(dataindex)
+function getStats(dataindex)
 {
     var sum = 0;
     var i=0;
@@ -266,9 +477,9 @@ function stats(dataindex)
     var npoints = 0;
     var npointsnull = 0;
     var val = null;
-    for (var z in queryData){
-      if (queryData[z][dataindex]!=null){ 
-        val = queryData[z][dataindex];
+    for (var z in response.data){
+      if (response.data[z][dataindex]!=null){ 
+        val = response.data[z][dataindex];
         if (i==0) {
             maxval = val;
             minval = val;
@@ -282,22 +493,12 @@ function stats(dataindex)
       npoints ++;
     }
     var mean = sum / i;
-    sum = 0, i=0;
-    for (z in queryData)
-    {
-      if (queryData[z][dataindex]!=null){ 
-        sum += (queryData[z][dataindex] - mean) * (queryData[z][dataindex] - mean);
-        i++;
-      }
-    }
-    var stdev = Math.sqrt(sum / i);
     
     return {
         "minval":minval,
         "maxval":maxval,
         "diff":maxval-minval,
         "mean":mean,
-        "stdev":stdev,
         "npointsnull":npointsnull,
         "npoints":npoints
     };
@@ -358,53 +559,22 @@ function setTitle(){
 <script language="javascript" type="text/javascript" src="graph2.js"></script>
 
 <script>
-    var path = "http://" + location.host; // + "/";
-	  var getbackup = false;
-    var configFileURL = "config.txt";
-    
+
+  var path = "http://" + location.host; // + "/";
+	var getbackup = false;
+  var configFileURL = "config.txt";
+
+function initialize(){
     sidebar_resize();
     graph_init_editor();
-    
-    // Assign active feedid from URL
-    var urlparts = window.location.pathname.split("graph/");
-    if (urlparts.length==2) {
-        feedid = parseInt(urlparts[1]);
-        f = getfeed(feedid);
-        feedlist.push({id:feedid, name:f.name, tag:f.tag, yaxis:1, fill:0, scale: 1.0, delta:false, dp:1, plottype:'lines'});
-    }
-    
     view.reset();
-    
-    // for(t in periodTable){
-    //   var selected = "";
-    //   if(periodTable[t].selected != undefined && periodTable[t].selected){
-    //     selected = " selected=true";
-    //     view.timewindow(t);
-    //   }
-    //   $("#select-time").append("<option value=" + t + selected + ">" + periodTable[t].label + "</option>");
-    // }
-    
     setTitle();
     load_feed_selector();
     graph_resize();
-    
-    // var timeWindow = 3600000*24; //default to 1 hour
-    // var now = Math.round(+new Date * 0.001)*1000;
-    // view.start = now - timeWindow;
-    // view.end = now;
-    
+    moment().format();
     graph_reload();
-    
+}
+        
 </script>
 
-        </div></div></div>
-        
-        <div style="clear:both; height:60px;"></div>
-        </div>
-
-        <div id="footer">
-            Powered by             <a href="http://openenergymonitor.org">openenergymonitor.org</a>
-            <span></span>
-        </div>
-    </body>
 </html>
