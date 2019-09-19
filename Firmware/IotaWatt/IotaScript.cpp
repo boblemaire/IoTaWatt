@@ -32,8 +32,7 @@ Script::Script(JsonObject& JsonScript)
       ,_tokens(nullptr)
       ,_units(unitsWatts)
       
-     {
-      _next = NULL;
+    {
       JsonVariant var = JsonScript["name"];
       if(var.success()){
         _name = charstar(var.as<char*>());
@@ -49,10 +48,30 @@ Script::Script(JsonObject& JsonScript)
           } 
         }
       }
+
       var = JsonScript["script"];
       if(var.success()){
         encodeScript(var.as<char*>());
       }
+    }
+
+Script::Script(const char* name, const char* unit, const char* script)
+      :_next(nullptr)
+      ,_name(nullptr)
+      ,_constants(nullptr)
+      ,_tokens(nullptr)
+      ,_units(unitsWatts)
+       
+    {
+      _name = charstar(name);
+
+       for(int i=0; i<unitsNone; i++){
+          if(strcmp_ci(unit,unitstr[i]) == 0){
+            _units = (units)i;
+            break;
+          } 
+        }
+      encodeScript(script);
     }
 
 Script::~Script() {

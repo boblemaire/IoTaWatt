@@ -1,27 +1,29 @@
 var savedgraphs = [];
-var feeds = [];
+var series = [];
+var series = [];
 var feedlist = [];
 var plotdata = [];
+var response = {};
 
 var loading = false;
 var reload = false;
-var highRes = false;
-var highResTimer;
-var response = {};
 
-var embed = false;
-var skipmissing = 0;
-var showcsv = 0;
-
-var showmissing = true;
-var showtag = true;
+var showunit = true;
 var showlegend = true;
+
+var units = [
+  "Volts",
+  "Watts",
+  "kWh",
+  "Amps",
+  "VA",
+  "PF",
+  "Hz"
+  ]
 
 var yaxis = {
     left: {min: "auto", max: "auto", used: false},
     right: {min: "auto", max: "auto", used: false}}
-var showtag = true;
-var active_histogram_feed = 0;
 
 var colors = [
   "#ff8000",    // orange
@@ -39,7 +41,11 @@ var colors = [
   "#408080",    // pastel green
   "#ffff00",    // yellow
   "#ff80c0"     // 
-]
+  ]
+
+    //********************************************************************************************
+    //        Graph Reset - make a fresh start
+    //********************************************************************************************
 
 $("#graph-reset").click(function(){
   view.reset();
@@ -73,24 +79,24 @@ $("#group").change(function() {
     //********************************************************************************************
 
 $("body").on("change","#yaxisLmin",function(){
-        yaxis.left.min = $(this).val();
-        graph_draw();
-    });
-    
-    $("body").on("change","#yaxisLmax",function(){
-        yaxis.left.max = $(this).val();
-        graph_draw();
-    });
+    yaxis.left.min = $(this).val();
+    graph_draw();
+});
 
-    $("body").on("change","#yaxisRmin",function(){
-        yaxis.right.min = $(this).val();
-        graph_draw();
-    });
+$("body").on("change","#yaxisLmax",function(){
+    yaxis.left.max = $(this).val();
+    graph_draw();
+});
 
-    $("body").on("change","#yaxisRmax",function(){
-        yaxis.right.max = $(this).val();
-        graph_draw();
-    });
+$("body").on("change","#yaxisRmin",function(){
+    yaxis.right.min = $(this).val();
+    graph_draw();
+});
+
+$("body").on("change","#yaxisRmax",function(){
+    yaxis.right.max = $(this).val();
+    graph_draw();
+});
     
     //********************************************************************************************
     //        Zoom, Pan, Reload
@@ -122,6 +128,29 @@ $('#placeholder').bind("plothover", function (event, pos, item)
     } 
 });
 
+function tooltip(x, y, contents, bgColour)
+{
+    var offset = 15; // use higher values for a little spacing between `x,y` and tooltip
+    var elem = $('<div id="tooltip">' + contents + '</div>').css({
+        position: 'absolute',
+        display: 'none',
+        'font-weight':'bold',
+        border: '1px solid rgb(255, 221, 221)',
+        padding: '2px',
+        'background-color': bgColour,
+        opacity: '0.8'
+    }).appendTo("body").fadeIn(200);
+
+    var elemY = y - elem.height() - offset;
+    var elemX = x - elem.width()  - offset;
+    if (elemY < 0) { elemY = 0; } 
+    if (elemX < 0) { elemX = 0; } 
+    elem.css({
+        top: elemY,
+        left: elemX
+    });
+};
+
     //********************************************************************************************
     //        Handle window and graph resize
     //********************************************************************************************
@@ -144,7 +173,7 @@ function graph_resize() {
 }
 
     //********************************************************************************************
-    //        Show/Hide CSV
+    //        Show/Hide/Copy CSV
     //********************************************************************************************
 
 $("#showcsv").click(function(){
@@ -174,7 +203,7 @@ $("#copycsv").click(function(){
   document.execCommand("Copy");
 });
 
-//********************************************************************************************
+    //********************************************************************************************
     //        Detail Lines - color, type(line/bar), fill, stack, delta, decimals, scale 
     //********************************************************************************************
     
@@ -262,23 +291,32 @@ function graph_init_editor()
     graph_load_savedgraphs();
     $("#graph-name").val("");
     
-    // Load user feeds for editor
+    // Load user series for editor
     
     $.ajax({                                      
-        url: path+"/feed/list.json",
+        url: path+"/query?show=series",
         async: false,
         dataType: "json",
         success: function(data_in) {
-            feeds = data_in;
+            series = data_in.series;
             
-            var numberoftags = 0;
-            feedsbytag = {};
-            for (var z in feeds) {
-                if (feedsbytag[feeds[z].tag]==undefined) {
-                    feedsbytag[feeds[z].tag] = [];
-                    numberoftags++;
+            seriesbyunits = {};
+            for(var z in units){
+              seriesbyunits[units[z]] = [];
+            }
+            for (var z in series) {
+                series[z].id = series[z].name + series[z].unit;
+                
+                if(series[z].unit == "Volts" || series[z] == "Hz"){
+                  seriesbyunits["Volts"].push(series[z]);
+                  seriesbyunits["Hz"].push(series[z]);
+                } else {
+                  seriesbyunits["Watts"].push(series[z]);
+                  seriesbyunits["kWh"].push(series[z]);
+                  seriesbyunits["Amps"].push(series[z]);
+                  seriesbyunits["VA"].push(series[z]);
+                  seriesbyunits["PF"].push(series[z]);
                 }
-                feedsbytag[feeds[z].tag].push(feeds[z]);
             }
             
             var out = "";
@@ -288,30 +326,28 @@ function graph_init_editor()
             out += "<col span='1' style='width: 15%;'>";
             out += "</colgroup>";
             
-            for (var tag in feedsbytag) {
-               tagname = tag;
-               if (tag=="") tagname = "undefined";
-               out += "<tr class='tagheading' tag='"+tagname+"' style='background-color:#aaa; cursor:pointer'><td style='font-size:12px; padding:4px; padding-left:8px; font-weight:bold'>"+tagname+"</td><td></td><td></td></tr>";
-               out += "<tbody class='tagbody' tag='"+tagname+"'>";
-               for (var z in feedsbytag[tag]) 
+            for (var unit in seriesbyunits) {
+               unitname = unit;
+               if (unit=="") unitname = "undefined";
+               out += "<tr class='unitheading' unit='"+unitname+"' style='background-color:#aaa; cursor:pointer'><td style='font-size:12px; padding:4px; padding-left:8px; font-weight:bold'>"+unitname+"</td><td></td><td></td></tr>";
+               out += "<tbody class='unitbody' unit='"+unitname+"'>";
+               for (var z in seriesbyunits[unit]) 
                {
                    out += "<tr>";
-                   var name = feedsbytag[tag][z].name;
+                   var name = seriesbyunits[unit][z].name;
                    if (name.length>20) {
                        name = name.substr(0,20)+"..";
                    }
                    out += "<td>"+name+"</td>";
-                   out += "<td><input class='feed-select-left' feedid="+feedsbytag[tag][z].id+" type='checkbox'></td>";
-                   out += "<td><input class='feed-select-right' feedid="+feedsbytag[tag][z].id+" type='checkbox'></td>";
+                   out += "<td><input class='feed-select-left' feedid="+seriesbyunits[unit][z].id+" name="+seriesbyunits[unit][z].name+" units="+unit+" type='checkbox'></td>";
+                   out += "<td><input class='feed-select-right' feedid="+seriesbyunits[unit][z].id+" name="+seriesbyunits[unit][z].name+" units="+unit+" type='checkbox'></td>";
                    out += "</tr>";
                }
                out += "</tbody>";
             }
-            $("#feeds").html(out);
+            $("#series").html(out);
             
-            if (feeds.length>12 && numberoftags>2) {
-                $(".tagbody").hide();
-            }
+            $(".unitbody").hide();
         }
     });
     
@@ -319,6 +355,8 @@ function graph_init_editor()
 
     $("body").on("click",".feed-select-left",function(){
         var feedid = $(this).attr("feedid");
+        var name = $(this).attr("name");
+        var unit = $(this).attr("units");
         var checked = $(this)[0].checked;
         
         var loaded = false;
@@ -336,14 +374,17 @@ function graph_init_editor()
         }
         
         if (loaded==false && checked) {
-          pushfeedlist(feedid, 1);
+          pushfeedlist(name, unit, 1);
           graph_reload();
         }
     });
 
     $("body").on("click",".feed-select-right",function(){
         var feedid = $(this).attr("feedid");
+        var name = $(this).attr("name");
+        var unit = $(this).attr("units");
         var checked = $(this)[0].checked;
+
         
         var loaded = false;
         for (var z in feedlist) {
@@ -360,35 +401,35 @@ function graph_init_editor()
         }
         
         if (loaded==false && checked) {
-          pushfeedlist(feedid, 2);
+          pushfeedlist(name, unit, 2);
           graph_reload();
         }
     });
     
-    $("body").on("click",".tagheading",function(){
-        var tag = $(this).attr("tag");
-        $(".tagbody[tag='"+tag+"']").toggle();
+    $("body").on("click",".unitheading",function(){
+        var unit = $(this).attr("unit");
+        $(".unitbody[unit='"+unit+"']").toggle();
     });
 
 }
 
-function pushfeedlist(feedid, yaxis) {
-    for(z in feeds){
-        if(feeds[z].id == feedid){
-            var dp = (feeds[z].tag=="Energy") ? 3 : 1;
-            feedlist.push({id:feedid,
-                    name:feeds[z].name,
-                    tag:feeds[z].tag,
+function pushfeedlist(name, unit, yaxis) {
+    // for(z in series){
+    //     if(series[z].id == feedid){
+    //         var dp = (series[z].unit=="Energy") ? 3 : 1;
+            feedlist.push({    id:name+unit,
+                    name:name,
+                    unit:unit,
                     color:assign_color(),
                     yaxis:yaxis, fill:0,
                     stack:false,
                     scale: 1.0,
                     delta:false,
                     getaverage:false,
-                    dp:dp,
+                    dp:1,
                     plottype:'Line'});
-        }
-    }
+    //     }
+    // }
 }
 
 function assign_color(){
@@ -424,11 +465,8 @@ function graph_reload() {
       reload = false;
     }
     loading = true;
-    if(highRes != undefined){
-      clearTimeout(highResTimer);
-    }
     
-      // Build the query
+    // Build the query
     
     var errorstr = "";
     var begin = periodTable[view.periodIndex].begin;
@@ -442,13 +480,11 @@ function graph_reload() {
     var request = path+"/query?format=json&header=yes&resolution=high&missing=null" + 
                         "&begin=" + begin + 
                         "&end=" + end + 
-                        "&columns=[time.utc.unix";
+                        "&select=[time.utc.unix";
                         
     for(var i=0; i<feedlist.length; i++){
       request += "," + feedlist[i].name;
-      if(feedlist[i].tag == "Energy"){
-        request += ".kwh";
-      }
+      request += '.' + feedlist[i].unit;
       if(feedlist[i].delta){
         request += ".delta";
       }
@@ -586,7 +622,7 @@ function graph_draw()
           
           // Add series to plot
           var label = "";
-          if (showtag) label += feedlist[z].tag+": ";
+          if (showunit) label += feedlist[z].unit+": ";
           label += feedlist[z].name;
           if (yaxis.left.used && yaxis2used) {
               if (feedlist[z].yaxis == 1) {label += " &#10229;"}; // Long Left Arrow
@@ -649,14 +685,14 @@ function build_data_tables()
             line += "<a class='move-feed' title='Move down' feedid="+z+" moveby=1 ><i class='glyphicon glyphicon-arrow-down'></i></a>";
         }
         line += "</td>";
-        line += "<td style='text-align:left'>"+feedlist[z].tag+":"+feedlist[z].name+"</td>";
+        line += "<td style='text-align:left'>"+feedlist[z].unit+":"+feedlist[z].name+"</td>";
         line += "<td><input class='table-input linecolor' feedindex="+z+" style='width:50px;' type='color' value='"+feedlist[z].color+"'></td>";
         
         line += "<td><button type='button' class='table-input line-bar' feedindex="+z+">"+feedlist[z].plottype+"</button></td>";
         line += "<td style='text-align:center'><input class='fill' type='checkbox' feedindex="+z+(feedlist[z].fill?' checked':'') + " /></td>";
         line += "<td style='text-align:center'><input class='stack' type='checkbox' feedindex="+z+(feedlist[z].stack?' checked':'') + "></td>";
         line += "<td>";
-        if(feedlist[z].tag == "Energy"){
+        if(feedlist[z].unit == "Energy"){
           line += "<input class='delta' + feedindex="+z+" type='checkbox'";
           if(feedlist[z].delta){line += " checked"};
           line += "/>";}
@@ -674,7 +710,7 @@ function build_data_tables()
         if (z < feedlist.length-1) {
             line += "<a class='move-feed' title='Move down' feedid="+z+" moveby=1 ><i class='glyphicon glyphicon-arrow-down'></i></a>";
         }
-        line += "<td style='text-align:left'>"+feedlist[z].tag+":"+feedlist[z].name+"</td>";
+        line += "<td style='text-align:left'>"+feedlist[z].unit+":"+feedlist[z].name+"</td>";
         var quality = Math.round(100 * (1-(stats.npointsnull/stats.npoints)));
         line += "<td>"+quality+"% ("+(stats.npoints-stats.npointsnull)+"/"+stats.npoints+")</td>";
         line += "<td>"+stats.minval.toFixed(dp)+"</td>";
@@ -682,7 +718,7 @@ function build_data_tables()
         line += "<td>"+stats.diff.toFixed(dp)+"</td>";
         line += "<td>"+stats.mean.toFixed(dp)+"</td>";
         
-        if(feedlist[z].tag == "Power"){
+        if(feedlist[z].unit == "Power"){
           line += "<td>Wh="+Math.round(stats.mean*view.windowTime/3600)+"</td>";
         }
         
@@ -928,18 +964,18 @@ function sidebar_resize() {
 
 // ----------------------------------------------------------------------------------------
 function load_feed_selector() {
-    for (var z in feeds) {
-        var feedid = feeds[z].id;
+    for (var z in series) {
+        var feedid = series[z].id;
         $(".feed-select-left[feedid="+feedid+"]")[0].checked = false;
         $(".feed-select-right[feedid="+feedid+"]")[0].checked = false;
     }
     
     for (var z=0; z<feedlist.length; z++) {
         var feedid = feedlist[z].id;
-        var tag = feedlist[z].tag;
-        if (tag=="") tag = "undefined";
-        if (feedlist[z].yaxis==1) { $(".feed-select-left[feedid="+feedid+"]")[0].checked = true; $(".tagbody[tag='"+tag+"']").show(); }
-        if (feedlist[z].yaxis==2) { $(".feed-select-right[feedid="+feedid+"]")[0].checked = true; $(".tagbody[tag='"+tag+"']").show(); }
+        var unit = feedlist[z].unit;
+        if (unit=="") unit = "undefined";
+        if (feedlist[z].yaxis==1) { $(".feed-select-left[feedid="+feedid+"]")[0].checked = true; $(".unitbody[unit='"+unit+"']").show(); }
+        if (feedlist[z].yaxis==2) { $(".feed-select-right[feedid="+feedid+"]")[0].checked = true; $(".unitbody[unit='"+unit+"']").show(); }
     }
 }
 

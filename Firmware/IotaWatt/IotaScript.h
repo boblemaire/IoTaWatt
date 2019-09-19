@@ -23,7 +23,8 @@ class Script {
 
   public:
 
-    Script(JsonObject&); 
+    Script(JsonObject&);
+    Script(const char* name, const char* units, const char* script); 
     ~Script();
 
     const char*   name();     // name associated with this Script

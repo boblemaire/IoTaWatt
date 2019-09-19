@@ -103,7 +103,6 @@
     
   <body onload = initialize()>
                   
-    <!--<link href="https://emoncms.org/Theme/basic/emon-blue.css?v=3" rel="stylesheet">-->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.1/css/bootstrap.min.css" integrity="sha256-1pnzA5kM6b19fJfpvTytakbs8lMvR1zyKuWCEyN4Ibk=" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" integrity="sha256-yMjaV542P+q1RnH6XByCPDfUFhmOafWbeLPmqKh11zo=" crossorigin="anonymous" />		<script type="text/javascript" src="//code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment.min.js" integrity="sha256-Cjux44IGDGmZwm+qw4rtfj1swD9zdqmja4gaflupI8o=" crossorigin="anonymous"></script>    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js" integrity="sha256-5YmaxAwMjIpMrVlK84Y/+NjCpKnFYa8bWWBbUHSBGfU=" crossorigin="anonymous"></script>
@@ -128,7 +127,7 @@
               
           </div>
           <div style="overflow-x: hidden; background-color:#f3f3f3; width:100%">
-              <table class="table" id="feeds">
+              <table class="table" id="series">
               </table>
           </div>
           
@@ -517,29 +516,6 @@ var urlParams;
     while (match = search.exec(query))
        urlParams[decode(match[1])] = decode(match[2]);
 })();
-
-function tooltip(x, y, contents, bgColour)
-{
-    var offset = 15; // use higher values for a little spacing between `x,y` and tooltip
-    var elem = $('<div id="tooltip">' + contents + '</div>').css({
-        position: 'absolute',
-        display: 'none',
-        'font-weight':'bold',
-        border: '1px solid rgb(255, 221, 221)',
-        padding: '2px',
-        'background-color': bgColour,
-        opacity: '0.8'
-    }).appendTo("body").fadeIn(200);
-
-    var elemY = y - elem.height() - offset;
-    var elemX = x - elem.width()  - offset;
-    if (elemY < 0) { elemY = 0; } 
-    if (elemX < 0) { elemX = 0; } 
-    elem.css({
-        top: elemY,
-        left: elemX
-    });
-};
 
 function setTitle(){
   var xmlHttp = new XMLHttpRequest();
