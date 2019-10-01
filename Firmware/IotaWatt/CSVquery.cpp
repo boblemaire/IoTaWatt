@@ -14,6 +14,7 @@ CSVquery::CSVquery()
     ,_missingSkip(false)
     ,_missingNull(true)
     ,_missingZero(false)
+    ,_timeOnly(false)
     ,_columns(nullptr)
     ,_intervals{5,10,15,20,30,60,120,300,600,1200,1800,3600,7200,14400,21600,28800}
     {}
@@ -73,7 +74,7 @@ bool    CSVquery::setup(){
         trace(T_CSVquery,10);
 
         String group = server.arg(F("group"));
-        group.toLowerCase();
+        //group.toLowerCase();
         if(group.equals("auto")){
             uint32_t rawInterval = (_end - _begin) / (_highRes ? 800 : 400);
             uint32_t interval = 86400;
@@ -92,7 +93,7 @@ bool    CSVquery::setup(){
             else if(group.endsWith("h")) _groupUnits = tUnitsHours;
             else if(group.endsWith("d")) _groupUnits = tUnitsDays;
             else if(group.endsWith("w")) _groupUnits = tUnitsWeeks;
-            else if(group.endsWith("mo")) _groupUnits = tUnitsMonths;
+            else if(group.endsWith("M")) _groupUnits = tUnitsMonths;
             else if(group.endsWith("y")) _groupUnits = tUnitsYears;
             else if(_groupMult > 0 && _groupMult % 5 == 0) _groupUnits = tUnitsSeconds;
             else return false;
@@ -235,9 +236,9 @@ bool    CSVquery::setup(){
                     col->unit = Watts;
                     col->decimals = 1;
                 }
-                else if(method.equalsIgnoreCase("kwh")){
-                    col->unit = kWh;
-                    col->decimals = 3;
+                else if(method.equalsIgnoreCase("wh")){
+                    col->unit = Wh;
+                    col->decimals = 0;
                 }
                 else if(method.equalsIgnoreCase("amps")){
                     col->unit = Amps;
@@ -257,6 +258,10 @@ bool    CSVquery::setup(){
                 }
 
                 else if(col->unit == kWh && method.equals("delta")){
+                    col->delta = true;
+                }
+
+                else if(col->unit == Wh && method.equals("delta")){
                     col->delta = true;
                 }
 
@@ -282,7 +287,6 @@ bool    CSVquery::setup(){
                 char newscript[4];
                 snprintf(newscript,4,"@%d",input);
                 col->script = new Script(inputChannel[input]->_name, unitstr(col->unit), newscript);
-                col->script->print();
             }
 
             column* next = col->next;
@@ -291,6 +295,9 @@ bool    CSVquery::setup(){
             col = next;
         }
         _columns = prev;
+        if(_columns->next == nullptr && _columns->source == 'T'){
+            _timeOnly = true;
+        }
 
         // Display the columns
 
@@ -443,35 +450,9 @@ void CSVquery::buildLine(){
             }
         }
 
-        // else if(col->source == 'I'){
-        //     double value = 0.0;
-        //     if(col->unit == Volts) {
-        //         value = (_newRec->accum1[col->input] - _oldRec->accum1[col->input]) / elapsedHours;
-        //     } 
-        //     else if(col->unit == Watts) {
-        //         value = (_newRec->accum1[col->input] - _oldRec->accum1[col->input]) / elapsedHours;
-        //     }
-        //     else if(col->unit == kWh) {
-        //         value = (_newRec->accum1[col->input] - (col->delta ? _oldRec->accum1[col->input] : 0)) / 1000.0;
-        //     }
-        //     printValue(value, col->decimals);
-        // }
-
-        // else if(col->source == 'O'){
         else {
             double value = 0.0;
-             if(col->unit == Volts) {
-                value = col->script->run(_oldRec, _newRec, elapsedHours);
-            } 
-            else if(col->unit == Watts) {
-                value = col->script->run(_oldRec, _newRec, elapsedHours);
-            }
-            else if(col->unit == kWh) {
-                value = col->script->run((col->delta ? _oldRec : nullptr), _newRec, 1000.0);
-            }
-            else { //if(col->unit == 'O'){
-                value = col->script->run(_oldRec, _newRec, elapsedHours);
-            }
+            value = col->script->run(_oldRec, _newRec, elapsedHours, col->unit);
             printValue(value, col->decimals);
         }
 
@@ -599,18 +580,18 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                         // Read group end record
 
                     _newRec->UNIXtime = (uint32_t)nextGroup((time_t)_oldRec->UNIXtime, _groupUnits, _groupMult);
-                    //if(_newRec->UNIXtime >= histLog.firstKey() || _newRec->UNIXtime >= currLog.firstKey()){
+                    if( ! _timeOnly){
                         logReadKey(_newRec);
-                    //}
+                    }
 
                         // If there is data or not skipping missing data, 
                         // Generate a line.             
 
-                    if( ! (_newRec->logHours == _oldRec->logHours && _missingSkip)){
+                    if( _timeOnly || (! (_newRec->logHours == _oldRec->logHours && _missingSkip))){
 
                         if( ! _firstLine){
                             if(_format == formatJson){
-                                _buffer.print(",\r\n");
+                                _buffer.print(',');
                             }
                             if(_format == formatCSV){
                                 _buffer.print("\r\n");
@@ -685,17 +666,19 @@ time_t  CSVquery::nextGroup(time_t time, tUnits units, int32_t inc){
 //      Relative local time expression:
 //          base time [modifier [modifier....]]
 //          base time is start of current:  y   year
-//                                          mo  month
+//                                          M   month
 //                                          w   week
 //                                          d   day
+//                                          h   hour
 //                                          m   minute
 //                                          s   last 5 seconds (equivalent to "now")
 //
 //          modifiers are:  +/- N period where:
 //                                          y   years
-//                                          mo  months   
+//                                          M  months   
 //                                          w   weeks
 //                                          d   days
+//                                          h   hours
 //                                          m   minutes
 //                                          s   seconds (N is mult of 5)    
 //
@@ -706,10 +689,11 @@ time_t  CSVquery::nextGroup(time_t time, tUnits units, int32_t inc){
 //          last hour                   s-1h        s
 //          last 12 hours               s-12h       s
 //          yesterday                   d-1d        d
-//          month to date               m           s
-//          last 6 whole months         m-6m        m
+//          month to date               M           s
+//          past two weeks              w-2w        w
+//          last 6 whole months         M-6M        M
 //          last 6 months               s-6m        s
-//          last day of last month      m-1d        m
+//          last day of last month      M-1d        M
 //
 //          This method can be very powerful and honors DST.  It is also independent of
 //          browser time zone, using the IoTaWatt time zone.      
@@ -772,16 +756,16 @@ time_t  CSVquery::parseTimeArg(String timeArg){
 
         // convert "mo" to 'M'
 
-    char* out = arg;
-    while(*ptr != 0){
-        if(*ptr == 'm' and *(ptr+1) == 'o'){
-            *out++ = 'M';
-            ptr += 2;
-        } else {
-            *out++ = *ptr++;
-        }
-    }
-    *out = 0;
+    // char* out = arg;
+    // while(*ptr != 0){
+    //     if(*ptr == 'm' and *(ptr+1) == 'o'){
+    //         *out++ = 'M';
+    //         ptr += 2;
+    //     } else {
+    //         *out++ = *ptr++;
+    //     }
+    // }
+    // *out = 0;
 
         // Check for starting identifier
 

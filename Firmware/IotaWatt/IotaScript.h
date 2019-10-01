@@ -5,15 +5,15 @@
 #include <ArduinoJson.h>
 #include "IotaLog.h"
 
-enum        units {
-            unitsWatts = 0,
-            unitsVolts = 1,
-            unitsAmps = 2,
-            unitsVA = 3,
-            unitsHz = 4,
-            unitsWh = 5,
-            unitskWh = 6,
-            unitsPF = 7,
+enum        units {    // Square one
+            Watts = 0,
+            Volts = 1,
+            Amps = 2,
+            VA = 3,
+            Hz = 4,
+            Wh = 5,
+            kWh = 6,
+            PF = 7,
             unitsNone = 8
             };         // Units to be computed   
 
@@ -34,6 +34,8 @@ class Script {
 
     double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours); // Run this Script
     double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units); // Run w/overide units
+    double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, const char* overideUnits);
+
     void    print();
     int     precision();
 

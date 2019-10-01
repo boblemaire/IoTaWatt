@@ -18,13 +18,14 @@ class  CSVquery {
                             show,               // Query is show series
                             select};            // Query is select series
 
-        enum        units   {Volts,             // Measurement units
-                             Watts,
-                             kWh,
-                             Amps,
-                             VA,
-                             Hz,
-                             PF};
+        // enum        units   {Volts = 1,         // Measurement units
+        //                      Watts = 0,         // Values must match values in IotaScript.h (Will combine someday);
+        //                      Wh = 8,
+        //                      kWh = 6,
+        //                      Amps = 2,
+        //                      VA = 3,
+        //                      Hz = 4,
+        //                      PF = 7};
 
         enum        tUnits {tUnitsSeconds,      // time units 
                             tUnitsMinutes,
@@ -59,6 +60,7 @@ class  CSVquery {
         bool        _missingSkip;               // Omit output line when no data
         bool        _missingNull;               // Produce null values when no data
         bool        _missingZero;               // Produce zero values when no data
+        bool        _timeOnly;                  // Query is for time only, no data needed    
 
         struct column {                         // Output column descriptor - built lifo then made fifo    
                     column* next;               // -> next in chain
