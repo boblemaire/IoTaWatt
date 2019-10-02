@@ -169,15 +169,16 @@ var colors = [      "#3a87fe",    // med blue
     **********************************************************************************************/
 
 var formats = [
-                    {max:1,        div:.001,     prefix:'m',   dp:0},
-                    {max:10,       div:1,        prefix:'',    dp:2},
-                    {max:100,      div:1,        prefix:'',    dp:1},
-                    {max:1000,     div:1,        prefix:'',    dp:0},
-                    {max:10000,    div:1000,     prefix:'k',   dp:2},
-                    {max:100000,   div:1000,     prefix:'k',   dp:1},
-                    {max:1000000,  div:1000,     prefix:'k',   dp:0},
-                    {max:1000000,  div:1000000,  prefix:'M',   dp:2},
-                    {max:10000000, div:1000000,  prefix:'M',   dp:1}
+                    {max:1,         div:.001,     prefix:'m',   dp:0},
+                    {max:10,        div:1,        prefix:'',    dp:2},
+                    {max:100,       div:1,        prefix:'',    dp:1},
+                    {max:1000,      div:1,        prefix:'',    dp:0},
+                    {max:10000,     div:1000,     prefix:'k',   dp:2},
+                    {max:100000,    div:1000,     prefix:'k',   dp:1},
+                    {max:1000000,   div:1000,     prefix:'k',   dp:0},
+                    {max:10000000,  div:1000000,  prefix:'M',   dp:2},
+                    {max:100000000, div:1000000,  prefix:'M',   dp:1},
+                    {max:100000000000, div:1000000,  prefix:'M',   dp:0}
               ]
 
     /**********************************************************************************************
@@ -1334,8 +1335,9 @@ function setTitle(){
       async: true,
       dataType: "json",
       success: function(result) {
-          document.title = result.device.name + " Data Viewer"
-          $("#Data-Viewer").html(result.device.name + " Data Viewer");
+          var title = result.device.name + " " + $("#title").html();
+          document.title = title;
+          $("#title").html(title);
       }
     });
 }
