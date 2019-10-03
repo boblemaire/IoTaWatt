@@ -1,438 +1,729 @@
-var savedgraphs = [];
-var feeds = [];
-var feedlist = [];
-var plotdata = [];
+    /**********************************************************************************************
+                     Global variables
+    **********************************************************************************************/
 
-var reloading = false;
+var savedgraphs = [];               // JWYT - graph definitions saved on IoTaWatt for selection
+var series = [];                    // All of the series available, loaded from initial query
+var feedlist = [];                  // Currently selected series+units
+var yaxes = [];                     // array of descriptors for currently active yaxes
+var response = {};                  // raw response from last data query
+
+var loading = false;                // semaphores used to control asynchronous data query
 var reload = false;
-var highRes = false;
-var highResTimer;
-var queryData = [];
+var refreshTimer;
+var refresh = false;
+var selectedunitcolor = "#00a1d8";  // Color to be used for selected unit
 
-var embed = false;
-var skipmissing = 0;
-var showcsv = 0;
+var path = "http://" + location.host; // + "/";     // used to call home
 
-var showmissing = false;
-var showtag = true;
-var showlegend = true;
+    /**********************************************************************************************
+                     Predefined reporting periods that can be selected
+    **********************************************************************************************/
 
-var floatingtime=1;
-var yaxismin="auto";
-var yaxismax="auto";
-var y2axismin="auto";
-var y2axismax="auto";
-var showtag = true;
+var initialperiod = "today";        // Initial period on reset
+var period = initialperiod;         // Currently selected period
 
-var previousPoint = 0;
+var periodTable = [ {label:'custom dates'},
+                    {label:'last 10 minutes', begin:'s-600s', end:'s'},
+                    {label:'last 30 minutes', begin:'s-1800s', end:'s'},
+                    {label:'last 1 hour', begin:'s-3600s', end:'s'},
+                    {label:'last 3 hours', begin:'s-10800s', end:'s'},
+                    {label:'last 6 hours', begin:'s-21600s', end:'s'},
+                    {label:'last 12 hours', begin:'s-43200s', end:'s'},
+                    {label:'last 24 hours', begin:'s-86400s', end:'s'},
+                    {label:'last 2 days to date', begin:'d-1d', end:'s'},
+                    {label:'last 3 days to date', begin:'d-2d', end:'s'},
+                    {label:'today', begin:'d', end:'s'},
+                    {label:'yesterday', begin:'d-1d', end:'d'},
+                    {label:'two days ago', begin:'d-2d', end:'d-1d'},
+                    {label:'this week to date', begin:'w', end:'s'},
+                    {label:'last week', begin:'w-1w', end:'w'},
+                    {label:'this month to date', begin:'M', end:'s'},
+                    {label:'last month', begin:'M-1M', end:'M'},
+                    {label:'this year to date', begin:'y', end:'s'},
+                    {label:'last year', begin:'y-1y', end:'y'},
+];
 
-var active_histogram_feed = 0;
+function build_period_selector(){
+  $("#select-period").empty();
+  for(t in periodTable){
+    $("#select-period").append("<option value=" + t + ">" + periodTable[t].label + "</option>");
+  }
+  $('#select-period option:contains('+period+')').prop('selected',true).change();
+}
 
- $("#graph-reset").click(function(){
-  view.reset();
+                    // Handle period select 
+
+$('#select-period').change(function () {
+    periodIndex = $(this).val();
+    period = periodTable[periodIndex].label;
+    custom_dates = (periodIndex == 0);
+    refresh &= periodTable[periodIndex].end == 's';
+    if(refresh){
+      $("#refresh-text").html(" Freeze");
+    } else {
+      $("#refresh-text").html(" Refresh");
+    }
+    query();
+});
+                  
+    /**********************************************************************************************
+                     Supported units and related parameters
+    **********************************************************************************************/
+
+var initialunit = "Watts";          // Initial unit on reset
+var unit = initialunit;             // Currently selected unit
+
+var units = [       {unit:"Volts", group:"V", label:"V",   dp:1,   min:"",   max:""},
+                    {unit:"Watts", group:"P", label:"W",   dp:1,   min:"",   max:""},
+                    {unit:"Wh",    group:"P", label:"Wh",  dp:1,   min:"",   max:""},
+                    {unit:"Amps",  group:"P", label:"A",   dp:3,   min:"",   max:""},
+                    {unit:"VA",    group:"P", label:"VA",  dp:1,   min:"",   max:""},
+                    {unit:"PF",    group:"P", label:"PF",  dp:3,   min:"",   max:""},
+                    {unit:"Hz",    group:"V", label:"Hz",  dp:2,   min:"",   max:""}
+            ];
+
+                    // Build unit select buttons
+
+function build_units_selector(){
+    var html = "";
+    for(u in units){
+      html += "<button class='btn-default unit-buttons'";
+      if(units[u].unit == unit){
+        html += " style='background:"+selectedunitcolor+"'";
+      }
+      html += ">" + units[u].unit + "</button>";
+    }
+    $("#units-select").html(html);
+}
+
+function unitindex(unit) {
+  for(u in units){
+    if(units[u].unit == unit) return u;
+  }
+}
+
+                    // Handle unit select button click
+
+$("body").on("click",".unit-buttons",
+    function(){
+      $(".unit-buttons").css("background","white");
+      $(this).css("background",selectedunitcolor);
+      unit = $(this).html();
+      build_source_list();
+    }
+);
+    /**********************************************************************************************
+                     Supported groups
+    **********************************************************************************************/
+
+var initialgroup = "auto";          // Initial group on reset
+var group = initialgroup;           // Currently selected group
+
+var groups = [      {group:"auto",    query:"auto"  },
+                    {group:"Hourly",  query:"1h"    },
+                    {group:"Daily",   query:"1d"    },
+                    {group:"Weekly",  query:"1w"    },
+                    {group:"Monthly", query:"1M"    },
+                    {group:"Yearly",  query:"1h"    }
+];
+
+                    // build group select options
+                    
+function build_group_options(){
+    $("#select-group").empty()
+    for(g in groups){
+      $("#select-group").append("<option value='"+groups[g].group+"'>"+groups[g].group+"</option>");
+    }
+    $("#select-group option:contains("+group+")").prop('selected',true).change();
+}
+
+                    // Handle group option select
+
+$("#select-group").change(function() {
+    group = $(this).val();
+    query();
+});
+
+    /**********************************************************************************************
+                     Colors that will be assigned to each plot series - in order of assignment
+    **********************************************************************************************/
+
+var colors = [      "#3a87fe",    // med blue
+                    "#96d35f",    // lt green
+                    "#e63b7a",    // pottery red
+                    "#feb43f",    // med orange
+                    "#be38f3",    // violet
+                    "#01c7fc",    // lt blue
+                    "#ff6250",    // red orange
+                    "#e4ef65",    // yellow green
+                    "#4e7a27",    // dark green
+                    "#99244f",    // fuchia
+                    "#fecb3e",    // lt orange
+                    "#5e30eb",    // dark blue 
+                    "#ff8648"     // orange
+];
+
+    /**********************************************************************************************
+                     Table used to scale kilo, milli, etc with associated decimal precision
+    **********************************************************************************************/
+
+var formats = [
+                    {max:1,             div:.001,     prefix:'m',   dp:0},
+                    {max:10,            div:1,        prefix:'',    dp:2},
+                    {max:100,           div:1,        prefix:'',    dp:1},
+                    {max:1000,          div:1,        prefix:'',    dp:0},
+                    {max:10000,         div:1000,     prefix:'k',   dp:2},
+                    {max:100000,        div:1000,     prefix:'k',   dp:1},
+                    {max:1000000,       div:1000,     prefix:'k',   dp:0},
+                    {max:10000000,      div:1000000,  prefix:'M',   dp:2},
+                    {max:100000000,     div:1000000,  prefix:'M',   dp:1},
+                    {max:100000000000,  div:1000000,  prefix:'M',   dp:0}
+              ]
+
+    /**********************************************************************************************
+                     context defines the current graph
+    **********************************************************************************************/
+
+var userDateChange = true;                      // Date change would be by user 
+var custom_dates = false;                       // Period is user modified dates
+var periodIndex = 0;                            // Index of selected period option
+var periodDuration = 0;                         // Duration of graph period in seconds
+var interval = 60;                              // Seconds represented by first group of response
+var showLegend = true;                          // Show the graph legend
+var showUnit = true;                            // Prefix series with unit: in graph legend
+
+    //********************************************************************************************
+    //        Graph Reset - make a fresh start
+    //********************************************************************************************
+
+$("#graph-reset").click(function(){
   feedlist = [];
-  queryData = [];
+  response.data = [];
   graph_load_savedgraphs();
   $("#graph-name").val("");
-  $(".feed-select-left").prop("checked",false);
-  $(".feed-select-right").prop("checked",false);
-  graph_reload();
+  $("#graph-save").hide();
+  $("#graph-delete").hide();
+  $(".reset-hide").hide();
+  
+  period = initialperiod;
+  build_period_selector();
+  unit = initialunit;
+  build_units_selector();
+  group = initialgroup;
+  build_group_options();
+  
+  build_source_list();
+
+  for(u in units){
+    units[u].min = "";
+    units[u].max = "";
+  }
+  $("#showSourceOptions").click();
 });
+
+    //********************************************************************************************
+    //        unitFormat - returns display string of val+units w/appropriate scaling and dp
+    //                     example 2406 Watts becomes "2.41 kW"
+    //********************************************************************************************
+  
+function unitFormat(val, unit)
+{   
+    if(unit == "Volts"){
+      return Number(val).toFixed(1)+" V";
+    }
+    if(unit == "PF"){
+      if(val > 0.999){
+        return Number(val).toFixed(2)+" PF";
+      }
+      return (Number(val).toFixed(3)+" PF").substring(1);
+    }
+    if(unit == "Hz"){
+      return Number(val).toFixed(2)+" Hz";
+    }
+    for(u in units){
+      if(units[u].unit == unit){
+        if(val == 0){
+          return "0 " + units[u].label;
+        }
+        for(f in formats){
+          if(Math.abs(val) < formats[f].max){
+            return (Number(val) / formats[f].div).toFixed(formats[f].dp) + " " + formats[f].prefix + units[u].label;
+          }
+        }
+      }
+    }
+    return Number(val).toFixed(0) + " " + unit;
+}
+
+    //********************************************************************************************
+    //        begin and end datetimepickers
+    //        Define the pickers, maintain min and max dates on change,
+    //        indicate custom period and graph-reload on change by user (explicit or implicit)
+    //********************************************************************************************    
+
+var widgetOpen = false;
+$('#datetimepicker1').datetimepicker({
+  format: 'MMM D,YYYY h:mm a'
+});
+$('#datetimepicker2').datetimepicker({
+  format: 'MMM D,YYYY h:mm a',
+  useCurrent: false 
+});
+$('#datetimepicker1').on("dp.change", function(e) {
+  $('#datetimepicker2').data('DateTimePicker').minDate(e.date);
+  if(userDateChange){
+    custom_dates = true;
+  }
+});
+$('#datetimepicker2').on("dp.change", function(e) {
+  $('#datetimepicker1').data('DateTimePicker').maxDate(e.date);
+  if(userDateChange){
+    custom_dates = true;
+  }
+});
+$('#datetimepicker1,#datetimepicker2').on("dp.show", function(e) {
+  widgetOpen = true;
+});
+$('#datetimepicker1,#datetimepicker2').on("dp.hide", function(e) {
+  widgetOpen = false;
+  if(custom_dates){
+    query();
+  }
+});
+
+var beginDate = $('#datetimepicker1').data('DateTimePicker');
+var endDate = $('#datetimepicker2').data('DateTimePicker');
+
+function set_custom_dates(begin,end){
+    userDateChange = false;
+    beginDate.maxDate(new Date(begin*1000));
+    beginDate.date(new Date(begin*1000));
+    endDate.date(new Date(end*1000));
+    userDateChange = true;
+}
+
+    //********************************************************************************************
+    //        Zoom, Pan, Reload
+    //********************************************************************************************    
+
+$(".zoom").click(function () {
+    custom_dates = true;
+    var time_adj = round2group(periodDuration * (1-$(this).val())/2);
+    set_custom_dates(response.range[0]+time_adj, response.range[1]-time_adj);
+    query();
+  }
+);
     
-$("#info").show();
-if ($("#showtag")[0]!=undefined) $("#showtag")[0].checked = showtag;
-if ($("#showlegend")[0]!=undefined) $("#showlegend")[0].checked = showlegend;
+    
+$('.pan').click(function() {
+    custom_dates = true;
+    var time_adj = round2group(periodDuration * $(this).val());
+    set_custom_dates(response.range[0]+time_adj, response.range[1]+time_adj);
+    query();
+  }
+);
 
-$(".zoom").click(function () {view.zoom($(this).val()); graph_reload();});
-$('.pan').click(function() {view.pan($(this).val()); graph_reload();});
-
-$('#select-time').change(function () {
-    floatingtime=1; 
-    view.timewindow($(this).val());
-    $(this).blur();
-    graph_reload();
+if(periodTable[periodIndex].end == "s" && refresh){
+                refreshTimer = setTimeout(function(){query();}, interval*1000);
+                $("#refresh-text").html(" Freeze");
+              }
+              
+$("#refresh").click(function(){
+  if(refresh){
+    clearTimeout(refreshTimer);
+    $("#refresh-text").html(" Refresh");
+    refresh = false;
+  } else {
+      refresh = true;
+      query();
+  }
 });
 
-$('#request-start').change(function(){
-  view.custom = true;
-  view.start = new Date($('#request-start').val()).getTime();
-  graph_reload();
-});
+function round2group(time){
+    var round = 24*3600;
+    if(group == "hour") round = 3600;
+    else if(group == "auto") round = 5;
+    return time - (time % round);
+}
 
-$('#request-end').change(function(){
-  view.custom = true;
-  view.end = new Date($('#request-end').val()).getTime();
-  graph_reload();
-});
-
-$('#placeholder').bind("legendclick", function (event, ranges) {
-  console.log(event);
-});
+    //********************************************************************************************
+    //        Handle cursor select range and tooltip
+    //********************************************************************************************
 
 $('#placeholder').bind("plotselected", function (event, ranges)
 {
-    view.custom = true; 
-    floatingtime=0; 
-    view.start = ranges.xaxis.from - (ranges.xaxis.from % view.interval);
-    view.end = ranges.xaxis.to + view.interval - (ranges.xaxis.to % view.interval);
-    graph_reload();
+    custom_dates = true;
+    set_custom_dates((ranges.xaxis.from/1000)-(ranges.xaxis.from % interval), (ranges.xaxis.to/1000)+interval-(ranges.xaxis.to % interval));
+    query();
 });
 
-$('#placeholder').bind("plothover", function (event, pos, item) {
+$('#placeholder').bind("plothover", function (event, pos, item)
+{
+    $("#tooltip").remove();
     if (item) {
-        var z = item.dataIndex;
-        if (previousPoint != item.datapoint) {
-            previousPoint = item.datapoint;
-
-            $("#tooltip").remove();
-            var item_time = item.datapoint[0];
-            var item_value = item.datapoint[1];
-
-            var d = new Date(item_time);
-            var days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-            var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-            var minutes = d.getMinutes();
-            if (minutes<10) minutes = "0"+minutes;
-            var date = d.getHours()+":"+minutes+" "+days[d.getDay()]+", "+months[d.getMonth()]+" "+d.getDate();
-            tooltip(item.pageX, item.pageY, "<span style='font-size:11px'>"+item.series.label+"</span><br>"+item_value+"<br><span style='font-size:11px'>"+date+"</span>", "#fff");
-        }
-    } else $("#tooltip").remove();
+        var value = unitFormat(item.datapoint[1],yaxes[item.series.yaxis.n-1].unit);
+        tooltip(item.pageX, item.pageY, "<span style='font-size:11px'>"+item.series.label+"</span><br>"+value+
+          "<br><span style='font-size:11px'>"+moment.unix(item.datapoint[0]/1000).format('H:mm ddd, MMM D')+"</span>", "#fff");
+    } 
 });
+
+function tooltip(x, y, contents, bgColour)
+{
+    var offset = 15; // use higher values for a little spacing between `x,y` and tooltip
+    var elem = $('<div id="tooltip">' + contents + '</div>').css({
+        position: 'absolute',
+        display: 'none',
+        'font-weight':'bold',
+        border: '1px solid rgb(255, 221, 221)',
+        padding: '2px',
+        'background-color': bgColour,
+        opacity: '0.8'
+    }).appendTo("body").fadeIn(200);
+
+    var elemY = y - elem.height() - offset;
+    var elemX = x - elem.width()  - offset;
+    if (elemY < 0) { elemY = 0; } 
+    if (elemX < 0) { elemX = 0; } 
+    elem.css({
+        top: elemY,
+        left: elemX
+    });
+};
+
+    //********************************************************************************************
+    //        Handle window and graph resize
+    //********************************************************************************************
 
 $(window).resize(function(){
-    if (!embed) sidebar_resize();
+    sidebar_resize();
     graph_resize();
-    graph_draw();
+    graph();
 });
 
 function graph_resize() {
     var top_offset = 0;
-    if (embed) top_offset = 35;
     var placeholder_bound = $('#placeholder_bound');
     var placeholder = $('#placeholder');
-
     var width = placeholder_bound.width();
     var height = width * 0.5;
-    if (embed) height = $(window).height();
-
     placeholder.width(width);
     placeholder_bound.height(height-top_offset);
     placeholder.height(height-top_offset);
 }
 
-function graph_init_editor()
-{
-    graph_load_savedgraphs();
-    $("#graph-name").val("");
+    //********************************************************************************************
+    //        CSV time-format, null-values, copy to clipboard
+    //********************************************************************************************
     
-    // Load user feeds for editor
+$("#csvtimeformat").change(function(){
+    printcsv();
+});
+
+$("#csvnullvalues").change(function(){
+    printcsv();
+});
+
+$("#copycsv").click(function(){
+  var textArea = document.getElementById("csv");
+  textArea.select();
+  document.execCommand("Copy");
+});
+
+    //********************************************************************************************
+    //        Detail Lines - color, type(line/bar), fill, stack, decimals, scale 
+    //********************************************************************************************
     
-    $.ajax({                                      
-        url: path+"/feed/list.json",
-        async: false,
-        dataType: "json",
-        success: function(data_in) {
-            feeds = data_in;
-            
-            var numberoftags = 0;
-            feedsbytag = {};
-            for (var z in feeds) {
-                if (feedsbytag[feeds[z].tag]==undefined) {
-                    feedsbytag[feeds[z].tag] = [];
-                    numberoftags++;
+$("body").on("change",".linecolor",function(){
+    feedlist[$(this).attr("feedindex")].color = $(this).val();
+    graph();
+});
+
+$("body").on("click",".line-bar",function(){
+    if($(this).html() == 'Line'){
+      $(this).html('Bar');
+    } else {
+      $(this).html('Line');
+    }
+    feedlist[$(this).attr("feedindex")].plottype = $(this).html();
+  graph();
+});
+
+$("body").on("change",".fill",function(){
+    feedlist[$(this).attr("feedindex")].fill = $(this)[0].checked;
+    graph();
+});
+
+$("body").on("change",".stack",function(){
+    feedlist[$(this).attr("feedindex")].stack = $(this)[0].checked;
+    graph();
+});
+
+$("body").on("change",".accrue",function(){
+    feedlist[$(this).attr("feedindex")].accrue = $(this)[0].checked;
+    graph();
+});
+
+$("body").on("change",".decimalpoints",function(){
+    feedlist[$(this).attr("feedindex")].dp = $(this).val();
+    query();
+});
+
+$("body").on("change",".scale",function(){
+    feedlist[$(this).attr("feedindex")].scale = $(this).val();
+    graph();
+});
+
+    //********************************************************************************************
+    //        Yaxes min and max
+    //********************************************************************************************
+
+$("body").on("change",".ymin",function(){
+    if($(this).val() == "auto") $(this).val("");
+    var val = $(this).val();
+    if(val == "" || $.isNumeric(val)){
+      units[$(this).attr("unitindex")].min = $(this).val();
+    }
+    graph();
+});
+
+$("body").on("change",".ymax",function(){
+    if($(this).val() == "auto") $(this).val("");
+    var val = $(this).val();
+    if(val == "" || $.isNumeric(val)){
+      units[$(this).attr("unitindex")].max = $(this).val();
+    }
+    graph();
+});
+
+    //********************************************************************************************
+    //        Detail Table select - CSV/Options/Statistics,Yaxis
+    //********************************************************************************************
+
+$(".data-tables").hide();
+$(".data-table").hide();
+$(".show-tables").click(
+    function(){ $(".show-tables").removeClass("active");
+                $(this).addClass("active");
+                $(".data-table").hide();
+                if($(this).val() == "stats"){
+                  $("#sourceStatsTable").show();
                 }
-                feedsbytag[feeds[z].tag].push(feeds[z]);
-            }
-            
-            var out = "";
-            out += "<colgroup>";
-            out += "<col span='1' style='width: 70%;'>";
-            out += "<col span='1' style='width: 15%;'>";
-            out += "<col span='1' style='width: 15%;'>";
-            out += "</colgroup>";
-            
-            for (var tag in feedsbytag) {
-               tagname = tag;
-               if (tag=="") tagname = "undefined";
-               out += "<tr class='tagheading' tag='"+tagname+"' style='background-color:#aaa; cursor:pointer'><td style='font-size:12px; padding:4px; padding-left:8px; font-weight:bold'>"+tagname+"</td><td></td><td></td></tr>";
-               out += "<tbody class='tagbody' tag='"+tagname+"'>";
-               for (var z in feedsbytag[tag]) 
-               {
-                   out += "<tr>";
-                   var name = feedsbytag[tag][z].name;
-                   if (name.length>20) {
-                       name = name.substr(0,20)+"..";
-                   }
-                   out += "<td>"+name+"</td>";
-                   out += "<td><input class='feed-select-left' feedid="+feedsbytag[tag][z].id+" type='checkbox'></td>";
-                   out += "<td><input class='feed-select-right' feedid="+feedsbytag[tag][z].id+" type='checkbox'></td>";
-                   out += "</tr>";
-               }
-               out += "</tbody>";
-            }
-            $("#feeds").html(out);
-            
-            if (feeds.length>12 && numberoftags>2) {
-                $(".tagbody").hide();
-            }
-        }
-    });
-    
-    $("#reload").click(function(){
-        graph_reload();
-    });
-    
-    $("#showcsv").click(function(){
-        if ($("#showcsv").html()=="Show CSV Output") {
-            printcsv()
-            showcsv = 1;
-            $("#csv").show();
-            $(".csvoptions").show();
-            $("#showcsv").html("Hide CSV Output");
-        } else {
-            showcsv = 0;
-            $("#csv").hide();
-            $(".csvoptions").hide();
-            $("#showcsv").html("Show CSV Output");
-        }
-    });
-    
-    $(".csvoptions").hide();
+                else if($(this).val() == "options"){
+                  $("#sourceOptionsTable").show();
+                }
+                else if($(this).val() == "yaxes"){
+                  $("#yaxesTable").show();
+                }
+                else if($(this).val() == "CSV"){
+                  $("#CSVgroup").show();
+                }
+    }
+);
 
-    $("body").on("click",".delta",function(){
-        var feedid = $(this).attr("feedid");
-        
-        for (var z in feedlist) {
-            if (feedlist[z].id==feedid) {
-                feedlist[z].delta = $(this)[0].checked;
-                break;
-            }
-        }
-        graph_reload();
-    });
-    
-    $("body").on("change",".linecolor",function(){
-        var feedid = $(this).attr("feedid");
-        
-        for (var z in feedlist) {
-            if (feedlist[z].id==feedid) {
-                feedlist[z].color = $(this).val();
-                break;
-            }
-        }
-        graph_draw();
-    });
-    
-    $("body").on("change",".fill",function(){
-        var feedid = $(this).attr("feedid");
-        
-        for (var z in feedlist) {
-            if (feedlist[z].id==feedid) {
-                feedlist[z].fill = $(this)[0].checked;
-                break;
-            }
-        }
-        graph_draw();
-    });
+$("#showSourceOptions").click();
 
-    $("body").on("click",".feed-select-left",function(){
-        var feedid = $(this).attr("feedid");
-        var checked = $(this)[0].checked;
-        
-        var loaded = false;
-        for (var z in feedlist) {
-           if (feedlist[z].id==feedid) {
-               if (!checked) {
-                   feedlist.splice(z,1);
-               } else {
-                   feedlist[z].yaxis = 1;
-                   loaded = true;
-                   $(".feed-select-right[feedid="+feedid+"]")[0].checked = false;
-               }
-               graph_draw();
-           }
-        }
-        
-        if (loaded==false && checked) {
-          pushfeedlist(feedid, 1);
-          graph_reload();
-        }
-    });
-
-    $("body").on("click",".feed-select-right",function(){
-        var feedid = $(this).attr("feedid");
-        var checked = $(this)[0].checked;
-        
-        var loaded = false;
-        for (var z in feedlist) {
-           if (feedlist[z].id==feedid) {
-               if (!checked) {
-                   feedlist.splice(z,1);
-               } else {
-                   feedlist[z].yaxis = 2;
-                   loaded = true;
-                   $(".feed-select-left[feedid="+feedid+"]")[0].checked = false;
-               }
-               graph_draw();
-           }
-        }
-        
-        // if (loaded==false && checked) feedlist.push({id:feedid, yaxis:2, fill:0, scale: 1.0, delta:false, getaverage:false, dp:1, plottype:'lines'});
-        if (loaded==false && checked) {
-          pushfeedlist(feedid, 2);
-          graph_reload();
-        }
-    });
-    
-    $("body").on("click",".tagheading",function(){
-        var tag = $(this).attr("tag");
-        $(".tagbody[tag='"+tag+"']").toggle();
-    });
-
-    $("#showlegend").click(function(){
-        if ($("#showlegend")[0].checked) showlegend = true; else showlegend = false;
-        graph_draw();
-    });
-    
-    $("#showtag").click(function(){
-        if ($("#showtag")[0].checked) showtag = true; else showtag = false;
-        graph_draw();
-    });
-
-    $("#group").change(function() {
-        view.group = $(this).val();
-        graph_reload();
-    });
-
-    $("body").on("change",".decimalpoints",function(){
-        var feedid = $(this).attr("feedid");
-        var dp = $(this).val();
-        
-        for (var z in feedlist) {
-            if (feedlist[z].id == feedid) {
-                feedlist[z].dp = dp;
-                
-                graph_draw();
-                break;
-            }
-        }
-    });
-
-    $("body").on("change",".plottype",function(){
-        var feedid = $(this).attr("feedid");
-        var plottype = $(this).val();
-        
-        for (var z in feedlist) {
-            if (feedlist[z].id == feedid) {
-                feedlist[z].plottype = plottype;
-                
-                graph_draw();
-                break;
-            }
-        }
-    });
-    
-    $("body").on("change","#yaxis-min",function(){
-        yaxismin = $(this).val();
-        graph_draw();
-    });
-    
-    $("body").on("change","#yaxis-max",function(){
-        yaxismax = $(this).val();
-        graph_draw();
-    });
-
-    $("body").on("change","#y2axis-min",function(){
-        y2axismin = $(this).val();
-        graph_draw();
-    });
-
-    $("body").on("change","#y2axis-max",function(){
-        y2axismax = $(this).val();
-        graph_draw();
-    });
+    //********************************************************************************************
+    //        re-arrange detail table entries
+    //********************************************************************************************
 
 
-    $("#csvtimeformat").change(function(){
-        printcsv();
-    });
+$("body").on("click", ".move-feed", function(){
+    var feedid = $(this).attr("feedid")*1;
+    var curpos = parseInt(feedid);
+    var moveby = parseInt($(this).attr("moveby"));
+    var newpos = curpos + moveby;
+    if (newpos>=0 && newpos<feedlist.length){
+        newfeedlist = arrayMove(feedlist,curpos,newpos);
+        graph();
+    }
+});
 
-    $("#csvnullvalues").change(function(){
-        printcsv();
-    });
-    
-    $('body').on("click",".legendColorBox",function(d){
-          var country = $(this).html().toLowerCase();
-          console.log(country);
-    });
+function arrayMove(array,old_index, new_index){
+    array.splice(new_index, 0, array.splice(old_index, 1)[0]);
+    return array;
 }
 
-function pushfeedlist(feedid, yaxis) {
-    var index = getfeedindex(feedid);
-    feedlist.push({id:feedid, name:feeds[index].name, tag:feeds[index].tag, yaxis:yaxis, fill:0, scale: 1.0, delta:false, getaverage:false, dp:1, plottype:'lines'});
+    //********************************************************************************************
+    //        Handle series select
+    //********************************************************************************************
+
+$("#source-table").on("click",".source-table-entry",
+    function(){
+      for(var z in feedlist) {
+        if(feedlist[z].unit == unit && feedlist[z].name == $(this).html()){
+          $(this).next().click();
+          return
+        };
+      }
+      feedlist.push({ name:$(this).html(),
+                      unit:unit,
+                      color:assign_color(),
+                      fill:false,
+                      stack:false,
+                      scale: 1,
+                      accrue:false,
+                      dp:units[unitindex(unit)].dp,
+                      plottype:'Line'});
+      build_source_list();
+      query();
+    }
+);
+
+    //********************************************************************************************
+    //        Handle delete feed
+    //********************************************************************************************
+
+$("body").on("click",".feed-delete",
+    function(){
+        feedlist.splice($(this).attr("feedindex"),1);
+        graph();
+    }
+);
+
+    //********************************************************************************************
+    //        Create source list table for the selected unit
+    //********************************************************************************************
+
+function build_source_list(){
+  var html = "<table style='width:100%';>";
+  html += "<colgroup>";
+  html += "<col span='1' style='width: 90%;'>";
+  html += "<col span='1' style='width: 10%;'>";
+  html += "</colgroup>";
+  for(z in series){
+    var entryunits = series[z].units;
+    if(source_type(unit) == source_type(series[z].unit)){
+      html += "<tr class='source-table-row'><td class='source-table-entry'>"+series[z].name+"</td>";
+      var selected = false;
+      for(f in feedlist){
+        if(unit == feedlist[f].unit && series[z].name == feedlist[f].name){
+          html += "<td class='feed-delete' feedindex="+f+" style='background:"+feedlist[f].color+"'><i class='glyphicon glyphicon-trash'></i></td>";
+          selected = true;
+        }
+      }
+      if( ! selected){
+        html += "<td></td>";
+      }
+      html += "</tr>"; 
+    }
+  }
+  html += "</table>";
+  $("#source-table").html(html);
 }
 
-function graph_reload() {
+function source_type(unit){
+  if(unit == "Volts"  || unit == "Hz") return "voltage";
+  return "power";
+}
+
+function assign_color(){
+  if(feedlist.length == 0) return colors[0];
+  for(i in colors){
+    var result = colors[i];
+    for(z in feedlist){
+      if(result == feedlist[z].color){
+        result = false;
+        break;
+      }
+    }
+    if(result) return result;
+  }
+  return "#000000";
+}
+
+// ----------------------------------------------------------------------------------------
+//        Sidebar open, close, resize
+// ----------------------------------------------------------------------------------------
+
+$("#sidebar-open").click(function(){
+    $("#sidebar-wrapper").css("left","250px");
+    $("#sidebar-close").show();
+});
+
+$("#sidebar-close").click(function(){
+    $("#sidebar-wrapper").css("left","0");
+    $("#sidebar-close").hide();
+});
+
+function sidebar_resize() {
+    var width = $(window).width();
+    var height = $(window).height();
+    $("#sidebar-wrapper").height(height-41);
     
-      // This is the first part of the asynchronous reload logic.
-      // It's a basic semaphore that queues the request for later.
-      // If there is a reload in progress, set reload = true to trigger another reload when the current one completes.
+    if (width<1024) {
+        $("#sidebar-wrapper").css("left","0");
+        $("#wrapper").css("padding-left","0");
+        $("#sidebar-open").show();
+    } else {
+        $("#sidebar-wrapper").css("left","250px");
+        $("#wrapper").css("padding-left","250px");
+        $("#sidebar-open").hide();
+        $("#sidebar-close").hide();
+    }
+}
+  
+  /***************************************************************************************************
+   ***************************************************************************************************
+   * 
+   *            query() - initiate asynchronous query for all graph data
+   * 
+   *            Process the feedlist and initiate a query.
+   *            If there is a query in progress (loading:true), the request is delayed (reload:true)
+   *            and processed on completion.  There are no parameters, only the current feedlist.
+   *
+   ***************************************************************************************************
+   **************************************************************************************************/
+
+function query() {
+  
+    clearTimeout(refreshTimer);
+
     
-    if(reloading) {
+      // This is the first part of the asynchronous load logic.
+      // It's a basic semaphore that queues a request for later.
+      // If there is a load in progress, set reload = true to trigger another load when the current one completes.
+    
+    if(loading) {
       reload = true;
       return;
-    } else {
-      reload = false;
-    }
-    reloading = true;
-    if(highRes != undefined){
-      clearTimeout(highResTimer);
-    }
-    
-      // Build the query
-    
-    var errorstr = "";
-    var begin = periodTable[view.period].begin;
-    var end = periodTable[view.period].end;
-    if(view.custom){
-      begin = view.start;
-      end = view.end;
-      $('#select-time').prop({"value":0, "selectedIndex":0});
     } 
     
-    var request = path+"/query?format=json&header=no&missing=null" + 
+      // Not currently loading, set loading semaphore and proceed
+
+    loading = true;
+    
+    // Build the query
+    
+    var errorstr = "";
+    var begin = periodTable[periodIndex].begin;
+    var end = periodTable[periodIndex].end;
+    if(custom_dates){
+      begin = beginDate.viewDate().format('x');
+      end = endDate.viewDate().format('x');
+      $('#select-period').prop({"value":0, "selectedIndex":0});
+    } 
+    
+    var request = path+"/query?format=json&header=yes&resolution=high&missing=null" + 
                         "&begin=" + begin + 
                         "&end=" + end + 
-                        "&columns=[time.local.unix";
+                        "&select=[time.utc.unix";
                         
     for(var i=0; i<feedlist.length; i++){
       request += "," + feedlist[i].name;
-      if(feedlist[i].tag == "Energy"){
-        request += ".kwh";
-      }
-      if(feedlist[i].delta){
-        request += ".delta";
-      }
+      request += '.' + feedlist[i].unit;
+      request += ".d"+feedlist[i].dp;
       feedlist[i].dataindex = i + 1;
     }
     
     request += "]&group=";
-    if(view.group == "Daily")request+="1d";
-    else if(view.group == "Hourly")request+="1h";
-    else if(view.group == "Weekly")request+="1w";
-    else if(view.group == "Monthly")request+="1mo";
-    else if(view.group == "Yearly")request+="1y";
-    else {
-      request += 'auto';
-      if(highRes){
-        request += "&resolution=high";
-        highRes = false;
-      } else {
-        highResTimer = setTimeout(function(){highRes = true; graph_reload();}, 2500);
+    for(g in groups){
+      if(group == groups[g].group){
+        request += groups[g].query;
       }
     }
     
-      // Send the query
+    // Send the query
     
     $.ajax({                                      
         url: request,
@@ -447,8 +738,8 @@ function graph_reload() {
           
             var valid = true;
             try {
-                queryData = JSON.parse(data_in);
-                if (queryData.success!=undefined) valid = false;
+                response = JSON.parse(data_in);
+                if (response.success!=undefined) valid = false;
             } catch (e) {
                 valid = false;
             }
@@ -457,420 +748,516 @@ function graph_reload() {
             if (errorstr!="") {
                 $("#error").html(errorstr).show();
             } else {
-                for(d in queryData){
-                  queryData[d][0] *= 1000;
+                userDateChange = false;
+                beginDate.maxDate(new Date(response.range[0]*1000));
+                beginDate.date(new Date(response.range[0]*1000));
+                endDate.date(new Date(response.range[1]*1000));
+                userDateChange = true;
+                periodDuration = endDate.viewDate().diff(beginDate.viewDate(),"seconds");
+                if(response.data.length < 2){
+                  interval = periodDuration;
+                } else {
+                  interval = response.data[1][0] - response.data[0][0];
                 }
-                view.start = queryData[0][0];
-                view.interval = queryData[1][0] - queryData[0][0];
-                view.end = queryData[queryData.length-1][0] + view.interval;
-                
-                $("#request-start").val(requestTimeFormat(view.start));
-                $("#request-start").prop("defaultValue",requestTimeFormat(view.start));
-                $("#request-end").val(requestTimeFormat(view.end));
-                $("#request-end").prop("defaultValue",requestTimeFormat(view.end));
-                $("#request-interval").val(view.interval / 1000);
-                $("#request-limitinterval").attr("checked",view.limitinterval);
-                $("#interval").hide();
-                if(view.group == "auto"){
-                  $("#interval").html((view.interval / 1000) + "s").show();
+                var autolabel = "auto"; 
+                if(group == "auto"){
+                  if((interval % 3600) == 0) autolabel += ' (' + interval/3600 + 'h)';
+                  else if((interval % 60) == 0) autolabel += ' (' + interval/60 + 'm)';
+                  else autolabel += ' (' + interval + 's)';
                 }
+                $("#select-group").children(":first").html(autolabel);
                 $("#error").hide();
                 
-                
-                
-                graph_draw();
+                graph();
             }
             
-            // This is the second part of the asynchronous reload logic.
-            // Change state to indicate reload no longer in progress.
-            // If a reload was requested during this reload, start a new reload.
-            
+            // This is the second part of the asynchronous load logic.
+            // Change state to indicate load no longer in progress.
+            // If a reload was requested during this load, start a new load.
             
         },
         
         complete: function(){
-            reloading = false;
+            clearTimeout(refreshTimer);
+            loading = false;
             if(reload){
-              graph_reload();
+              reload = false;
+              query();
+            } else {
+              if(periodTable[periodIndex].end == "s" && refresh){
+                refreshTimer = setTimeout(function(){query();}, interval*1000);
+                $("#refresh-text").html(" Freeze");
+              }
+              else
+              {
+                $("#refresh-text").html(" Refresh");
+              }
             }
         }
-        
     });
 }
 
-function requestTimeFormat(time){
-  var date = new Date(time);
-  var month = date.getUTCMonth()+1;
-  var day = date.getUTCDate();
-  return date.getUTCFullYear() + '-' + (month <= 9 ? '0': "") + month + '-' + (day <= 9 ? '0' : "") + day;
-}
+  /***************************************************************************************************
+   ***************************************************************************************************
+   * 
+   *            graph() - Create a graph
+   *
+   ***************************************************************************************************
+   **************************************************************************************************/
 
-function graph_draw()
+function graph()
 {
+  
+            // Boilerplate options
+  
     var options = {
-        lines: { fill: false },
+        lines: {fill: false},
         grid: {hoverable: true, clickable: true},
         selection: { mode: "x" },
-        legend: { show: false, position: "nw", toggle: true },
+        legend: { show: true, position: "nw", toggle: true },
         toggle: { scale: "visible" },
         touch: { pan: "x", scale: "x" },
         xaxis: { 
             mode: "time",
-            //timezone: "browser",
-            min: view.start,
-            max: view.end + view.interval,
+            timezone: "browser",
+            min: beginDate.viewDate().format('x'),
+            max: endDate.viewDate().format('x')
         },
-	      yaxes: [
-	          // Left Yaxis
-	          {},
-	          // Right Yaxis
-	          {
-	            alignTicksWithAxis: 1,
-			        position: "right"
-	          }
-		    ]
+        yaxis: {alignTicksWithAxis: 1,
+                tickFormatter: tick_format
+        },
+	      yaxes: []
     }
     
-    if (showlegend) options.legend.show = true;
-    if (yaxismin!='auto' && yaxismin!='') { options.yaxes[0].min = yaxismin }
-    if (yaxismax!='auto' && yaxismax!='') { options.yaxes[0].max = yaxismax }
-    if (y2axismin!='auto' && y2axismin!='') { options.yaxes[1].min = y2axismin }
-    if (y2axismax!='auto' && y2axismax!='') { options.yaxes[1].max = y2axismax; }
-   
-    var lenstr = "";
-    var time_in_window = (view.end - view.start) / 1000;
-    var days = Math.floor(time_in_window / 86400);
-    var timeLeft = time_in_window % 86400;
-    if(days) lenstr += days + "d ";
-    if(timeLeft){
-      var hours = Math.floor(timeLeft / 3600);
-      timeLeft %= 3600;
-      lenstr += hours + "h ";
-      if(timeLeft){
-        var mins = Math.floor(timeLeft / 60);
-        lenstr += mins + "m ";
-        var secs = timeLeft %= 60;
-        if(secs) lenstr += secs + "s";
+          // Create yaxes table for active units from feedlist
+    
+    yaxes = [];
+    var position = "left";
+    for(z in feedlist){
+      var y;
+      for(y=0; y<yaxes.length; ++y){
+        if(feedlist[z].unit == yaxes[y].unit){
+          feedlist[z].yaxis = y + 1;
+          break;
+        }
+      }
+      if(y == yaxes.length){
+        for(u in units){
+          if(feedlist[z].unit == units[u].unit){
+            yaxes.push(units[u]);
+            yaxes[yaxes.length-1].unitIndex = u;
+            yaxes[yaxes.length-1].position = position;
+            yaxes[yaxes.length-1].min = units[u].min;
+            yaxes[yaxes.length-1].max = units[u].max;
+            position = (position == "left") ? "right" : "left";
+            feedlist[z].yaxis = yaxes.length;        
+            break;
+          }
+        }
       }
     }
     
-    $("#window-info").html("<b>Window:</b> " + printdate(view.start) + " - " + printdate(view.end) + ", <b>Length: </b>" + lenstr);
+          // Add yaxes table information to plot options
     
-    plotdata = [];
-    var yaxisUsed = 0;
+    for(y in yaxes){
+      options.yaxes.push({position:yaxes[y].position,
+                          min: yaxes[y].min != "" ? yaxes[y].min : null,
+                          max: yaxes[y].max != "" ? yaxes[y].max : null
+                        });
+    }
+    
+          // Define plotdata and add feedlist items
+    
+    var plotdata = [];
     
     for (var z in feedlist) {
         if(feedlist[z].dataindex != undefined){
-          yaxisUsed |= feedlist[z].yaxis;
           var dataindex = feedlist[z].dataindex;
           var data = [];
-          for(var i=0; i<queryData.length; i++){
-            if(queryData[dataindex][i]!=null || !showmissing){
-              data.push([queryData[i][0], queryData[i][dataindex]]);
+          var scale = feedlist[z].scale;
+          var accrual = 0;
+          for(var i=0; i<response.data.length; i++){
+            if(response.data[i][dataindex]!=null) {
+              data.push([response.data[i][0]*1000, response.data[i][dataindex]*scale+accrual]);
+            }
+            if(feedlist[z].accrue){
+              accrual += response.data[i][dataindex]*scale;
             }
           }
           
-          // Add series to plot
-          var label = "";
-          if (showtag) label += feedlist[z].tag+": ";
-          label += feedlist[z].name;
-          if (yaxisUsed == 3) {
-              if (feedlist[z].yaxis == 1) {label += " &#10229;"}; // Long Left Arrow
-              if (feedlist[z].yaxis == 2) {label += " &#10230;"}; // Long Right Arrow 
-          }
-  
-          var plot = {label:label, data:data, yaxis:feedlist[z].yaxis, color: feedlist[z].color};
+          var plot = {label:(showUnit ? feedlist[z].unit+": " : "") + feedlist[z].name, 
+                      data:data, 
+                      yaxis:feedlist[z].yaxis, 
+                      color: feedlist[z].color, 
+                      stack: feedlist[z].stack != undefined && feedlist[z].stack};
           
-          if (feedlist[z].plottype=='lines') plot.lines = { show: true, fill: feedlist[z].fill };
-          if (feedlist[z].plottype=='bars'){
-            plot.bars = { show: true, barWidth: view.interval * 0.75};
+          if (feedlist[z].plottype=='Line'){
+            plot.lines = { show: true, fill: feedlist[z].fill };
+          } 
+          if (feedlist[z].plottype=='Bar'){
+            plot.bars = { show: true, barWidth: interval * 750};
           }
           plotdata.push(plot);
         }
     }
     
-    if(queryData[0] != undefined){
-      options.xaxis.min = view.start;
-      options.xaxis.max = view.end;
+          // The BIG moment....  plot it!
+    
+    var plotobj = $.plot($('#placeholder'), plotdata, options);
+   
+          // Rebuild the tables to update context
+
+    $(".data-tables").hide();   
+    if(feedlist.length != 0){
+        build_options_table();
+        build_stats_table();
+        build_yaxes_table();
+        build_CSV();
+        $(".data-tables").show();
     }
-    $.plot($('#placeholder'), plotdata, options);
-    
-    if(yaxisUsed % 2) $("#y1axis-menu").show();
-    else $("#y1axis-menu").hide();
-    if(yaxisUsed >= 2) $("#y2axis-menu").show();
-    else $("#y2axis-menu").hide();
-    
-    
-    if (!embed) {
-      
-        var default_linecolor = "000";
-        var out = "";
-        
-        for (var z in feedlist) {
-            if(feedlist[z].dataindex != undefined){
-              feedlist[z].stats = stats(feedlist[z].dataindex);
-              var dp = feedlist[z].dp;
-           
-              out += "<tr>";
-              out += "<td>"+feedlist[z].tag+":"+feedlist[z].name+"</td>";
-              out += "<td><select class='plottype' feedid="+feedlist[z].id+" style='width:80px'>";
-              
-              var selected = "";
-              if (feedlist[z].plottype == "lines") selected = "selected"; else selected = "";
-              out += "<option value='lines' "+selected+">Lines</option>";
-              if (feedlist[z].plottype == "bars") selected = "selected"; else selected = "";
-              out += "<option value='bars' "+selected+">Bars</option>";
-              out += "</select></td>";
-              out += "<td><input class='linecolor' feedid="+feedlist[z].id+" style='width:50px' type='color' value='#"+default_linecolor+"'></td>";
-              out += "<td><input class='fill' type='checkbox' feedid="+feedlist[z].id+"></td>";
-              var quality = Math.round(100 * (1-(feedlist[z].stats.npointsnull/feedlist[z].stats.npoints)));
-              out += "<td>"+quality+"% ("+(feedlist[z].stats.npoints-feedlist[z].stats.npointsnull)+"/"+feedlist[z].stats.npoints+")</td>";
-              out += "<td>"+feedlist[z].stats.minval.toFixed(dp)+"</td>";
-              out += "<td>"+feedlist[z].stats.maxval.toFixed(dp)+"</td>";
-              out += "<td>"+feedlist[z].stats.diff.toFixed(dp)+"</td>";
-              out += "<td>"+feedlist[z].stats.mean.toFixed(dp)+"</td>";
-              out += "<td>"+feedlist[z].stats.stdev.toFixed(dp)+"</td>";
-              out += "<td>"+Math.round((feedlist[z].stats.mean*time_in_window)/3600)+"</td>";
-              for (var i=0; i<11; i++) out += "<option>"+i+"</option>";
-              out += "</select></td>";
-              out += "<td style='text-align:center'><input class='scale' feedid="+feedlist[z].id+" type='text' style='width:50px' value='1.0' /></td>";
-              if(feedlist[z].tag == "Energy"){
-                out += "<td style='text-align:center'><input class='delta' feedid="+feedlist[z].id+" type='checkbox'/></td>";
-              } else {
-                out += "<td/>";
-              }
-              
-              out += "<td><select feedid="+feedlist[z].id+" class='decimalpoints' style='width:50px'><option>0</option><option>1</option><option>2</option><option>3</option></select></td>";
-              out += "</tr>";
-            }
+    build_source_list();
+
+}
+
+    //********************************************************************************************
+    //        tick_format - callback to format the yaxis ticks
+    //********************************************************************************************
+
+function tick_format(val, axis){
+  if(axis.ticks.length == 0){
+    yaxes[axis.n-1].tickmin = val;
+    yaxes[axis.n-1].datamin = axis.datamin;
+    yaxes[axis.n-1].datamax = axis.datamax;
+  }
+  yaxes[axis.n-1].tickmax = val;
+  return unitFormat(val, yaxes[axis.n-1].unit);
+}
+
+    //********************************************************************************************
+    //        Create the tables for options, statistics, yaxes and CSV
+    //********************************************************************************************
+
+function build_options_table(){
+  
+    $("#sourceOptionsBody").empty();
+    for(var z in feedlist){
+      if(feedlist[z].dataindex != undefined){
+        var line = "<tr><td>";
+        if (z > 0) {
+            line += "<a class='move-feed' title='Move up' feedid="+z+" moveby=-1 ><i class='glyphicon glyphicon-arrow-up'></i></a>";
         }
-        $("#stats").html(out);
-        
-        for (var z in feedlist) {
-            $(".decimalpoints[feedid="+feedlist[z].id+"]").val(feedlist[z].dp);
-            if ($(".getaverage[feedid="+feedlist[z].id+"]")[0]!=undefined)
-                $(".getaverage[feedid="+feedlist[z].id+"]")[0].checked = feedlist[z].getaverage;
-            if ($(".delta[feedid="+feedlist[z].id+"]")[0]!=undefined)
-                $(".delta[feedid="+feedlist[z].id+"]")[0].checked = feedlist[z].delta;
-            $(".scale[feedid="+feedlist[z].id+"]").val(feedlist[z].scale);
-            $(".linecolor[feedid="+feedlist[z].id+"]").val(feedlist[z].color);
-            if ($(".fill[feedid="+feedlist[z].id+"]")[0]!=undefined)
-                $(".fill[feedid="+feedlist[z].id+"]")[0].checked = feedlist[z].fill;
+        if (z < feedlist.length-1) {
+            line += "<a class='move-feed' title='Move down' feedid="+z+" moveby=1 ><i class='glyphicon glyphicon-arrow-down'></i></a>";
         }
+        line += "</td>";
+        line += "<td><span class='feed-delete' feedindex="+z+"><i class='glyphicon glyphicon-trash'></i></td>";
+        line += "<td style='text-align:left'>"+feedlist[z].unit+":"+feedlist[z].name+"</td>";
+        line += "<td><input class='table-input linecolor' feedindex="+z+" style='width:50px;' type='color' value='"+feedlist[z].color+"'></td>";
         
-        if (showcsv) printcsv();
+        line += "<td><button type='button' class='table-input line-bar' feedindex="+z+">"+feedlist[z].plottype+"</button></td>";
+        line += "<td style='text-align:center'><input class='fill' type='checkbox' feedindex="+z+(feedlist[z].fill?' checked':'') + " /></td>";
+        line += "<td style='text-align:center'><input class='stack' type='checkbox' feedindex="+z+(feedlist[z].stack?' checked':'') + "></td>";
+        if(feedlist[z].unit == "Wh"){
+          line += "<td style='text-align:center'><input class='accrue' type='checkbox' feedindex="+z+(feedlist[z].accrue?' checked':'') + "></td>";
+        } else {
+          line += "<td></td>";
+        }
+        line += "<td><input class='table-input decimalpoints' feedindex="+z+" type='number' min='0' max='3' step='1' value="+feedlist[z].dp+" style='width:50px;' /></td>";
+        line += "<td><input class='table-input scale' feedindex="+z+" type='text' style='width:50px;' value="+feedlist[z].scale+" /></td>";
+        line += "</tr>";
+        $("#sourceOptionsBody").append(line);
+      }
     }
 }
 
-function getfeed(id) 
-{
-    for (var z in feeds) {
-        if (feeds[z].id == id) {
-            return feeds[z];
+function build_stats_table(){
+  
+    $("#sourceStatsBody").empty();
+    for(var z in feedlist){
+      if(feedlist[z].dataindex != undefined){
+        var dp = feedlist[z].dp;
+        var stats = compute_stats(feedlist[z].dataindex, feedlist[z].scale);
+        var line = "<tr><td>";
+        if (z > 0) {
+            line += "<a class='move-feed' title='Move up' feedid="+z+" moveby=-1 ><i class='glyphicon glyphicon-arrow-up'></i></a>";
         }
+        if (z < feedlist.length-1) {
+            line += "<a class='move-feed' title='Move down' feedid="+z+" moveby=1 ><i class='glyphicon glyphicon-arrow-down'></i></a>";
+        }
+        line += "<td><span class='feed-delete' feedindex="+z+"><i class='glyphicon glyphicon-trash'></i></td>";
+        line += "<td style='text-align:left'>"+feedlist[z].unit+":"+feedlist[z].name+"</td>";
+        var quality = Math.round(100 * (1-(stats.npointsnull/stats.npoints)));
+        line += "<td>"+quality+"% ("+(stats.npoints-stats.npointsnull)+"/"+stats.npoints+")</td>";
+        line += "<td>"+stats.minval.toFixed(dp)+"</td>";
+        line += "<td>"+stats.maxval.toFixed(dp)+"</td>";
+        line += "<td>"+stats.diff.toFixed(dp)+"</td>";
+        line += "<td>"+unitFormat(stats.mean.toFixed(dp),feedlist[z].unit)+"</td>";
+        
+        var unit = feedlist[z].unit;
+        if(unit == "Wh"){
+          line += "<td>"+unitFormat(stats.sum, "Wh")+"</td>";
+        }
+        if(unit == "Watts"){
+          line += "<td>"+unitFormat(Math.round((stats.mean*periodDuration)/3600), "Wh")+"</td>";
+        }
+        line += "</tr>"
+        $("#sourceStatsBody").append(line);
+      }
     }
 }
 
-function getfeedindex(id) 
+function compute_stats(dataindex, scale)
 {
-    for (var z in feeds) {
-        if (feeds[z].id == id) {
-            return z;
+    var stats = {"minval":0,
+                 "maxval":0,
+                 "sum":0,
+                 "npointsnull":0,
+                 "npoints":0}
+    var i=0;
+    var val = null;
+    for (var z in response.data){
+      if (response.data[z][dataindex]!=null){ 
+        val = response.data[z][dataindex] * scale;
+        if (i==0) {
+            stats.maxval = val;
+            stats.minval = val;
         }
+        if (val>stats.maxval) stats.maxval = val;
+        if (val<stats.minval) stats.minval = val;
+        stats.sum += val;
+        i++;
+      }
+      else stats.npointsnull++;
+      stats.npoints ++;
     }
+    stats.mean = stats.sum/i;
+    stats.diff = stats.maxval-stats.minval;
+    return stats;
+};
+   
+function build_yaxes_table(){   
+    $("#yaxesBody").empty();
+    for(y in yaxes){
+      var yaxis = yaxes[y];
+      var unit = yaxis.unit;
+      var min = (units[unitindex(unit)].min == undefined) ? "" : units[unitindex(unit)].min;
+      var max = (units[unitindex(unit)].max == undefined) ? "" : units[unitindex(unit)].max;
+      var line = "<tr>";
+      line += "<td style='text-align:left'>"+yaxis.unit+"</td>";
+      line += "<td>"+unitFormat(yaxis.tickmin,unit)+" to "+unitFormat(yaxis.tickmax,unit)+"</td>";
+      var dp = units[unitindex(unit)].dp;
+      line += "<td>"+Number(yaxis.datamin).toFixed(dp)+" to "+Number(yaxis.datamax).toFixed(dp)+"</td>";
+      line += "<td><input class='table-input ymin text-center' unitindex="+unitindex(unit)+" style='width:50px' placeholder='auto' value="+min+"></td>";
+      line += "<td></td>";
+      line += "<td><input class='table-input ymax text-center' unitindex="+unitindex(unit)+" style='width:50px' placeholder='auto' value="+max+"></td>";
+      line += "</tr>"
+      $("#yaxesBody").append(line);
+    }
+    
 }
 
-//----------------------------------------------------------------------------------------
-// Print CSV
-//----------------------------------------------------------------------------------------
-function printcsv()
-{
+function build_CSV(){
+    $("#csv").empty();
     var timeformat = $("#csvtimeformat").val();
     var nullvalues = $("#csvnullvalues").val();
-    
-    var csvout = "";
-    var start_time = queryData[0][0];
-    for(var i=0; i<queryData.length; i++){
+    var start_time = response.data[0][0];
+    var accrual = [];
+    for(f in feedlist){
+      accrual.push(0);
+    }
+    for(var i=0; i<response.data.length; i++){
         var line = "";
-          // Different time format options for csv output
         if (timeformat=="unix") {
-            line += queryData[i][0];
+            line += response.data[i][0];
         } else if (timeformat=="seconds") {
-            line += (queryData[i][0] - start_time);
+            line += (response.data[i][0] - start_time);
         } else if (timeformat=="datestr") {
-            // Create date time string
-            var t = new Date(queryData[i][0]);
-            var year = t.getUTCFullYear();
-            var month = t.getUTCMonth()+1;
-            if (month<10) month = "0"+month;
-            var day = t.getUTCDate();
-            if (day<10) day = "0"+day;
-            var hours = t.getUTCHours();
-            if (hours<10) hours = "0"+hours;
-            var minutes = t.getUTCMinutes();
-            if (minutes<10) minutes = "0"+minutes;
-            var seconds = t.getUTCSeconds();
-            if (seconds<10) seconds = "0"+seconds;
-            
-            line += year+"-"+month+"-"+day+" "+hours+":"+minutes+":"+seconds;
-        }
-          
-        for (var f in feedlist) {
-            dataindex = feedlist[f].dataindex;
-            line += ", " + queryData[i][dataindex];
+            line += moment(response.data[i][0]*1000).format("YYYY-MM-DD HH:mm:ss");
         }
         
-        csvout += line+"\n";
+        for (var f in feedlist) {
+            var dataindex = feedlist[f].dataindex;
+            var value = response.data[i][dataindex];
+            if(value==null){
+              if(nullvalues == "show"){
+                line += ", null";
+              } else if(nullvalues == "remove"){
+                line = "";
+                break;
+              } else {
+                line += ",";
+              }
+            } else {
+              value = value * feedlist[f].scale + accrual[f];
+              line += ", " + Number(value).toFixed(feedlist[f].dp);
+              if(feedlist[f].accrue){
+                accrual[f] = value;
+              }
+            }
+        }
+        if(line.length > 0) $("#csv").append(line+"\n");
     }
-
-    $("#csv").val(csvout);
 }
 
-//----------------------------------------------------------------------------------------
-// Saved graph's feature
-//----------------------------------------------------------------------------------------
-function graph_index_from_name(name) {
-    var index = -1;
-    for (var z in savedgraphs) {
-        if (savedgraphs[z].name==name) index = z;
+
+    //********************************************************************************************
+    //        unitFormat - returns display string of val+units w/appropriate scaling and dp
+    //                     example 2406 Watts becomes "2.41 kW"
+    //********************************************************************************************
+  
+function unitFormat(val, unit)
+{   
+    if(unit == "Volts"){
+      return Number(val).toFixed(1)+" V";
     }
-    return index;
+    if(unit == "PF"){
+      if(val > 0.999){
+        return Number(val).toFixed(2)+" PF";
+      }
+      return (Number(val).toFixed(3)+" PF").substring(1);
+    }
+    if(unit == "Hz"){
+      return Number(val).toFixed(2)+" Hz";
+    }
+    for(u in units){
+      if(units[u].unit == unit){
+        if(val == 0){
+          return "0 " + units[u].label;
+        }
+        for(f in formats){
+          if(Math.abs(val) < formats[f].max){
+            return (Number(val) / formats[f].div).toFixed(formats[f].dp) + " " + formats[f].prefix + units[u].label;
+          }
+        }
+      }
+    }
+    return Number(val).toFixed(0) + " " + unit;
 }
+ 
+  /*********************************************************************************************
+   *********************************************************************************************
+   * 
+   *            GRAPH SAVE 
+   * 
+   *********************************************************************************************
+   ********************************************************************************************/
+
 
 $("#graph-select").change(function() {
     var name = $(this).val();
+    $("graph-reset").click();
+    
     $("#graph-name").val(name);
+    $("#graph-save").show();
     $("#graph-delete").show();
     var index;
     for(index=0; index<savedgraphs.length; index++){
       if(name == savedgraphs[index].name)break;
     }
+    var context = savedgraphs[index];
     
-    // view settings
-    view.start = savedgraphs[index].start;
-    view.end = savedgraphs[index].end;
-    view.interval = savedgraphs[index].interval;
-    view.custom = savedgraphs[index].custom;
-    view.group = savedgraphs[index].group;
-    yaxismin = savedgraphs[index].yaxismin;
-    yaxismax = savedgraphs[index].yaxismax;
-    y2axismin = savedgraphs[index].y2axismin || yaxismin;
-    y2axismax = savedgraphs[index].y2axismax || yaxismax;
-  
-    // Lookup the period literally in case the options have changed
-    for(p in periodTable){
-      if(savedgraphs[index].periodlabel == periodTable[p].label ){
-        view.period = p;
-        break;
-      }
-      else if(periodTable[p].selected != undefined){
-        view.period = p;
-      }
-    }
     
-    // show settings
-    showmissing = savedgraphs[index].showmissing;
-    showtag = savedgraphs[index].showtag;
-    showlegend = savedgraphs[index].showlegend;
+    period = context.period;
+    build_period_selector();
     
-    // feedlist
-    feedlist = savedgraphs[index].feedlist;
-    $(".feed-select-left").prop("checked",false);
-    $(".feed-select-right").prop("checked",false);
-    
-    $("#yaxis-min").val(yaxismin);
-    $("#yaxis-max").val(yaxismax);
-    $("#y2axis-min").val(y2axismin);
-    $("#y2axis-max").val(y2axismax);
-    $("#showtag")[0].checked = showtag;
-    $("#showlegend")[0].checked = showlegend;
-    $('#select-time').prop({"value":0, "selectedIndex":view.period});
-    var options = $("#group").children();
-    for(var i=0; i<options.length; i++){
-      if(options[i].value == view.group){
-        $('#group').prop({"value":options[i].value, "selectedIndex":i});
-      }
-    }
-    
-    for(z in feedlist){
-      var a = $("[feedid='"+feedlist[z].id+"']");
-      if(a.length){
-        a[feedlist[z].yaxis-1].checked=true;
-      }
-      else {
-        feedlist.splice(z,1);
-      }
-    }
-    graph_reload();
-});
+    group = context.group;
+    build_group_options();
 
-$("#graph-name").keyup(function(){
-    var name = $(this).val();
-    
-    if (graph_exists(name)) {
-        $("#graph-delete").show(); 
-    } else { 
-        $("#graph-delete").hide();
-    }
-});
+    unit = context.unit;
+    build_units_selector();
 
-$("#graph-delete").click(function() {
-    var name = $("#graph-name").val();
+    userDateChange = false;
+    beginDate.date(new Date(context.beginDate));
+    endDate.date(new Date(context.endDate));
+    userDateChange = true;
     
-    var updateindex = graph_index_from_name(name);
-    if (updateindex!=-1) {
-        graph_delete(savedgraphs[updateindex].id);
-        feedlist = [];
-        graph_reload();
-        $("#graph-name").val("");
-        load_feed_selector();
+    feedlist = context.feedlist;
+    
+    for(y in context.yaxes){
+      var u = unitindex(context.yaxes[y].unit);
+      if(context.yaxes[y].min != ""){
+        units[u].min = context.yaxes[y].min;
+      }
+      if(context.yaxes[y].max != ""){
+        units[u].max = context.yaxes[y].max;
+      }
     }
+
+    query();
 });
 
 $("#graph-save").click(function() {
     var name = $("#graph-name").val();
     
     if (name==undefined || name=="") {
-        alert("Please enter a name for the graph you wish to save");
+        alert("Please enter a name for the graph.");
         return false;
     }
     
-    var graph_to_save = {
+    var context = {
         name: name,
-        start: view.start,
-        end: view.end,
-        group: view.group,
-        periodlabel: periodTable[view.period].label,
-        interval: view.interval,
-        yaxismin: yaxismin,
-        yaxismax: yaxismax,
-        y2axismin: y2axismin,
-        y2axismax: y2axismax,
-        showtag: showtag,
-        showlegend: showlegend,
-        feedlist: JSON.parse(JSON.stringify(feedlist))
+        period: period,
+        group: group,
+        unit: unit,
+        endDate: endDate.viewDate(),
+        beginDate: beginDate.viewDate(),
+        feedlist: feedlist,
+        yaxes: []
     };
-    for(z in graph_to_save.feedlist){
-      delete graph_to_save.feedlist[z].stats;
+    for(z in context.feedlist){
+      delete context.feedlist[z].stats;
+    }
+    for(u in units){
+      if(units[u].min != "" || units[u].max != ""){
+        context.yaxes.push({unit:units[u].unit, min:units[u].min, max:units[u].max});
+      }
     }
     $.ajax({         
         method: "POST",                             
-        url: path+"/graph/create?version=2",
-        data: "data="+JSON.stringify(graph_to_save),
+        url: path+"/graph/create",
+        data: "data="+JSON.stringify(context),
         async: true,
-        dataType: "json",
+        //contentType: "text/plain",
         success: function(result) {
             if (!result.success) alert("ERROR: "+result.message);
+            $("#graph-delete").show();
         }
     });
     graph_load_savedgraphs();
     $("#graph-select").val(name);
 });
 
+$("#graph-name").keyup(function(){
+    var name = $(this).val();
+    $("#graph-delete").hide();
+    if(name == ""){
+      $("#graph-save").hide();
+      return;
+    }
+    for(z in savedgraphs){
+      if(savedgraphs[z].name == name){
+        $("#graph-delete").show();
+        break;
+      }
+    }
+    $("#graph-save").show();
+});
+
+$("#graph-delete").click(function() {
+    var name = $("#graph-name").val();
+    for (var z in savedgraphs) {
+        if (savedgraphs[z].name==name){
+            graph_delete(savedgraphs[z].id);
+            $("#graph-name").val("");
+            $("#graph-delete").hide();
+        }
+    }
+});
+
 function graph_load_savedgraphs()
 {
     $.ajax({                                      
-        url: path+"/graph/getall?version=2",
+        url: path+"/graph/getall",
         async: true,
         dataType: "json",
         success: function(result) {
@@ -890,7 +1277,7 @@ function graph_delete(id) {
     // Save 
     $.ajax({         
         method: "POST",                             
-        url: path+"/graph/delete?version=2",
+        url: path+"/graph/delete",
         data: "id="+id,
         async: true,
         dataType: "json",
@@ -900,7 +1287,6 @@ function graph_delete(id) {
     });
     graph_load_savedgraphs();
 }
-
 
 // ----------------------------------------------------------------------------------------
 // Sidebar
@@ -932,34 +1318,46 @@ function sidebar_resize() {
     }
 }
 
-// ----------------------------------------------------------------------------------------
-function load_feed_selector() {
-    for (var z in feeds) {
-        var feedid = feeds[z].id;
-        $(".feed-select-left[feedid="+feedid+"]")[0].checked = false;
-        $(".feed-select-right[feedid="+feedid+"]")[0].checked = false;
-    }
-    
-    for (var z=0; z<feedlist.length; z++) {
-        var feedid = feedlist[z].id;
-        var tag = feedlist[z].tag;
-        if (tag=="") tag = "undefined";
-        if (feedlist[z].yaxis==1) { $(".feed-select-left[feedid="+feedid+"]")[0].checked = true; $(".tagbody[tag='"+tag+"']").show(); }
-        if (feedlist[z].yaxis==2) { $(".feed-select-right[feedid="+feedid+"]")[0].checked = true; $(".tagbody[tag='"+tag+"']").show(); }
-    }
+/*********************************************************************************************
+   *********************************************************************************************
+   * 
+   *            INITIALIZE - Onetime startup sequence
+   * 
+   *********************************************************************************************
+   ********************************************************************************************/
+
+function initialize(){
+    moment().format();                // Initialize moment
+    setTitle();                       // Set the document title, async not critical
+    sidebar_resize();
+    graph_resize();
+    build_units_selector();
+    query_series_list();
+    $("#graph-reset").click();
+    $(".initHide").show();
 }
 
-function printdate(timestamp)
-{
-    var date = new Date();
-    var thisyear = date.getUTCFullYear();
-    var date = new Date(timestamp);
-    var year = date.getUTCFullYear();
-    var datestr = date.toUTCString().substr(0, (thisyear == year) ? 11 : 16);
-    datestr += ((date.getUTCHours()<10) ? " 0" : " ") + date.getUTCHours() + ":" + ((date.getUTCMinutes()<10) ? "0" : "") + date.getUTCMinutes();
-    if(date.getUTCSeconds()) datestr += ":" + ((date.getUTCSeconds()<10) ? "0" : "") + date.getUTCSeconds();
-    
-    //var datestr = date.getHours()+":"+minutes+" "+day+" "+month;
-    //if (thisyear!=year) datestr +=" "+year;
-    return datestr;
-};
+function setTitle(){
+  $.ajax({                                      
+      url: path+"/status?device=yes",
+      async: true,
+      dataType: "json",
+      success: function(result) {
+          var title = result.device.name + " " + $("#title").html();
+          document.title = title;
+          $("#title").html(title);
+      }
+    });
+}
+
+function query_series_list(){
+    $.ajax({                                      
+        url: path+"/query?show=series",
+        async: true,
+        dataType: "json",
+        success: function(data_in) {
+            series = data_in.series;
+            build_source_list();
+        }
+    });
+}
