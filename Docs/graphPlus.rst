@@ -18,7 +18,7 @@ First, here's the whole picture with all of the parts.  We're plotting power for
 (midnight to 5:42pm).  Along with that we've plotted the accrued Watt-hours for the day 
 which are at 145.2 kWh as of 5:42.
 
-.. image:: pics/mainMenu.png
+.. image:: pics/graphPlus.png
     :scale: 60 %
     :align: center
     :alt: Graph+ image
