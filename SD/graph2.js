@@ -169,16 +169,16 @@ var colors = [      "#3a87fe",    // med blue
     **********************************************************************************************/
 
 var formats = [
-                    {max:1,         div:.001,     prefix:'m',   dp:0},
-                    {max:10,        div:1,        prefix:'',    dp:2},
-                    {max:100,       div:1,        prefix:'',    dp:1},
-                    {max:1000,      div:1,        prefix:'',    dp:0},
-                    {max:10000,     div:1000,     prefix:'k',   dp:2},
-                    {max:100000,    div:1000,     prefix:'k',   dp:1},
-                    {max:1000000,   div:1000,     prefix:'k',   dp:0},
-                    {max:10000000,  div:1000000,  prefix:'M',   dp:2},
-                    {max:100000000, div:1000000,  prefix:'M',   dp:1},
-                    {max:100000000000, div:1000000,  prefix:'M',   dp:0}
+                    {max:1,             div:.001,     prefix:'m',   dp:0},
+                    {max:10,            div:1,        prefix:'',    dp:2},
+                    {max:100,           div:1,        prefix:'',    dp:1},
+                    {max:1000,          div:1,        prefix:'',    dp:0},
+                    {max:10000,         div:1000,     prefix:'k',   dp:2},
+                    {max:100000,        div:1000,     prefix:'k',   dp:1},
+                    {max:1000000,       div:1000,     prefix:'k',   dp:0},
+                    {max:10000000,      div:1000000,  prefix:'M',   dp:2},
+                    {max:100000000,     div:1000000,  prefix:'M',   dp:1},
+                    {max:100000000000,  div:1000000,  prefix:'M',   dp:0}
               ]
 
     /**********************************************************************************************
@@ -189,10 +189,9 @@ var userDateChange = true;                      // Date change would be by user
 var custom_dates = false;                       // Period is user modified dates
 var periodIndex = 0;                            // Index of selected period option
 var periodDuration = 0;                         // Duration of graph period in seconds
-var interval = 60;                             // Seconds represented by first group of response
+var interval = 60;                              // Seconds represented by first group of response
 var showLegend = true;                          // Show the graph legend
 var showUnit = true;                            // Prefix series with unit: in graph legend
-var minmax = [];                                // Min and Max settings (entries for each unitIndex)  
 
     //********************************************************************************************
     //        Graph Reset - make a fresh start
@@ -256,7 +255,6 @@ function unitFormat(val, unit)
     }
     return Number(val).toFixed(0) + " " + unit;
 }
-
 
     //********************************************************************************************
     //        begin and end datetimepickers
@@ -1047,7 +1045,8 @@ function build_yaxes_table(){
       var line = "<tr>";
       line += "<td style='text-align:left'>"+yaxis.unit+"</td>";
       line += "<td>"+unitFormat(yaxis.tickmin,unit)+" to "+unitFormat(yaxis.tickmax,unit)+"</td>";
-      line += "<td>"+yaxis.datamin+" to "+yaxis.datamax+"</td>";
+      var dp = units[unitindex(unit)].dp;
+      line += "<td>"+Number(yaxis.datamin).toFixed(dp)+" to "+Number(yaxis.datamax).toFixed(dp)+"</td>";
       line += "<td><input class='table-input ymin text-center' unitindex="+unitindex(unit)+" style='width:50px' placeholder='auto' value="+min+"></td>";
       line += "<td></td>";
       line += "<td><input class='table-input ymax text-center' unitindex="+unitindex(unit)+" style='width:50px' placeholder='auto' value="+max+"></td>";
@@ -1062,6 +1061,10 @@ function build_CSV(){
     var timeformat = $("#csvtimeformat").val();
     var nullvalues = $("#csvnullvalues").val();
     var start_time = response.data[0][0];
+    var accrual = [];
+    for(f in feedlist){
+      accrual.push(0);
+    }
     for(var i=0; i<response.data.length; i++){
         var line = "";
         if (timeformat=="unix") {
@@ -1074,7 +1077,8 @@ function build_CSV(){
         
         for (var f in feedlist) {
             var dataindex = feedlist[f].dataindex;
-            if(response.data[i][dataindex]==null){
+            var value = response.data[i][dataindex];
+            if(value==null){
               if(nullvalues == "show"){
                 line += ", null";
               } else if(nullvalues == "remove"){
@@ -1084,7 +1088,11 @@ function build_CSV(){
                 line += ",";
               }
             } else {
-              line += ", " + Number(response.data[i][dataindex]*feedlist[f].scale).toFixed(feedlist[f].dp);
+              value = value * feedlist[f].scale + accrual[f];
+              line += ", " + Number(value).toFixed(feedlist[f].dp);
+              if(feedlist[f].accrue){
+                accrual[f] = value;
+              }
             }
         }
         if(line.length > 0) $("#csv").append(line+"\n");

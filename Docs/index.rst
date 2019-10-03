@@ -22,6 +22,8 @@ IoTaWatt documentation
     CT Basics <CTbasics>
     Data Visualization <dataVisualization>
     Graphing the Data <graphing>
+    Graph+ <graphPlus>
+    Original Graph <originalGraph>
     File Manager and Editor <fileManager>
     Message Log <messageLog>
     Troubleshooting <troubleshooting>
