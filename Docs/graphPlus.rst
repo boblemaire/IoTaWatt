@@ -19,7 +19,7 @@ First, here's the whole picture with all of the parts.  We're plotting power for
 which are at 145.2 kWh as of 5:42.
 
 .. image:: pics/graphPlus/graphPlus.PNG
-    :scale: 60 %
+    :scale: 100 %
     :align: center
     :alt: Graph+ image
 
@@ -78,7 +78,7 @@ datastore, and as such is the independent variable in all graphs.
 
 
 .. image:: pics/graphPlus/timeSelector.PNG
-    :scale: 50%
+    :scale: 80%
     :align: center
     :alt: Time timeSelector
 
@@ -90,7 +90,7 @@ In the upper left is a dropdown selector that is used to specify common relative
 time periods.
 
 .. image:: pics/graphPlus/periodList.PNG
-    :scale: 30%
+    :scale: 80%
     :align: center
     :alt: Period list
 
@@ -118,7 +118,7 @@ total used in each grouping.  So in this case, there would be 28-31 data points 
 
 
 .. image:: pics/graphPlus/groupSelect.PNG
-    :scale: 40%
+    :scale: 80%
     :align: center
     :alt: Group Selecting
 
@@ -146,7 +146,7 @@ ways to modify the dates bounding the current graph.  The most obvious is the
 zoom/scroll bar.
 
 .. image:: pics/graphPlus/zoomScroll.PNG
-    :scale: 50%
+    :scale: 120%
     :align: center
     :alt: Zoom/Scroll bar
 
@@ -174,7 +174,7 @@ The Graph
 Once data sources are selected, the graph window comes to life.
 
 .. image:: pics/graphPlus/graphWindow.PNG
-    :scale: 60%
+    :scale: 100%
     :align: center
     :alt: Graph Window
 
@@ -200,7 +200,7 @@ Options Table
 .............
 
 .. image:: pics/graphPlus/optionsTable.PNG
-    :scale: 60%
+    :scale: 80%
     :align: center
     :alt: Options Table
 
@@ -253,7 +253,7 @@ Statistics Table
 ................
 
 .. image:: pics/graphPlus/statsTable.PNG
-    :scale: 60%
+    :scale: 80%
     :align: center
     :alt: Statistics Table
 
@@ -291,7 +291,7 @@ Yaxes Range Table
 .................
 
 .. image:: pics/graphPlus/yaxesTable.PNG
-    :scale: 60%
+    :scale: 80%
     :align: center
     :alt: Yaxes Range Table
 
@@ -320,7 +320,7 @@ CSV Data
 ........
 
 .. image:: pics/graphPlus/csvTable.PNG
-    :scale: 60%
+    :scale: 80%
     :align: center
     :alt: CSV Data area
 
