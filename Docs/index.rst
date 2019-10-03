@@ -21,7 +21,6 @@ IoTaWatt documentation
     Three-phase power <threePhase>
     CT Basics <CTbasics>
     Data Visualization <dataVisualization>
-    Graphing the Data <graphing>
     Graph+ <graphPlus>
     Original Graph <originalGraph>
     File Manager and Editor <fileManager>
