@@ -31,7 +31,7 @@ measurements that you want to plot.
 At the top is the unit selection. Click on the particular unit you are interested in.
 
 .. image:: pics/graphPlus/powerSource.PNG
-    :scale: 60 %
+    :scale: 40 %
     :align: right
     :alt: CT sources
 
@@ -46,7 +46,7 @@ blue trash-can. That indicates that particular unit/source has been selected and
 currently graphed.
 
 .. image:: pics/graphPlus/voltageSource.PNG
-    :scale: 60 %
+    :scale: 40 %
     :align: left
     :alt: VT sources
 
