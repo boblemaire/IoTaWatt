@@ -19,7 +19,7 @@ First, here's the whole picture with all of the parts.  We're plotting power for
 which are at 145.2 kWh as of 5:42.
 
 .. image:: pics/graphPlus/graphPlus.PNG
-    :scale: 100 %
+    :scale: 40 %
     :align: center
     :alt: Graph+ image
 
@@ -31,7 +31,7 @@ measurements that you want to plot.
 At the top is the unit selection. Click on the particular unit you are interested in.
 
 .. image:: pics/graphPlus/powerSource.PNG
-    :scale: 40 %
+    :scale: 50 %
     :align: right
     :alt: CT sources
 
@@ -46,7 +46,7 @@ blue trash-can. That indicates that particular unit/source has been selected and
 currently graphed.
 
 .. image:: pics/graphPlus/voltageSource.PNG
-    :scale: 40 %
+    :scale: 50 %
     :align: left
     :alt: VT sources
 
@@ -146,7 +146,7 @@ ways to modify the dates bounding the current graph.  The most obvious is the
 zoom/scroll bar.
 
 .. image:: pics/graphPlus/zoomScroll.PNG
-    :scale: 120%
+    :scale: 100%
     :align: center
     :alt: Zoom/Scroll bar
 
@@ -164,7 +164,7 @@ the graph window holding down the left mouse button.  When you release it, the
 highlighted selection will become the new time period.
 
 .. image:: pics/graphPlus/screenSelect.PNG
-    :scale: 60%
+    :scale: 40%
     :align: center
     :alt: Screen Selection
 
@@ -174,7 +174,7 @@ The Graph
 Once data sources are selected, the graph window comes to life.
 
 .. image:: pics/graphPlus/graphWindow.PNG
-    :scale: 100%
+    :scale: 40%
     :align: center
     :alt: Graph Window
 
