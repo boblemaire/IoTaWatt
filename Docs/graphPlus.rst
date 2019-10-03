@@ -18,7 +18,7 @@ First, here's the whole picture with all of the parts.  We're plotting power for
 (midnight to 5:42pm).  Along with that we've plotted the accrued Watt-hours for the day 
 which are at 145.2 kWh as of 5:42.
 
-.. image:: pics/graphPlus.png
+.. image:: pics/graphPlus/graphPlus.PNG
     :scale: 60 %
     :align: center
     :alt: Graph+ image
@@ -30,7 +30,7 @@ So now lets break it down.  On the left is the "sidebar" where you select each o
 measurements that you want to plot.  
 At the top is the unit selection. Click on the particular unit you are interested in.
 
-.. image:: pics/graphPlus/powerSource.png
+.. image:: pics/graphPlus/powerSource.PNG
     :scale: 60 %
     :align: right
     :alt: CT sources
@@ -45,7 +45,7 @@ as power channels (CT inputs or CT based outputs). Note that the last entry show
 blue trash-can. That indicates that particular unit/source has been selected and is 
 currently graphed.
 
-.. image:: pics/graphPlus/voltageSource.png
+.. image:: pics/graphPlus/voltageSource.PNG
     :scale: 60 %
     :align: left
     :alt: VT sources
@@ -77,7 +77,7 @@ The time period section is the upper section of the main body. IoTaWatt is a tim
 datastore, and as such is the independent variable in all graphs.
 
 
-.. image:: pics/graphPlus/timeSelector.png
+.. image:: pics/graphPlus/timeSelector.PNG
     :scale: 50%
     :align: center
     :alt: Time timeSelector
@@ -89,7 +89,7 @@ This is where you specify an initial time period, and where you go to change it.
 In the upper left is a dropdown selector that is used to specify common relative 
 time periods.
 
-.. image:: pics/graphPlus/periodList.png
+.. image:: pics/graphPlus/periodList.PNG
     :scale: 30%
     :align: center
     :alt: Period list
@@ -117,7 +117,7 @@ the 28-31 days in the past month.  All units are averaged except Wh, which retur
 total used in each grouping.  So in this case, there would be 28-31 data points plotted.
 
 
-.. image:: pics/graphPlus/groupSelect.png
+.. image:: pics/graphPlus/groupSelect.PNG
     :scale: 40%
     :align: center
     :alt: Group Selecting
@@ -145,7 +145,7 @@ This is only one of several ways to manipulate custom dates. There are two other
 ways to modify the dates bounding the current graph.  The most obvious is the 
 zoom/scroll bar.
 
-.. image:: pics/graphPlus/zoomScroll.png
+.. image:: pics/graphPlus/zoomScroll.PNG
     :scale: 50%
     :align: center
     :alt: Zoom/Scroll bar
@@ -163,7 +163,7 @@ There is one last way to modify graph period.  You can simply select a subset of
 the graph window holding down the left mouse button.  When you release it, the 
 highlighted selection will become the new time period.
 
-.. image:: pics/graphPlus/screenSelect.png
+.. image:: pics/graphPlus/screenSelect.PNG
     :scale: 60%
     :align: center
     :alt: Screen Selection
@@ -173,7 +173,7 @@ The Graph
 
 Once data sources are selected, the graph window comes to life.
 
-.. image:: pics/graphPlus/graphWindow.png
+.. image:: pics/graphPlus/graphWindow.PNG
     :scale: 60%
     :align: center
     :alt: Graph Window
@@ -199,7 +199,7 @@ top row. There are four tables:
 Options Table 
 .............
 
-.. image:: pics/graphPlus/optionsTable.png
+.. image:: pics/graphPlus/optionsTable.PNG
     :scale: 60%
     :align: center
     :alt: Options Table
@@ -252,7 +252,7 @@ an immediate effect on the graph.  There is no Save or Refresh required.
 Statistics Table 
 ................
 
-.. image:: pics/graphPlus/statsTable.png
+.. image:: pics/graphPlus/statsTable.PNG
     :scale: 60%
     :align: center
     :alt: Statistics Table
@@ -290,7 +290,7 @@ This is a list the traces with useful statistics.
 Yaxes Range Table 
 .................
 
-.. image:: pics/graphPlus/yaxesTable.png
+.. image:: pics/graphPlus/yaxesTable.PNG
     :scale: 60%
     :align: center
     :alt: Yaxes Range Table
@@ -319,7 +319,7 @@ Max:
 CSV Data 
 ........
 
-.. image:: pics/graphPlus/csvTable.png
+.. image:: pics/graphPlus/csvTable.PNG
     :scale: 60%
     :align: center
     :alt: CSV Data area
