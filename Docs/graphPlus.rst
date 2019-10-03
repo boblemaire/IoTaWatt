@@ -18,7 +18,7 @@ First, here's the whole picture with all of the parts.  We're plotting power for
 (midnight to 5:42pm).  Along with that we've plotted the accrued Watt-hours for the day 
 which are at 145.2 kWh as of 5:42.
 
-.. image:: pics/graphPlus/graphPlus.png
+.. image:: pics/graphPlus.png
     :scale: 60 %
     :align: center
     :alt: Graph+ image
@@ -192,7 +192,7 @@ later how to change the boundaries of each unit scale.
 Graph tables and options
 ------------------------
 
-The last section of the window is the options and information table area.  This is a 
+The last major section of the window is the options and information table area.  This is a 
 multi-purpose area that displays different tables depending on the selection in the 
 top row. There are four tables:
 
