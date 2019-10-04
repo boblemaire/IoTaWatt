@@ -308,7 +308,7 @@ function set_custom_dates(begin,end){
 }
 
     //********************************************************************************************
-    //        Zoom, Pan, Reload
+    //        Zoom, Pan, Reload, legend
     //********************************************************************************************    
 
 $(".zoom").click(function () {
@@ -351,6 +351,17 @@ function round2group(time){
     return time - (time % round);
 }
 
+$("#show-legend").click(function(){
+  if(showLegend){
+    showLegend = false;
+    $("#show-legend").html("Show Legend");
+    graph();
+  } else {
+    showLegend = true;    
+    $("#show-legend").html("Hide Legend");
+    graph();
+  }
+});
     //********************************************************************************************
     //        Handle cursor select range and tooltip
     //********************************************************************************************
@@ -818,7 +829,8 @@ function graph()
         lines: {fill: false},
         grid: {hoverable: true, clickable: true},
         selection: { mode: "x" },
-        legend: { show: true, position: "nw", toggle: true },
+        legend: { show: showLegend, 
+                  position: "nw"}, 
         toggle: { scale: "visible" },
         touch: { pan: "x", scale: "x" },
         xaxis: { 
