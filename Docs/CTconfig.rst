@@ -50,7 +50,7 @@ channel connected, configured, and calibrated if necessary.
 You are using the config app in a browser connected to your WiFi network.  
 Hover over |Setup| and click |inputs| in the dropdown buttons.
 
-.. image:: pics/setupInputs.png
+.. image:: pics/setupInputs.PNG
     :scale: 60 %
     :align: center
     :alt: Setup Inputs List
@@ -221,7 +221,7 @@ section `Three Phase Power <threePhase.html>`_ for more information.
     :scale: 60 %
     :alt: **Inputs button**
 
-.. |Input1| image:: pics/Input1Button.png
+.. |Input1| image:: pics/Input1Button.PNG
     :scale: 60 %
     :alt: **Input 1 button**
 
