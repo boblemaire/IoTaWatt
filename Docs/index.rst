@@ -20,7 +20,9 @@ IoTaWatt documentation
     Configure influxDB <influxDB>
     Three-phase power <threePhase>
     CT Basics <CTbasics>
-    Graphing the Data <graphing>
+    Data Visualization <dataVisualization>
+    Graph+ <graphPlus>
+    Original Graph <originalGraph>
     File Manager and Editor <fileManager>
     Message Log <messageLog>
     Troubleshooting <troubleshooting>

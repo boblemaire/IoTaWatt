@@ -64,12 +64,13 @@
         <td>
           <span class="dropdown">
             <button class="mainMenuButton buttonUp dropbtn"
-              title="Graphically visualize and compare accumulated data">Graphs</button>
+              title="Graphically visualize and compare accumulated data">Data</button>
             <span class="dropContent">
+              <button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph2)"
+                  title="Enhanced graph utility">Graph+</button>
               <button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph)"
                   title="Original graph utility">Original Graph</button>
-              <button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph2)"
-                  title="Enhanced graph utility">Enhanced Graph</button>
+              
             </span> 
           </span>
         </td>
@@ -443,7 +444,8 @@ var parenLevel = 0;
 var inputEditChannel;
 var voltageChannels = [];
 var vchanUsed = [];
-var vphaseNames = ["A", "B", "C"];
+var derivedTable = [{phase:"A",vphase:0,vmult:1},{phase:"B",vphase:120,vmult:1},{phase:"C",vphase:240,vmult:1},
+                   {phase:"A-B",vphase:30,vmult:1.732},{phase:"B-C",vphase:270,vmult:1.732},{phase:"C-A",vphase:150,vmult:1.732}];
 var scriptEditTable;
 var scriptEditSet;
 var scriptEditIndex = -1;
@@ -723,8 +725,6 @@ function configInputs(){
       if(config.inputs[i].turns != undefined){
         config.inputs[i].cal = config.inputs[i].turns / config.device.burden[i];
       }
-      //newColumn.innerHTML += ", cal:<strong>" + Number(config.inputs[i].cal).toFixed(2) + "</strong>";
-      //newColumn.innerHTML += ", lead:<strong>" + Number(config.inputs[i].phase).toFixed(2) + "&#176</strong>";
       if(config.inputs[i].vchan !== undefined){
         vchanUsed[config.inputs[i].vchan] = true;
         if(config.inputs[i].vchan != 0){
@@ -733,8 +733,18 @@ function configInputs(){
       }
       
       if(config.derive3ph){
-        var phase = (config.inputs[i].vphase === undefined) ? vphaseNames[0] : vphaseNames[config.inputs[i].vphase/120];
-        newColumn.innerHTML += ", phase:<strong>" + phase + "</strong>";
+        if(config.inputs[i].vphase === undefined){
+          config.inputs[i].vphase = 0;
+        }
+        if(config.inputs[i].vmult === undefined){
+          config.inputs[i].vmult = 1;
+        }
+        for(j in derivedTable){
+          if(derivedTable[j].vphase == config.inputs[i].vphase){
+            newColumn.innerHTML += ", phase:<strong>" + derivedTable[j].phase + "</strong>";
+            break;
+          }
+        }
       }
     }
   }
@@ -913,16 +923,17 @@ function refreshInputEdit(){
     }
     if(config.derive3ph){
       inputVchan = addTableRow(table, "Mains Phase", "inputVphase", "select");
-      inputVchan.setAttribute("oninput","inputEditObject.vphase = Number(this.value); refreshInputEdit();");
-      for(i in vphaseNames){
+      inputVchan.setAttribute("oninput",
+        "inputEditObject.vphase=derivedTable[this.value].vphase; inputEditObject.vmult=derivedTable[this.value].vmult; refreshInputEdit();");
+      for(i in derivedTable){
         option = document.createElement("option");
-        option.value = i * 120;
-        option.innerHTML = vphaseNames[i];
-        if(i > 0){
-          option.innerHTML += " (+" + option.value + "&#176)";
+        option.value = Number(i);
+        option.innerHTML = derivedTable[i].phase;
+        if(derivedTable[i].vphase != 0){
+          option.innerHTML += " (+" + derivedTable[i].vphase + "&#176)";
         }
         inputVchan.add(option);
-        if(inputEditObject.vphase !== undefined && inputEditObject.vphase == option.value){
+        if(inputEditObject.vphase !== undefined && inputEditObject.vphase == derivedTable[i].vphase){
           option.selected = true;
         } 
       }
@@ -943,15 +954,17 @@ function refreshInputEdit(){
       inputEditObject.signed = undefined;
     }
     
-    inputDouble = addTableRow(table, "", "inputMult", "input");
-    inputDouble.parentNode.appendChild(document.createTextNode("Double"));
-    addInfo(inputDouble, "Double measured power.  Use with balanced 240V circuit with CT on one conductor.");
-    inputDouble.setAttribute("type","checkbox");
-    inputDouble.setAttribute("onchange","inputEditObject.double = this.checked; refreshInputEdit();");
-    if(inputEditObject.double != undefined && inputEditObject.double){
-      inputDouble.checked = true;
-    } else {
-      inputEditObject.double = undefined;
+    if( ! config.derive3ph || inputEditObject.double != undefined){
+      inputDouble = addTableRow(table, "", "inputMult", "input");
+      inputDouble.parentNode.appendChild(document.createTextNode("Double"));
+      addInfo(inputDouble, "Double measured power.  Use with balanced 240V circuit with CT on one conductor.");
+      inputDouble.setAttribute("type","checkbox");
+      inputDouble.setAttribute("onchange","inputEditObject.double = this.checked; refreshInputEdit();");
+      if(inputEditObject.double != undefined && inputEditObject.double){
+        inputDouble.checked = true;
+      } else {
+        inputEditObject.double = undefined;
+      }
     }
     
     EbyId("inputEditDelete").style.display = (config.inputs[inputEditChannel] == null) ? "none" : "inline";
@@ -981,8 +994,6 @@ function refreshInputEdit(){
   
   if(complete) show("inputEditSave");
   else hide("inputEditSave");
-
-  //EbyId("inputEditSave").style.display = complete ? "inline" : "none";
 }
 
 function addInfo(element, title){
