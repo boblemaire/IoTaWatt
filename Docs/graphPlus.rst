@@ -359,6 +359,51 @@ Null Values:
 Copy:
     This button will copy the entire contents of the CSV table to the clipboard.
     
+Saving Graphs
+--------------
+
+Graph+ is great for ad-hoc queries, but it can take some time to fine-tune a 
+busy graph, and it recreating it weekly or monthly can get old.  This is where 
+the ability to save a set of graph specification comes in handy.
+
+At the bottom of the sidebar you can save and reload any number of graphs.
+Each graph is saved in the IoTaWatt, so it doesn't matter if you use a different 
+browser or device to recall them, they will always be there.
+
+.. image:: pics/graphPlus/savedGraphList.PNG
+    :scale: 60%
+    :align: center
+    :alt: Saved Graphs
+
+Once you have a graph that you like, enter a description in the *Graph name:* box. 
+The **save** button will appear.  Click it. The graph has been saved. Click the 
+*Saved Graphs:* selector and a list of all of the saved graphs will appear.
+Click any selection and Graph+ will load that graph specification.
+
+.. image:: pics/graphPlus/savedMonthlyWh.PNG
+    :scale: 40%
+    :align: center
+    :alt: Saveds Monthly Wh
+
+This is a graph of total monthly kWh to date.  Once loaded, I can do a lot with it:
+
+* Change group to Weekly to see it by week.
+* Change the period to last-year or anything else.
+* Show the CSV table to see list of usage by month.
+* Add traces for particular circuits, stacking if appropriate, to see a breakdown.
+* Move the data to a spreadsheet to apply your tariff and convert to cost.
+
+Note that you are saving the graph *specification*, not the actual graph.  If you
+save a graph of yesterday and reload it tomorrow, it will plot today. If you want to
+save a static graph, select the *custom dates* period at the top before saving.
+
+Whenever a saved graph name is in the *Graph name:* box, the **Delete** key will be 
+available. To change a graph specification, simply load it, make the changes and save 
+it again.
+
+Reset
+-----
+Sometimes you just want to start over with a clean slate like the app was just loaded.
 
 
 
