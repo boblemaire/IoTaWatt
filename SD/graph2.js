@@ -33,13 +33,17 @@ var periodTable = [ {label:'custom dates'},
                     {label:'last 24 hours', begin:'s-86400s', end:'s'},
                     {label:'last 2 days to date', begin:'d-1d', end:'s'},
                     {label:'last 3 days to date', begin:'d-2d', end:'s'},
+                    {label:'last 7 days to date', begin:'d-7d', end:'s'},
                     {label:'today', begin:'d', end:'s'},
                     {label:'yesterday', begin:'d-1d', end:'d'},
                     {label:'two days ago', begin:'d-2d', end:'d-1d'},
                     {label:'this week to date', begin:'w', end:'s'},
                     {label:'last week', begin:'w-1w', end:'w'},
+                    {label:'last 4 weeks', begin:'w-4w', end:'w'},
                     {label:'this month to date', begin:'M', end:'s'},
                     {label:'last month', begin:'M-1M', end:'M'},
+                    {label:'Last 6 months', begin:'M-6M', end:'M'},
+                    {label:'Last 12 months', begin:'M-12M', end:'M'},
                     {label:'this year to date', begin:'y', end:'s'},
                     {label:'last year', begin:'y-1y', end:'y'},
 ];
@@ -304,7 +308,7 @@ function set_custom_dates(begin,end){
 }
 
     //********************************************************************************************
-    //        Zoom, Pan, Reload
+    //        Zoom, Pan, Reload, legend
     //********************************************************************************************    
 
 $(".zoom").click(function () {
@@ -347,6 +351,17 @@ function round2group(time){
     return time - (time % round);
 }
 
+$("#show-legend").click(function(){
+  if(showLegend){
+    showLegend = false;
+    $("#show-legend").html("Show Legend");
+    graph();
+  } else {
+    showLegend = true;    
+    $("#show-legend").html("Hide Legend");
+    graph();
+  }
+});
     //********************************************************************************************
     //        Handle cursor select range and tooltip
     //********************************************************************************************
@@ -814,7 +829,8 @@ function graph()
         lines: {fill: false},
         grid: {hoverable: true, clickable: true},
         selection: { mode: "x" },
-        legend: { show: true, position: "nw", toggle: true },
+        legend: { show: showLegend, 
+                  position: "nw"}, 
         toggle: { scale: "visible" },
         touch: { pan: "x", scale: "x" },
         xaxis: { 
