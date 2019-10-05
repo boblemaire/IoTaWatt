@@ -91,7 +91,8 @@
  *   01/18/19 02_03_21 EEprom, influx error recovery+, RTC battery warning, graph from IoTaWatt.com 
  *   03/05/19 02_04_00 Frequency and current based phase correction 
  *   07/23/19 02_04_01 Maintenance. Ongoing heap battle, tables, etc.
- *   08/13/19 02_04_02 Maintenance. PVoutput recovery, Save last config, safe mode on config problems                      
+ *   08/13/19 02_04_02 Maintenance. PVoutput recovery, Save last config, safe mode on config problems
+ *   10/04/19 02_05_00 Changes to new query and new Graph+                    
  * 
  *****************************************************************************************************/
 
