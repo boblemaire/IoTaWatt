@@ -830,7 +830,8 @@ function graph()
         grid: {hoverable: true, clickable: true},
         selection: { mode: "x" },
         legend: { show: showLegend, 
-                  position: "nw"}, 
+                  position: "nw",
+                  sorted:"reverse"}, 
         toggle: { scale: "visible" },
         touch: { pan: "x", scale: "x" },
         xaxis: { 
@@ -886,7 +887,7 @@ function graph()
     
     var plotdata = [];
     
-    for (var z in feedlist) {
+    for (var z=feedlist.length-1; z>=0; z--) {
         if(feedlist[z].dataindex != undefined){
           var dataindex = feedlist[z].dataindex;
           var data = [];
@@ -912,6 +913,9 @@ function graph()
           } 
           if (feedlist[z].plottype=='Bar'){
             plot.bars = { show: true, barWidth: interval * 750};
+            if(feedlist[z].fill){
+              plot.bars.fillColor = {colors:[{opacity: 1},{ opacity: 1}]};
+            }
           }
           plotdata.push(plot);
         }
