@@ -584,6 +584,13 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                         logReadKey(_newRec);
                     }
 
+                        // Belt and suspenders,
+                        // Make sure we are moving forward.
+
+                    if(_newRec->UNIXtime <= _oldRec->UNIXtime){
+                        _lastLine = true;
+                    }
+
                         // If there is data or not skipping missing data, 
                         // Generate a line.             
 
