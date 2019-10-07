@@ -81,6 +81,7 @@ extern IotaLog currLog;
 extern IotaLog histLog;
 extern RTC_PCF8523 rtc;
 extern Ticker ticker;
+extern Ticker logWDT;
 extern messageLog msglog;
 
 #define MS_PER_HOUR   3600000UL
@@ -309,6 +310,7 @@ void      logTrace(void);
 void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*), const uint8_t taskID=0);
 void      AddService(struct serviceBlock*);
 uint32_t  dataLog(struct serviceBlock*);
+void      datalogWDT();
 uint32_t  historyLog(struct serviceBlock*);
 uint32_t  statService(struct serviceBlock*);
 uint32_t  EmonService(struct serviceBlock*);
