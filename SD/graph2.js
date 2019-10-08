@@ -428,7 +428,7 @@ function graph_resize() {
 }
 
     //********************************************************************************************
-    //        CSV time-format, null-values, copy to clipboard
+    //        CSV time-format, null-values, copy to clipboard, download
     //********************************************************************************************
     
 $("#csvtimeformat").change(function(){
@@ -443,6 +443,16 @@ $("#copycsv").click(function(){
   var textArea = document.getElementById("csv");
   textArea.select();
   document.execCommand("Copy");
+});
+
+$("#downloadcsv").click(function(){
+  var element = document.createElement("a");
+  element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent($("#csv").html()));
+  element.setAttribute('download', "iotawatt_"+moment().format("YYYY-MM-DD_HHmm")+".csv");
+  element.style.display = 'none';
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
 });
 
     //********************************************************************************************
@@ -1119,7 +1129,6 @@ function build_CSV(){
     }
 }
 
-
     //********************************************************************************************
     //        unitFormat - returns display string of val+units w/appropriate scaling and dp
     //                     example 2406 Watts becomes "2.41 kW"
@@ -1164,6 +1173,7 @@ function unitFormat(val, unit)
 
 
 $("#graph-select").change(function() {
+    loading = true;
     var name = $(this).val();
     $("graph-reset").click();
     
@@ -1202,7 +1212,8 @@ $("#graph-select").change(function() {
         units[u].max = context.yaxes[y].max;
       }
     }
-
+    
+    loading = false;
     query();
 });
 
