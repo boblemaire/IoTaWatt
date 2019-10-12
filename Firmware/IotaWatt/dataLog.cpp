@@ -146,6 +146,13 @@
       // Write the record
       
       currLog.write(logRecord);
+
+      // Logging data is the primary purpose of IoTaWatt.
+      // Set a WDT to make sure it continues.
+
+      logWDT.detach();
+      logWDT.attach(30, datalogWDT);
+
       break;
     }
   }
@@ -156,6 +163,19 @@
   return logRecord->UNIXtime;
 }
 
+/******************************************************************************
+ * 
+ *    The datalog WDT is set each time the datalog is updated. If it expires
+ *    the datyalog is not being updated.  The program may be stuck in a 
+ *    loop somewhere.  Log a message and restart.  The trace will provide
+ *    diagnostic information. 
+ * 
+ * *****************************************************************************/
+
+void datalogWDT(){
+        log("dataLog: datalog WDT - restarting");
+        ESP.restart();
+}
 /******************************************************************************
  * logReadKey(iotaLogRecord) - read a keyed record from the combined log
  * 
