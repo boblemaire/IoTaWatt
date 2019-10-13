@@ -204,7 +204,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     rtc.adjust(UTCtime());
     RTCrunning = true;
     log("timeSync: RTC initalized to NTP time");
-    SdFile::dateTimeCallback(dateTime);
+    //SdFile::dateTimeCallback(dateTime);
   }
 
         // RTC is running, 
@@ -261,18 +261,18 @@ uint32_t littleEndian(uint32_t in){
  *   dateTime callback for SD so it can maintain dates in the directory.
  ********************************************************************************/
 
-void dateTime(uint16_t* date, uint16_t* time) {
+// void dateTime(uint16_t* date, uint16_t* time) {
    
-  // return date using FAT_DATE macro to format fields
-  *date = FAT_DATE(DateTime(localTime()).year(),
-                   DateTime(localTime()).month(),
-                   DateTime(localTime()).day());
+//   // return date using FAT_DATE macro to format fields
+//   *date = FAT_DATE(DateTime(localTime()).year(),
+//                    DateTime(localTime()).month(),
+//                    DateTime(localTime()).day());
 
-  // return time using FAT_TIME macro to format fields
-  *time = FAT_TIME(DateTime(localTime()).hour(), 
-                   DateTime(localTime()).minute(),
-                   DateTime(localTime()).second());
-}
+//   // return time using FAT_TIME macro to format fields
+//   *time = FAT_TIME(DateTime(localTime()).hour(), 
+//                    DateTime(localTime()).minute(),
+//                    DateTime(localTime()).second());
+// }
 
 /********************************************************************************************
  * 

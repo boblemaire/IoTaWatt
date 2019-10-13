@@ -9,6 +9,9 @@
 // null pointer until configured (or if deleted);
 
 PVoutput* pvoutput = nullptr;
+const char P_getstatus[] PROGMEM = "getstatus.jsp";
+const char P_getsystem[] PROGMEM = "getsystem.jsp";
+const char P_addbatchstatus[] PROGMEM = "addbatchstatus.jsp";
 
     // This is the worm hole that the scheduler uses to get into the class state machine.
     // It invokes the tick method of the class.
@@ -125,7 +128,7 @@ uint32_t PVoutput::tickInitialize(){
 uint32_t PVoutput::tickGetSystemService(){
     trace(T_PVoutput,20);
     reqData.print(F("donations=1"));
-    HTTPPost(F("getsystem.jsp"), checkSystemService);
+    HTTPPost(FPSTR(P_getsystem), checkSystemService);
     return 1;
 }
 
@@ -160,7 +163,7 @@ uint32_t PVoutput::tickCheckSystemService(){
 
 uint32_t PVoutput::tickGetStatus(){
     trace(T_PVoutput,70);
-    HTTPPost(F("getstatus.jsp"), gotStatus);
+    HTTPPost(FPSTR(P_getstatus), gotStatus);
     return 1;
 }
 
@@ -294,7 +297,7 @@ uint32_t PVoutput::tickUploadStatus(){
         oldRecord = nullptr;
         delete newRecord;
         newRecord = nullptr;  
-        HTTPPost(F("addbatchstatus.jsp"), checkUploadStatus);
+        HTTPPost(FPSTR(P_addbatchstatus), checkUploadStatus);
         _reqEntries = 0;
         return 1;
     }

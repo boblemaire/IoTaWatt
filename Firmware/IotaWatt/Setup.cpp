@@ -83,7 +83,7 @@ void setup()
       log("Real Time Clock battery is low.");
       RTClowBat = true;
     }
-    SdFile::dateTimeCallback(dateTime);
+    //SdFile::dateTimeCallback(dateTime);
   }
   else {
     log("Real Time Clock not initialized.");
