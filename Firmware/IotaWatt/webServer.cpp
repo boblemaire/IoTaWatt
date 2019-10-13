@@ -827,7 +827,9 @@ void handleQuery(){
   CSVquery* query = new CSVquery();
   if( ! query->setup()){
     trace(T_WEB,51);
-    server.send(400, txtPlain_P, "Bad Request.");
+    String response("{\"error\":\"invalid query. ");
+    response += query->failReason() + "\"}";
+    server.send(400, txtPlain_P, response);
   } else {
     trace(T_WEB,52);
     server.setContentLength(CONTENT_LENGTH_UNKNOWN);

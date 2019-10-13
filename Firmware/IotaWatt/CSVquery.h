@@ -11,6 +11,7 @@ class  CSVquery {
         size_t  readResult(uint8_t* buf, int len);
         bool    isJson();
         bool    isCSV();
+        String  failReason();
 
     private:
 
@@ -44,6 +45,7 @@ class  CSVquery {
         IotaLogRecord*  _oldRec;                // -> aged logRecord
         IotaLogRecord*  _newRec;                // -> new logRecord
         xbuf            _buffer;                // work buffer to build response lines
+        String          _failReason;            // Error message from constructor
 
         uint32_t    _begin;                     // Beginning time - UTC
         uint32_t    _end;                       // Ending time - UTC
