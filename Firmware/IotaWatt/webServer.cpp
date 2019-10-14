@@ -66,8 +66,8 @@ bool authenticate(authLevel level){
 
 void handleRequest(){
   String uri = server.uri();
-      
-  if(serverOn(authAdmin, F("/status"),HTTP_GET, handleStatus)) return;
+  static const char P_status[] PROGMEM = "/status";    
+  if(serverOn(authAdmin, FPSTR(P_status),HTTP_GET, handleStatus)) return;
   if(serverOn(authAdmin, F("/vcal"),HTTP_GET, handleVcal)) return;
   if(serverOn(authAdmin, F("/command"), HTTP_GET, handleCommand)) return;
   if(serverOn(authUser, F("/list"), HTTP_GET, printDirectory)) return;
@@ -99,7 +99,7 @@ void handleRequest(){
   server.send(404, txtPlain_P, message);
 }
 
-bool serverOn(authLevel level, const __FlashStringHelper* uri, HTTPMethod method, genericHandler fn){
+bool serverOn(authLevel level, const __FlashStringHelper *uri, HTTPMethod method, genericHandler fn){
   if(strcmp_P(server.uri().c_str(),(PGM_P)uri) == 0 && server.method() == method){
     if( ! authenticate(level)) return true;
     fn();
@@ -827,7 +827,9 @@ void handleQuery(){
   CSVquery* query = new CSVquery();
   if( ! query->setup()){
     trace(T_WEB,51);
-    server.send(400, txtPlain_P, "Bad Request.");
+    String response("{\"error\":\"invalid query. ");
+    response += query->failReason() + "\"}";
+    server.send(400, txtPlain_P, response);
   } else {
     trace(T_WEB,52);
     server.setContentLength(CONTENT_LENGTH_UNKNOWN);

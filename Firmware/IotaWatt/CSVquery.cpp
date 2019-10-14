@@ -22,7 +22,6 @@ CSVquery::CSVquery()
 CSVquery::~CSVquery(){
     trace(T_CSVquery,1,0);
     delete _oldRec;
-    trace(T_CSVquery,1,1);
     delete _newRec;
     trace(T_CSVquery,1,2);
     delete _columns;
@@ -48,7 +47,10 @@ bool    CSVquery::setup(){
 
     else if (server.hasArg(F("select"))){
     
-        if( ! (server.hasArg(F("begin")) && server.hasArg(F("end")) && server.hasArg(F("group")) )) return false;
+        if( ! (server.hasArg(F("begin")) && server.hasArg(F("end")) && server.hasArg(F("group")) )){
+            _failReason = F("Missing begin, end or group.");
+            return false;
+        }
        
         _begin = parseTimeArg(server.arg(F("begin")));
         if(_begin % currLog.interval()){
@@ -69,7 +71,10 @@ bool    CSVquery::setup(){
             else if(arg.equalsIgnoreCase("high")){
                 _highRes = true;
             }
-            else return false;
+            else {
+                _failReason = F("Invalid resolution");
+                return false;
+            }
         }
         trace(T_CSVquery,10);
 
@@ -96,7 +101,10 @@ bool    CSVquery::setup(){
             else if(group.endsWith("M")) _groupUnits = tUnitsMonths;
             else if(group.endsWith("y")) _groupUnits = tUnitsYears;
             else if(_groupMult > 0 && _groupMult % 5 == 0) _groupUnits = tUnitsSeconds;
-            else return false;
+            else {
+                _failReason = F("Invalid group");
+                return false;
+            }
         }
 
         if(server.hasArg(F("missing"))){
@@ -115,7 +123,13 @@ bool    CSVquery::setup(){
             if(arg.equalsIgnoreCase("json")){
                 _format = formatJson;
             }
-            if(arg.equalsIgnoreCase("CSV")) _format = formatCSV;
+            else if(arg.equalsIgnoreCase("CSV")){
+                _format = formatCSV;
+            }
+            else {
+                _failReason = F("Invalid format");
+                return false;
+            }
         }
         
         trace(T_CSVquery,10);
@@ -124,7 +138,8 @@ bool    CSVquery::setup(){
 
         trace(T_CSVquery,12);
         String array = server.arg(F("select"));
-        if(array[0] != '[' || array[array.length()-1] != ']'){
+        if( ! (array.startsWith("[") && array.endsWith("]"))){
+            _failReason = F("select not an array []");
             return false;
         }
         array = array.substring(1,array.length()-1);
@@ -208,6 +223,11 @@ bool    CSVquery::setup(){
                 }  
             }
 
+            if(col->source == ' '){
+                _failReason = String(F("Invalid series: ")) + name;
+                return false;
+            }
+
                 // Process any methods
 
             while(element.length()){
@@ -223,9 +243,13 @@ bool    CSVquery::setup(){
 
                 if(col->source == 'T'){
                     if(method.equals("local")) col->timeLocal = true;
-                    if(method.equals("utc")) col->timeLocal = false;
-                    if(method.equals("iso")) col->timeFormat = iso;
-                    if(method.equals("unix")) col->timeFormat = unix;
+                    else if(method.equals("utc")) col->timeLocal = false;
+                    else if(method.equals("iso")) col->timeFormat = iso;
+                    else if(method.equals("unix")) col->timeFormat = unix;
+                    else {
+                        _failReason = String(F("invalid time method: ")) + method;
+                        return false;
+                    }
                 }
 
                 else if(method.equalsIgnoreCase("volts")){
@@ -256,21 +280,12 @@ bool    CSVquery::setup(){
                     col->unit = PF;
                     col->decimals = 1;
                 }
-
-                else if(col->unit == kWh && method.equals("delta")){
-                    col->delta = true;
-                }
-
-                else if(col->unit == Wh && method.equals("delta")){
-                    col->delta = true;
-                }
-
                 else if(method.startsWith("d")){
                     if(method.length() != 2 | method[1] < '0' | method[1] > '9') return false;
                     col->decimals = method[1] - '0';
                 }
-
                 else {
+                    _failReason = String(F("Invalid series method: ")) + method;
                     return false;
                 }
             }
@@ -356,6 +371,10 @@ bool    CSVquery::isCSV(){
     return _format == formatCSV;
 }
 
+String  CSVquery::failReason(){
+    return _failReason.length() ? _failReason : "unspecified";
+}
+
 //*****************************************************************************************
 //                  buildHeader
 //*****************************************************************************************
@@ -405,11 +424,13 @@ void CSVquery::buildHeader(){
 //                  buildLine
 //*****************************************************************************************
 void CSVquery::buildLine(){
+    trace(T_CSVquery,60);
     column* col = _columns;
     double elapsedHours = _newRec->logHours - _oldRec->logHours;
     bool first = true;
         
     while(col){
+        trace(T_CSVquery,61);
 
         if( ! first){
             if(_format == formatJson){
@@ -430,6 +451,7 @@ void CSVquery::buildLine(){
                 _buffer.print(Time);
             }
             else {
+                trace(T_CSVquery,62);
                 _tm = gmtime((time_t*) &Time); 
                 char out[80];
                 strftime(out, 80, "%FT%T", _tm);
@@ -442,6 +464,7 @@ void CSVquery::buildLine(){
         }
 
         else if(elapsedHours == 0){
+            trace(T_CSVquery,63);
             if(_missingZero){
                 _buffer.print('0');
             }
@@ -451,8 +474,10 @@ void CSVquery::buildLine(){
         }
 
         else {
+            trace(T_CSVquery,64);
             double value = 0.0;
             value = col->script->run(_oldRec, _newRec, elapsedHours, col->unit);
+            trace(T_CSVquery,65);
             printValue(value, col->decimals);
         }
 
@@ -476,6 +501,7 @@ void CSVquery::printValue(const double value, const int8_t decimals){
 //*****************************************************************************************
 size_t  CSVquery::readResult(uint8_t* buf, int len){
 
+    trace(T_CSVquery,20);
     switch (_query){
 
         default:
@@ -485,6 +511,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
 
         case show: {
 
+            trace(T_CSVquery,30);
             if(!_lastLine){
                 char leader = '[';
                 _buffer.write("{\"series\":");
@@ -522,6 +549,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                 _buffer.read(buf+written, supply);
                 written += supply;
             }
+            trace(T_CSVquery,31);
             return written;
         }
 
@@ -530,12 +558,15 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                     // Loop to fill caller buf
                     // Order is important to avoid boundary conditions.
 
+            trace(T_CSVquery,40);
             int written = 0;
             while(true){
+                trace(T_CSVquery,41);
 
                     // Transfer _buffer to caller buffer
 
                 if(_buffer.available()){
+                    trace(T_CSVquery,42);
                     int supply = _buffer.available();
                     int demand = len - written;
                     if(demand < supply){
@@ -544,6 +575,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                     _buffer.read(buf+written, supply);
                     written += supply;
                     if(written == len){
+                        trace(T_CSVquery,43);
                         return written;
                     }
                 }
@@ -551,6 +583,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                     // If ended, just return zero 
                 
                 else if(_lastLine){
+                    trace(T_CSVquery,44);
                     return written;
                 }
 
@@ -558,6 +591,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                     // Finish output stream and break.
 
                 else if(_newRec->UNIXtime >= _end){
+                    trace(T_CSVquery,45);
                     if(_format == formatJson){
                         _buffer.print(']');
                         if(_header){
@@ -570,6 +604,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                     // Process next group
 
                 else {
+                    trace(T_CSVquery,50);
 
                         // Age the log record
                     
@@ -581,6 +616,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
 
                     _newRec->UNIXtime = (uint32_t)nextGroup((time_t)_oldRec->UNIXtime, _groupUnits, _groupMult);
                     if( ! _timeOnly){
+                        trace(T_CSVquery,51);
                         logReadKey(_newRec);
                     }
 
@@ -588,6 +624,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                         // Make sure we are moving forward.
 
                     if(_newRec->UNIXtime <= _oldRec->UNIXtime){
+                        trace(T_CSVquery,52);
                         _lastLine = true;
                     }
 
@@ -595,7 +632,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                         // Generate a line.             
 
                     if( _timeOnly || (! (_newRec->logHours == _oldRec->logHours && _missingSkip))){
-
+                        trace(T_CSVquery,53);    
                         if( ! _firstLine){
                             if(_format == formatJson){
                                 _buffer.print(',');
@@ -608,10 +645,12 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                         if(_format == formatJson){
                             _buffer.print('[');
                         }
-
+                        trace(T_CSVquery,54);    
                         buildLine();
+                        trace(T_CSVquery,55);
 
                         if(_format == formatJson){
+                            trace(T_CSVquery,56);
                             _buffer.print(']');
                         }
 

@@ -78,7 +78,7 @@ void handleGraphGetall(){
       if( ! response.endsWith("[")) response += ',';
       uint32_t fileSize = graphFile.size();
       char* bufr = new char[fileSize];
-      graphFile.read(bufr, fileSize);
+      graphFile.read((uint8_t*)bufr, fileSize);
       bufr[fileSize-1] = 0;
       response += bufr;
       delete[] bufr;

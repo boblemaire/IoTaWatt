@@ -198,12 +198,12 @@ void authLoadPwds(){
     return;
   }
   if(pwdsFile.available() >= 32){
-    pwdsFile.read(buf, 32);
+    pwdsFile.read((uint8_t*)buf, 32);
     adminH1 = new uint8_t[16];
     hex2bin(adminH1, buf, 16);
   }
   if(pwdsFile.available() >= 32){
-    pwdsFile.read(buf, 32);
+    pwdsFile.read((uint8_t*)buf, 32);
     userH1 = new uint8_t[16];
     hex2bin(userH1, buf, 16);
   }

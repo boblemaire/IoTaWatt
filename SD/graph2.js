@@ -755,7 +755,8 @@ function query() {
         async: true,
         dataType: "text",
         error: function(xhr){
-            $("#error").html("<h4>" + xhr.status + " " + xhr.statusText+ "</h4><p>" + request + "</p>").show();
+            $("#error").html("<h4>" + xhr.status + " " + xhr.statusText+ "</h4><p>" +
+            xhr.responseText + "<br>" + request.substring(0,400) + "</p>").show();
         },
         success: function(data_in){
           

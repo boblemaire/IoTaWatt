@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PVoutput_h
+#define PVoutput_h
 #include "IotaWatt.h"
 
 //********************************************************************************************************
@@ -206,4 +207,5 @@ private:
 extern PVoutput* pvoutput;                  // external pointer to the instance of pvoutput
 
 uint32_t PVOutputTick(struct serviceBlock* serviceBlock); // external function used to schedule state machine
-   
+
+#endif  
