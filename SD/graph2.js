@@ -301,8 +301,9 @@ var endDate = $('#datetimepicker2').data('DateTimePicker');
 
 function set_custom_dates(begin,end){
     userDateChange = false;
-    beginDate.maxDate(new Date(begin*1000));
+    beginDate.maxDate(new Date(end*1000));
     beginDate.date(new Date(begin*1000));
+    endDate.minDate(new Date(begin*1000));
     endDate.date(new Date(end*1000));
     userDateChange = true;
 }
@@ -775,8 +776,9 @@ function query() {
                 $("#error").html(errorstr).show();
             } else {
                 userDateChange = false;
-                beginDate.maxDate(new Date(response.range[0]*1000));
+                beginDate.maxDate(new Date(response.range[1]*1000));
                 beginDate.date(new Date(response.range[0]*1000));
+                endDate.minDate(new Date(response.range[0]*1000));
                 endDate.date(new Date(response.range[1]*1000));
                 userDateChange = true;
                 periodDuration = endDate.viewDate().diff(beginDate.viewDate(),"seconds");
