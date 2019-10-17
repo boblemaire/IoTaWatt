@@ -7,13 +7,14 @@ Overview
 ---------
 
 The IoTaWatt Query API provides access to the historical data in the datalogs 
-using a restful interface capable of producing a table of JSON or CSV data.
-The table columns are made up of time, IoTaWatt inputs and IoTaWatt outputs.
+using a restful interface that produces a table of JSON or CSV data.
+The table columns can configuration time, IoTaWatt inputs and IoTaWatt outputs.
 The table rows are datalog values grouped by a fixed time period or relative time 
 periods like days, weeks, months and years.
 
 IoTaWatt retains multiple values for each input or output specified by a unit 
-of measure like Watts, Volts or Amps.
+of measure like Watts, Volts or Amps. The query provides for reporting in 
+all of the available units.
 
 The Query API provides data to the Graph+ utility.
 
@@ -273,7 +274,7 @@ Examples:
 +-----------------------+-----------------------------------+
 |   Base with modifiers |   Effective time                  |
 +=======================+===================================+
-|d-d                    |00:00:00 yesterday                 |
+|d-1                    |00:00:00 yesterday                 |
 +-----------------------+-----------------------------------+
 |d-18h                  |06:00:00 yesterday                 |
 +-----------------------+-----------------------------------+
@@ -305,10 +306,101 @@ be specified:
 |y              |s              |Year to date                   |
 +---------------+---------------+-------------------------------+
 
+---------
+Responses
+---------
 
 
+400 invalid query.
+..................
+
+    The query has a missing or invalid specification.  The response is 
+    a json object "error":"*<error details>*".
+
+    query::
+
+        HTTP:// ... /query?select=[time.iso,heap_pump,misc]&begin=d-1d&end=d&group=h
+
+    response::
+
+        {"error":"invalid query. Invalid series: heap_pump"}
+
+200 Success
+...........
+
+    The query succeeded and the response is sent.
+
+    :csv:
+        Response is the table of csv formatted lines.
+
+    query::
+
+        /query?select=[time.iso,Heat_Pump,misc]&begin=d-1d&end=d&group=h&format=csv&header=yes
+
+    response::
+
+        Time, Heat_Pump, misc
+        2019-10-16T00:00:00, 333, 125.5
+        2019-10-16T01:00:00, 332.2, 121.4
+        2019-10-16T02:00:00, 446.8, 116.8
+        2019-10-16T03:00:00, 416.8, 114.3
+        2019-10-16T04:00:00, 415.4, 109.9
+        2019-10-16T05:00:00, 582.9, 111.4
+        2019-10-16T06:00:00, 711.8, 113.3
+        2019-10-16T07:00:00, 783.5, 117.1
+        2019-10-16T08:00:00, 619.6, 117.5
+        2019-10-16T09:00:00, 333, 116.4
+        2019-10-16T10:00:00, 339.8, 164.5
+        2019-10-16T11:00:00, 345.1, 180.6
+        2019-10-16T12:00:00, 345.6, 114.5
+        2019-10-16T13:00:00, 345.3, 111.8
+        2019-10-16T14:00:00, 344.3, 130.9
+        2019-10-16T15:00:00, 343.4, 302.5
+        2019-10-16T16:00:00, 343.1, 271.6
+        2019-10-16T17:00:00, 342, 264.5
+        2019-10-16T18:00:00, 342.3, 114.1
+        2019-10-16T19:00:00, 343, 117
+        2019-10-16T20:00:00, 342.7, 118
+        2019-10-16T21:00:00, 343.9, 136
+        2019-10-16T22:00:00, 344.9, 120.2
+        2019-10-16T23:00:00, 345.7, 124.2``
+    
+    :json:
+        Response is a json object.
+
+    query::
+
+        HTTP:// ... /query?select=[time.iso,Heat_Pump,misc]&begin=d-1d&end=d&group=h&format=json&header=yes
 
 
+    response::
+
+        {"range":[1571198400,1571284800],
+        "labels":["Time","Heat_Pump","misc"],
+        "data":[["2019-10-16T00:00:00",333,125.5],
+        ["2019-10-16T01:00:00",332.2,121.4],
+        ["2019-10-16T02:00:00",446.8,116.8],
+        ["2019-10-16T03:00:00",416.8,114.3],
+        ["2019-10-16T04:00:00",415.4,109.9],
+        ["2019-10-16T05:00:00",582.9,111.4],
+        ["2019-10-16T06:00:00",711.8,113.3],
+        ["2019-10-16T07:00:00",783.5,117.1],
+        ["2019-10-16T08:00:00",619.6,117.5],
+        ["2019-10-16T09:00:00",333,116.4],
+        ["2019-10-16T10:00:00",339.8,164.5],
+        ["2019-10-16T11:00:00",345.1,180.6],
+        ["2019-10-16T12:00:00",345.6,114.5],
+        ["2019-10-16T13:00:00",345.3,111.8],
+        ["2019-10-16T14:00:00",344.3,130.9],
+        ["2019-10-16T15:00:00",343.4,302.5],
+        ["2019-10-16T16:00:00",343.1,271.6],
+        ["2019-10-16T17:00:00",342,264.5],
+        ["2019-10-16T18:00:00",342.3,114.1],
+        ["2019-10-16T19:00:00",343,117],
+        ["2019-10-16T20:00:00",342.7,118],
+        ["2019-10-16T21:00:00",343.9,136],
+        ["2019-10-16T22:00:00",344.9,120.2],
+        ["2019-10-16T23:00:00",345.7,124.2]]}
     
     
 
