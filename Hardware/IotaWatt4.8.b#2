@@ -1971,10 +1971,6 @@ design rules under a new name.</description>
 <vertex x="0" y="50.8"/>
 <vertex x="87.63" y="50.8"/>
 <vertex x="87.63" y="0"/>
-<vertex x="53.34" y="0"/>
-<vertex x="53.34" y="7.62"/>
-<vertex x="35.56" y="7.62"/>
-<vertex x="35.56" y="0"/>
 <vertex x="0" y="0"/>
 </polygon>
 <via x="20.32" y="27.94" extent="1-16" drill="0.6" shape="octagon"/>
@@ -2251,10 +2247,6 @@ design rules under a new name.</description>
 <vertex x="0" y="50.165"/>
 <vertex x="86.995" y="50.165"/>
 <vertex x="86.995" y="0"/>
-<vertex x="53.34" y="0"/>
-<vertex x="53.34" y="7.62"/>
-<vertex x="35.56" y="7.62"/>
-<vertex x="35.56" y="0"/>
 <vertex x="0" y="0"/>
 </polygon>
 <contactref element="R7" pad="1"/>
@@ -2297,6 +2289,10 @@ design rules under a new name.</description>
 <wire x1="36.35" y1="16.4875" x2="38.44" y2="16.4875" width="0.3048" layer="1"/>
 <wire x1="38.44" y1="16.4875" x2="38.735" y2="16.1925" width="0.3048" layer="1"/>
 <wire x1="38.735" y1="16.1925" x2="38.735" y2="13.335" width="0.3048" layer="1"/>
+<wire x1="38.735" y1="13.335" x2="39.0525" y2="13.0175" width="0.3048" layer="1"/>
+<wire x1="39.0525" y1="13.0175" x2="42.2275" y2="13.0175" width="0.3048" layer="1"/>
+<wire x1="42.2275" y1="13.0175" x2="42.8625" y2="13.6525" width="0.3048" layer="1"/>
+<wire x1="42.8625" y1="13.6525" x2="42.8625" y2="20.955" width="0.3048" layer="1"/>
 <wire x1="58.26" y1="40.7" x2="58.26" y2="40.64" width="0.3048" layer="1"/>
 <via x="44.7675" y="31.75" extent="1-16" drill="0.6" shape="octagon"/>
 <wire x1="44.7675" y1="31.75" x2="44.7675" y2="27.94" width="0.3048" layer="16"/>
@@ -2311,10 +2307,6 @@ design rules under a new name.</description>
 <wire x1="54.2925" y1="38.735" x2="47.3075" y2="38.735" width="0.3048" layer="1"/>
 <wire x1="47.3075" y1="38.735" x2="44.7675" y2="36.195" width="0.3048" layer="1"/>
 <wire x1="44.7675" y1="36.195" x2="44.7675" y2="31.75" width="0.3048" layer="1"/>
-<wire x1="38.735" y1="13.335" x2="39.37" y2="12.7" width="0.3048" layer="1"/>
-<wire x1="39.37" y1="12.7" x2="42.545" y2="12.7" width="0.3048" layer="1"/>
-<wire x1="42.545" y1="12.7" x2="42.8625" y2="13.0175" width="0.3048" layer="1"/>
-<wire x1="42.8625" y1="13.0175" x2="42.8625" y2="20.955" width="0.3048" layer="1"/>
 </signal>
 <signal name="ADC11">
 <contactref element="R_CT11" pad="2"/>
