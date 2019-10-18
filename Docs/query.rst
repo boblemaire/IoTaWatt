@@ -100,8 +100,8 @@ select=[*series1* [, *series2* ...]]
     Required parameter. Time can specified in a variety of relative and absolute
     formats.  See `time specifiers`_. end must be greater than begin.
 
-&group={ **auto** | <n> {s | m | h | d | w | M | y}}
-.....................................................
+&group={ **auto** | all | <n> {s | m | h | d | w | M | y}}
+..........................................................
 
     Optional parameter.  The datalog contains measurements at 5 second (current log)
     and 1 minute (history log) intervals.  This parameter specifies how to group 
@@ -114,6 +114,10 @@ select=[*series1* [, *series2* ...]]
 
     The default is **auto**, which selects a fixed time group to yield about 360 rows 
     (resolution=low) or 720 rows (resolution=high).
+
+    *all* will cause all of the data in the time period to be treated as a single group.
+    For most units, this will result in the average value over the entire period.
+    For Wh, it will result in the total Wh for the entire period.
 
     To overide, specify a time unit preceeded by a multiplier, as in:
         * 10s (ten seconds)
