@@ -80,7 +80,7 @@ var unit = initialunit;             // Currently selected unit
 
 var units = [       {unit:"Volts", group:"V", label:"V",   dp:1,   min:"",   max:""},
                     {unit:"Watts", group:"P", label:"W",   dp:1,   min:"",   max:""},
-                    {unit:"Wh",    group:"P", label:"Wh",  dp:1,   min:"",   max:""},
+                    {unit:"Wh",    group:"P", label:"Wh",  dp:2,   min:"",   max:""},
                     {unit:"Amps",  group:"P", label:"A",   dp:3,   min:"",   max:""},
                     {unit:"VA",    group:"P", label:"VA",  dp:1,   min:"",   max:""},
                     {unit:"PF",    group:"P", label:"PF",  dp:3,   min:"",   max:""},
@@ -129,7 +129,8 @@ var groups = [      {group:"auto",    query:"auto"  },
                     {group:"Daily",   query:"1d"    },
                     {group:"Weekly",  query:"1w"    },
                     {group:"Monthly", query:"1M"    },
-                    {group:"Yearly",  query:"1h"    }
+                    {group:"Yearly",  query:"1h"    },
+                    {group:"all",     query:"all"   }
 ];
 
                     // build group select options
