@@ -8955,6 +8955,7 @@ Wickmann</description>
 <segment>
 <pinref part="SV1" gate="G$1" pin="1"/>
 <wire x1="243.84" y1="12.7" x2="248.92" y2="12.7" width="0.1524" layer="91"/>
+<label x="248.92" y="12.7" size="1.778" layer="91" xref="yes"/>
 </segment>
 </net>
 <net name="2V5" class="0">
@@ -9265,6 +9266,7 @@ Wickmann</description>
 <segment>
 <pinref part="SV1" gate="G$1" pin="3"/>
 <wire x1="243.84" y1="15.24" x2="248.92" y2="15.24" width="0.1524" layer="91"/>
+<label x="261.62" y="15.24" size="1.778" layer="91" xref="yes"/>
 </segment>
 </net>
 <net name="N$2" class="0">
