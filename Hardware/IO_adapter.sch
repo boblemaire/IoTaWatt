@@ -8517,6 +8517,61 @@ Epson Toyocom FCC-255</description>
 </deviceset>
 </devicesets>
 </library>
+<library name="tactile_switch">
+<packages>
+<package name="TACT_6X3.5">
+<wire x1="-3" y1="-1.75" x2="3" y2="-1.75" width="0.127" layer="21"/>
+<wire x1="3" y1="-1.75" x2="3" y2="1.75" width="0.127" layer="21"/>
+<wire x1="3" y1="1.75" x2="-3" y2="1.75" width="0.127" layer="21"/>
+<wire x1="-3" y1="1.75" x2="-3" y2="-1.75" width="0.127" layer="21"/>
+<wire x1="-1.5" y1="0.5" x2="-1.5" y2="-0.5" width="0.127" layer="21"/>
+<wire x1="-1.5" y1="-0.5" x2="1.5" y2="-0.5" width="0.127" layer="21"/>
+<wire x1="1.5" y1="-0.5" x2="1.5" y2="0.5" width="0.127" layer="21"/>
+<wire x1="1.5" y1="0.5" x2="-1.5" y2="0.5" width="0.127" layer="21"/>
+<smd name="P$1" x="-3.95" y="0" dx="1.5" dy="1.2" layer="1"/>
+<smd name="P$2" x="3.95" y="0" dx="1.5" dy="1.2" layer="1"/>
+<text x="-2.54" y="2.54" size="0.8128" layer="21" ratio="10">&gt;NAME</text>
+</package>
+</packages>
+<symbols>
+<symbol name="TACT_SW">
+<wire x1="-1.27" y1="0" x2="3.048" y2="1.778" width="0.2032" layer="94"/>
+<wire x1="3.048" y1="0.508" x2="3.048" y2="0" width="0.2032" layer="94"/>
+<wire x1="0.762" y1="1.016" x2="0.762" y2="1.524" width="0.2032" layer="94"/>
+<wire x1="0.762" y1="2.032" x2="0.762" y2="2.794" width="0.2032" layer="94"/>
+<wire x1="0.762" y1="2.794" x2="0.762" y2="3.048" width="0.2032" layer="94"/>
+<wire x1="0.762" y1="3.556" x2="0.762" y2="4.064" width="0.2032" layer="94"/>
+<wire x1="1.27" y1="4.064" x2="0.762" y2="4.064" width="0.2032" layer="94"/>
+<wire x1="0.762" y1="4.064" x2="0.254" y2="4.064" width="0.2032" layer="94"/>
+<wire x1="0.254" y1="2.286" x2="0.762" y2="2.794" width="0.1524" layer="94"/>
+<wire x1="0.762" y1="2.794" x2="1.27" y2="2.286" width="0.1524" layer="94"/>
+<wire x1="-2.54" y1="0" x2="-1.27" y2="0" width="0.2032" layer="94"/>
+<wire x1="3.048" y1="0" x2="5.08" y2="0" width="0.2032" layer="94"/>
+<text x="-3.048" y="4.826" size="1.778" layer="95">&gt;NAME</text>
+<text x="-3.81" y="-5.588" size="1.778" layer="96">&gt;VALUE</text>
+<pin name="1" x="-5.08" y="0" visible="off" length="short" direction="pas" swaplevel="1"/>
+<pin name="2" x="7.62" y="0" visible="off" length="short" direction="pas" swaplevel="2" rot="R180"/>
+</symbol>
+</symbols>
+<devicesets>
+<deviceset name="6X3.5_TACT" prefix="SW">
+<gates>
+<gate name="G$1" symbol="TACT_SW" x="0" y="0"/>
+</gates>
+<devices>
+<device name="" package="TACT_6X3.5">
+<connects>
+<connect gate="G$1" pin="1" pad="P$1"/>
+<connect gate="G$1" pin="2" pad="P$2"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
+</devicesets>
+</library>
 </libraries>
 <attributes>
 </attributes>
@@ -8550,6 +8605,9 @@ Epson Toyocom FCC-255</description>
 <part name="R3" library="resistor" deviceset="R-EU_" device="R0805" value="1K"/>
 <part name="LED1" library="adafruit" deviceset="LED" device="CHIPLED_0805"/>
 <part name="LED2" library="adafruit" deviceset="LED" device="CHIPLED_0805"/>
+<part name="PRG" library="tactile_switch" deviceset="6X3.5_TACT" device=""/>
+<part name="RST" library="tactile_switch" deviceset="6X3.5_TACT" device=""/>
+<part name="GND1" library="supply1" deviceset="GND" device=""/>
 </parts>
 <sheets>
 <sheet>
@@ -8600,6 +8658,9 @@ Epson Toyocom FCC-255</description>
 </instance>
 <instance part="LED1" gate="G$1" x="86.36" y="91.44" rot="R90"/>
 <instance part="LED2" gate="G$1" x="88.9" y="86.36" rot="R270"/>
+<instance part="PRG" gate="G$1" x="223.52" y="-53.34"/>
+<instance part="RST" gate="G$1" x="223.52" y="-66.04"/>
+<instance part="GND1" gate="1" x="243.84" y="-78.74"/>
 </instances>
 <busses>
 </busses>
@@ -8673,6 +8734,16 @@ Epson Toyocom FCC-255</description>
 <pinref part="SUPPLY12" gate="GND" pin="GND"/>
 <pinref part="C7" gate="G$1" pin="2"/>
 <wire x1="261.62" y1="63.5" x2="259.08" y2="63.5" width="0.1524" layer="91"/>
+</segment>
+<segment>
+<pinref part="PRG" gate="G$1" pin="2"/>
+<wire x1="231.14" y1="-53.34" x2="243.84" y2="-53.34" width="0.1524" layer="91"/>
+<wire x1="243.84" y1="-53.34" x2="243.84" y2="-66.04" width="0.1524" layer="91"/>
+<pinref part="RST" gate="G$1" pin="2"/>
+<wire x1="243.84" y1="-66.04" x2="243.84" y2="-76.2" width="0.1524" layer="91"/>
+<wire x1="231.14" y1="-66.04" x2="243.84" y2="-66.04" width="0.1524" layer="91"/>
+<junction x="243.84" y="-66.04"/>
+<pinref part="GND1" gate="1" pin="GND"/>
 </segment>
 </net>
 <net name="MISO" class="0">
@@ -8809,6 +8880,11 @@ Epson Toyocom FCC-255</description>
 <pinref part="R1" gate="G$1" pin="2"/>
 <wire x1="251.46" y1="5.08" x2="261.62" y2="5.08" width="0.1524" layer="91"/>
 <label x="261.62" y="5.08" size="1.778" layer="91" font="vector" xref="yes"/>
+</segment>
+<segment>
+<pinref part="PRG" gate="G$1" pin="1"/>
+<wire x1="218.44" y1="-53.34" x2="210.82" y2="-53.34" width="0.1524" layer="91"/>
+<label x="210.82" y="-53.34" size="1.778" layer="95" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="CSSD" class="0">
@@ -8949,6 +9025,11 @@ Epson Toyocom FCC-255</description>
 <pinref part="R7" gate="G$1" pin="2"/>
 <wire x1="251.46" y1="-17.78" x2="261.62" y2="-17.78" width="0.1524" layer="91"/>
 <label x="261.62" y="-17.78" size="1.778" layer="91" font="vector" xref="yes"/>
+</segment>
+<segment>
+<pinref part="RST" gate="G$1" pin="1"/>
+<wire x1="218.44" y1="-66.04" x2="210.82" y2="-66.04" width="0.1524" layer="91"/>
+<label x="210.82" y="-66.04" size="1.778" layer="95" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="ADC" class="0">
