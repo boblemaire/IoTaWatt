@@ -8813,9 +8813,9 @@ Wickmann</description>
 <label x="165.1" y="-104.14" size="1.778" layer="91" xref="yes"/>
 </segment>
 <segment>
-<pinref part="SV1" gate="G$1" pin="3"/>
-<wire x1="243.84" y1="15.24" x2="248.92" y2="15.24" width="0.1524" layer="91"/>
-<label x="261.62" y="15.24" size="1.778" layer="91" font="vector" xref="yes"/>
+<pinref part="SV1" gate="G$1" pin="14"/>
+<wire x1="228.6" y1="27.94" x2="223.52" y2="27.94" width="0.1524" layer="91"/>
+<label x="223.52" y="27.94" size="1.778" layer="91" rot="R180" xref="yes"/>
 </segment>
 </net>
 <net name="ADC11" class="0">
@@ -8952,12 +8952,9 @@ Wickmann</description>
 <wire x1="48.26" y1="-104.14" x2="55.88" y2="-104.14" width="0.1524" layer="91"/>
 <label x="55.88" y="-104.14" size="1.778" layer="91" xref="yes"/>
 </segment>
-</net>
-<net name="CSSD" class="0">
 <segment>
-<pinref part="SV1" gate="G$1" pin="10"/>
-<wire x1="228.6" y1="22.86" x2="223.52" y2="22.86" width="0.1524" layer="91"/>
-<label x="223.52" y="22.86" size="1.778" layer="91" font="vector" rot="R180" xref="yes"/>
+<pinref part="SV1" gate="G$1" pin="1"/>
+<wire x1="243.84" y1="12.7" x2="248.92" y2="12.7" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="2V5" class="0">
@@ -9001,11 +8998,6 @@ Wickmann</description>
 <segment>
 <pinref part="U$20" gate="G$1" pin="6"/>
 <wire x1="88.9" y1="-76.2" x2="81.28" y2="-76.2" width="0.25" layer="91"/>
-</segment>
-<segment>
-<pinref part="SV1" gate="G$1" pin="2"/>
-<wire x1="228.6" y1="12.7" x2="223.52" y2="12.7" width="0.1524" layer="91"/>
-<label x="223.52" y="12.7" size="1.778" layer="91" font="vector" rot="R180" xref="yes"/>
 </segment>
 <segment>
 <pinref part="R32" gate="G$1" pin="1"/>
@@ -9269,6 +9261,10 @@ Wickmann</description>
 <pinref part="HLK1" gate="G$1" pin="+VO"/>
 <wire x1="83.82" y1="119.38" x2="93.98" y2="119.38" width="0.1524" layer="91"/>
 <label x="93.98" y="119.38" size="1.778" layer="95" xref="yes"/>
+</segment>
+<segment>
+<pinref part="SV1" gate="G$1" pin="3"/>
+<wire x1="243.84" y1="15.24" x2="248.92" y2="15.24" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$2" class="0">
