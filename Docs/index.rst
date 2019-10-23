@@ -24,6 +24,7 @@ IoTaWatt documentation
     Graph+ <graphPlus>
     Original Graph <originalGraph>
     File Manager and Editor <fileManager>
+    Query API <query.rst>
     Message Log <messageLog>
     Troubleshooting <troubleshooting>
     
