@@ -8,13 +8,11 @@ Overview
 
 The IoTaWatt Query API provides access to the historical data in the datalogs 
 using a restful interface that produces a table of JSON or CSV data.
-The table columns can configuration time, IoTaWatt inputs and IoTaWatt outputs.
+The table columns can be time, IoTaWatt inputs and IoTaWatt outputs.
 The table rows are datalog values grouped by a fixed time period or relative time 
 periods like days, weeks, months and years.
 
-IoTaWatt retains multiple values for each input or output specified by a unit 
-of measure like Watts, Volts or Amps. The query provides for reporting in 
-all of the available units.
+Values can be requested for a variety of measurements such as Watts, Volts or Amps. 
 
 The Query API provides data to the Graph+ utility.
 
@@ -22,7 +20,7 @@ The Query API provides data to the Graph+ utility.
 Query types
 ------------
 
-There are two basic queries currently suppoprted:
+There are two basic queries currently supported:
 
 show
 ....
@@ -33,29 +31,28 @@ select
     Used to select a set of series for a particular time period and return a 
     table of values in JSON or CSV format.
 
-------------
+-----------------
 query?show
-------------
+-----------------
 
-``HTTP://iotawatt.local/query?show=series``
+This is the only form of the show query::
+
+    HTTP://iotawatt.local/query?show=series
 
 This query simply lists all of the available inputs and outputs along with their respective
-primary unit of measure. The format is always JSON.
+primary unit of measure. The format is always JSON. 
 
-Here is a typical response from a simple configuration:
+The response lists the series names that the select query will recognize.
+Here is a typical response from a simple configuration::
 
-``{"series":[{"name":"voltage","unit":"Volts"},{"name":"mains1","unit":"Watts"},
-{"name":"mains2","unit":"Watts"},{"name":"solar","unit":"Watts"},
-{"name":"heat_pump","unit":"Watts"},{"name":"mains","unit":"Watts"},
-{"name":"used","unit":"Watts"}]}``
-
-These are the data series names that the select query will recognize.
+    {"series":[{"name":"voltage","unit":"Volts"},{"name":"mains1","unit":"Watts"},
+    {"name":"mains2","unit":"Watts"},{"name":"solar","unit":"Watts"},
+    {"name":"heat_pump","unit":"Watts"},{"name":"mains","unit":"Watts"},
+    {"name":"used","unit":"Watts"}]}
 
 ------------
 query?select
 ------------
-
-*host-URL*/query?
 
 select=[*series1* [, *series2* ...]]
 .....................................
@@ -147,9 +144,9 @@ select=[*series1* [, *series2* ...]]
     For *&format=csv*, a row is prepended to the data with a comma delimited 
     list of the series names.
 
-    For *&format=json*, an object "labels":[series1 [,series2 ....]] is added 
-    to the response.  Another object "range":[begin, end] is added where begin
-    and end are the absolute unix begin and end times of the response.
+    For *&format=json*, the array "labels":[series1 [,series2 ....]] is added 
+    to the response.  Another array "range":[begin, end] is added where begin
+    and end are the 10 digit absolute unix begin and end times of the response.
 
 &missing={ **null** | skip | zero}
 ..................................
@@ -188,8 +185,8 @@ Unix time
 .........
 
 Unix time is the count of seconds or milliseconds since Jan 1, 1970.  a Unix time 
-specifier is simply that count which is a 10 character integer for seconds 
-or a 13 character integer for milliseconds.  IoTaWatt will always round the 
+specifier is simply a 10 digit integer for seconds 
+or a 13 digit integer for milliseconds.  IoTaWatt will always round the 
 time to a multiple of 5 seconds.
 
 ISO time
@@ -207,7 +204,7 @@ That is optionally followed by:
         a two digit month 01-12
 
     ``-DD``
-        a two digit day in month 00-31
+        a two digit day in month 01-31
 
     ``Thh``
         two digit hours 00-23
@@ -272,14 +269,14 @@ So if "today" is 2019-04-15T16:11:42:
 Base time may be followed by one or more offset modifiers to add or subtract from the
 base time.  The format is:
 
-    `` { + | -} [n] { y | M | w | d | h | m | s }``
+    ``{ + | -} [n] { y | M | w | d | h | m | s }``
 
 Examples:
 
 +-----------------------+-----------------------------------+
 |   Base with modifiers |   Effective time                  |
 +=======================+===================================+
-|d-1                    |00:00:00 yesterday                 |
+|d-1d                   |00:00:00 yesterday                 |
 +-----------------------+-----------------------------------+
 |d-18h                  |06:00:00 yesterday                 |
 +-----------------------+-----------------------------------+
@@ -292,7 +289,7 @@ Examples:
 |s                      |Now                                |
 +-----------------------+-----------------------------------+
 
-Using relative time for both **begin** and **end**, relative time periods can 
+By using relative time for both **begin** and **end**, relative time periods can 
 be specified:
 
 +---------------+---------------+-------------------------------+
