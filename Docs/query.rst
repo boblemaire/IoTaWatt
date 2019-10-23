@@ -65,7 +65,7 @@ select=[*series1* [, *series2* ...]]
 
     time [ **.local** | .utc] [ **.iso** | .unix]
         Returns the time of the beginning of the reporting group.
-        Modifiers can be used to specify local (delault) or utc time,
+        Modifiers can be used to specify local (default) or utc time,
         and iso date format(default) or unix seconds since 1/1/1970 format.
 
     <voltage input or output> [ **.volts** | .hz] [.d<n>]
@@ -91,13 +91,13 @@ select=[*series1* [, *series2* ...]]
 &begin=<time specifier>
 .......................
 
-    Required parameter. Time can specified in a variety of relative and absolute
+    Required parameter. Time can be specified in a variety of relative and absolute
     formats.  See `time specifiers`_ 
 
 &end=<time specifier>
 .....................
 
-    Required parameter. Time can specified in a variety of relative and absolute
+    Required parameter. Time can be specified in a variety of relative and absolute
     formats.  See `time specifiers`_. end must be greater than begin.
 
 &group={ **auto** | all | <n> {s | m | h | d | w | M | y}}
@@ -120,6 +120,7 @@ select=[*series1* [, *series2* ...]]
     For Wh, it will result in the total Wh for the entire period.
 
     To overide, specify a time unit preceeded by a multiplier, as in:
+    
         * 10s (ten seconds)
         * 5m (five minutes)
         * 1h (one hour)
