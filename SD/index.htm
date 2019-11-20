@@ -1969,10 +1969,10 @@ function editInfluxdb(){
   userInput.placeholder = "optional";
 
   if(config.influxdb.pwd === undefined) config.influxdb.pwd = "";
-  var pwdInput = addTableRow(serverTable, "password:", "serverPwd", "input", 16);
+  var pwdInput = addTableRow(serverTable, "password:", "serverPwd", "input", 32);
   pwdInput.value = config.influxdb.pwd;
   pwdInput.setAttribute("oninput","config.influxdb.pwd = this.value; checkInfluxdb();"); 
-  pwdInput.pattern = "^[A-Za-z0-9_!%@#]{0,16}";
+  pwdInput.pattern = "^[A-Za-z0-9_!%@#]{0,32}";
   pwdInput.type = "password";
   pwdInput.placeholder = "optional";
   
