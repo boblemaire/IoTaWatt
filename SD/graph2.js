@@ -1213,14 +1213,9 @@ $("#graph-select").change(function() {
             
             for(y in context.yaxes){
               var u = unitindex(context.yaxes[y].unit);
-              if(context.yaxes[y].min != ""){
-                units[u].min = context.yaxes[y].min;
-              }
-              if(context.yaxes[y].max != ""){
-                units[u].max = context.yaxes[y].max;
-              }
+              units[u].min = context.yaxes[y].min;
+              units[u].max = context.yaxes[y].max;
             }
-            
             loading = false;
             query();
         }
