@@ -33,6 +33,7 @@ void handleGetFeedData();
 void handleGraphCreate();
 void handleGraphUpdate();
 void handleGraphGetall();
+void handleGraphGetallplus();
 void handleGraphDelete();
 void sendMsgFile(File &dataFile, int32_t relPos);
 void handleGetConfig();

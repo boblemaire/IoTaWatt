@@ -1300,7 +1300,7 @@ $("#graph-delete").click(function() {
 function graph_load_savedgraphs()
 {
     $.ajax({                                      
-        url: path+"/graph/getall",
+        url: path+"/graph/getallplus",
         async: true,
         dataType: "json",
         success: function(result) {
