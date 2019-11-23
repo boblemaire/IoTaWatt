@@ -379,8 +379,14 @@ $('#placeholder').bind("plothover", function (event, pos, item)
 {
     $("#tooltip").remove();
     if (item) {
-        var value = unitFormat(item.datapoint[1],yaxes[item.series.yaxis.n-1].unit);
-        tooltip(item.pageX, item.pageY, "<span style='font-size:11px'>"+item.series.label+"</span><br>"+value+
+        var value = item.series.data[item.dataIndex][1];
+        var stackValue = item.datapoint[1];
+        var dispValue = unitFormat(value, yaxes[item.series.yaxis.n-1].unit);
+        var dispStackValue = (value == stackValue) ? "" : "<br><span style='font-size:11px'>stack</span><br>" + unitFormat(stackValue, yaxes[item.series.yaxis.n-1].unit); 
+        if(item.series.stack){
+          stackValue = ""
+        }
+        tooltip(item.pageX, item.pageY, "<span style='font-size:11px'>"+item.series.label+"</span><br>"+dispValue+dispStackValue+
           "<br><span style='font-size:11px'>"+moment.unix(item.datapoint[0]/1000).format('H:mm ddd, MMM D')+"</span>", "#fff");
     } 
 });
