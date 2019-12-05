@@ -127,8 +127,12 @@ void base64encode(xbuf* buf){
 
 String base64encode(const uint8_t* in, size_t len){
   trace(T_base64,1);
+  if(len <= 0){
+     trace(T_base64,2);
+     return String("");
+  }
   size_t _len = len * 2 + len;
-  xbuf work(_len < 64 ? _len : 64);
+  xbuf work;
   work.write(in, len);
   base64encode(&work);
   return work.readString(work.available());
