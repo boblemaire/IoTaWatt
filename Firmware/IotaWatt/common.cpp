@@ -93,7 +93,8 @@
  *   07/23/19 02_04_01 Maintenance. Ongoing heap battle, tables, etc.
  *   08/13/19 02_04_02 Maintenance. PVoutput recovery, Save last config, safe mode on config problems
  *   10/04/19 02_05_00 Changes to new query and new Graph+ 
- *   10/12/19 02_05_01 Graph+ add download, add datalog WTD, add Query progress check, increase Query limit to 100K                   
+ *   10/12/19 02_05_01 Graph+ add download, add datalog WTD, add Query progress check, increase Query limit to 100K
+ *   12/04/19 02_05_02 Graph+ improvements,                   
  * 
  *****************************************************************************************************/
 
