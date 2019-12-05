@@ -14,7 +14,7 @@ var refreshTimer;
 var refresh = false;
 var selectedunitcolor = "#00a1d8";  // Color to be used for selected unit
 
-var path = "http://" + location.host; // + "/";     // used to call home
+var path =""; //https://" + location.host; // + "/";     // used to call home
 
     /**********************************************************************************************
                      Predefined reporting periods that can be selected
@@ -80,7 +80,7 @@ var unit = initialunit;             // Currently selected unit
 
 var units = [       {unit:"Volts", group:"V", label:"V",   dp:1,   min:"",   max:""},
                     {unit:"Watts", group:"P", label:"W",   dp:1,   min:"",   max:""},
-                    {unit:"Wh",    group:"P", label:"Wh",  dp:1,   min:"",   max:""},
+                    {unit:"Wh",    group:"P", label:"Wh",  dp:2,   min:"",   max:""},
                     {unit:"Amps",  group:"P", label:"A",   dp:3,   min:"",   max:""},
                     {unit:"VA",    group:"P", label:"VA",  dp:1,   min:"",   max:""},
                     {unit:"PF",    group:"P", label:"PF",  dp:3,   min:"",   max:""},
@@ -129,7 +129,8 @@ var groups = [      {group:"auto",    query:"auto"  },
                     {group:"Daily",   query:"1d"    },
                     {group:"Weekly",  query:"1w"    },
                     {group:"Monthly", query:"1M"    },
-                    {group:"Yearly",  query:"1h"    }
+                    {group:"Yearly",  query:"1h"    },
+                    {group:"all",     query:"all"   }
 ];
 
                     // build group select options
@@ -378,8 +379,14 @@ $('#placeholder').bind("plothover", function (event, pos, item)
 {
     $("#tooltip").remove();
     if (item) {
-        var value = unitFormat(item.datapoint[1],yaxes[item.series.yaxis.n-1].unit);
-        tooltip(item.pageX, item.pageY, "<span style='font-size:11px'>"+item.series.label+"</span><br>"+value+
+        var value = item.series.data[item.dataIndex][1];
+        var stackValue = item.datapoint[1];
+        var dispValue = unitFormat(value, yaxes[item.series.yaxis.n-1].unit);
+        var dispStackValue = (value == stackValue) ? "" : "<br><span style='font-size:11px'>stack</span><br>" + unitFormat(stackValue, yaxes[item.series.yaxis.n-1].unit); 
+        if(item.series.stack){
+          stackValue = ""
+        }
+        tooltip(item.pageX, item.pageY, "<span style='font-size:11px'>"+item.series.label+"</span><br>"+dispValue+dispStackValue+
           "<br><span style='font-size:11px'>"+moment.unix(item.datapoint[0]/1000).format('H:mm ddd, MMM D')+"</span>", "#fff");
     } 
 });
@@ -730,7 +737,7 @@ function query() {
       $('#select-period').prop({"value":0, "selectedIndex":0});
     } 
     
-    var request = path+"/query?format=json&header=yes&resolution=high&missing=null" + 
+    var request = path+"query?format=json&header=yes&resolution=high&missing=null" + 
                         "&begin=" + begin + 
                         "&end=" + end + 
                         "&select=[time.utc.unix";
@@ -1187,37 +1194,40 @@ $("#graph-select").change(function() {
     for(index=0; index<savedgraphs.length; index++){
       if(name == savedgraphs[index].name)break;
     }
-    var context = savedgraphs[index];
+    
+    $.ajax({                                      
+        url: path+"/graphs/"+savedgraphs[index].id,
+        async: true,
+        dataType: "json",
+        success: function(result) {
+            var context = result;
+            period = context.period;
+            build_period_selector();
+            
+            group = context.group;
+            build_group_options();
+        
+            unit = context.unit;
+            build_units_selector();
+        
+            userDateChange = false;
+            beginDate.date(new Date(context.beginDate));
+            endDate.date(new Date(context.endDate));
+            userDateChange = true;
+            
+            feedlist = context.feedlist;
+            
+            for(y in context.yaxes){
+              var u = unitindex(context.yaxes[y].unit);
+              units[u].min = context.yaxes[y].min;
+              units[u].max = context.yaxes[y].max;
+            }
+            loading = false;
+            query();
+        }
+    });
     
     
-    period = context.period;
-    build_period_selector();
-    
-    group = context.group;
-    build_group_options();
-
-    unit = context.unit;
-    build_units_selector();
-
-    userDateChange = false;
-    beginDate.date(new Date(context.beginDate));
-    endDate.date(new Date(context.endDate));
-    userDateChange = true;
-    
-    feedlist = context.feedlist;
-    
-    for(y in context.yaxes){
-      var u = unitindex(context.yaxes[y].unit);
-      if(context.yaxes[y].min != ""){
-        units[u].min = context.yaxes[y].min;
-      }
-      if(context.yaxes[y].max != ""){
-        units[u].max = context.yaxes[y].max;
-      }
-    }
-    
-    loading = false;
-    query();
 });
 
 $("#graph-save").click(function() {
@@ -1291,7 +1301,7 @@ $("#graph-delete").click(function() {
 function graph_load_savedgraphs()
 {
     $.ajax({                                      
-        url: path+"/graph/getall",
+        url: path+"/graph/getallplus",
         async: true,
         dataType: "json",
         success: function(result) {
