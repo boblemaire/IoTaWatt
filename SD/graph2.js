@@ -14,7 +14,7 @@ var refreshTimer;
 var refresh = false;
 var selectedunitcolor = "#00a1d8";  // Color to be used for selected unit
 
-var path = "http://" + location.host; // + "/";     // used to call home
+var path =""; //https://" + location.host; // + "/";     // used to call home
 
     /**********************************************************************************************
                      Predefined reporting periods that can be selected
@@ -737,7 +737,7 @@ function query() {
       $('#select-period').prop({"value":0, "selectedIndex":0});
     } 
     
-    var request = path+"/query?format=json&header=yes&resolution=high&missing=null" + 
+    var request = path+"query?format=json&header=yes&resolution=high&missing=null" + 
                         "&begin=" + begin + 
                         "&end=" + end + 
                         "&select=[time.utc.unix";
