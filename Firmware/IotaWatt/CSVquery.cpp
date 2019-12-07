@@ -91,6 +91,9 @@ bool    CSVquery::setup(){
             }
             _groupMult = interval;
             _groupUnits = tUnitsSeconds;
+        } else if(group.equals("all")){
+            _groupMult = _end - _begin;
+            _groupUnits = tUnitsSeconds;
         } else {
             _groupMult = MAX(1, group.toInt());
             if(group.endsWith("s")) _groupUnits = tUnitsSeconds;
