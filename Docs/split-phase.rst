@@ -2,7 +2,7 @@
 Split-Phase Installation
 ========================
 
-This chapter assumes the reader has read the `CT Basics <CTbasics>`_ section.
+This chapter assumes the reader has read the `CT Basics <CTbasics.html>`_ section.
 
 --------------------
 What is split-phase?
@@ -114,7 +114,7 @@ the wall transformer plug is not polarized as well as other uncontrolled
 factors, we don't know yet.  
 
 So what we do is install just install
-the CTs with opposite orientation, `configure them <CTconfig>`_, and 
+the CTs with opposite orientation, `configure them <CTconfig.html>`_, and 
 look at the status display of the IoTaWatt.  If reversed,
 they will show a ↺ symbol. To correct this, you can do one of two things.
 
