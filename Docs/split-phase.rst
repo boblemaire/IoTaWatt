@@ -11,7 +11,7 @@ Worldwide, virtually all of the residential power delivered to residential homes
 is 230V-240V single phase.
 In North America, the single-phase 240V supply is split so that there are two 120V
 legs that are typically used for lighting and light-duty appliances.
-To learn more about, see the
+To learn more see the
 `Split-Phase Wiki <https://en.wikipedia.org/wiki/Split-phase_electric_power>`_.
 
 ------------------------
@@ -27,17 +27,16 @@ Split-phase load centers
 
 A typical split-phase load center has two Main circuit breakers, one for each of the two
 "legs" coming from the service entrance.  There is also a third neutral wire that is
-directly connected to the neutral bus - a long bar with holes and screws to connected
+directly connected to the neutral bus - a long bar with holes and screws to connecte
 conductors.  Another ground bus is provided which is connected to a reliable local
 earth connection like a ground stake.  
-In most entrance panels, the neutral and ground busses are "bonded" (connected) together,
-but not in split-phase subpanels.
+In most entrance panels, but not sub-panels, the neutral and ground busses are "bonded" (connected together).
 
 The service is typically described in terms of the amperage rating of the Mains 
 circuit breakers or fuses.  Most common are "100A service" and "200A service".
 
 See the North America section of this Load-Center Wiki_.
-to see how the split-phases correspond to the breaker rows. 
+to see how the split-phases correspond to alternating breaker rows. 
 
 .. _Wiki: https://en.wikipedia.org/wiki/Distribution_board
 
@@ -46,7 +45,7 @@ Monitoring split phase
 ----------------------
 When monitoring a circuit in a split phase service, it's helpful to
 recognize exactly which of the mains circuits it is utilizing.
-There are three different possibilities:
+There are three possibilities:
 
 ............
 120V phase A
@@ -70,6 +69,25 @@ There are three different possibilities:
     Range, Pumps, Electric Heat, Dryers, Heat-pumps, sub-panels, 
     and Air-conditioners. They use two circuit breakers in adjascent
     rows, so one of the breakers is on phase A and the other is on phase B.
+    
+    As explained in the `CT Basics <CTbasics.html>`_ section, 240V 
+    loads can be two-wire or three-wire.
+
+    Two-wire loads typically use two conductor cable with the white and 
+    black conductors connected to the two circuit-breakers.  For these 
+    circuits, a single CT can be placed on either one of the two conductors
+    and the "double" box checked to indicate to IoTaWatt that the voltage
+    is doubled to 240V. Orientation of the CT is dependent on the row that
+    the CT is associated with.
+
+    Three-wire loads typically use three conductor cable with black, red,
+    and white conductors.  The red and black are connected to the two 
+    breakers and the white is connected to neutral.  These loads must 
+    be measured with two CTs, one on the red and one on the black, or 
+    by passing the two conductors through one CT in opposite directions 
+    so that the resulting orientation of the CT is correct for the row
+    of the breaker that each conductor is connected to. An illustration
+    canm be found in the `CT Basics <CTbasics.html>`_ section.
 
 -----------------
 Voltage Reference
