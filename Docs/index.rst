@@ -20,6 +20,7 @@ IoTaWatt documentation
     Configure influxDB <influxDB>
     Three-phase power <threePhase>
     CT Basics <CTbasics>
+    Split-phase power <split-phase.rst>
     Data Visualization <dataVisualization>
     Graph+ <graphPlus>
     Original Graph <originalGraph>

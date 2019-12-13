@@ -96,7 +96,7 @@ void base64encode(xbuf* buf){
   size_t supply = buf->available();
   uint8_t in[3];
   uint8_t out[4];
-  trace(T_base64,0);
+  trace(T_base64,2,supply);
   while(supply >= 3){
     buf->read(in,3);
     out[0] = (uint8_t) base64codes[in[0]>>2];
@@ -106,7 +106,7 @@ void base64encode(xbuf* buf){
     buf->write(out, 4);
     supply -= 3;
   }
-  trace(T_base64,1);
+  trace(T_base64,3,supply);
   if(supply > 0){
     in[0] = in[1] = in[2] = 0;
     buf->read(in,supply);
@@ -126,7 +126,7 @@ void base64encode(xbuf* buf){
 }
 
 String base64encode(const uint8_t* in, size_t len){
-  trace(T_base64,1);
+  trace(T_base64,0,len);
   if(len <= 0){
      trace(T_base64,2);
      return String("");
@@ -136,6 +136,7 @@ String base64encode(const uint8_t* in, size_t len){
   work.write(in, len);
   base64encode(&work);
   return work.readString(work.available());
+  trace(T_base64,1);
 }
 
 /**************************************************************************************************
