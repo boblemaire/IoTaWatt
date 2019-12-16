@@ -1034,12 +1034,14 @@ function build_stats_table(){
         line += "<td>"+unitFormat(stats.mean.toFixed(dp),feedlist[z].unit)+"</td>";
         
         var unit = feedlist[z].unit;
+        line += "<td>";
         if(unit == "Wh"){
-          line += "<td>"+unitFormat(stats.sum, "Wh")+"</td>";
+          line += unitFormat(stats.sum, "Wh");
         }
         if(unit == "Watts"){
-          line += "<td>"+unitFormat(Math.round((stats.mean*periodDuration)/3600), "Wh")+"</td>";
+          line += unitFormat(Math.round((1-stats.npointsnull/stats.npoints)*stats.mean*periodDuration/3600), "Wh");
         }
+        line += "</td>";
         line += "</tr>"
         $("#sourceStatsBody").append(line);
       }
