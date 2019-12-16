@@ -400,7 +400,13 @@ bool configInputs(const char* JsonStr){
       }  
       else{
         log("unsupported input type: %s", type.c_str());
+      }
+      if(input.containsKey(F("vmult"))){
+        inputChannel[i]->_vmult = input[F("vmult")].as<float>();
       } 
+      else {
+        inputChannel[i]->_vmult = 1.0;
+      }
     }
     else {
       inputChannel[i]->reset();

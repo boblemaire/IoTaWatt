@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <title>IoTaWatt Configuration app</title>
-<link rel="stylesheet" type="text/css" href="/cnfstyle.css">
+<link rel="stylesheet" type="text/css" href="cnfstyle.css">
 
 </head>
 <body onload="setup()">
@@ -415,10 +415,10 @@
 
 <script>
 // configuration files
-var configFileURL = "config.txt";
-var configNewURL = "config.txt";
+var configFileURL = "/config.txt";
+var configNewURL = "/config.txt";
 var burdenFileURL = "/esp_spiffs/config/device/burden.txt";
-var configTablesURL = "tables.txt";
+var configTablesURL = "/tables.txt";
 var editURL = "edit.htm";
 var graphURL = "graph.htm";
 var graph2URL = "graph2.htm";
@@ -445,7 +445,7 @@ var inputEditChannel;
 var voltageChannels = [];
 var vchanUsed = [];
 var derivedTable = [{phase:"A",vphase:0,vmult:1},{phase:"B",vphase:120,vmult:1},{phase:"C",vphase:240,vmult:1},
-                   {phase:"A-B",vphase:30,vmult:1.732},{phase:"B-C",vphase:270,vmult:1.732},{phase:"C-A",vphase:150,vmult:1.732}];
+                   {phase:"A-B",vphase:-30,vmult:1.732},{phase:"B-C",vphase:+90,vmult:1.732},{phase:"C-A",vphase:-150,vmult:1.732}];
 var scriptEditTable;
 var scriptEditSet;
 var scriptEditIndex = -1;
@@ -930,7 +930,9 @@ function refreshInputEdit(){
         option.value = Number(i);
         option.innerHTML = derivedTable[i].phase;
         if(derivedTable[i].vphase != 0){
-          option.innerHTML += " (+" + derivedTable[i].vphase + "&#176)";
+          option.innerHTML += " (";
+          option.innerHTML += (derivedTable[i].vphase >= 0) ? "+" : "";
+          option.innerHTML += derivedTable[i].vphase + "&#176)";
         }
         inputVchan.add(option);
         if(inputEditObject.vphase !== undefined && inputEditObject.vphase == derivedTable[i].vphase){
