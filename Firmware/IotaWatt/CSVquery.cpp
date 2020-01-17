@@ -787,6 +787,7 @@ time_t  CSVquery::parseTimeArg(String timeArg){
                         _tm->tm_min = parseInt(&ptr);
                         if(_tm->tm_min >= 0 && _tm->tm_min <= 59 && *(ptr++) == ':'){
                             _tm->tm_sec = parseInt(&ptr);
+                            ptr++;
                         }
                     }
                 }
