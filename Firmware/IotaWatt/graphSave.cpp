@@ -40,7 +40,7 @@ void handleGraphCreate(){
 void handleGraphDelete(){
   String filePath = graphDir;
   String fileName = server.arg("id");
-  filePath += "/" + fileName + ".txt";
+  filePath += "/" + fileName;
   SD.remove(filePath);
   server.send(200, txtJson_P, F("{\"success\":true,\"message\":\"deleted\"}"));
 }
