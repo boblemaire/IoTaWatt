@@ -14,6 +14,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   static String updateVersion;
   static File releaseFile;
   static bool upToDate = false;
+  static bool parseError = false;
   static int checkResponse = 0;
   static char* _updateClass = nullptr;
   static uint32_t lastVersionCheck = 0;
@@ -27,7 +28,10 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   switch(state){
 
     case initialize: {
-      trace(T_UPDATE,1); 
+      trace(T_UPDATE,1);
+      if( ! updateClass){
+        updateClass = charstar("NONE");
+      } 
       log("Updater: service started. Auto-update class is %s", updateClass);
       _updateClass = charstar(updateClass);
       state = checkAutoUpdate;
@@ -43,7 +47,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         delete[] _updateClass;
         _updateClass = charstar(updateClass);
         log("Updater: Auto-update class changed to %s", _updateClass);
-        if (strcmp(_updateClass, "NONE") != 0){
+        if (strcmp(updateClass, "NONE") != 0){
           lastVersionCheck = 0;
           upToDate = false;
           state = getVersion;
@@ -77,10 +81,6 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         break;
       }
       request->setTimeout(10);
-      request->setReqHeader("USER_AGENT","IotaWatt");
-      request->setReqHeader("X_STA_MAC", WiFi.macAddress().c_str());
-      request->setReqHeader("X-UPDATE-CLASS", updateClass);
-      request->setReqHeader("X_CURRENT_VERSION", IOTAWATT_VERSION);
       if( ! request->send()){
         request->abort();
         HTTPrelease(HTTPtoken);;
@@ -95,36 +95,74 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       if(request->readyState() != 4){
         return UTCtime() + 1;
       }
-      HTTPrelease(HTTPtoken);;
-      if(request->responseHTTPcode() != 200 || request->available() != 8){
-        int responseCode = request->responseHTTPcode();
-        delete request;
-        request = nullptr;
+      HTTPrelease(HTTPtoken);
+      int responseCode = request->responseHTTPcode();
+      String responseText = request->responseText();
+      delete request;
+      request = nullptr;
+
+          // Handle error response
+
+      if(responseCode != 200){
         if( responseCode != checkResponse){
           log("Updater: Invalid response from server. HTTPcode: %d", responseCode);
         }
         checkResponse = responseCode;
-        state = getVersion;
         state = checkAutoUpdate;
         if(responseCode == 403){
           lastVersionCheck = UTCtime();
         }
-        return UTCtime() + 11 ;
+        return UTCtime() + 301;
       }
-      checkResponse = 0;
-      updateVersion = request->responseText();
-      delete request;
-      request = nullptr;
-      if(strcmp(updateVersion.c_str(), IOTAWATT_VERSION) == 0){
-        if( ! upToDate){
-          log("Updater: Auto-update is current for class %s.", updateClass);
-          upToDate = true;
+      
+      DynamicJsonBuffer Json;
+      JsonObject& response = Json.parseObject(responseText);
+      if( ! response.success()){
+        if(!parseError){
+          log("Updater: could not parse versions.json file.");
         }
+        parseError = true;
         state = checkAutoUpdate;
+        lastVersionCheck = UTCtime();
         return 1;
       }
-      log("Updater: Update from %s to %s", IOTAWATT_VERSION, updateVersion.c_str());
-      state = createFile;
+      parseError = false;
+
+            // Check for "classes" object
+
+      JsonObject& classes = response[F("classes")];
+      if( ! classes.success()){
+        if(!parseError){
+          log("Updater: versions.json is invalid.");
+        }
+        parseError = true;
+        state = checkAutoUpdate;
+        lastVersionCheck = UTCtime();
+        return 1;
+      }      
+
+            // Check if response contains the configured auto-update class
+
+      if(classes.containsKey(updateClass)){
+        updateVersion = classes[updateClass].as<char*>();
+        if(updateVersion.equals(IOTAWATT_VERSION)){
+          if( ! upToDate){
+            log("Updater: Auto-update is current for class %s.", updateClass);
+            upToDate = true;
+          }
+        }
+        else {
+          log("Updater: Update from %s to %s", IOTAWATT_VERSION, updateVersion.c_str());
+          state = createFile;
+          return 1;
+        }
+      }
+      else {
+        log("Updater: Unrecognized auto-update class %s.", updateClass);
+        upToDate = true;
+      }
+      state = checkAutoUpdate;
+      lastVersionCheck = UTCtime();
       return 1;
     }
 
