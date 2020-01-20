@@ -22,7 +22,6 @@ void handleGraphCreate(){
   String filePath = graphDir;
   String fileName = hashName(graph["name"].as<char*>());
   filePath += "/" + fileName + ".txt";
-  Serial.printf("graphname: %s\n", filePath.c_str());
   SD.remove(filePath);
   graphFile = SD.open(filePath, FILE_WRITE);
   if( ! graphFile){
