@@ -390,7 +390,11 @@ bool installUpdate(String version){
   update.setMD5((char*)buff);
   delete[] buff;
   if( ! update.end()){
-    log("Updater: update end failed. %d", update.getError());
+    int error = update.getError();
+    xbuf errorMsg;
+    update.printError(errorMsg);
+    log("Updater: %s", errorMsg.readStringUntil('\r').c_str());
+    log("Updater: update failed");
     return false; 
   }
   SD.remove((char*)inPath.c_str());
