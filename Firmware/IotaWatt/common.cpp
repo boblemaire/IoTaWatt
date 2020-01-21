@@ -95,7 +95,7 @@
  *   10/04/19 02_05_00 Changes to new query and new Graph+ 
  *   10/12/19 02_05_01 Graph+ add download, add datalog WTD, add Query progress check, increase Query limit to 100K
  *   12/04/19 02_05_02 Graph+ improvements
- *   01/19/20 02_05_03 Derived phase-phase support, Issue #252 query seconds, Fix Graph+ delete                  
+ *   01/19/20 02_05_03 Update use versions.json, derived phase-phase support, Issue #252 query seconds, Fix Graph+ delete                  
  * 
  *****************************************************************************************************/
 
