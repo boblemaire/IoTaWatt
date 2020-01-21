@@ -55,7 +55,9 @@ const char appJson_P[]  PROGMEM = "application/json";
 const char txtJson_P[]  PROGMEM = "text/json";
 
 bool authenticate(authLevel level){
+  Serial.printf_P(PSTR("\n\nAuth: authenticate %s\n"), level==authAdmin ? "admin" : "user");
   if(auth(level)){
+    Serial.printf_P(PSTR("Auth: authenticated.\n"));
     return true;
   } 
   requestAuth();
@@ -66,25 +68,24 @@ bool authenticate(authLevel level){
 
 void handleRequest(){
   String uri = server.uri();
-  static const char P_status[] PROGMEM = "/status";    
-  if(serverOn(authAdmin, FPSTR(P_status),HTTP_GET, handleStatus)) return;
+  if(serverOn(authUser,  F("/status"),HTTP_GET, handleStatus)) return;
   if(serverOn(authAdmin, F("/vcal"),HTTP_GET, handleVcal)) return;
   if(serverOn(authAdmin, F("/command"), HTTP_GET, handleCommand)) return;
-  if(serverOn(authUser, F("/list"), HTTP_GET, printDirectory)) return;
+  if(serverOn(authUser,  F("/list"), HTTP_GET, printDirectory)) return;
   if(serverOn(authAdmin, F("/config"), HTTP_GET, handleGetConfig)) return;
   if(serverOn(authAdmin, F("/edit"), HTTP_DELETE, handleDelete)) return;
   if(serverOn(authAdmin, F("/edit"), HTTP_PUT, handleCreate)) return;
-  if(serverOn(authUser, F("/feed/list.json"), HTTP_GET, handleGetFeedList)) return;
-  if(serverOn(authUser, F("/feed/data.json"), HTTP_GET, handleGetFeedData)) return;
+  if(serverOn(authUser,  F("/feed/list.json"), HTTP_GET, handleGetFeedList)) return;
+  if(serverOn(authUser,  F("/feed/data.json"), HTTP_GET, handleGetFeedData)) return;
   if(serverOn(authAdmin, F("/graph/create"),HTTP_POST, handleGraphCreate)) return;
   if(serverOn(authAdmin, F("/graph/update"),HTTP_POST, handleGraphCreate)) return;
   if(serverOn(authAdmin, F("/graph/delete"),HTTP_POST, handleGraphDelete)) return;
-  if(serverOn(authUser, F("/graph/getall"), HTTP_GET, handleGraphGetall)) return;
-  if(serverOn(authUser, F("/graph/getallplus"), HTTP_GET, handleGraphGetallplus)) return;
+  if(serverOn(authUser,  F("/graph/getall"), HTTP_GET, handleGraphGetall)) return;
+  if(serverOn(authUser,  F("/graph/getallplus"), HTTP_GET, handleGraphGetallplus)) return;
   if(serverOn(authAdmin, F("/auth"), HTTP_POST, handlePasswords)) return;
-  if(serverOn(authUser, F("/nullreq"), HTTP_GET, returnOK)) return;
-  if(serverOn(authUser, F("/query"), HTTP_GET, handleQuery)) return;
-  if(serverOn(authUser, F("/DSTtest"), HTTP_GET, handleDSTtest)) return;
+  if(serverOn(authUser,  F("/nullreq"), HTTP_GET, returnOK)) return;
+  if(serverOn(authUser,  F("/query"), HTTP_GET, handleQuery)) return;
+  if(serverOn(authUser,  F("/DSTtest"), HTTP_GET, handleDSTtest)) return;
   if(serverOn(authAdmin, F("/update"), HTTP_GET, handleUpdate)) return;
 
 
@@ -122,7 +123,7 @@ bool loadFromSdCard(String path){
   if( ! path.startsWith("/")) path = '/' + path;
   String dataType = txtPlain_P;
   if(path.endsWith("/")) path += F("index.htm");
-  if(path == F("/edit") || path == F("/graph")){
+  if(path.equals(F("/edit")) || path.equals(F("/graph")) || path.equals(F("/graph2"))){
     path += F(".htm");
   }
   
@@ -149,14 +150,15 @@ bool loadFromSdCard(String path){
     dataFile = SD.open(path.c_str());
   }
 
- 
-
           // If reading user directory,
           // authenticate as user
           // otherwise require admin.
 
   authLevel level = authAdmin;
-  if(path.startsWith(F("/user/"))){
+  if(path.startsWith(F("/user/")) ||
+     path.startsWith(F("/graphs/")) ||
+     path.startsWith(F("/graph.")) ||
+     path.startsWith(F("/graph2."))){
     level = authUser;
   }
   if( ! authenticate(level)) return true;
