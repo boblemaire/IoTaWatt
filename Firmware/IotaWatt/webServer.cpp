@@ -55,9 +55,7 @@ const char appJson_P[]  PROGMEM = "application/json";
 const char txtJson_P[]  PROGMEM = "text/json";
 
 bool authenticate(authLevel level){
-  Serial.printf_P(PSTR("\n\nAuth: authenticate %s\n"), level==authAdmin ? "admin" : "user");
   if(auth(level)){
-    Serial.printf_P(PSTR("Auth: authenticated.\n"));
     return true;
   } 
   requestAuth();

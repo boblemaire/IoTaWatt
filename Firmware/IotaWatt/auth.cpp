@@ -7,9 +7,11 @@ static const char AUTHORIZATION_HEADER[] PROGMEM = "Authorization";
 static const char qop_auth[] PROGMEM = "qop=auth";
 static const char qop_authquote[] PROGMEM = "qop=\"auth\"";
 static const char WWW_Authenticate[] PROGMEM = "WWW-Authenticate";
-static bool       authDebug = true;
+static bool       authDebug = false;
 
 bool auth(authLevel level){
+
+  if(authDebug) Serial.printf_P(PSTR("\nAuth: authenticate %s\n"), level==authAdmin ? "admin" : "user");
 
         // If no passwords or authorization not required, return true
 
