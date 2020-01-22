@@ -102,7 +102,6 @@
       // Define instances of major classes to be used
 
 WiFiClient WifiClient;
-WiFiManager wifiManager;
 DNSServer dnsServer;    
 IotaLog currLog(5,365);                     // current data log  (1 year) 
 IotaLog histLog(60,3652);                   // history data log  (10 years)  
