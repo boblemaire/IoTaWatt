@@ -351,28 +351,32 @@ void printDirectory() {
   }
   else {
     if(path != "/" && !SD.exists((char *)path.c_str())) return returnFail("BAD PATH");
-    File dir = SD.open((char *)path.c_str());
-    if(!dir.isDirectory()){
-      dir.close();
-      return returnFail("NOT DIR");
-    }
+    Dir dir = SDFS.openDir(path);
     DynamicJsonBuffer jsonBuffer;
     JsonArray& array = jsonBuffer.createArray();
-    dir.rewindDirectory();
-    File entry;
-    while(entry = dir.openNextFile()){
-      JsonObject& object = jsonBuffer.createObject();
-      object["type"] = (entry.isDirectory()) ? "dir" : "file";
-      object["name"] = String(entry.name());
-      array.add(object);
-      entry.close();
-    }
-    dir.close();
     if(path == "/"){
       JsonObject& object = jsonBuffer.createObject();
       object["type"] = "dir";
       object["name"] = "esp_spiffs";
       array.add(object);
+    }
+    dir.rewind();
+    while(dir.next()){
+      if(dir.isDirectory() && !dir.fileName().equalsIgnoreCase(F("system volume information"))){
+        JsonObject& object = jsonBuffer.createObject();
+        object["type"] = "dir";
+        object["name"] = String(dir.fileName());
+        array.add(object);
+      }
+    }
+    dir.rewind();
+    while(dir.next()){
+      if(dir.isFile()){
+        JsonObject& object = jsonBuffer.createObject();
+        object["type"] = "file";
+        object["name"] = String(dir.fileName());
+        array.add(object);
+      }
     }
     array.printTo(response);
   }  
@@ -410,7 +414,6 @@ void printSpiffsDirectory(String path) {
  * Following handlers added to WebServer for IotaWatt specific requests
  * 
  **********************************************************************************************/
-
 void handlePasswords(){
   trace(T_WEB,21);
   int len = server.arg("plain").length();

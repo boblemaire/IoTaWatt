@@ -1,4 +1,5 @@
 #include "IotaWatt.h"
+#include <xurl.h>
       
 bool      EmonStarted = false;                    // set true when Service started
 bool      EmonStop = false;                       // set true to stop the Service
@@ -7,12 +8,11 @@ uint32_t  EmonLastPost = 0;                       // Last acknowledged post for 
 
       // Configuration settings
 
-char*     EmonURL = nullptr;                                // These are set from the config file 
-char*     EmonURI = nullptr;
+
+xurl*     EmonURL = nullptr;                      // These are set from the config file 
 char*     apiKey = nullptr;
 char*     emonNode = nullptr;
 char*     EmonUsername = nullptr;
-uint16_t  EmonPort = 80;
 int16_t   EmonBulkSend = 1;
 int32_t   EmonRevision = -1;
 uint32_t  EmonBeginPosting = 0;
@@ -83,7 +83,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(!currLog.isOpen()){
         return UTCtime() + 5;
       }
-      log("EmonService: started. url=%s:%d%s, node=%s, interval=%d%s", EmonURL, EmonPort, EmonURI, 
+      log("EmonService: started. url=%s, node=%s, interval=%d%s", EmonURL->build().c_str(),
            emonNode, EmonCMSInterval, (EmonSend == EmonSendGET ? "" : ", encrypted"));
       retryCount = 0;
       EmonLastPost = EmonBeginPosting;
@@ -103,8 +103,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if( ! request){
         request = new asyncHTTPrequest;
       }
-      String URL(EmonURL);
-      URL += ":" + String(EmonPort) + EmonURI + "/input/get?node=" + String(emonNode);
+      String URL = EmonURL->build() + "/input/get?node=" + String(emonNode);
       request->setTimeout (10);
       request->setDebug(false);
       trace(T_Emon,3);
@@ -210,10 +209,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         delete request;
         request = nullptr;
         reqData.flush();
-        delete[] EmonURL;
+        delete   EmonURL;
         EmonURL = nullptr;
-        delete[] EmonURI;                                // These are set from the config file 
-        EmonURI = nullptr;
         delete[] apiKey;
         apiKey = nullptr;
         delete[] emonNode;
@@ -345,8 +342,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if( ! request){
         request = new asyncHTTPrequest;
       }
-      String URL(EmonURL);
-      URL += ":" + String(EmonPort) + EmonURI + "/input/bulk";
+      String URL = EmonURL->build() + "/input/bulk";
       request->setTimeout(2);
       request->setDebug(false);
       if(request->debug()){
@@ -435,8 +431,7 @@ case sendSecure:{
 
       base64encode(&reqData); 
       trace(T_Emon,10);
-      String URL(EmonURL);
-      URL += ":" + String(EmonPort) + EmonURI + "/input/bulk";
+      String URL = EmonURL->build() + "/input/bulk";
       request->setTimeout(2);
       request->setDebug(false);
       trace(T_Emon,10); 
@@ -527,27 +522,11 @@ bool EmonConfig(const char* configObj){
   }
   EmonRevision = revision;
   EmonStop = config["stop"].as<bool>();
-  String URL = config["url"].as<String>();
-  URL = config["url"].as<String>();
-  if(URL.substring(0,7).equalsIgnoreCase("http://")){
-    URL.remove(0,7);
-  } 
-  else if(URL.substring(0,8).equalsIgnoreCase("https://")){
-    URL.remove(0,8);
+  if(! EmonURL){
+    EmonURL = new xurl;
   }
-  delete[] EmonURI;
-  if(URL.indexOf("/") > 0){
-    EmonURI = charstar(URL.substring(URL.indexOf("/")).c_str());
-    URL.remove(URL.indexOf("/"));
-  } else {
-    EmonURI = charstar("");
-  }
-  if(URL.indexOf(":") > 0){
-    EmonPort = URL.substring(URL.indexOf(":")+1).toInt();
-    URL.remove(URL.indexOf(":"));
-  }
-  delete[] EmonURL;
-  EmonURL = charstar(URL.c_str());
+  EmonURL->parse(config.get<char*>("url"));
+  EmonURL->query(nullptr);
   trace(T_EmonConfig,2);
   EmonBeginPosting = config.get<uint32_t>("begdate");
   delete[] apiKey;
