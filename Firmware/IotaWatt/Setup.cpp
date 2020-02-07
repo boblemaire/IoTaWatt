@@ -190,6 +190,9 @@ if(spiffsBegin()){
   WiFi.hostname(deviceName);
   WiFi.setAutoConnect(true);
   WiFi.begin();
+  if(WiFi.status() != WL_CONNECTED){
+    WiFi.reconnect();
+  }
 
         // If the RTC is not running or power fail restart
         // Use the WiFi Manager.
