@@ -11,7 +11,7 @@ class xurl {
         :_method(0)
         ,_auth(0)
         ,_domain(0)
-        ,_port(-1)
+        ,_port(0)
         ,_path(0)
         ,_query(0)
         {};
@@ -21,6 +21,7 @@ class xurl {
             delete[] _method;
             delete[] _auth;
             delete[] _domain;
+            delete[] _port;   
             delete[] _path;
             delete[] _query;
         };
@@ -31,7 +32,7 @@ class xurl {
         void    method(const char *_method_);
         void    auth(const char *_auth_);
         void    domain(const char *_domain_);
-        void    port(long _port_);
+        void    port(const char *_port_);
         void    path(const char *_path_);
         void    query(const char *_query_);
 
@@ -40,7 +41,7 @@ class xurl {
         const char*  method(){return _method;}
         const char*  auth(){return _auth;}
         const char*  domain(){return _domain;}
-        long         port(){return _port;}
+        const char*  port(){return _port;}
         const char*  path(){return _path;}
         const char*  query(){return _query;}
 
@@ -51,7 +52,7 @@ class xurl {
         char*   _method;
         char*   _auth;
         char*   _domain;
-        int32_t _port;
+        char*   _port;
         char*   _path;
         char*   _query;
         
