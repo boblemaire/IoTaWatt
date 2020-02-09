@@ -69,6 +69,7 @@
 #include "timeServices.h"
 #include "PVoutput.h"
 #include "CSVquery.h"
+#include "xurl.h"
 
 
       // Declare instances of major classes
@@ -169,7 +170,9 @@ struct EEprom {
 #define T_PVoutput 22      // PVoutput class 
 #define T_samplePhase 23   // Sample phase (within samplePower) 
 #define T_RTCWDT 24        // Dead man pedal service
-#define T_CSVquery 25      // CSVquery            
+#define T_CSVquery 25      // CSVquery
+#define T_xurl 26          // xurl 
+#define T_utility 27       // Miscelaneous utilities                
 
       // LED codes
 

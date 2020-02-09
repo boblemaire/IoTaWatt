@@ -87,7 +87,7 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
 }
 
 uint32_t HTTPreserve(uint16_t id, bool lock){
-  trace(T_WiFi,100);
+  trace(T_WiFi,100,id);
   if(HTTPrequestFree == 0 || HTTPlock) return 0;
   HTTPrequestFree--;
   for(int i=0; i<HTTPrequestMax; i++){
