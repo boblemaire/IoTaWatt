@@ -2,8 +2,6 @@
 
 bool    xurl::parse(const char* _url_){
 
-        Serial.println("parseurl");
-
         delete[] _method;
         _method = nullptr;
         delete[] _domain;
@@ -89,9 +87,6 @@ bool    xurl::parse(const char* _url_){
             _query = new char[strlen(pos)+1];
             strcpy(_query, pos);
         }
-        Serial.println("parsed");
-        Serial.println(build());
-        Serial.println("parseurldone");
         return true;
     }
 
