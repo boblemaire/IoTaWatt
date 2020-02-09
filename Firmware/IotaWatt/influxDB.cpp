@@ -532,7 +532,7 @@ bool influxConfig(const char* configObj){
   
   influxURL->parse(config.get<char*>("url"));
   influxURL->query(nullptr);
-  if(influxURL->port() <= 0){
+  if( ! influxURL->port()){
     influxURL->port(":8086");
   }
   trace(T_influxConfig,4);
