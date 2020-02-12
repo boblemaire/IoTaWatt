@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.   
 ***********************************************************************************/
-#define IOTAWATT_VERSION "02_05_03"
+#define IOTAWATT_VERSION "02_05_04"
 #define DEVICE_NAME "IotaWatt"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
@@ -69,6 +69,7 @@
 #include "timeServices.h"
 #include "PVoutput.h"
 #include "CSVquery.h"
+#include "xurl.h"
 
 
       // Declare instances of major classes
@@ -169,7 +170,9 @@ struct EEprom {
 #define T_PVoutput 22      // PVoutput class 
 #define T_samplePhase 23   // Sample phase (within samplePower) 
 #define T_RTCWDT 24        // Dead man pedal service
-#define T_CSVquery 25      // CSVquery            
+#define T_CSVquery 25      // CSVquery
+#define T_xurl 26          // xurl 
+#define T_utility 27       // Miscelaneous utilities                
 
       // LED codes
 
@@ -217,6 +220,7 @@ extern uint8_t  deviceMajorVersion;           // Major version of hardware
 extern uint8_t  deviceMinorVersion;           // Minor version of hardware 
 extern float    VrefVolts;                    // Voltage reference shunt value used to calibrate
                                               // the ADCs. (can be specified in config.device.refvolts)
+extern int16_t* masterPhaseArray;             // Single array containing all individual phase shift arrays    
 #define Vadj_3 13                             // Voltage channel attenuation ratio
 
       // ****************************************************************************

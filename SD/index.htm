@@ -126,11 +126,11 @@
     <div class="body color_body" id="inputEdit" style="display: none">
       <h3 id="inputChannel"></h3>
       <table id="inputEditTable"></table>
-      <p>
+      <div>
         <button class="actionDelete" id="inputEditDelete" onclick="inputEditDelete()">delete</button>
         <button class="actionCancel" id="inputEditCancel" onclick="inputEditCancel()">cancel</button>
-        <button class="actionSave" id="inputEditSave" onclick="inputEditSave()">save</button>
-      </p>
+        <button class="actionSave"   id="inputEditSave"   onclick="inputEditSave()">save</button>
+      </div>
     </div>
 
     <div class="body color_body" id="inputCalVT" style="display: none">
@@ -468,7 +468,7 @@ var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:
 * ************************************************************************************************/
 function EbyId(id) {return document.getElementById(id)};
 function hide(id) {document.getElementById(id).style.display = "none";}
-function show(id) {document.getElementById(id).style.display = "block";}
+function show(id) {document.getElementById(id).style.display = "inline";}
 
 /***************************************************************************************************
  *                       setPasswords

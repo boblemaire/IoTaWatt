@@ -1,37 +1,17 @@
 #include "IotaWatt.h"
 
-struct phaseTableEntry {
-    phaseTableEntry* next;
-    char        modelHash[8];
-    float       phase;
-    int16_t*    p50;
-    int16_t*    p60;
-    phaseTableEntry()
-    :next(nullptr)
-    ,phase(0)
-    ,p50(nullptr)
-    ,p60(nullptr)
-    {}
-    ~phaseTableEntry(){
-      delete[] p50;
-      delete[] p60;
-      delete next;
-    }
-  }; 
-
 bool configDevice(const char*);
 bool configDST(const char* JsonStr);
 bool configInputs(const char*);
+void configPhaseShift();
+bool configMasterPhaseArray();
 bool configOutputs(const char*);
 void hashFile(uint8_t* sha, File file);
-void buildPhaseTable(phaseTableEntry**);
-void phaseTableAdd(phaseTableEntry**, JsonArray&);
-int16_t* buildPtable(JsonArray& table, const char* model);
-int16_t* copyPtable(int16_t* Ptable);
-String old2newScript(JsonArray& script);
+
+// Handy diagnostic macro to investigate heap requirements.
+//#define heap(where) Serial.print(#where); Serial.print(' '); Serial.println(ESP.getFreeHeap());
 
 boolean getConfig(const char* configPath){
-
   DynamicJsonBuffer Json;              
         
   //************************************** Load and parse Json Config file ************************
@@ -94,6 +74,10 @@ boolean getConfig(const char* configPath){
     delete[] inputsStr;
   }
 
+        //************************************ Lookup phase shift in tables ***********************
+
+  configMasterPhaseArray();
+
     // Print the inputs
 
   // for(int i=0; i<MAXINPUTS; i++){
@@ -104,19 +88,19 @@ boolean getConfig(const char* configPath){
   //         Serial.print("p60");
   //         int16_t* array = input->_p60;
   //         while(*(array+1)){
-  //           Serial.printf(" %.2f, %.2f,",(float)*array/100.0, (float)*(array+1)/100.0);
+  //           Serial.printf(" (%.2f, %.2f),",(float)*array/100.0, (float)*(array+1)/100.0);
   //           array += 2;
   //         } 
-  //         Serial.printf(" %.2f, %.2f\r\n",(float)*array/100.0, (float)*(array+1)/100.0);
+  //         Serial.printf(" (%.2f)\r\n",(float)*array/100.0);
   //       }
   //       if(input->_p50){
   //         Serial.print("p50");
   //         int16_t* array = input->_p50;
   //         while(*(array+1)){
-  //           Serial.printf(" %.2f, %.2f,",(float)*array/100.0, (float)*(array+1)/100.0);
+  //           Serial.printf(" (%.2f, %.2f),",(float)*array/100.0, (float)*(array+1)/100.0);
   //           array += 2;
   //         } 
-  //         Serial.printf(" %.2f, %.2f\r\n",(float)*array/100.0, (float)*(array+1)/100.0);
+  //         Serial.printf(" (%.2f)\r\n",(float)*array/100.0);
   //       }
   //   }
   // }
@@ -137,7 +121,15 @@ boolean getConfig(const char* configPath){
     }
     configOutputs(outputsStr);
     delete[] outputsStr;
+
+    // Script* script = outputs->first();
+    // while(script){
+    //   script->print();
+    //   script = script->next();
+    // }
+
   }
+
 
          // ************************************** configure Emoncms **********************************
 
@@ -215,7 +207,8 @@ bool configDevice(const char* JsonStr){
   ADC_selectPin[0] = pin_CS_ADC0;
   ADC_selectPin[1] = pin_CS_ADC1;
 
-  int channels = 15; DynamicJsonBuffer Json;
+  int channels = 15; 
+  DynamicJsonBuffer Json;
   JsonObject& device = Json.parseObject(JsonStr);
   if( ! device.success()){
     log("device: Json parse failed");
@@ -227,31 +220,31 @@ bool configDevice(const char* JsonStr){
       
   if(device.containsKey(F("refvolts"))){
     VrefVolts = device[F("refvolts")].as<float>();
-  }  
-  
-          // Build or update the input channels
+  } 
           
-  trace(T_CONFIG,5); 
-  if(device.containsKey(F("channels"))){
-    channels = MIN(device[F("channels")].as<unsigned int>(),MAXINPUTS);
-  }
+  trace(T_CONFIG,5);
+  channels = MIN((device[F("channels")].as<unsigned int>() | MAXINPUTS), MAXINPUTS);
   
-  if(maxInputs != channels) {
-    IotaInputChannel* *newList = new IotaInputChannel*[channels];
-    for(int i=0; i<MIN(channels,maxInputs); i++){
-      newList[i] = inputChannel[i];
-    }
-    for(int i=MIN(channels,maxInputs); i<maxInputs; i++){
-      delete inputChannel[i];
-    }
-    for(int i=MIN(channels,maxInputs); i<channels; i++){
-      newList[i] = new IotaInputChannel(i);
+            // If first time after restart
+            // Instantiate the inputs
+
+  if(maxInputs == 0) {
+    inputChannel = new IotaInputChannel*[channels];
+    for(int i=0; i<channels; i++){
+      inputChannel[i] = new IotaInputChannel(i);
       String name = "Input(" + String(i) + ")";
-      newList[i]->_name = charstar(name);
+      inputChannel[i]->_name = charstar(name);
     }
-    delete[] inputChannel;
-    inputChannel = newList;
     maxInputs = channels;
+  }
+
+        // If channels has changed, restart.
+        // Too many downsteam dependencies, safer to just restart.
+
+  if(channels != maxInputs){
+    log("Channels changing from %d to %d, restarting.", maxInputs, channels);
+    delay(500);
+    ESP.restart();
   }
 
         // Override all defaults with user specification
@@ -349,8 +342,7 @@ bool configInputs(const char* JsonStr){
     log("inputs: Json parse failed");
     return false;
   }
-  phaseTableEntry* phaseTable = nullptr;
-  buildPhaseTable(&phaseTable);
+
   for(int i=0; i<MIN(maxInputs,JsonInputs.size()); i++) {
     if(JsonInputs[i].is<JsonObject>()){
       JsonObject& input = JsonInputs[i].as<JsonObject&>();
@@ -359,44 +351,33 @@ bool configInputs(const char* JsonStr){
         continue;
       }
       delete inputChannel[i]->_name;
-      inputChannel[i]->_name = charstar(input["name"].as<char*>());
+      inputChannel[i]->_name = charstar(input[F("name")].as<char*>());
       delete inputChannel[i]->_model;
-      inputChannel[i]->_model = charstar(input["model"].as<char*>());
+      inputChannel[i]->_model = charstar(input[F("model")].as<char*>());
       // Fix name change that removed (USA) in table
-      if(strcmp(inputChannel[i]->_model,"TDC DA-10-09(USA)") == 0){
+      if(strcmp_P(inputChannel[i]->_model,PSTR("TDC DA-10-09(USA)")) == 0){
         inputChannel[i]->_model[12] = 0;
       }
-      inputChannel[i]->_turns = input["turns"].as<float>();
-      inputChannel[i]->_calibration = input["cal"].as<float>();
+      inputChannel[i]->_turns = input[F("turns")].as<float>();
+      inputChannel[i]->_calibration = input[F("cal")].as<float>();
       if(inputChannel[i]->_turns && inputChannel[i]->_burden){
         inputChannel[i]->_calibration = inputChannel[i]->_turns / inputChannel[i]->_burden;
       }
-      inputChannel[i]->_phase = input["phase"].as<float>();
-      inputChannel[i]->_vphase = input["vphase"].as<float>();
+      inputChannel[i]->_phase = input[F("phase")].as<float>();
+      inputChannel[i]->_vphase = input[F("vphase")].as<float>();
       inputChannel[i]->_vchannel = input.containsKey("vref") ? input["vref"].as<int>() : 0;
       inputChannel[i]->active(true);
-      String type = input["type"];
-      String _hashName = hashName(inputChannel[i]->_model);
-      phaseTableEntry* entry = phaseTable;
-      while(entry){
-        if(memcmp(entry->modelHash, _hashName.c_str(), 8) == 0){
-          inputChannel[i]->_phase = entry->phase;
-          inputChannel[i]->_p50 = copyPtable(entry->p50);
-          inputChannel[i]->_p60 = copyPtable(entry->p60);
-          break;
-        }
-        entry = entry->next;
-      }
-      inputChannel[i]->_reverse = input["reverse"] | false;
+      String type = input[F("type")];
+      inputChannel[i]->_reverse = input[F("reverse")] | false;
       if(type == "VT") {
         inputChannel[i]->_type = channelTypeVoltage; 
         inputChannel[i]->_vchannel = i;
       }
       else if (type == "CT"){
         inputChannel[i]->_type = channelTypePower;
-        inputChannel[i]->_vchannel = input["vchan"].as<int>();
-        inputChannel[i]->_signed = input["signed"] | false;
-        inputChannel[i]->_double = input["double"] | false;
+        inputChannel[i]->_vchannel = input[F("vchan")].as<int>();
+        inputChannel[i]->_signed = input[F("signed")] | false;
+        inputChannel[i]->_double = input[F("double")] | false;
       }  
       else{
         log("unsupported input type: %s", type.c_str());
@@ -412,11 +393,11 @@ bool configInputs(const char* JsonStr){
       inputChannel[i]->reset();
     }
   }
-  delete phaseTable;
   return true;
 }
 
 //********************************** configOutputs ***********************************************
+
 bool configOutputs(const char* JsonStr){
   DynamicJsonBuffer Json;
   JsonArray& outputsArray = Json.parseArray(JsonStr);
@@ -428,94 +409,180 @@ bool configOutputs(const char* JsonStr){
   return true;
 } 
 
-//********************************** old2newScript ***********************************************
-String old2newScript(JsonArray& script){
-  String newScript = "";
-  for(int i=0; i<script.size(); i++){
-    if(script[i]["oper"] == "const"){
-      newScript += "#" + script[i]["value"].as<String>();
+/********************************** configmasterPhaseArray ********************************************
+ * 
+ * Phase shift can be specified as an array of shift value steps dependent on Voltage (VT), or
+ * current (CT) as well as frequency (50Hz or 60Hz).  These values go into the calculation of
+ * net phase shift along with shift attributable to derived reference and timing in the sampling
+ * code.  The net is used to shift the voltage array prior to calculating real power.
+ * 
+ * This function will:
+ * 
+ * 1) Build a working table of each unique model configured.
+ * 2) Search the table.txt file for each model and the existence of either dynamic phase array.
+ * 3) allocate a single array to contain each of the unique arrays.
+ * 4) Parse each of the unique model/Hz arrays and add to the master array, zero delimited.
+ * 5) Set pointers in each iotaInputChannel to their corresponding dynamic phase arrays
+ * 
+ * **********************************************************************************************/
+
+struct  modelTable {
+  char*     model;
+  int16_t   p50_pos;
+  int16_t   p60_pos;
+  int16_t*  p50_ptr;
+  int16_t*  p60_ptr;
+};
+
+int arraySize(File tableFile){
+    int commas = 0;
+    char in = tableFile.read();
+    while(tableFile.available() && in != ']'){
+      if(in == ',') commas++;
+      in = tableFile.read();
     }
-    else if(script[i]["oper"] == "input"){
-      newScript += "@" + script[i]["value"].as<String>();
-    }
-    else if(script[i]["oper"] == "binop"){
-      newScript += script[i]["value"].as<String>(); 
-    } 
-    else if(script[i]["oper"] == "push"){
-      newScript += "(";
-    }
-    else if(script[i]["oper"] == "pop"){
-      newScript += ")";
-    }
-    else if(script[i]["oper"] == "abs"){
-      newScript += "|";
-    }   
-  }
-  return newScript;
+    return commas + 2;
 }
 
-//********************************** buildPhaseTable ***********************************************
-void buildPhaseTable(phaseTableEntry** phaseTable){
-  DynamicJsonBuffer Json;              
-  File TableFile;
-  String TableFileURL = "tables.txt";
-  TableFile = SD.open(TableFileURL, FILE_READ);
-  if(!TableFile) return;
-  JsonObject& Table = Json.parse(TableFile);
-  TableFile.close();
-  if(!Table.success()) return;
-  if(Table.containsKey("VT")) phaseTableAdd(phaseTable, Table["VT"]);
-  if(Table.containsKey("CT")) phaseTableAdd(phaseTable, Table["CT"]);
-  configFrequency = frequency;
-  return;  
+bool arrayCopy(File tableFile, int16_t** entry){
+    char buf[100];
+    if( ! tableFile.find('[')){
+      return false;
+    }
+    int count = 0;
+    int len = tableFile.readBytesUntil(']', buf, 100);
+    buf[len] = 0;
+    char* pos = buf;
+    while(*pos != 0){
+      float num = strtof(pos, &pos);
+      **entry = (num * 100) + 0.5;
+      *entry += 1;
+      pos = strchr(pos, ',');
+      if(pos == nullptr) break;
+      pos++;
+    }
+    **entry = 0;
+    *entry += 1;
+    return true;
 }
 
-void phaseTableAdd(phaseTableEntry** phaseTable, JsonArray& table){
-  int size = table.size();
-  char modelHash[9];
-  for(int i=0; i<size; i++){
-    if(table[i].is<JsonObject>()) {
-      JsonObject& entry = table[i].as<JsonObject&>();
-      if(memcmp(entry["model"].as<char*>(),"generic",7) == 0) continue;
-      phaseTableEntry* tableEntry = new phaseTableEntry;
-      tableEntry->next = *phaseTable;
-      *phaseTable = tableEntry;
-      String _hashName = hashName(entry["model"].as<char*>());
-      memcpy(tableEntry->modelHash, _hashName.c_str(), 8);
-      tableEntry->phase = entry["phase"].as<float>();
-      if(entry.containsKey("p50")){
-        tableEntry->p50 = buildPtable(entry["p50"], entry["model"].as<char*>());
+bool configMasterPhaseArray(){
+
+// Allocate a table for unique models
+
+  modelTable table[maxInputs];
+  int models = 0;
+  for(int i=0; i<maxInputs; i++){
+    if(inputChannel[i]->isActive()){
+      int t;
+      for(t=0; t<models; t++){
+        if(inputChannel[i]->_model == table[t].model){
+          break;
+        }
       }
-      if(entry.containsKey("p60")){
-        tableEntry->p60 = buildPtable(entry["p60"], entry["model"].as<char*>());
+      if(t == models){
+        table[t].model = inputChannel[i]->_model;
+        table[t].p50_pos = 0;
+        table[t].p60_pos = 0;
+        table[t].p50_ptr = nullptr;
+        table[t].p60_ptr = nullptr;
+        models++;
       }
     }
   }
-}
 
-int16_t* buildPtable(JsonArray& table, const char* model){
-  int16_t size = table.size();
-  if(size % 2 == 0){
-    log("Invalid phase table for model %s", model);
-    return nullptr;
-  }
-  int16_t* array = new int16_t[table.size()+1];
-  for(int i=0; i<size; i++){
-    array[i] = table[i].as<float>() * 100.0 + 0.5;
-  }
-  array[size] = 0;
-  return array;
-}
+      // Lookup models in table file.
+      // Count total masterPhaseArray entries required
 
-int16_t* copyPtable(int16_t* Ptable){
-  if( ! Ptable) return nullptr;
-  size_t size = 2;
-  while(Ptable[size-1]){
-    size += 2;
+  File tableFile;
+  String tableFileURL = "tables.txt";
+  tableFile = SD.open(tableFileURL, FILE_READ);
+  if(!tableFile) return false;
+
+  int totalEntries = 0;
+  for(int t=0; t<models; t++){
+    tableFile.seek(0);
+    if(tableFile.find(table[t].model)){
+      int pos = tableFile.position();
+      if(tableFile.findUntil("\"p50\":", 6, "}", 1)){
+        table[t].p50_pos = tableFile.position();
+        totalEntries += arraySize(tableFile);
+      }
+      tableFile.seek(pos);
+      if(tableFile.findUntil("\"p60\":", 6, "}", 1)){
+        table[t].p60_pos = tableFile.position();
+        totalEntries += arraySize(tableFile);
+      }
+    }
   }
-  int16_t* array = new int16_t[size];
-  for(int i=0; i<size; i++){
-    array[i] = Ptable[i];
+
+        // allocate master array to contain all of the individual arrays.
+        // Pointers will be set to subarrays in master;
+
+  delete[] masterPhaseArray;
+  masterPhaseArray = new int16_t[totalEntries];
+  int16_t* nextArray = masterPhaseArray;
+
+        // Copy arrays into master and save pointers to them.
+
+  for(int t=0; t<models; t++){
+    if(table[t].p50_pos){
+      table[t].p50_ptr = nextArray;
+      tableFile.seek(table[t].p50_pos);
+      if( ! arrayCopy(tableFile, &nextArray)){
+        table[t].p50_ptr = nullptr;
+      }
+    }
+    if(table[t].p60_pos){
+      table[t].p60_ptr = nextArray;
+      tableFile.seek(table[t].p60_pos);
+      if( ! arrayCopy(tableFile, &nextArray)){
+        table[t].p60_ptr = nullptr;
+      }
+    }
   }
-  return array;
+
+        // Set array pointers in inputs
+
+  for(int i=0; i<maxInputs; i++){
+    IotaInputChannel* input = inputChannel[i];
+    input->_p50 = nullptr;
+    input->_p60 = nullptr;
+    if(input->isActive()){
+      for(int t=0; t<models; t++){
+        if(input->_model == table[t].model){
+          input->_p50 = table[t].p50_ptr;
+          input->_p60 = table[t].p60_ptr;
+          break;
+        }
+      }
+    }
+  }
+    
+  // for(int t=0; t<models; t++){
+  //   Serial.printf("%s p50pos %d, p60pos %d\n", table[t].model, table[t].p50_pos, table[t].p60_pos);
+  //   int16_t* ptr = table[t].p50_ptr;
+  //   if(ptr){
+  //     Serial.print("  p50");
+  //     while(*ptr){
+  //       Serial.print(", ");
+  //       Serial.print((float)*ptr / 100.0);
+  //       ptr++;
+  //     }
+  //   }
+    
+  //   ptr = table[t].p60_ptr;
+  //   if(ptr){
+  //     Serial.print("  p60");
+  //     while(*ptr){
+  //       Serial.print(", ");
+  //       Serial.print((float)*ptr / 100.0);
+  //       ptr++;
+  //     }
+  //   }
+  //   Serial.println();
+  // }
+
+  tableFile.close();
+  return true;
 }

@@ -1,5 +1,6 @@
 #include "IotaWatt.h"
 #include "xbuf.h"
+#include "xurl.h"
 
 bool      influxStarted = false;                    // True when Service started
 bool      influxStop = false;                       // Stop the influx service
@@ -18,7 +19,7 @@ char*     influxPwd = nullptr;
 char*     influxRetention = nullptr;
 char*     influxMeasurement = nullptr;
 char*     influxFieldKey = nullptr; 
-char*     influxURL = nullptr;
+xurl*      influxURL = nullptr;
 char*     influxDataBase = nullptr;
 influxTag* influxTagSet = nullptr;  
 ScriptSet* influxOutputs;      
@@ -73,7 +74,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(!currLog.isOpen()){                  
         return UTCtime() + 5;
       }
-      log("influxDB: started, url=%s:%d, db=%s, interval=%d", influxURL, influxPort,
+      log("influxDB: started, url=%s, db=%s, interval=%d", influxURL->build().c_str(),
               influxDataBase, influxDBInterval);
       state = queryLastPostTime;
       trace(T_influx,2);
@@ -111,7 +112,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       request->setDebug(false);
       {
         char URL[100];
-        sprintf_P(URL, PSTR("%s:%d/query"),influxURL,influxPort);
+        sprintf_P(URL, PSTR("%s/query"),influxURL->build().c_str());
         if( ! request->open("POST", URL)){
           HTTPrelease(HTTPtoken);
           return UTCtime() + 2;
@@ -166,15 +167,16 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       }
       String response = request->responseText(); 
       int HTTPcode = request->responseHTTPcode();
-      delete request;
-      request = nullptr;
+      
       if(HTTPcode < 0){
-        if(retryCount++ == 20){
+        if(retryCount++ == 10){
           log("influxDB: last entry query failed: %d, retrying.", HTTPcode);
         }
         state = queryLast;
-        return UTCtime() + (retryCount < 20 ? 1 : retryCount / 10);
+        return UTCtime() + (retryCount <= 10 ? 2 : 10);
       }
+      delete request;
+      request = nullptr;
       retryCount = 0;
       trace(T_influx,5);
 
@@ -307,7 +309,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           influxMeasurement = nullptr;
           delete[] influxFieldKey;
           influxFieldKey = nullptr; 
-          delete[] influxURL;
+          delete influxURL;
           influxURL = nullptr;
           delete[] influxDataBase;
           influxDataBase = nullptr;
@@ -431,7 +433,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       trace(T_influx,8);
       {
         char URL[128];
-        size_t len = sprintf_P(URL, PSTR("%s:%d/write?precision=s&db=%s"), influxURL, influxPort, influxDataBase);
+        size_t len = sprintf_P(URL, PSTR("%s/write?precision=s&db=%s"), influxURL->build().c_str(), influxDataBase);
         if(influxRetention){
           sprintf(URL+len,"&rp=%s", influxRetention);
         }
@@ -525,19 +527,15 @@ bool influxConfig(const char* configObj){
   influxRevision = revision;
   influxStop = config["stop"].as<bool>();
   influxLogHeap = config["heap"].as<bool>();
-  String URL = config.get<String>("url");
-  if(URL.substring(0,7).equalsIgnoreCase("http://")){
-    URL.remove(0,7);
-  } 
-  else if(URL.substring(0,8).equalsIgnoreCase("https://")){
-    URL.remove(0,8);
-  }  
-  if(URL.indexOf(":") > 0){
-    influxPort = URL.substring(URL.indexOf(":")+1).toInt();
-    URL.remove(URL.indexOf(":"));
+  if( ! influxURL){
+    influxURL = new xurl;
   }
-  delete[] influxURL;
-  influxURL = charstar(URL.c_str());
+  
+  influxURL->parse(config.get<char*>("url"));
+  influxURL->query(nullptr);
+  if( ! influxURL->port()){
+    influxURL->port(":8086");
+  }
   trace(T_influxConfig,4);
   delete[] influxDataBase;
   influxDataBase = charstar(config.get<char*>("database"));
