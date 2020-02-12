@@ -111,7 +111,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       request->setTimeout(5);
       request->setDebug(false);
       {
-        char* URL = new char[100];
+        char URL[100];
         sprintf_P(URL, PSTR("%s/query"),influxURL->build().c_str());
         if( ! request->open("POST", URL)){
           HTTPrelease(HTTPtoken);
@@ -167,15 +167,16 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       }
       String response = request->responseText(); 
       int HTTPcode = request->responseHTTPcode();
-      delete request;
-      request = nullptr;
+      
       if(HTTPcode < 0){
-        if(retryCount++ == 20){
+        if(retryCount++ == 10){
           log("influxDB: last entry query failed: %d, retrying.", HTTPcode);
         }
         state = queryLast;
-        return UTCtime() + (retryCount < 20 ? 1 : retryCount / 10);
+        return UTCtime() + (retryCount <= 10 ? 2 : 10);
       }
+      delete request;
+      request = nullptr;
       retryCount = 0;
       trace(T_influx,5);
 

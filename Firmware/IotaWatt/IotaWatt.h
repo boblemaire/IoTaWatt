@@ -220,6 +220,7 @@ extern uint8_t  deviceMajorVersion;           // Major version of hardware
 extern uint8_t  deviceMinorVersion;           // Minor version of hardware 
 extern float    VrefVolts;                    // Voltage reference shunt value used to calibrate
                                               // the ADCs. (can be specified in config.device.refvolts)
+extern int16_t* masterPhaseArray;             // Single array containing all individual phase shift arrays    
 #define Vadj_3 13                             // Voltage channel attenuation ratio
 
       // ****************************************************************************
