@@ -134,19 +134,20 @@ traceUnion traceEntry;
        * We try to run everything else during the half-wave intervals between power sampling.  
        **************************************************************************************************/
        
-uint32_t lastCrossMs = 0;             // Timestamp at last zero crossing (ms) (set in samplePower)
-uint32_t nextCrossMs = 0;             // Time just before next zero crossing (ms) (computed in Loop)
+uint32_t lastCrossMs = 0;                 // Timestamp at last zero crossing (ms) (set in samplePower)
+uint32_t nextCrossMs = 0;                 // Time just before next zero crossing (ms) (computed in Loop)
 
       // Various queues and lists of resources.
 
-serviceBlock* serviceQueue;           // Head of active services list in order of dispatch time.       
+serviceBlock* serviceQueue;               // Head of active services list in order of dispatch time.       
 IotaInputChannel* *inputChannel = nullptr; // -->s to incidences of input channels (maxInputs entries) 
-uint8_t maxInputs = 0;                // channel limit based on configured hardware (set in Config)      
-ScriptSet* outputs;                   // -> scriptSet for output channels
+uint8_t     maxInputs = 0;                // channel limit based on configured hardware (set in Config)
+int16_t*    masterPhaseArray = nullptr;   // Single array containing all individual phase shift arrays          
+ScriptSet*  outputs;                      // -> scriptSet for output channels
 
-uint8_t  deviceMajorVersion = 4;      // Default to 4.8
-uint8_t  deviceMinorVersion = 8;                 
-float    VrefVolts = 2.5;             // Voltage reference shunt value used to calibrate
+uint8_t     deviceMajorVersion = 4;       // Default to 4.8
+uint8_t     deviceMinorVersion = 8;                 
+float       VrefVolts = 2.5;              // Voltage reference shunt value used to calibrate
 
       // ****************************************************************************
       // statService maintains current averages of the channel values

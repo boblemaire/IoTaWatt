@@ -9,9 +9,7 @@ void IotaInputChannel::reset(){
 	_burden = 0;
     _calibration = 0;
     _phase = 0;
-    delete[] _p50;
     _p50 = nullptr;
-    delete[] _p60;
     _p60 = nullptr;
 	_active = false;
     _reversed = false;
