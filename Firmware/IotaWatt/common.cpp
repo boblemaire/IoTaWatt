@@ -96,7 +96,8 @@
  *   10/12/19 02_05_01 Graph+ add download, add datalog WTD, add Query progress check, increase Query limit to 100K
  *   12/04/19 02_05_02 Graph+ improvements
  *   01/19/20 02_05_03 Update use versions.json, derived phase-phase support, Issue #252 query seconds, Fix Graph+ delete,
- *                     Fix and improve authorization, instantiate WiFiManager in local scope.                 
+ *                     Fix and improve authorization, instantiate WiFiManager in local scope.
+ *   02/12/20 02_05_04 Update to core 2.6.3, Fix URL handling influx, fix heap requirement issues during config start and update.                 
  * 
  *****************************************************************************************************/
 
