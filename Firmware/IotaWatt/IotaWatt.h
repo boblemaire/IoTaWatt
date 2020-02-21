@@ -197,7 +197,7 @@ enum priorities: byte {priorityLow=3, priorityMed=2, priorityHigh=1};
 
 struct serviceBlock {                  // Scheduler/Dispatcher list item (see comments in Loop)
   serviceBlock* next;                  // Next serviceBlock in list
-  uint32_t callTime;                   // Time (in NTP seconds) to dispatch
+  uint32_t callTime;                   // Time in millis to dispatch
   uint32_t (*service)(serviceBlock*);  // the SERVICE
   priorities priority;                 // All things equal tie breaker
   uint8_t   taskID;
