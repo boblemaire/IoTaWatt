@@ -15,9 +15,11 @@ int IotaLog::begin (const char* path ){
   if(!SD.exists(_path)){
 		if(logPath.lastIndexOf('/') > 0){
 			String  dir = logPath.substring(0,logPath.lastIndexOf('/'));
-			if( ! SD.mkdir(dir)){
-				Serial.printf_P(PSTR("mkdir failed: %s\r\n"), dir.c_str());
-				return 2;
+			if( ! SD.exists(dir)){
+				if( ! SD.mkdir(dir)){
+					Serial.printf_P(PSTR("mkdir failed: %s\r\n"), dir.c_str());
+					return 2;
+				}
 			}
 		}
 		IotaFile = SD.open(_path, FILE_WRITE);
