@@ -33,7 +33,12 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
   switch(state){
 
     case initialize: {
-      trace(T_history,1); 
+      trace(T_history,1);
+
+      if(_serviceBlock->priority != priorityLow){
+        _serviceBlock->priority = priorityLow;
+        return 1;
+      } 
 
         // If iotaLog not open or empty, check back later.
 
