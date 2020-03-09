@@ -455,6 +455,7 @@ var scriptEditNameList = [];
 var scriptEditNameTitle = "";
 var scriptEditNamePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
 var scriptEditUnits = [];
+var scriptEditUniqueNames = true;
 var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA"];
 var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh"];
 var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:false,begin:{month:3,weekday:1,instance:2,time:120},end:{month:11,weekday:1,instance:1,time:120}}},
@@ -1171,6 +1172,7 @@ function calVTsave(obj){
     scriptEditSet = config.outputs;
     scriptEditUnits = scriptEditUnitsOutput;
     scriptEditNameList = [];
+    scriptEditUniqueNames = true;
     scriptEditNameTitle="Name must be alphanumeric and start with a letter";
     scriptEditNamePattern="^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
     editScript();
@@ -1286,8 +1288,10 @@ function calVTsave(obj){
                         script:tokens.join("") 
                       });
     scriptEditSet.sort(function(a, b){return a.name.toString().localeCompare(b.name.toString())});
-    for(var i=0; i<scriptEditSet.length-1; i++){
-      if(scriptEditSet[i].name == scriptEditSet[i+1].name) scriptEditSet.splice(i,1);
+    if(scriptEditUniqueNames){
+      for(var i=0; i<scriptEditSet.length-1; i++){
+        if(scriptEditSet[i].name == scriptEditSet[i+1].name) scriptEditSet.splice(i,1);
+      }
     }
     scriptEditSave();
     currentBodyPop();
@@ -1843,6 +1847,7 @@ function editEmoncms(){
   scriptEditSet = config.server.outputs;
   scriptEditUnits = scriptEditUnitsUpload;
   scriptEditNameList = [];
+  scriptEditUniqueNames = true;
   scriptEditNamePattern="^[1-9]{1}$|^[1-2]{1}[0-9]{1}$";
   scriptEditNameTitle="Name is Emoncms Input Key 1-29";
   editScript();
@@ -2018,6 +2023,7 @@ function editInfluxdb(){
   scriptEditSet = config.influxdb.outputs;
   scriptEditUnits = scriptEditUnitsUpload;
   scriptEditNameList = [];
+  scriptEditUniqueNames = false;
   scriptEditNameTitle="Name must be valid influxDB field name";
   scriptEditNamePattern="^[0-9a-zA-Z_$-/\.\+]+$";
   editScript();
@@ -2232,6 +2238,7 @@ function editPVoutput(){
   scriptEditSet = config.pvoutput.outputs;
   scriptEditUnits = scriptEditUnitsUpload;
   scriptEditNameList = ["generation", "consumption", "voltage", "extended_1(v7)", "extended_2(v8)", "extended_3(v9)", "extended_4(v10)", "extended_5(v11)", "extended_6(v12)"];
+  scriptEditUniqueNames = true;
   scriptEditNamePattern = undefined;
   scriptEditNameTitle = "extended is used for donator mode only";
   editScript();
