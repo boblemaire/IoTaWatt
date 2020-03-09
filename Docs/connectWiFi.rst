@@ -47,6 +47,10 @@ A few seconds may elapse while the IoTaWatt scans for the local networks,
 then another page will be rendered allowing you to select one of the listed
 networks, or specify another network not listed.
 
+Note that the IotaWatt only supports 2.4 GHz wireless networks. If you have a 5 GHz
+only network you can either enable 2.4 GHz on it, or create a separate (optionally hidden)
+network on 2.4 GHz for the IotaWatt to use.
+
 .. image:: pics/SSIDpwd.jpg
     :scale: 50 %
     :align: center
