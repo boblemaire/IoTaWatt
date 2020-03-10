@@ -11,7 +11,9 @@ extern "C" void tcp_abort(struct tcp_pcb* pcb);
 
 uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
   static uint32_t lastDisconnect = millis();          // Time of last disconnect
-  const uint32_t restartInterval = 60;              // Restart ESP if disconnected this many minutes  
+  static uint32_t lastRetry = 0;
+  const uint32_t restartInterval = 60;              // Restart ESP if disconnected this many minutes 
+  const uint32_t retryInterval = 1; 
 
   trace(T_WiFi,0);
   if(WiFi.status() == WL_CONNECTED){
@@ -35,6 +37,9 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
       log("WiFi disconnected more than %d minutes, restarting.", restartInterval);
       delay(500);
       ESP.restart();
+    }
+    else if((millis() - lastRetry) > (60000UL * retryInterval)){
+      lastRetry = millis();
     }
   }
 
