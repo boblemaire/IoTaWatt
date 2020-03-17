@@ -12,7 +12,7 @@ and necessary routing information to the IoTaWatt using the
 Dynamic Host Configuration Protocol (DHCP).
 Depending on your router settings, that IP address will either be
 a fixed local IP address, or a semi-random IP address chosen from
-a pool of available addfresses.
+a pool of available addresses.
 
 When you enter **iotawatt.local** into your browser,
 your computer uses one of several similar
@@ -25,11 +25,11 @@ link for the detailed WiKi.
 Essentially, when you type iotawatt.local intro your browser,
 the underlying networking layer in your computer broadcasts a 
 datagram message available to all members of the LAN, asking 
-if there is anyone out there that calls themself iotawatt.
+if there is anyone out there that called iotawatt.
 
 At startup, IoTaWatt creates a process that listens for those datagrams.
 When it hears it's name, it responds to the sender saying "I'm iotawatt
-and my IP address is xx.xx.xx.xx.  The requestor makes a note of
+and my IP address is xx.xx.xx.xx".  The requestor makes a note of
 this address and uses it to send subsequent transactions to iotawatt.local.
 
 How does that *not* work?
@@ -63,7 +63,7 @@ Your router associates the specified IP address with the MAC
 address of the IoTaWatt and always gives it that address during
 the DHCP handshake at startup.
 Write it down.  If you subsequently find that you can't access
-via iotyawatt.local, you can use the IP address by 
+via iotawatt.local, you can use the IP address by 
 typing HTTP://xx.xx.xx.xx as a URL in the browser.
 
 If you are reading this because you didn't assign a static IP
