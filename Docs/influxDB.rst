@@ -222,9 +222,9 @@ measurement     tag-value   field-key   measurement sent to influxDB
 ==============  ==========  ==========  ===================================================
 $name                       value       solar value=2944.6 1523810195 (This is the default)
 $units          $device     $name       kWh,tag1=IotaHome solar=2944.6 1523810195
-$device         $name       $units      IotaWatt,tag1=solar kWh=2944.6 1523810195
+$device         $name       $units      IotaHome,tag1=solar kWh=2944.6 1523810195
 $name.$units                value       solar.kWh value=2944.6 1523810195
-power           &device.01  $name       power,tag1=IotaWatt.01 solar=2944.6 1523810195
+power           $device.01  $name       power,tag1=IotaHome.01 solar=2944.6 1523810195
 ==============  ==========  ==========  ===================================================
 
 .. |add| image:: pics/addButton.png
