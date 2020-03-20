@@ -94,6 +94,10 @@ class ScriptSet {
       }
     }
 
+    //typedef std::function<int(Script*, Script*)> scriptCompare;
+
+    void sort(std::function<int(Script*, Script*)> scriptCompare);
+
     size_t    count();      // Retrieve count of Scripts in the set.
     Script*   first();      // Get -> first Script in set
 

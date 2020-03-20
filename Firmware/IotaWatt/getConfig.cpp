@@ -406,6 +406,11 @@ bool configOutputs(const char* JsonStr){
     return false;
   }
   outputs = new ScriptSet(outputsArray);
+  // outputs->sort([](Script* a, Script* b)->int{
+  //   int res = strcmp(a->name(), b->name());
+  //   Serial.printf("%s, %s, %d\r\n",a->getUnits(), b->getUnits(), res);
+  //   return res;
+  // });
   return true;
 } 
 
