@@ -464,7 +464,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         auth += xb.readString(xb.available());
         request->setReqHeader("Authorization", auth.c_str()); 
       }
-      Serial.println(reqData.peekString());
       request->send(&reqData, reqData.available());
       reqEntries = 0;
       lastRequestTime = lastBufferTime;
