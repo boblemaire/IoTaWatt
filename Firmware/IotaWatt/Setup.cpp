@@ -19,8 +19,8 @@ void setup()
   //Serial.println(F("Serial Initialized"));
   
   //*************************************** Start SPI *************************************************
-    
-  pinMode(pin_CS_ADC0,OUTPUT);                    // Make sure all the CS pins are HIGH
+
+  pinMode(pin_CS_ADC0, OUTPUT);                // Make sure all the CS pins are HIGH
   digitalWrite(pin_CS_ADC0,HIGH);
   pinMode(pin_CS_ADC1,OUTPUT);
   digitalWrite(pin_CS_ADC1,HIGH);
