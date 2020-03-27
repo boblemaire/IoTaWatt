@@ -585,7 +585,14 @@ bool influxConfig(const char* configObj){
   JsonVariant var = config["outputs"];
   if(var.success()){
     trace(T_influxConfig,9);
-    influxOutputs = new ScriptSet(var.as<JsonArray>()); 
+    influxOutputs = new ScriptSet(var.as<JsonArray>());
+    influxOutputs->sort([](Script* a, Script* b)->int{
+      int res = strcmp(influxVarStr(a->name(), a).c_str(), influxVarStr(b->name(), b).c_str());
+      return res;
+    });
+  }
+  else {
+    return false;
   }
   if( ! influxStarted) {
     trace(T_influxConfig,10);
