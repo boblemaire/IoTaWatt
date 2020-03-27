@@ -99,6 +99,7 @@
  *                     Fix and improve authorization, instantiate WiFiManager in local scope.
  *   02/12/20 02_05_04 Update to core 2.6.3, Fix URL handling influx, fix heap requirement issues during config start and update.                 
  *   02/27/20 02_05_05 Fix problem creating datalogs 
+ *   03/27/20 02_05_06 Use legacy mDNS, combine influxDBmeasurements
  * 
  *****************************************************************************************************/
 
