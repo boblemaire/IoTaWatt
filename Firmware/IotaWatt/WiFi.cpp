@@ -11,7 +11,9 @@ extern "C" void tcp_abort(struct tcp_pcb* pcb);
 
 uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
   static uint32_t lastDisconnect = millis();          // Time of last disconnect
-  const uint32_t restartInterval = 60;              // Restart ESP if disconnected this many minutes 
+  const uint32_t restartInterval = 60;              // Restart ESP if disconnected this many minutes
+  static bool mDNSstarted = false;
+  static bool LLMNRstarted = false;
 
   trace(T_WiFi,0);
   if(WiFi.status() == WL_CONNECTED){
@@ -21,6 +23,19 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
       wifiConnected = true;
       String ip = WiFi.localIP().toString();
       log("WiFi connected. SSID=%s, IP=%s, channel=%d, RSSI %ddb", WiFi.SSID().c_str(), ip.c_str(), WiFi.channel(), WiFi.RSSI());
+    }
+    if( ! mDNSstarted){
+      if (MDNS.begin(deviceName)) {
+        MDNS.addService("http", "tcp", 80);
+        log("MDNS responder started for hostname %s", deviceName);
+        mDNSstarted = true;
+      }
+    }
+    if( ! LLMNRstarted){
+      if (LLMNR.begin(deviceName)){
+        log("LLMNR responder started for hostname %s", deviceName);
+        LLMNRstarted = true;
+      } 
     }
   }
   else {
