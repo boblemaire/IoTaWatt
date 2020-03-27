@@ -19,8 +19,8 @@ void setup()
   //Serial.println(F("Serial Initialized"));
   
   //*************************************** Start SPI *************************************************
-    
-  pinMode(pin_CS_ADC0,OUTPUT);                    // Make sure all the CS pins are HIGH
+
+  pinMode(pin_CS_ADC0, OUTPUT);                // Make sure all the CS pins are HIGH
   digitalWrite(pin_CS_ADC0,HIGH);
   pinMode(pin_CS_ADC1,OUTPUT);
   digitalWrite(pin_CS_ADC1,HIGH);
@@ -186,9 +186,9 @@ if(spiffsBegin()){
   authLoadPwds();  
 
 //*************************************** Start the WiFi  connection *****************************
-  
   WiFi.hostname(deviceName);
   WiFi.setAutoConnect(true);
+  WiFi.setAutoReconnect(true);
   WiFi.begin();
   if(WiFi.status() != WL_CONNECTED){
     WiFi.reconnect();
@@ -197,14 +197,14 @@ if(spiffsBegin()){
         // If the RTC is not running or power fail restart
         // Use the WiFi Manager.
 
-  if( ! RTCrunning || powerFailRestart){
+  if( (! RTCrunning) || powerFailRestart){
     uint32_t autoConnectTimeout = millis() + 3000UL;
     while(WiFi.status() != WL_CONNECTED){
       if(millis() > autoConnectTimeout){
         setLedCycle(LED_CONNECT_WIFI);
         WiFiManager wifiManager;
         wifiManager.setDebugOutput(false);
-        wifiManager.setConfigPortalTimeout(180);
+        wifiManager.setConfigPortalTimeout(120);
         String ssid = "iota" + String(ESP.getChipId());
         String pwd = deviceName;
         log("Connecting with WiFiManager.");
@@ -216,6 +216,11 @@ if(spiffsBegin()){
           wifiManager.setConfigPortalTimeout(3600);
           wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
           endLedCycle();
+        }
+        if(! WiFi.isConnected()){
+          log("Did not connect after power-fail. Restarting to reset WiFi.");
+          delay(500);
+          ESP.restart();
         }
         break;
       }

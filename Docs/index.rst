@@ -28,5 +28,6 @@ IoTaWatt documentation
     Query API <query.rst>
     Message Log <messageLog>
     Troubleshooting <troubleshooting>
+    Accessing iotawatt.local <dotlocal>
     
 

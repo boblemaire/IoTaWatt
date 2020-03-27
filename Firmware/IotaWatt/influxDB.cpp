@@ -6,6 +6,7 @@ bool      influxStarted = false;                    // True when Service started
 bool      influxStop = false;                       // Stop the influx service
 bool      influxRestart = false;                    // Restart the influx service
 bool      influxLogHeap = false;                    // Post a heap size measurement (diag)
+bool      influxStaticKeyset = true;                // True if keyset has no variables (except $device)
 uint32_t  influxLastPost = 0;                       // Last acknowledge post for status report
 
     // Configuration settings
@@ -42,15 +43,15 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static IotaLogRecord* oldRecord = nullptr;
   static uint32_t lastRequestTime = 0;          // Time of last measurement in last or current request
   static uint32_t lastBufferTime = 0;           // Time of last measurement reqData buffer
-  static uint32_t UnixNextPost = UTCtime();    // Next measurement to be posted
+  static uint32_t UnixNextPost = UTCtime();     // Next measurement to be posted
   static xbuf reqData;                          // Current request buffer
   static uint32_t reqUnixtime = 0;              // First measurement in current reqData buffer
   static int  reqEntries = 0;                   // Number of measurement intervals in current reqData
   static int16_t retryCount = 0;                // HTTP error count
   static asyncHTTPrequest* request = nullptr;   // -> instance of asyncHTTPrequest
-  static uint32_t postFirstTime = UTCtime();   // First measurement in outstanding post request
-  static uint32_t postLastTime = UTCtime();    // Last measurement in outstanding post request
-  static size_t reqDataLimit = 3000;            // transaction yellow light size
+  static uint32_t postFirstTime = UTCtime();    // First measurement in outstanding post request
+  static uint32_t postLastTime = UTCtime();     // Last measurement in outstanding post request
+  static size_t reqDataLimit = 4000;            // transaction yellow light size
   static uint32_t HTTPtoken = 0;                // HTTP resource reservation token
   static Script* script = nullptr;              // current Script
 
@@ -323,12 +324,6 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         
       }
 
-          // If not enough entries for bulk-send, come back in one second;
-
-      if(((currLog.lastKey() - influxLastPost) / influxDBInterval + reqEntries) < influxBulkSend){
-        return UTCtime() + 1;
-      } 
-
           // If buffer isn't full,
           // add another measurement.
 
@@ -362,23 +357,35 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       
         script = influxOutputs->first();
         trace(T_influx,7);
+        String lastMeasurement;
+        String thisMeasurement;
         while(script){
           double value = script->run(oldRecord, logRecord, elapsedHours);
           if(value == value){
-            reqData.write(influxVarStr(influxMeasurement, script));
-            if(influxTagSet){
-              trace(T_influx,71);
-              influxTag* tag = influxTagSet;
-              while(tag){
-                reqData.printf_P(PSTR(",%s=%s"), tag->key, influxVarStr(tag->value, script).c_str());
-                tag = tag->next;
+            thisMeasurement = influxVarStr(influxMeasurement, script);
+            if(influxStaticKeyset && thisMeasurement.equals(lastMeasurement)){
+              reqData.printf_P(PSTR(",%s=%.*f"), influxVarStr(influxFieldKey, script).c_str(), script->precision(), value);
+            } else {
+              if(lastMeasurement.length()){
+                reqData.printf(" %d\n", UnixNextPost);
               }
+              reqData.write(thisMeasurement);
+              if(influxTagSet){
+                trace(T_influx,71);
+                influxTag* tag = influxTagSet;
+                while(tag){
+                  reqData.printf_P(PSTR(",%s=%s"), tag->key, influxVarStr(tag->value, script).c_str());
+                  tag = tag->next;
+                }
+              }
+              reqData.printf_P(PSTR(" %s=%.*f"), influxVarStr(influxFieldKey, script).c_str(), script->precision(), value);
             }
-            reqData.printf_P(PSTR(" %s=%.*f"), influxVarStr(influxFieldKey, script).c_str(), script->precision(), value);
-            reqData.printf(" %d\n", UnixNextPost);
           }
+          lastMeasurement = thisMeasurement;
           script = script->next();
         }
+        reqData.printf(" %d\n", UnixNextPost);
+
         trace(T_influx,7);
         delete oldRecord;
         oldRecord = logRecord;
@@ -388,6 +395,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         reqEntries++;
         lastBufferTime = UnixNextPost;
         UnixNextPost +=  influxDBInterval - (UnixNextPost % influxDBInterval);
+        return 1;
       }
 
             // If there's no request pending and we have bulksend entries,
@@ -577,16 +585,29 @@ bool influxConfig(const char* configObj){
       influxTagSet = tag;
       tag->key = charstar(tagset[i]["key"].as<const char*>());
       tag->value = charstar(tagset[i]["value"].as<const char*>());
+      if((strstr(tag->value,"$units") != nullptr) || (strstr(tag->value,"$name") != nullptr)) influxStaticKeyset = false;
     }
   }
+
+        // Build the measurement scriptset
 
   delete influxOutputs;
   influxOutputs = nullptr;
   JsonVariant var = config["outputs"];
   if(var.success()){
     trace(T_influxConfig,9);
-    influxOutputs = new ScriptSet(var.as<JsonArray>()); 
+    influxOutputs = new ScriptSet(var.as<JsonArray>());
   }
+  else {
+    return false;
+  }
+
+        // sort the measurements by measurement name
+
+  influxOutputs->sort([](Script* a, Script* b)->int {
+    return strcmp(influxVarStr(influxMeasurement, a).c_str(), influxVarStr(influxMeasurement, b).c_str());
+  });
+
   if( ! influxStarted) {
     trace(T_influxConfig,10);
     NewService(influxService, T_influx);

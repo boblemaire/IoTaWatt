@@ -299,3 +299,33 @@ double    Script::evaluate(double result, uint8_t token, double operand){
           default:     return 0;        
         }
 }
+
+          // Sort the Scripts in the set
+          // Uses callback comparison
+          // Simple bubble sort
+
+void  ScriptSet::sort(std::function<int(Script*, Script*)> scriptCompare){
+  int count = _count;
+  while(--count){
+    Script* link = nullptr;
+    Script* a = _listHead;
+    Script* b = a->_next;
+    for(int i=0; i<count; i++){
+      int comp = scriptCompare(a, b);
+      if( comp > 0){
+        a->_next = b->_next;
+        b->_next = a;
+        if(link){
+          link->_next = b;
+        } else {
+          _listHead = b;
+        }
+        link = b;
+      } else {
+        link = a;
+      }
+      a = link->_next;
+      b = a->_next;
+    }
+  }
+}
