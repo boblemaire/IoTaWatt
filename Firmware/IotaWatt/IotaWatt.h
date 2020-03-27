@@ -31,13 +31,17 @@
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <WiFiManager.h>
-#include <ESP8266mDNS.h>
+
 #include <ESP8266LLMNR.h>
 #include <DNSServer.h> 
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESPAsyncTCP.h>
 #include <asyncHTTPrequest.h>
+
+#include "ESP8266mDNS_Legacy.h"
+using MDNSResponder = Legacy_MDNSResponder::MDNSResponder;
+extern MDNSResponder MDNS;
 
 #include <SPI.h>
 #include <RTClib.h>
