@@ -31,17 +31,13 @@
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <WiFiManager.h>
-
+#include "ESP8266mDNS_Legacy.h"
 #include <ESP8266LLMNR.h>
 #include <DNSServer.h> 
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESPAsyncTCP.h>
 #include <asyncHTTPrequest.h>
-
-#include "ESP8266mDNS_Legacy.h"
-using MDNSResponder = Legacy_MDNSResponder::MDNSResponder;
-extern MDNSResponder MDNS;
 
 #include <SPI.h>
 #include <RTClib.h>
@@ -75,13 +71,14 @@ extern MDNSResponder MDNS;
 #include "CSVquery.h"
 #include "xurl.h"
 
-
-      // Declare instances of major classes
+      // Declare global instances of classes
 
 extern WiFiClient WifiClient;
 extern WiFiManager wifiManager;
 extern ESP8266WebServer server;
 extern DNSServer dnsServer;
+using MDNSResponder = Legacy_MDNSResponder::MDNSResponder;
+extern MDNSResponder MDNS;
 extern IotaLog currLog;
 extern IotaLog histLog;
 extern RTC_PCF8523 rtc;

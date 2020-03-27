@@ -223,16 +223,6 @@ if(spiffsBegin()){
     }
   }
 
-      //*************************************** Startup the Zeroconfig responders *********************
-
-  // if (MDNS.begin(deviceName)) {
-  //   MDNS.addService("http", "tcp", 80);
-  //   log("MDNS responder started for hostname %s", deviceName);
-  // }
-  // if (LLMNR.begin(deviceName)){
-  //   log("LLMNR responder started for hostname %s", deviceName);
-  // } 
-  
  //*************************************** Start the web server ****************************
 
   server.on(F("/edit"), HTTP_POST, returnOK, handleFileUpload);
