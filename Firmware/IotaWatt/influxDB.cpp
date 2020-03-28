@@ -323,6 +323,12 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         }
         
       }
+      
+          // If not enough entries for bulk-send, come back in one second;
+
+      if(((currLog.lastKey() - influxLastPost) / influxDBInterval + reqEntries) < influxBulkSend){
+        return UTCtime() + 1;
+      }
 
           // If buffer isn't full,
           // add another measurement.
@@ -468,7 +474,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       reqEntries = 0;
       lastRequestTime = lastBufferTime;
       state = waitPost;
-        1;
+      return 1;
     } 
 
     case waitPost: {
