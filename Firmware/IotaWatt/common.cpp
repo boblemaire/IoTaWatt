@@ -108,8 +108,8 @@
 WiFiClient WifiClient;
 DNSServer dnsServer;
 MDNSResponder MDNS;    
-IotaLog currLog(5,365);                     // current data log  (1 year) 
-IotaLog histLog(60,3652);                   // history data log  (10 years)  
+IotaLog currLog(256,5,365);                 // current data log  (1 year) 
+IotaLog histLog(256,60,3652);               // history data log  (10 years)  
 RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
 Ticker ticker;
 Ticker logWDT;
