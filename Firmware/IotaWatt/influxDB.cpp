@@ -72,7 +72,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
           // We post from the log, so wait if not available.          
 
-      if(!currLog.isOpen()){                  
+      if(!Current_log.isOpen()){                  
         return UTCtime() + 5;
       }
       log("influxDB: started, url=%s, db=%s, interval=%d", influxURL->build().c_str(),
@@ -260,7 +260,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         oldRecord = new IotaLogRecord;
       }
       oldRecord->UNIXtime = influxLastPost;      
-      currLog.readKey(oldRecord);
+      Current_log.readKey(oldRecord);
       trace(T_influx,6);
 
           // Assume that record was posted (not important).
@@ -326,14 +326,14 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       
           // If not enough entries for bulk-send, come back in one second;
 
-      if(((currLog.lastKey() - influxLastPost) / influxDBInterval + reqEntries) < influxBulkSend){
+      if(((Current_log.lastKey() - influxLastPost) / influxDBInterval + reqEntries) < influxBulkSend){
         return UTCtime() + 1;
       }
 
           // If buffer isn't full,
           // add another measurement.
 
-      if(reqData.available() < reqDataLimit && UnixNextPost <= currLog.lastKey()){  
+      if(reqData.available() < reqDataLimit && UnixNextPost <= Current_log.lastKey()){  
 
             // Read the next log record.
 
@@ -342,7 +342,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         }
         trace(T_influx,7);
         logRecord->UNIXtime = UnixNextPost;
-        currLog.readKey(logRecord);
+        Current_log.readKey(logRecord);
         trace(T_influx,7);
         
             // Compute the time difference between log entries.
@@ -350,7 +350,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
             
         double elapsedHours = logRecord->logHours - oldRecord->logHours;
         if(elapsedHours == 0){
-          if(currLog.readNext(logRecord) == 0) {
+          if(Current_log.readNext(logRecord) == 0) {
             UnixNextPost = logRecord->UNIXtime - (logRecord->UNIXtime % influxDBInterval);
           }
           UnixNextPost += influxDBInterval;

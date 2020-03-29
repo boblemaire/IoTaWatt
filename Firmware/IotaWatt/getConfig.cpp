@@ -39,7 +39,7 @@ boolean getConfig(const char* configPath){
   localTimeDiff = 60.0 * Config["timezone"].as<float>();
     
   if(Config.containsKey("logdays")){ 
-    log("Current log overide days: %d", currLog.setDays(Config["logdays"].as<int>()));
+    log("Current log overide days: %d", Current_log.setDays(Config["logdays"].as<int>()));
   }      
 
         //************************************ Configure device ***************************

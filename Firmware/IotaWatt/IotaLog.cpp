@@ -10,11 +10,10 @@ struct {
 } recordKey;
 
 int IotaLog::begin (const char* path ){
-  if(IotaFile) return 0;	
-  String logPath = String(path) + ".log";
-	_path = new char[logPath.length()+1];
-	strcpy(_path, logPath.c_str());
-  if(!SD.exists(_path)){
+	if(IotaFile) return 0;
+	_path = charstar(path);
+	if(!SD.exists(_path)){
+		String logPath = _path;
 		if(logPath.lastIndexOf('/') > 0){
 			String  dir = logPath.substring(0,logPath.lastIndexOf('/'));
 			if( ! SD.exists(dir)){

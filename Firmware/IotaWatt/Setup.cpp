@@ -270,11 +270,11 @@ void setLedCycle(const char* pattern){
     ledColor[i] = pattern[i];
     if(pattern[i] == 0) break;
   }
-  ticker.attach(0.5, ledBlink);
+  Led_timer.attach(0.5, ledBlink);
 }
 
 void endLedCycle(){
-  ticker.detach();
+  Led_timer.detach();
   setLedState();
 }
 

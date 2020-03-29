@@ -80,7 +80,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // We post the log to EmonCMS,
           // so wait until the log service is up and running.
       
-      if(!currLog.isOpen()){
+      if(!Current_log.isOpen()){
         return UTCtime() + 5;
       }
       log("EmonService: started. url=%s, node=%s, interval=%d%s", EmonURL->build().c_str(),
@@ -152,11 +152,11 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           EmonLastPost = MAX(EmonLastPost, _time);
         }
       }
-      if(EmonLastPost == 0 || EmonLastPost > currLog.lastKey()) {
-        EmonLastPost = currLog.lastKey();
+      if(EmonLastPost == 0 || EmonLastPost > Current_log.lastKey()) {
+        EmonLastPost = Current_log.lastKey();
       }  
-      if(EmonLastPost < currLog.firstKey()){
-        EmonLastPost = currLog.firstKey();
+      if(EmonLastPost < Current_log.firstKey()){
+        EmonLastPost = Current_log.firstKey();
       }
       log("EmonService: Start posting at %s", localDateString(EmonLastPost + EmonCMSInterval).c_str());
       state = getLastRecord;
@@ -174,7 +174,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       trace(T_Emon,5);
       oldRecord->UNIXtime = EmonLastPost;      
-      currLog.readKey(oldRecord);
+      Current_log.readKey(oldRecord);
 
             // Assume that record was posted (not important).
             // Plan to start posting one interval later
@@ -224,14 +224,14 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
 
           // If not enough entries for bulk-send, come back in one second;
 
-      if(((currLog.lastKey() - EmonLastPost) / EmonCMSInterval + reqEntries) < EmonBulkSend){
+      if(((Current_log.lastKey() - EmonLastPost) / EmonCMSInterval + reqEntries) < EmonBulkSend){
         return UTCtime() + 1;
       }
 
           // If buffer isn't full,
           // add another measurement.
 
-      if(reqData.available() < reqDataLimit && UnixNextPost <= currLog.lastKey()){  
+      if(reqData.available() < reqDataLimit && UnixNextPost <= Current_log.lastKey()){  
  
             // Read the next log record.
             
@@ -240,14 +240,14 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           logRecord = new IotaLogRecord;
         }
         logRecord->UNIXtime = UnixNextPost;
-        currLog.readKey(logRecord);    
+        Current_log.readKey(logRecord);    
       
             // Compute the time difference between log entries.
             // If zero, read ahead to skip over a potentially lengthy gap.
             
         double elapsedHours = logRecord->logHours - oldRecord->logHours;
         if(elapsedHours == 0 || elapsedHours != elapsedHours){
-          if(currLog.readNext(logRecord) == 0) {
+          if(Current_log.readNext(logRecord) == 0) {
             UnixNextPost = logRecord->UNIXtime - (logRecord->UNIXtime % EmonCMSInterval);
           }
           UnixNextPost += EmonCMSInterval;
@@ -319,7 +319,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
             // If buffer not full and there is a data backlog,
             // return to fill buffer.
 
-      if(reqData.available() < reqDataLimit && UnixNextPost < currLog.lastKey()){
+      if(reqData.available() < reqDataLimit && UnixNextPost < Current_log.lastKey()){
         return 1;
       }
 
