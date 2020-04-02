@@ -107,7 +107,12 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       request->setTimeout (10);
       request->setDebug(false);
       trace(T_Emon,3);
-      request->open("GET", URL.c_str());
+      if( ! request->open("GET", URL.c_str())){
+        log("EmonService: query open failed.");
+        HTTPrelease(HTTPtoken);
+        state = queryLastGet;
+        return UTCtime() + 60;
+      };
       String auth("Bearer ");
       auth += apiKey;
       request->setReqHeader("Authorization", auth.c_str());
@@ -348,7 +353,11 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if(request->debug()){
         Serial.println(datef(localTime(),"hh:mm:ss"));
       }
-      request->open("POST", URL.c_str());
+      if( ! request->open("POST", URL.c_str())){
+        HTTPrelease(HTTPtoken);
+        state = getLastRecord;
+        return UTCtime() + 1;
+      }
       trace(T_Emon,7);
       String auth("Bearer ");
       auth += apiKey;
@@ -527,6 +536,7 @@ bool EmonConfig(const char* configObj){
   }
   EmonURL->parse(config.get<char*>("url"));
   EmonURL->query(nullptr);
+  EmonURL->method("HTTP://");
   trace(T_EmonConfig,2);
   EmonBeginPosting = config.get<uint32_t>("begdate");
   delete[] apiKey;

@@ -544,6 +544,7 @@ bool influxConfig(const char* configObj){
   if( ! influxURL->port()){
     influxURL->port(":8086");
   }
+  influxURL->method("HTTP://");
   trace(T_influxConfig,4);
   delete[] influxDataBase;
   influxDataBase = charstar(config.get<char*>("database"));
