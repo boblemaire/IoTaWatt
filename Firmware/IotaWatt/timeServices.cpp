@@ -1,7 +1,7 @@
 #include "IotaWatt.h"
 
-#define NTP2018 (1514796044UL + SEVENTY_YEAR_SECONDS)
-#define NTP2028 (1830328844UL + SEVENTY_YEAR_SECONDS)
+#define NTP2018 (1514796044UL + SECONDS_PER_SEVENTY_YEARS)
+#define NTP2028 (1830328844UL + SECONDS_PER_SEVENTY_YEARS)
 
 #define ntpPort 2390 
   struct ntpPacket {  /* courtesy Eugene Ma */
@@ -289,7 +289,7 @@ uint32_t NTPtime() {
  }
   
 uint32_t UTCtime() {
-  return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000 - SEVENTY_YEAR_SECONDS;
+  return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000 - SECONDS_PER_SEVENTY_YEARS;
 }
 
 uint32_t UTCtime(uint32_t localtime){
@@ -305,7 +305,7 @@ uint32_t localTime(uint32_t utctime){
 }
  
 uint32_t millisAtUTCTime(uint32_t UnixTime){                  
-  return (uint32_t)timeRefMs + 1000 * (UnixTime + SEVENTY_YEAR_SECONDS - timeRefNTP);
+  return (uint32_t)timeRefMs + 1000 * (UnixTime + SECONDS_PER_SEVENTY_YEARS - timeRefNTP);
  }
 
 uint32_t UTC2Local(uint32_t UTCtime){

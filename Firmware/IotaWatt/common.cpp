@@ -107,23 +107,21 @@
       // Define instances of major classes to be used
 
 WiFiClient WifiClient;
-DNSServer dnsServer;
+DNSServer DNS_server;
 MDNSResponder MDNS;    
-IotaLog currLog(256,5,365);                 // current data log  (1 year) 
-IotaLog histLog(256,60,3652);               // history data log  (10 years)  
-RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
-Ticker ticker;
-Ticker logWDT;
-messageLog msglog;                          // Message log handler    
+IotaLog Current_log(256,5,365);                 // current data log  (1 year) 
+IotaLog History_log(256,60,3652);               // history data log  (10 years)
+IotaLog *Export_log = nullptr;                  // Optional export log    
+RTC_PCF8523 rtc;                                // Instance of RTC_PCF8523
+Ticker Led_timer;
+Ticker LogWDT;
+messageLog Message_log;                         // Message log handler    
 
       // Define filename Strings of system files.          
 
 char* deviceName;             
-const char* IotaLogFile = "iotawatt/iotalog";
-const char* historyLogFile = "iotawatt/histLog";
-const char* IotaMsgLog = "iotawatt/iotamsgs.txt";
                        
-uint8_t ADC_selectPin[2] = {pin_CS_ADC0,    // indexable reference for ADC select pins
+uint8_t ADC_selectPin[2] = {pin_CS_ADC0,        // indexable reference for ADC select pins
                             pin_CS_ADC1};  
 
 
@@ -198,7 +196,7 @@ uint32_t HTTPlock = 0;                      // Time(ms) HTTP was locked (no new 
 int32_t  localTimeDiff = 0;                  // Hours from UTC 
 tzRule*  timezoneRule = nullptr;             // Rule for DST 
 uint32_t programStartTime = 0;               // Time program started (UnixTime)
-uint32_t timeRefNTP = SEVENTY_YEAR_SECONDS;  // Last time from NTP server (NTPtime)
+uint32_t timeRefNTP = SECONDS_PER_SEVENTY_YEARS;  // Last time from NTP server (NTPtime)
 uint32_t timeRefMs = 0;                      // Internal MS clock corresponding to timeRefNTP
 uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forward and try to refresh
 uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS

@@ -10,7 +10,7 @@
 void        messageLog::endMsg(){
                 this->println();
                 Serial.write(buf, bufPos);
-                msgFile = SD.open(IotaMsgLog,FILE_WRITE);
+                msgFile = SD.open(IOTA_MESSAGE_LOG_PATH, FILE_WRITE);
                 if(msgFile) {
                     msgFile.write(buf, bufPos);
                     msgFile.close();
@@ -39,12 +39,12 @@ size_t      messageLog::write(const uint8_t byte){
                 }
                 if(bufPos >= bufLen) {
                     Serial.write(buf, bufPos);
-                    msgFile = SD.open(IotaMsgLog,FILE_WRITE);
+                    msgFile = SD.open(IOTA_MESSAGE_LOG_PATH, FILE_WRITE);
                     if(! msgFile){
-                        String msgDir = IotaMsgLog;
+                        String msgDir = IOTA_MESSAGE_LOG_PATH;
                         msgDir.remove(msgDir.indexOf('/',1));
                         SD.mkdir(msgDir.c_str());
-                        msgFile = SD.open(IotaMsgLog,FILE_WRITE);
+                        msgFile = SD.open(IOTA_MESSAGE_LOG_PATH, FILE_WRITE);
                     }
                     if(msgFile) {
                         msgFile.write(buf, bufPos);

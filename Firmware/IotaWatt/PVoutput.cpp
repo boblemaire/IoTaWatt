@@ -116,7 +116,7 @@ uint32_t PVoutput::tickStopped(){
 
 uint32_t PVoutput::tickInitialize(){
     trace(T_PVoutput,10);
-    if( ! histLog.isOpen()){
+    if( ! History_log.isOpen()){
         return UTCtime() + 10;
     }
     log("PVoutput: started");
@@ -199,8 +199,8 @@ uint32_t PVoutput::tickGotStatus(){
     if(_lastPostTime < lookback || _reload){
         _lastPostTime = lookback;
     }
-    if(UTC2Local(histLog.firstKey()) > _lastPostTime){
-        _lastPostTime = UTC2Local(histLog.firstKey()) + _interval;
+    if(UTC2Local(History_log.firstKey()) > _lastPostTime){
+        _lastPostTime = UTC2Local(History_log.firstKey()) + _interval;
         _lastPostTime -= _lastPostTime % _interval;
     }
     if(_lastPostTime < _beginPosting){
@@ -268,7 +268,7 @@ uint32_t PVoutput::tickUploadStatus(){
             oldRecord = new IotaLogRecord;
         }
         oldRecord->UNIXtime = local2UTC(_lastReqTime - _lastReqTime % UNIX_DAY);
-        histLog.readKey(oldRecord);
+        History_log.readKey(oldRecord);
         Script* script = _outputs->first();
         while(script){
             if(strcmp(script->name(),"generation") == 0){
@@ -291,7 +291,7 @@ uint32_t PVoutput::tickUploadStatus(){
     if(_reqEntries &&
       (_reqEntries >= (_donator ? PV_DONATOR_STATUS_LIMIT : PV_DEFAULT_STATUS_LIMIT) ||
       (reqData.available() >= PV_REQDATA_LIMIT) ||
-      (_lastReqTime + _interval) > UTC2Local(histLog.lastKey()) ||
+      (_lastReqTime + _interval) > UTC2Local(History_log.lastKey()) ||
       (_lastReqTime % UNIX_DAY) == 0)){
         delete oldRecord;
         oldRecord = nullptr;
@@ -304,7 +304,7 @@ uint32_t PVoutput::tickUploadStatus(){
 
             // If up-to-date, just return.
 
-    if((_lastReqTime + _interval) > UTC2Local(histLog.lastKey())){
+    if((_lastReqTime + _interval) > UTC2Local(History_log.lastKey())){
         trace(T_PVoutput,85);
         delete oldRecord;
         oldRecord = nullptr;
@@ -329,11 +329,11 @@ uint32_t PVoutput::tickUploadStatus(){
             newRecord = temp;
         } else {
             oldRecord->UNIXtime = local2UTC(_lastReqTime);
-            histLog.readKey(oldRecord);
+            History_log.readKey(oldRecord);
         }
     }
     newRecord->UNIXtime = local2UTC(_lastReqTime + _interval);
-    histLog.readKey(newRecord);
+    History_log.readKey(newRecord);
 
             // See if there was any measurement during this interval
             // Skip ahead if not.

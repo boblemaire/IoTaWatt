@@ -64,7 +64,7 @@ void setup()
   byte Control_3 = Wire.read();
   
   if(rtc.initialized()){
-    timeRefNTP = rtc.now().unixtime() + SEVENTY_YEAR_SECONDS;
+    timeRefNTP = rtc.now().unixtime() + SECONDS_PER_SEVENTY_YEARS;
     timeRefMs = millis();
     RTCrunning = true;
     log("Real Time Clock is running. Unix time %d ", UTCtime());
@@ -270,11 +270,11 @@ void setLedCycle(const char* pattern){
     ledColor[i] = pattern[i];
     if(pattern[i] == 0) break;
   }
-  ticker.attach(0.5, ledBlink);
+  Led_timer.attach(0.5, ledBlink);
 }
 
 void endLedCycle(){
-  ticker.detach();
+  Led_timer.detach();
   setLedState();
 }
 

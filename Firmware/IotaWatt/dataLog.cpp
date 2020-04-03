@@ -42,7 +42,7 @@
 
       // Initialize the IotaLog class
       
-      if(int rtc = currLog.begin(IotaLogFile)){
+      if(int rtc = Current_log.begin(IOTA_CURRENT_LOG_PATH)){
         log("dataLog: Log file open failed. %d", rtc);
         dropDead();
       }
@@ -57,11 +57,11 @@
       // If it's a new log,
       // Check to see if there is a history log for context.
       
-      if(currLog.fileSize() == 0){
+      if(Current_log.fileSize() == 0){
         log("dataLog: New current log created.");
-        if(histLog.begin(historyLogFile) == 0 && histLog.fileSize() > 0){
-          logRecord->UNIXtime = histLog.lastKey();
-          histLog.readKey(logRecord);
+        if(History_log.begin(IOTA_HISTORY_LOG_PATH) == 0 && History_log.fileSize() > 0){
+          logRecord->UNIXtime = History_log.lastKey();
+          History_log.readKey(logRecord);
           log("dataLog: Last history entry: %s", datef(UTC2Local(logRecord->UNIXtime)).c_str());
         }
       }
@@ -69,15 +69,15 @@
       // If it's not a new log, get the last entry.
 
       else {
-        logRecord->UNIXtime = currLog.lastKey();
-        currLog.readKey(logRecord);
-        log("dataLog: Last log entry %s", datef(UTC2Local(currLog.lastKey())).c_str());
+        logRecord->UNIXtime = Current_log.lastKey();
+        Current_log.readKey(logRecord);
+        log("dataLog: Last log entry %s", datef(UTC2Local(Current_log.lastKey())).c_str());
       }
 
       // If not at current log interval, return until then.  
 
       state = checkClock;
-      uint32_t syncDelay = UTCtime() % currLog.interval();
+      uint32_t syncDelay = UTCtime() % Current_log.interval();
       if(syncDelay) return syncDelay;
 
       // Fall through to checkClock
@@ -102,7 +102,7 @@
       
       if((UTCtime() - logRecord->UNIXtime) > GapFill){
         logRecord->UNIXtime = UTCtime();
-        logRecord->UNIXtime -= logRecord->UNIXtime % currLog.interval();
+        logRecord->UNIXtime -= logRecord->UNIXtime % Current_log.interval();
       }
 
       // Set state to log on subsequent calls.
@@ -145,13 +145,13 @@
 
       // Write the record
       
-      currLog.write(logRecord);
+      Current_log.write(logRecord);
 
       // Logging data is the primary purpose of IoTaWatt.
       // Set a WDT to make sure it continues.
 
-      logWDT.detach();
-      logWDT.attach(30, datalogWDT);
+      LogWDT.detach();
+      LogWDT.attach(30, dataLogWDT);
 
       break;
     }
@@ -159,7 +159,7 @@
 
   // Advance the time and return.
   
-  logRecord->UNIXtime += currLog.interval();
+  logRecord->UNIXtime += Current_log.interval();
   return logRecord->UNIXtime;
 }
 
@@ -172,7 +172,7 @@
  * 
  * *****************************************************************************/
 
-void datalogWDT(){
+void dataLogWDT(){
         log("dataLog: datalog WDT - restarting");
         ESP.restart();
 }
@@ -182,12 +182,12 @@ void datalogWDT(){
  * This function brokers keyed log read requests, servicing them from the
  * appropriate log:
  * 
- * currLog:
+ * Current_log:
  * relatively recent data spanning the past 12-15 months.
  * small interval (5 seconds).
  * potentially slower access because it can have holes neccessitating searching.
  * 
- * histLog:
+ * History_log:
  * contains all of the data since the beginning of time.
  * large interval (60 seconds).
  * Look ma - no holes!  direct access w/o searching.
@@ -199,35 +199,35 @@ void datalogWDT(){
  * the history log, use the history log.
  * 
  * If the key is not a multiple of the history log interval and contained in
- * the currLog, use the currLog.
+ * the Current_log, use the Current_log.
  * 
  * If the key is not a multiple of the history log, but not contained in the 
- * currLog, use the history log.
+ * Current_log, use the history log.
  * 
- * if the key is between the end of the history log and the start of the currLog,
+ * if the key is between the end of the history log and the start of the Current_log,
  * return the last record in the history log with requested key.
  * 
  * ***************************************************************************/
 
 uint32_t logReadKey(IotaLogRecord* callerRecord) {
   uint32_t key = callerRecord->UNIXtime;
-  if( ! histLog.isOpen()){
-    return currLog.readKey(callerRecord);
+  if( ! History_log.isOpen()){
+    return Current_log.readKey(callerRecord);
   }
-  if(key % histLog.interval()){               // not multiple of histLog interval
-    if(key >= currLog.firstKey() || key < histLog.firstKey()){   // in iotaLog
-      return currLog.readKey(callerRecord);
+  if(key % History_log.interval()){               // not multiple of History_log interval
+    if(key >= Current_log.firstKey() || key < History_log.firstKey()){   // in iotaLog
+      return Current_log.readKey(callerRecord);
     }
-    return histLog.readKey(callerRecord);     // in histLog
+    return History_log.readKey(callerRecord);     // in History_log
   }
-  else {                                      // multiple of histLog interval
-    if(key >= histLog.firstKey() && key <= histLog.lastKey()){   // in histLog
-      return histLog.readKey(callerRecord);
+  else {                                      // multiple of History_log interval
+    if(key >= History_log.firstKey() && key <= History_log.lastKey()){   // in History_log
+      return History_log.readKey(callerRecord);
     }
-    return currLog.readKey(callerRecord);     // in IotaLog
+    return Current_log.readKey(callerRecord);     // in IotaLog
   }
-  callerRecord->UNIXtime = histLog.lastKey(); // between the two logs (rare)
-  histLog.readKey(callerRecord);
+  callerRecord->UNIXtime = History_log.lastKey(); // between the two logs (rare)
+  History_log.readKey(callerRecord);
   callerRecord->UNIXtime = key;
   return 0;
 }

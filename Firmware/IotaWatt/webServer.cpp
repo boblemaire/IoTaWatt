@@ -303,8 +303,8 @@ void handleDelete(){
     return;
   }
   if(path == F("/config.txt") ||
-     path.startsWith(IotaLogFile) ||
-     path.startsWith(historyLogFile)){
+     path.equals(IOTA_CURRENT_LOG_PATH) ||
+     path.equals(IOTA_HISTORY_LOG_PATH)){
     returnFail("Restricted File");
     return;
   }
@@ -588,18 +588,18 @@ void handleStatus(){
       trace(T_WEB,17);
       JsonObject& datalogs = jsonBuffer.createObject();
       JsonObject& currlog = jsonBuffer.createObject();
-      currlog.set(F("firstkey"),currLog.firstKey());
-      currlog.set(F("lastkey"),currLog.lastKey());
-      currlog.set(F("size"),currLog.fileSize());
-      currlog.set(F("interval"),currLog.interval());
-      //currlog.set("wrap",currLog._wrap ? true : false);
+      currlog.set(F("firstkey"),Current_log.firstKey());
+      currlog.set(F("lastkey"),Current_log.lastKey());
+      currlog.set(F("size"),Current_log.fileSize());
+      currlog.set(F("interval"),Current_log.interval());
+      //currlog.set("wrap",Current_log._wrap ? true : false);
       datalogs.set(F("currlog"),currlog);
       JsonObject& histlog = jsonBuffer.createObject();
-      histlog.set(F("firstkey"),histLog.firstKey());
-      histlog.set(F("lastkey"),histLog.lastKey());
-      histlog.set(F("size"),histLog.fileSize());
-      histlog.set(F("interval"),histLog.interval());
-      //histlog.set("wrap",histLog._wrap ? true : false);
+      histlog.set(F("firstkey"),History_log.firstKey());
+      histlog.set(F("lastkey"),History_log.lastKey());
+      histlog.set(F("size"),History_log.fileSize());
+      histlog.set(F("interval"),History_log.interval());
+      //histlog.set("wrap",History_log._wrap ? true : false);
       datalogs.set(F("histlog"),histlog);
       root.set(F("datalogs"),datalogs);
     }
@@ -677,24 +677,20 @@ void handleCommand(){
     log("deletelog=%s command received.", arg.c_str());
     if(arg == "current"){
       trace(T_WEB,21); 
-      currLog.end();
-      deleteRecursive(String(IotaLogFile) + ".log");
-      deleteRecursive(String(IotaLogFile) + ".ndx");
+      Current_log.end();
+      deleteRecursive(IOTA_CURRENT_LOG_PATH);
     } 
     else if(arg == "history"){
       trace(T_WEB,22); 
-      histLog.end();
-      deleteRecursive(String(historyLogFile) + ".log");
-      deleteRecursive(String(historyLogFile) + ".ndx");
+      History_log.end();
+      deleteRecursive(IOTA_HISTORY_LOG_PATH);
     }
     else if(arg == "both"){
       trace(T_WEB,23);
-      currLog.end();
-      deleteRecursive(String(IotaLogFile) + ".log");
-      deleteRecursive(String(IotaLogFile) + ".ndx");
-      histLog.end();
-      deleteRecursive(String(historyLogFile) + ".log");
-      deleteRecursive(String(historyLogFile) + ".ndx");
+      Current_log.end();
+      deleteRecursive(IOTA_CURRENT_LOG_PATH);
+      History_log.end();
+      deleteRecursive(IOTA_HISTORY_LOG_PATH);
     }
     else {
       server.send(400, txtPlain_P, F("Specify current, history, or both."));

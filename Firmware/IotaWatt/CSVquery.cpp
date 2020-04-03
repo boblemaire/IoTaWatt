@@ -53,12 +53,12 @@ bool    CSVquery::setup(){
         }
        
         _begin = parseTimeArg(server.arg(F("begin")));
-        if(_begin % currLog.interval()){
-            _begin += currLog.interval() - (_begin % currLog.interval());
+        if(_begin % Current_log.interval()){
+            _begin += Current_log.interval() - (_begin % Current_log.interval());
         }
         _end = parseTimeArg(server.arg(F("end")));
-        if(_end % currLog.interval()){
-            _end -= _end % currLog.interval();
+        if(_end % Current_log.interval()){
+            _end -= _end % Current_log.interval();
         }
         if(_end == 0 || _begin == 0 || _end < _begin) return false;
         trace(T_CSVquery,10);
