@@ -7,6 +7,7 @@ void configPhaseShift();
 bool configMasterPhaseArray();
 bool configOutputs(const char*);
 void hashFile(uint8_t* sha, File file);
+bool exportLogConfig(const char *configObj);
 
 // Handy diagnostic macro to investigate heap requirements.
 //#define heap(where) Serial.print(#where); Serial.print(' '); Serial.println(ESP.getFreeHeap());
@@ -122,14 +123,7 @@ boolean getConfig(const char* configPath){
     configOutputs(outputsStr);
     delete[] outputsStr;
 
-    // Script* script = outputs->first();
-    // while(script){
-    //   script->print();
-    //   script = script->next();
-    // }
-
   }
-
 
          // ************************************** configure Emoncms **********************************
 
@@ -192,10 +186,26 @@ boolean getConfig(const char* configPath){
       pvoutput->end();
     } 
     
-    ConfigFile.close();
-    trace(T_CONFIG,12);
-    return true;
   }
+
+      // ************************************** configure Export log **********************************
+
+  {
+    trace(T_CONFIG,12);
+    JsonArray& exportArray = Config[F("exportlog")];
+    if(exportArray.success()){
+      char* exportStr = JsonDetail(ConfigFile, exportArray);
+      if( ! exportLogConfig(exportStr)){
+        log("Exportlog: Invalid configuration.");
+      }
+      delete[] exportStr;
+    }   
+  }
+
+  ConfigFile.close();
+  trace(T_CONFIG,12);
+  return true;
+
 }                                       // End of getConfig
 
 

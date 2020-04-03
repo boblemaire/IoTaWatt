@@ -87,8 +87,11 @@ extern Ticker Led_timer;
 extern Ticker LogWDT;
 extern messageLog Message_log;
 
+#define SECONDS_PER_MINUTE 60
+#define SECONDS_PER_HOUR 3600
+#define SECONDS_PER_SEVENTY_YEARS 2208988800UL
+
 #define MS_PER_HOUR   3600000UL
-#define SEVENTY_YEAR_SECONDS  2208988800UL
 
       // Declare filename Strings of system files.
 
@@ -270,7 +273,7 @@ extern authSession* authSessions;         // authSessions list head;
 extern uint16_t   authTimeout;            // Timeout interval of authSession in seconds;   
 
       // ****************************** Timing and time data *************************
-#define  SEVENTY_YEAR_SECONDS 2208988800UL
+#define  SECONDS_PER_SEVENTY_YEARS 2208988800UL
 extern int32_t  localTimeDiff;                 // Local time Difference in minutes
 extern tzRule*  timezoneRule;                  // Rule for DST 
 extern uint32_t programStartTime;;             // Time program started (UnixTime)
@@ -328,6 +331,7 @@ uint32_t  influxService(struct serviceBlock*);
 uint32_t  timeSync(struct serviceBlock*);
 uint32_t  updater(struct serviceBlock*);
 uint32_t  WiFiService(struct serviceBlock*);
+uint32_t  exportLog(struct serviceBlock *_serviceBlock);
 uint32_t  getFeedData(); //(struct serviceBlock*);
 
 uint32_t  logReadKey(IotaLogRecord* callerRecord);

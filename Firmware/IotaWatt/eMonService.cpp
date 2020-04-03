@@ -105,7 +105,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       String URL = EmonURL->build() + "/input/get?node=" + String(emonNode);
       request->setTimeout (10);
-      request->setDebug(false);
+      request->setDebug(true);
       trace(T_Emon,3);
       if( ! request->open("GET", URL.c_str())){
         log("EmonService: query open failed.");
