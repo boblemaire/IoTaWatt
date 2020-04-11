@@ -112,7 +112,7 @@ void AddService(struct serviceBlock* newBlock){
   if(newBlock->callTime < UTCtime()) newBlock->callTime = UTCtime();
   if(serviceQueue == NULL ||
     (newBlock->callTime < serviceQueue->callTime) ||
-    (newBlock->callTime == serviceQueue->callTime && newBlock->priority < serviceQueue->priority)){
+    (newBlock->callTime == serviceQueue->callTime && newBlock->priority > serviceQueue->priority)){
     newBlock->next = serviceQueue;
     serviceQueue = newBlock;
   }
@@ -120,7 +120,7 @@ void AddService(struct serviceBlock* newBlock){
     serviceBlock* link = serviceQueue;
     while(link->next != NULL){
       if((newBlock->callTime < link->next->callTime) ||
-        (newBlock->callTime == link->next->callTime && newBlock->priority < link->next->priority)){
+        (newBlock->callTime == link->next->callTime && newBlock->priority > link->next->priority)){
         break;
       }        
       link = link->next;

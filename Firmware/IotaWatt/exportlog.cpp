@@ -124,8 +124,8 @@ uint32_t exportLog(struct serviceBlock* _serviceBlock){
         case integrate: {
 
             if(oldRec->UNIXtime >= exportRecord->UNIXtime){
-                //Export_log->write(exportRecord)
-                if((exportRecord->UNIXtime % 120) == 0)
+                Export_log->write(exportRecord);
+                //if((exportRecord->UNIXtime % 120) == 0)
                 Serial.printf("%s, %.3f, %.3f\n", localDateString(exportRecord->UNIXtime).c_str(),
                               exportRecord->Export, exportRecord->Import);
                 exportRecord->UNIXtime += Export_log->interval();

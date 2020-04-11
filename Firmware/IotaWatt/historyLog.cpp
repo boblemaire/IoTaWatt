@@ -35,10 +35,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
     case initialize: {
       trace(T_history,1);
 
-      if(_serviceBlock->priority != priorityLow){
-        _serviceBlock->priority = priorityLow;
-        return 1;
-      } 
+      _serviceBlock->priority = priorityML;
 
         // If iotaLog not open or empty, check back later.
 
