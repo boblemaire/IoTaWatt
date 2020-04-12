@@ -10,6 +10,8 @@ const char*      unitstr[] = {
                     "Wh", 
                     "kWh", 
                     "PF",
+                    "VAR",
+                    "VARh",
                     ""
                     };
 
@@ -22,6 +24,8 @@ uint8_t     unitsPrecision[] = {
                     /*Wh*/    4, 
                     /*kWh*/   7, 
                     /*PF*/    3,
+                    /*VAR*/   2,
+                    /*VARh*/  4,
                     /*None*/  0 
                     };                   
 
@@ -204,6 +208,14 @@ double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsed
             watts = runRecursive(&tokens, oldRec, newRec, elapsedHours, '1');
             var = runRecursive(&tokens, oldRec, newRec, elapsedHours, 'R');
             result = watts / sqrt(watts*watts + var*var); 
+            break;
+
+          case VAR:
+            result = runRecursive(&tokens, oldRec, newRec, elapsedHours, 'R');
+            break;
+
+          case VARh:
+            result = runRecursive(&tokens, oldRec, newRec, 1.0, 'R');
             break;
         }
         

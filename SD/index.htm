@@ -456,8 +456,8 @@ var scriptEditNameTitle = "";
 var scriptEditNamePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
 var scriptEditUnits = [];
 var scriptEditUniqueNames = true;
-var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA"];
-var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh"];
+var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA","VAR"];
+var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh","VAR","VARh"];
 var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:false,begin:{month:3,weekday:1,instance:2,time:120},end:{month:11,weekday:1,instance:1,time:120}}},
                 {id:"Europe",begOffset:0,endOffset:2,dstrule:{adj:60,utc:true,begin:{month:3,weekday:1,instance:-1,time:60},end:{month:10,weekday:1,instance:-1,time:60}}},
                 {id:"Australia",begOffset:9.5,endOffset:10.0,dstrule:{adj:60,utc:false,begin:{month:10,weekday:1,instance:1,time:120},end:{month:4,weekday:1,instance:1,time:180}}},

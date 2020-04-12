@@ -283,6 +283,14 @@ bool    CSVquery::setup(){
                     col->unit = PF;
                     col->decimals = 1;
                 }
+                else if(method.equalsIgnoreCase("var")){
+                    col->unit = VAR;
+                    col->decimals = 1;
+                }
+                else if(method.equalsIgnoreCase("varh")){
+                    col->unit = VARh;
+                    col->decimals = 0;
+                }
                 else if(method.startsWith("d")){
                     if(method.length() != 2 | method[1] < '0' | method[1] > '9') return false;
                     col->decimals = method[1] - '0';
@@ -363,6 +371,8 @@ const char*  CSVquery::unitstr(units units){
     if(units == Amps)  return "Amps";
     if(units == VA)    return "VA";
     if(units == PF)    return "PF";
+    if(units == VAR)   return "VAR";
+    if(units == VARh)  return "VARh";
     return "Watts";
 
 }
