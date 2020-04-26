@@ -151,7 +151,7 @@
       // Set a WDT to make sure it continues.
 
       logWDT.detach();
-      logWDT.attach(30, datalogWDT);
+      logWDT.attach(300, datalogWDT);
 
       break;
     }
