@@ -150,8 +150,8 @@
       // Logging data is the primary purpose of IoTaWatt.
       // Set a WDT to make sure it continues.
 
-      LogWDT.detach();
-      LogWDT.attach(30, dataLogWDT);
+      logWDT.detach();
+      logWDT.attach(300, datalogWDT);
 
       break;
     }
