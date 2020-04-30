@@ -131,9 +131,11 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       trace(T_influx,4);
       request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
       reqData.flush();
-      reqData.printf_P(PSTR("db=%s&epoch=s&q=SELECT LAST(%s) FROM %s"), influxDataBase,
-            influxVarStr(influxFieldKey, script).c_str(),
-            influxVarStr(influxMeasurement, script).c_str());
+      reqData.printf_P(PSTR("db=%s&epoch=s"), influxDataBase); 
+      if(influxRetention){
+        reqData.printf_P(PSTR("&rp=%s"), influxRetention);
+      }
+      reqData.printf_P(PSTR("&q= SELECT LAST(% s) FROM % s "),influxVarStr(influxFieldKey, script).c_str(),influxVarStr(influxMeasurement, script).c_str());
       influxTag* tag = influxTagSet;
       trace(T_influx,41);
       while(tag){
@@ -142,6 +144,8 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       }
       
           // Send the request
+
+      Serial.println(reqData.peekString());
 
       if( ! request->send(&reqData, reqData.available())){
         HTTPrelease(HTTPtoken);
