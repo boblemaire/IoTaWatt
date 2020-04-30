@@ -56,7 +56,7 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
     // Check for degraded heap.
 
   trace(T_WiFi,10);
-  if(ESP.getFreeHeap() < 10000){
+  if(ESP.getFreeHeap() < 7000){
     trace(T_WiFi,10);
     log("Heap memory has degraded below safe minimum, restarting.");
     delay(500);
