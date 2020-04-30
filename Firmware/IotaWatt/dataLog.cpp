@@ -168,15 +168,22 @@
 /******************************************************************************
  * 
  *    The datalog WDT is set each time the datalog is updated. If it expires
- *    the datyalog is not being updated.  The program may be stuck in a 
+ *    the datalog is not being updated.  The program may be stuck in a 
  *    loop somewhere.  Log a message and restart.  The trace will provide
- *    diagnostic information. 
+ *    diagnostic information.
+ * 
+ *    Conditional on HTTPlock not set.  This is a proxy for update release
+ *    download, which is the only place lock is currently used. During download,
+ *    the update service retains control so this WDT could trigger if download
+ *    is delayed.
  * 
  * *****************************************************************************/
 
 void dataLogWDT(){
-        log("dataLog: datalog WDT - restarting");
-        ESP.restart();
+        if(! HTTPlock){
+          log("dataLog: datalog WDT - restarting");
+          ESP.restart();
+        }
 }
 /******************************************************************************
  * logReadKey(iotaLogRecord) - read a keyed record from the combined log
