@@ -232,8 +232,8 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         delete request;
         request = nullptr;
         deleteRecursive("download");
-        state = getVersion;
-        break;
+        state = checkAutoUpdate;
+        return UTCtime() + 1;
       }
       log("Updater: Release downloaded %dms, size %d", request->elapsedTime(), fileSize);
       delete request;
