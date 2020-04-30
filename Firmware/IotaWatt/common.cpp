@@ -115,7 +115,6 @@ IotaLog History_log(256,60,3652);               // history data log  (10 years)
 IotaLog *Export_log = nullptr;                  // Optional export log    
 RTC_PCF8523 rtc;                                // Instance of RTC_PCF8523
 Ticker Led_timer;
-Ticker LogWDT;
 messageLog Message_log;                         // Message log handler    
 
       // Define filename Strings of system files.          

@@ -84,7 +84,6 @@ extern IotaLog History_log;
 extern IotaLog *Export_log;
 extern RTC_PCF8523 rtc;
 extern Ticker Led_timer;
-extern Ticker LogWDT;
 extern messageLog Message_log;
 
 #define SECONDS_PER_MINUTE 60
@@ -330,7 +329,6 @@ void      logTrace(void);
 void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*), const uint8_t taskID=0);
 void      AddService(struct serviceBlock*);
 uint32_t  dataLog(struct serviceBlock*);
-void      dataLogWDT();
 uint32_t  historyLog(struct serviceBlock*);
 uint32_t  statService(struct serviceBlock*);
 uint32_t  EmonService(struct serviceBlock*);
