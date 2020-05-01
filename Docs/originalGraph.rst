@@ -58,6 +58,6 @@ computer and office machines. Kwh can be plotted as well,
 and compared to the whole. With 14 input channels, 
 its possible to divide household usage into manageable components.
 
-.. |data| image:: pics/dataButton.PNG
+.. |data| image:: pics/dataButton.png
     :scale: 60 %
     :alt: **Data Button**
