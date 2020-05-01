@@ -35,7 +35,7 @@ Click on the input channel 0 button on the left.
 
 As you can see, the display changes to reveal the details of the input_0 configuration.
 
-.. image:: pics/VTselect.PNG
+.. image:: pics/VTselect.png
     :scale: 60 %
     :align: center
     :alt: Select VT Image
