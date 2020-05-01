@@ -205,14 +205,11 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       }
       trace(T_UPDATE,6);   
       request->setTimeout(5);
-      size_t fileSize = 0;
-      size_t *size = &fileSize;
-      request->onData([size](void* arg, asyncHTTPrequest* request, size_t available){
+      request->onData([](void* arg, asyncHTTPrequest* request, size_t available){
         uint8_t *buf = new uint8_t[500];
         while(request->available()){
           size_t read = request->responseRead(buf, 500);
           releaseFile.write(buf, read);
-          *size += read;
         }
         delete[] buf;
         });
@@ -231,7 +228,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       trace(T_UPDATE,6);   
       endLedCycle();
       HTTPrelease(HTTPtoken);
-      //uint32_t fileSize = releaseFile.size();
+      size_t fileSize = releaseFile.size();
       releaseFile.close();
       trace(T_UPDATE,6);   
       if(request->responseHTTPcode() != 200){
