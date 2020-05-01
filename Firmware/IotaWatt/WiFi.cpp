@@ -122,7 +122,7 @@ uint32_t HTTPreserve(uint16_t id, bool lock){
 void HTTPrelease(uint32_t HTTPtoken){
   trace(T_WiFi,110);
   for(int i=0; i<HTTPrequestMax; i++){
-    trace(T_WiFi,110,0);
+    trace(T_WiFi,110,i);
     if(HTTPrequestStart[i] == HTTPtoken){
       HTTPrequestStart[i] = 0;
       HTTPrequestFree++;

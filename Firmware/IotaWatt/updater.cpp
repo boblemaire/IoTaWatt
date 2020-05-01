@@ -78,13 +78,13 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       String URL = String(updateURL) + updatePath;
       if( ! request->open("GET", URL.c_str())){
         HTTPrelease(HTTPtoken);
-        break;
+        return UTCtime() + 60;
       }
       request->setTimeout(10);
       if( ! request->send()){
         request->abort();
         HTTPrelease(HTTPtoken);;
-        break;
+        return UTCtime() + 60;
       }
       state = waitVersion;
       return 1;
@@ -169,19 +169,13 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     case createFile: {
       trace(T_UPDATE,5); 
       log("Updater: download %s", updateVersion.c_str());
-      deleteRecursive("download");
-      if( ! SD.mkdir("download")){
-        log("Cannot create download directory");
-        state = checkAutoUpdate;
-        break;
-      }
       String filePath = "download/" + updateVersion + ".bin";
+      deleteRecursive(filePath);
       releaseFile = SD.open(filePath.c_str(), FILE_WRITE);
       if(! releaseFile){
         log("Updater: Cannot create download file.");
-        deleteRecursive("download");
         state = checkAutoUpdate;
-        break;
+        return UTCtime() + 60;
       }
       state = download;
       return 1;
@@ -201,13 +195,24 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       }
       String URL = String(updateURL) + "/firmware/bin/" + updateVersion + ".bin";
       request->setDebug(false);
-      request->open("GET", URL.c_str());
+      trace(T_UPDATE,6);   
+      if( ! request->open("GET", URL.c_str())){
+        log("Updater: Cannot GET %s.", URL.c_str());
+        HTTPrelease(HTTPtoken);
+        state = checkAutoUpdate;
+        lastVersionCheck = UTCtime();
+        return 1;
+      }
+      trace(T_UPDATE,6);   
       request->setTimeout(5);
-      request->onData([](void* arg, asyncHTTPrequest* request, size_t available){
+      size_t fileSize = 0;
+      size_t *size = &fileSize;
+      request->onData([size](void* arg, asyncHTTPrequest* request, size_t available){
         uint8_t *buf = new uint8_t[500];
         while(request->available()){
           size_t read = request->responseRead(buf, 500);
           releaseFile.write(buf, read);
+          *size += read;
         }
         delete[] buf;
         });
@@ -223,19 +228,24 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       while(request->readyState() != 4){
         yield();
       }
+      trace(T_UPDATE,6);   
       endLedCycle();
       HTTPrelease(HTTPtoken);
-      size_t fileSize = releaseFile.size();
+      //uint32_t fileSize = releaseFile.size();
       releaseFile.close();
+      trace(T_UPDATE,6);   
       if(request->responseHTTPcode() != 200){
-        log("Updater: Download failed HTTPcode %s", request->responseHTTPcode());
+        log("Updater: Download failed HTTPcode %d", request->responseHTTPcode());
         delete request;
         request = nullptr;
-        deleteRecursive("download");
+        String filePath = "download/" + updateVersion + ".bin";
+        deleteRecursive(filePath);
         state = checkAutoUpdate;
-        return UTCtime() + 1;
+        lastVersionCheck = UTCtime();
+        return 1;
       }
       log("Updater: Release downloaded %dms, size %d", request->elapsedTime(), fileSize);
+      releaseFile.close();
       delete request;
       request = nullptr;
       state = install;
