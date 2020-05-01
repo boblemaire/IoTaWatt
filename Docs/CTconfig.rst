@@ -221,7 +221,7 @@ section `Three Phase Power <threePhase.html>`_ for more information.
     :scale: 60 %
     :alt: **Inputs button**
 
-.. |Input1| image:: pics/Input1Button.PNG
+.. |Input1| image:: pics/Input1Button.png
     :scale: 60 %
     :alt: **Input 1 button**
 
