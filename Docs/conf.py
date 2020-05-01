@@ -20,7 +20,7 @@
 # -- Project information -----------------------------------------------------
 
 project = u'IoTaWatt'
-copyright = u'2019, Bob Lemaire'
+copyright = u'2020, Bob Lemaire'
 author = u'Bob Lemaire'
 
 # The short X.Y version
