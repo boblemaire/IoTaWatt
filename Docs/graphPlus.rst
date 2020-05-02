@@ -26,7 +26,7 @@ We're plotting power for the current day
 14.2 kWh as of 5:42.
 
 .. image:: pics/graphPlus/graphPlus.PNG
-    :scale: 40 %
+    :scale: 100 %
     :align: center
     :alt: Graph+ image
 
