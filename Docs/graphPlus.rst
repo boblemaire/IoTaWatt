@@ -25,7 +25,7 @@ We're plotting power for the current day
 (midnight to 5:42pm).  Along with that we've plotted the accrued Watt-hours for the day, 
 14.2 kWh as of 5:42.
 
-.. image:: pics/graphPlus/graphPlus.PNG
+.. image:: pics/graphPlus/graphPlus.png
     :scale: 40 %
     :align: center
     :alt: Graph+ image
@@ -41,7 +41,7 @@ VTs measure Voltage and frequency(Hz), and CTs measure Watts, Watt-hours, Amps, 
 and Power-Factor (PF).  So the first thing is to select the measurement you are interested in.
 At the top are the unit selection buttons. Click on the particular unit you are interested in.
 
-.. image:: pics/graphPlus/powerSource.PNG
+.. image:: pics/graphPlus/powerSource.png
     :scale: 50 %
     :align: right
     :alt: CT sources
@@ -57,7 +57,7 @@ as power channels (CT inputs or CT based outputs). Note that the last entry show
 blue trash-can indicating that particular unit/source has been selected and is 
 currently graphed.
 
-.. image:: pics/graphPlus/voltageSource.PNG
+.. image:: pics/graphPlus/voltageSource.png
     :scale: 50 %
     :align: left
     :alt: VT sources
@@ -94,7 +94,7 @@ Once data has been plotted, the zoom/pan buttons can be used to modify the
 time-frame.  Graphs with relative time-periods ending in the present can be set to 
 automatically refresh.
 
-.. image:: pics/graphPlus/timeSelector.PNG
+.. image:: pics/graphPlus/timeSelector.png
     :scale: 80%
     :align: center
     :alt: Time timeSelector
@@ -106,7 +106,7 @@ This is where you specify an initial time period, and where you go to change it.
 In the upper left is a dropdown selector that is used to specify common relative 
 time periods.
 
-.. image:: pics/graphPlus/periodList.PNG
+.. image:: pics/graphPlus/periodList.png
     :scale: 80%
     :align: center
     :alt: Period list
@@ -134,7 +134,7 @@ the 28-31 days in the past month.  All units are averaged except Wh, which retur
 total used in each grouping.  So in this case, there would be 28-31 data points plotted.
 
 
-.. image:: pics/graphPlus/groupSelect.PNG
+.. image:: pics/graphPlus/groupSelect.png
     :scale: 80%
     :align: center
     :alt: Group Selecting
@@ -162,7 +162,7 @@ This is only one of several ways to manipulate custom dates. There are two other
 ways to modify the dates bounding the current graph.  The most obvious is the 
 zoom/scroll bar.
 
-.. image:: pics/graphPlus/zoomScroll.PNG
+.. image:: pics/graphPlus/zoomScroll.png
     :scale: 100%
     :align: center
     :alt: Zoom/Scroll bar
@@ -180,7 +180,7 @@ There is one last way to modify graph period.  You can simply select a subset of
 the graph window holding down the left mouse button.  When you release it, the 
 highlighted selection will become the new time period.
 
-.. image:: pics/graphPlus/screenSelect.PNG
+.. image:: pics/graphPlus/screenSelect.png
     :scale: 40%
     :align: center
     :alt: Screen Selection
@@ -190,7 +190,7 @@ Graph window
 
 Once data sources are selected, the graph window comes to life.
 
-.. image:: pics/graphPlus/graphWindow.PNG
+.. image:: pics/graphPlus/graphWindow.png
     :scale: 40%
     :align: center
     :alt: Graph Window
@@ -216,7 +216,7 @@ top row. There are four tables:
 Options Table 
 .............
 
-.. image:: pics/graphPlus/optionsTable.PNG
+.. image:: pics/graphPlus/optionsTable.png
     :scale: 80%
     :align: center
     :alt: Options Table
@@ -269,7 +269,7 @@ an immediate effect on the graph.  There is no Save or Refresh required.
 Statistics Table 
 ................
 
-.. image:: pics/graphPlus/statsTable.PNG
+.. image:: pics/graphPlus/statsTable.png
     :scale: 80%
     :align: center
     :alt: Statistics Table
@@ -307,7 +307,7 @@ This is a list the traces with useful statistics.
 Yaxes Range Table 
 .................
 
-.. image:: pics/graphPlus/yaxesTable.PNG
+.. image:: pics/graphPlus/yaxesTable.png
     :scale: 80%
     :align: center
     :alt: Yaxes Range Table
@@ -336,7 +336,7 @@ Max:
 CSV Data 
 ........
 
-.. image:: pics/graphPlus/csvTable.PNG
+.. image:: pics/graphPlus/csvTable.png
     :scale: 80%
     :align: center
     :alt: CSV Data area
@@ -373,7 +373,7 @@ At the bottom of the sidebar you can save and reload any number of graphs.
 Each graph is saved in the IoTaWatt, so it doesn't matter if you use a different 
 browser or device to recall them, they will always be there.
 
-.. image:: pics/graphPlus/savedGraphList.PNG
+.. image:: pics/graphPlus/savedGraphList.png
     :scale: 60%
     :align: center
     :alt: Saved Graphs
@@ -383,7 +383,7 @@ The **save** button will appear.  Click it. The graph has been saved. Click the
 *Saved Graphs:* selector and a list of all of the saved graphs will appear.
 Click any selection and Graph+ will load that graph specification.
 
-.. image:: pics/graphPlus/savedMonthlyWh.PNG
+.. image:: pics/graphPlus/savedMonthlyWh.png
     :scale: 40%
     :align: center
     :alt: Saveds Monthly Wh
