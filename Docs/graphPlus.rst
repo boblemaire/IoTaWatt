@@ -357,7 +357,10 @@ Null Values:
     * Remove line - Where a line has a null value, remove the entire line from the display.
 
 Copy:
-    This button will copy the entire contents of the CSV table to the clipboard.
+    Copy the contents of the CSV table to the clipboard.
+
+Download:
+    Download the CSV data as a file.
     
 Saving Graphs
 --------------
