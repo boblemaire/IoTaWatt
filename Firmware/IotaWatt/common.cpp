@@ -101,7 +101,8 @@
  *   02/27/20 02_05_05 Fix problem creating datalogs 
  *   03/27/20 02_05_06 Use legacy mDNS, combine influxDBmeasurements
  *   04/02/20 02_05_07 Overide HTTPS with HTTP in Emonservice, influxService
- *   04/20/20 02_05_08 Nothing to see here, just a change to tables.txt to add AccuCTs forced version change 
+ *   04/20/20 02_05_08 Nothing to see here, just a change to tables.txt to add AccuCTs forced version change
+ *   05/03/20 02_05_08 Add VAR VARh to script and query, Disable datalog WDT during update download, rp in influx query
  * 
  *****************************************************************************************************/
 
