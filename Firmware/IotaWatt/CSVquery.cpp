@@ -53,12 +53,12 @@ bool    CSVquery::setup(){
         }
        
         _begin = parseTimeArg(server.arg(F("begin")));
-        if(_begin % currLog.interval()){
-            _begin += currLog.interval() - (_begin % currLog.interval());
+        if(_begin % Current_log.interval()){
+            _begin += Current_log.interval() - (_begin % Current_log.interval());
         }
         _end = parseTimeArg(server.arg(F("end")));
-        if(_end % currLog.interval()){
-            _end -= _end % currLog.interval();
+        if(_end % Current_log.interval()){
+            _end -= _end % Current_log.interval();
         }
         if(_end == 0 || _begin == 0 || _end < _begin) return false;
         trace(T_CSVquery,10);
@@ -283,6 +283,14 @@ bool    CSVquery::setup(){
                     col->unit = PF;
                     col->decimals = 1;
                 }
+                else if(method.equalsIgnoreCase("var")){
+                    col->unit = VAR;
+                    col->decimals = 1;
+                }
+                else if(method.equalsIgnoreCase("varh")){
+                    col->unit = VARh;
+                    col->decimals = 0;
+                }
                 else if(method.startsWith("d")){
                     if(method.length() != 2 | method[1] < '0' | method[1] > '9') return false;
                     col->decimals = method[1] - '0';
@@ -363,6 +371,8 @@ const char*  CSVquery::unitstr(units units){
     if(units == Amps)  return "Amps";
     if(units == VA)    return "VA";
     if(units == PF)    return "PF";
+    if(units == VAR)   return "VAR";
+    if(units == VARh)  return "VARh";
     return "Watts";
 
 }

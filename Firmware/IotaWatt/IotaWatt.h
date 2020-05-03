@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.   
 ***********************************************************************************/
-#define IOTAWATT_VERSION "02_05_08"
+#define IOTAWATT_VERSION "02_05_09"
 #define DEVICE_NAME "IotaWatt"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
@@ -76,27 +76,33 @@
 extern WiFiClient WifiClient;
 extern WiFiManager wifiManager;
 extern ESP8266WebServer server;
-extern DNSServer dnsServer;
+extern DNSServer DNS_server;
 using MDNSResponder = Legacy_MDNSResponder::MDNSResponder;
 extern MDNSResponder MDNS;
-extern IotaLog currLog;
-extern IotaLog histLog;
+extern IotaLog Current_log;
+extern IotaLog History_log;
+extern IotaLog *Export_log;
 extern RTC_PCF8523 rtc;
-extern Ticker ticker;
-extern Ticker logWDT;
-extern messageLog msglog;
+extern Ticker Led_timer;
+extern messageLog Message_log;
+
+#define SECONDS_PER_MINUTE 60
+#define SECONDS_PER_HOUR 3600
+#define SECONDS_PER_SEVENTY_YEARS 2208988800UL
 
 #define MS_PER_HOUR   3600000UL
-#define SEVENTY_YEAR_SECONDS  2208988800UL
 
       // Declare filename Strings of system files.
 
+#define IOTA_EXPORT_LOG_PATH  "iotawatt/export.log"
+#define IOTA_CURRENT_LOG_PATH "iotawatt/iotalog.log"
+#define IOTA_HISTORY_LOG_PATH "iotawatt/History_log.log"
+#define IOTA_MESSAGE_LOG_PATH "iotawatt/iotamsgs.txt"
+
 extern char* deviceName;
-extern const char* IotaLogFile;
-extern const char* historyLogFile;
-extern const char* IotaMsgLog;
 
         // Define the hardware pins
+
 
 #define pin_CS_ADC0 0                       // Define the hardware SPI chip select pins
 #define pin_CS_ADC1 2
@@ -173,7 +179,8 @@ struct EEprom {
 #define T_RTCWDT 24        // Dead man pedal service
 #define T_CSVquery 25      // CSVquery
 #define T_xurl 26          // xurl 
-#define T_utility 27       // Miscelaneous utilities                
+#define T_utility 27       // Miscelaneous utilities 
+#define T_EXPORTLOG 28     // Export log                      
 
       // LED codes
 
@@ -194,7 +201,14 @@ struct EEprom {
 extern uint32_t lastCrossMs;           // Timestamp at last zero crossing (ms) (set in samplePower)
 extern uint32_t nextCrossMs;           // Time just before next zero crossing (ms) (computed in Loop)
 
-enum priorities: byte {priorityLow=3, priorityMed=2, priorityHigh=1};
+enum priorities: byte { priorityLow=2, 
+                        priorityLM=3, 
+                        priorityML=4,
+                        priorityMed=5,
+                        priorityMH=6,
+                        priorityHM=7,
+                        priorityHigh=8
+                      };
 
 struct serviceBlock {                  // Scheduler/Dispatcher list item (see comments in Loop)
   serviceBlock* next;                  // Next serviceBlock in list
@@ -265,7 +279,7 @@ extern authSession* authSessions;         // authSessions list head;
 extern uint16_t   authTimeout;            // Timeout interval of authSession in seconds;   
 
       // ****************************** Timing and time data *************************
-#define  SEVENTY_YEAR_SECONDS 2208988800UL
+#define  SECONDS_PER_SEVENTY_YEARS 2208988800UL
 extern int32_t  localTimeDiff;                 // Local time Difference in minutes
 extern tzRule*  timezoneRule;                  // Rule for DST 
 extern uint32_t programStartTime;;             // Time program started (UnixTime)
@@ -315,7 +329,6 @@ void      logTrace(void);
 void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*), const uint8_t taskID=0);
 void      AddService(struct serviceBlock*);
 uint32_t  dataLog(struct serviceBlock*);
-void      datalogWDT();
 uint32_t  historyLog(struct serviceBlock*);
 uint32_t  statService(struct serviceBlock*);
 uint32_t  EmonService(struct serviceBlock*);
@@ -323,6 +336,7 @@ uint32_t  influxService(struct serviceBlock*);
 uint32_t  timeSync(struct serviceBlock*);
 uint32_t  updater(struct serviceBlock*);
 uint32_t  WiFiService(struct serviceBlock*);
+uint32_t  exportLog(struct serviceBlock *_serviceBlock);
 uint32_t  getFeedData(); //(struct serviceBlock*);
 
 uint32_t  logReadKey(IotaLogRecord* callerRecord);

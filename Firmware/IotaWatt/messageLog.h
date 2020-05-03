@@ -21,4 +21,4 @@ class messageLog: public Print {
         uint8_t     bufPos;
 };
 
-#define log(format,...)  msglog.printf_P(PSTR(format),##__VA_ARGS__); msglog.endMsg()
+#define log(format,...)  Message_log.printf_P(PSTR(format),##__VA_ARGS__); Message_log.endMsg()

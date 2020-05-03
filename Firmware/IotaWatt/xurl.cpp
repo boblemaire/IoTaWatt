@@ -55,9 +55,12 @@ bool    xurl::parse(const char* _url_){
             // parse port
 
         if(*pos == ':'){
-            loc = strchr(pos, '/');
-            if( !loc){
-                loc = pos + strlen(pos);
+            loc = pos + 1;
+            while(*loc >= '0' && *loc <= '9'){
+                loc++;
+            }
+            if((loc - pos) == 1){
+                return false;
             }
             _port = new char[loc-pos+1];
             memcpy(_port, pos, loc-pos);
@@ -75,10 +78,16 @@ bool    xurl::parse(const char* _url_){
             if(pos == loc){
                 return true;
             }
-            _path = new char[loc-pos+1];
-            memcpy(_path, pos, loc-pos);
-            _path[loc-pos] = 0;
+            if((loc-pos) > 1){
+                _path = new char[loc-pos+1];
+                memcpy(_path, pos, loc-pos);
+                _path[loc-pos] = 0;
+            }
             pos = loc;
+        }
+
+        if(*pos == 0){
+            return true;
         }
 
             // parse query

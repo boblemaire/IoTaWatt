@@ -51,7 +51,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static asyncHTTPrequest* request = nullptr;   // -> instance of asyncHTTPrequest
   static uint32_t postFirstTime = UTCtime();    // First measurement in outstanding post request
   static uint32_t postLastTime = UTCtime();     // Last measurement in outstanding post request
-  static size_t reqDataLimit = 4000;            // transaction yellow light size
+  static size_t reqDataLimit = 3000;            // transaction yellow light size
   static uint32_t HTTPtoken = 0;                // HTTP resource reservation token
   static Script* script = nullptr;              // current Script
 
@@ -72,7 +72,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
           // We post from the log, so wait if not available.          
 
-      if(!currLog.isOpen()){                  
+      if(!Current_log.isOpen()){                  
         return UTCtime() + 5;
       }
       log("influxDB: started, url=%s, db=%s, interval=%d", influxURL->build().c_str(),
@@ -131,9 +131,11 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       trace(T_influx,4);
       request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
       reqData.flush();
-      reqData.printf_P(PSTR("db=%s&epoch=s&q=SELECT LAST(%s) FROM %s"), influxDataBase,
-            influxVarStr(influxFieldKey, script).c_str(),
-            influxVarStr(influxMeasurement, script).c_str());
+      reqData.printf_P(PSTR("db=%s&epoch=s"), influxDataBase); 
+      if(influxRetention){
+        reqData.printf_P(PSTR("&rp=%s"), influxRetention);
+      }
+      reqData.printf_P(PSTR("&q= SELECT LAST(% s) FROM % s "),influxVarStr(influxFieldKey, script).c_str(),influxVarStr(influxMeasurement, script).c_str());
       influxTag* tag = influxTagSet;
       trace(T_influx,41);
       while(tag){
@@ -260,7 +262,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         oldRecord = new IotaLogRecord;
       }
       oldRecord->UNIXtime = influxLastPost;      
-      currLog.readKey(oldRecord);
+      Current_log.readKey(oldRecord);
       trace(T_influx,6);
 
           // Assume that record was posted (not important).
@@ -323,11 +325,17 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         }
         
       }
+      
+          // If not enough entries for bulk-send, come back in one second;
+
+      if(((Current_log.lastKey() - influxLastPost) / influxDBInterval + reqEntries) < influxBulkSend){
+        return UTCtime() + 1;
+      }
 
           // If buffer isn't full,
           // add another measurement.
 
-      if(reqData.available() < reqDataLimit && UnixNextPost <= currLog.lastKey()){  
+      if(reqData.available() < reqDataLimit && UnixNextPost <= Current_log.lastKey()){  
 
             // Read the next log record.
 
@@ -336,7 +344,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         }
         trace(T_influx,7);
         logRecord->UNIXtime = UnixNextPost;
-        currLog.readKey(logRecord);
+        Current_log.readKey(logRecord);
         trace(T_influx,7);
         
             // Compute the time difference between log entries.
@@ -344,7 +352,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
             
         double elapsedHours = logRecord->logHours - oldRecord->logHours;
         if(elapsedHours == 0){
-          if(currLog.readNext(logRecord) == 0) {
+          if(Current_log.readNext(logRecord) == 0) {
             UnixNextPost = logRecord->UNIXtime - (logRecord->UNIXtime % influxDBInterval);
           }
           UnixNextPost += influxDBInterval;
@@ -468,7 +476,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       reqEntries = 0;
       lastRequestTime = lastBufferTime;
       state = waitPost;
-        1;
+      return 1;
     } 
 
     case waitPost: {

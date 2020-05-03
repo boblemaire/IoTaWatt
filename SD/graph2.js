@@ -78,13 +78,16 @@ $('#select-period').change(function () {
 var initialunit = "Watts";          // Initial unit on reset
 var unit = initialunit;             // Currently selected unit
 
-var units = [       {unit:"Volts", group:"V", label:"V",   dp:1,   min:"",   max:""},
-                    {unit:"Watts", group:"P", label:"W",   dp:1,   min:"",   max:""},
-                    {unit:"Wh",    group:"P", label:"Wh",  dp:2,   min:"",   max:""},
-                    {unit:"Amps",  group:"P", label:"A",   dp:3,   min:"",   max:""},
-                    {unit:"VA",    group:"P", label:"VA",  dp:1,   min:"",   max:""},
-                    {unit:"PF",    group:"P", label:"PF",  dp:3,   min:"",   max:""},
-                    {unit:"Hz",    group:"V", label:"Hz",  dp:2,   min:"",   max:""}
+var units = [       {unit:"Volts", group:"V", label:"V",    stat:" ",  dp:1,   min:"",   max:""},
+                    {unit:"Watts", group:"P", label:"W",    stat:"I",  dp:1,   min:"",   max:""},
+                    {unit:"Wh",    group:"P", label:"Wh",   stat:"S",  dp:2,   min:"",   max:""},
+                    {unit:"Amps",  group:"P", label:"A",    stat:"I",  dp:3,   min:"",   max:""},
+                    {unit:"VA",    group:"P", label:"VA",   stat:"I",  dp:1,   min:"",   max:""},
+                    {unit:"PF",    group:"P", label:"PF",   stat:" ",  dp:3,   min:"",   max:""},
+                    {unit:"Hz",    group:"V", label:"Hz",   stat:" ",  dp:2,   min:"",   max:""},
+                    {unit:"VAR",   group:"P", label:"VAR",  stat:"I",  dp:1,   min:"",   max:""},
+                    {unit:"VARh",  group:"P", label:"VARh", stat:"S",  dp:2,   min:"",   max:""}
+                    
             ];
 
                     // Build unit select buttons
@@ -997,7 +1000,7 @@ function build_options_table(){
         line += "<td><button type='button' class='table-input line-bar' feedindex="+z+">"+feedlist[z].plottype+"</button></td>";
         line += "<td style='text-align:center'><input class='fill' type='checkbox' feedindex="+z+(feedlist[z].fill?' checked':'') + " /></td>";
         line += "<td style='text-align:center'><input class='stack' type='checkbox' feedindex="+z+(feedlist[z].stack?' checked':'') + "></td>";
-        if(feedlist[z].unit == "Wh"){
+        if(feedlist[z].unit == "Wh" || feedlist[z].unit == "VARh"){
           line += "<td style='text-align:center'><input class='accrue' type='checkbox' feedindex="+z+(feedlist[z].accrue?' checked':'') + "></td>";
         } else {
           line += "<td></td>";
@@ -1035,11 +1038,16 @@ function build_stats_table(){
         
         var unit = feedlist[z].unit;
         line += "<td>";
-        if(unit == "Wh"){
-          line += unitFormat(stats.sum, "Wh");
-        }
-        if(unit == "Watts"){
-          line += unitFormat(Math.round((1-stats.npointsnull/stats.npoints)*stats.mean*periodDuration/3600), "Wh");
+        for(u in units){
+          if(units[u].unit == unit){
+            if(units[u].stat == "S"){
+              line += unitFormat(stats.sum, units[u].label);
+            }
+            else if(units[u].stat == "I"){
+              line += unitFormat(((1-stats.npointsnull/stats.npoints)*stats.mean*periodDuration/3600), units[u].unit) + "h";
+            }
+            break;
+          }
         }
         line += "</td>";
         line += "</tr>"

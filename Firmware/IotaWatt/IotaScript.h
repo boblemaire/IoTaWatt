@@ -14,7 +14,9 @@ enum        units {    // Square one
             Wh = 5,
             kWh = 6,
             PF = 7,
-            unitsNone = 8
+            VAR = 8,
+            VARh = 9,
+            unitsNone = 10
             };         // Units to be computed   
 
 class Script {

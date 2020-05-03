@@ -72,12 +72,14 @@ select=[*series1* [, *series2* ...]]
 
         The .d<n> modifier overides the default number of decimal digits.
 
-    <power input or output> [ **.watts** | .amps | .wh | .va | .pf] [.d<n>]
+    <power input or output> [ **.watts** | .amps | .wh | .va | .var | .varh | .pf] [.d<n>]
         A power input or output. A unit modifier can be used to specify:
             * .watts (default)
             * .amps
             * .wh (watt-hours)
-            * .va (volt-amps)
+            * .va (volt-ampere)
+            * .var (volt-ampere-reactive)
+            * .varh (volt-ampere-reactive hours)
             * .pf (power factor)
 
         The .d<n> modifier overides the default number of decimal digits.

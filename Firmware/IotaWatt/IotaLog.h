@@ -19,10 +19,18 @@ When reading by key, the entry with the requested or next lower key is returned 
 ********************************************************************************************************/
 struct IotaLogRecord {
       uint32_t UNIXtime;        // Time period represented by this record
-      int32_t serial;        // record number in file
-      double logHours;        // Total hours of monitoring logged to date in this log 
-      double accum1[15];
-      double accum2[15];
+      int32_t serial;           // record number in file
+      double logHours;          // Total hours of monitoring logged to date in this log
+      union {
+        struct {                // import/export log record (total size 32 bytes)
+          double Import;
+          double Export;
+        };
+        struct {                // Full datalog record (total size 256 bytes)
+          double accum1[15];
+          double accum2[15];
+        };
+      };
       IotaLogRecord()
       :UNIXtime(0)
       ,serial(0)
@@ -33,10 +41,10 @@ class IotaLog
 {
   public:
 
-	IotaLog(int interval=5, uint32_t days = 365) {
+	IotaLog(size_t recordSize = 256, int interval=5, uint32_t days = 365) {
     _path = nullptr;
 		_interval = interval;
-		_recordSize = sizeof(IotaLogRecord);
+		_recordSize = recordSize;
     _fileSize = 0;
 		_lastReadKey = 0;
 		_lastReadSerial = 0;
