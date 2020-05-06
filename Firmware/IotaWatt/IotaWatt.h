@@ -96,7 +96,7 @@ extern messageLog Message_log;
 
 #define IOTA_EXPORT_LOG_PATH  "iotawatt/export.log"
 #define IOTA_CURRENT_LOG_PATH "iotawatt/iotalog.log"
-#define IOTA_HISTORY_LOG_PATH "iotawatt/History_log.log"
+#define IOTA_HISTORY_LOG_PATH "iotawatt/histlog.log"
 #define IOTA_MESSAGE_LOG_PATH "iotawatt/iotamsgs.txt"
 
 extern char* deviceName;
