@@ -16,6 +16,8 @@ var selectedunitcolor = "#00a1d8"; // Color to be used for selected unit
 
 var path = ""; //https://" + location.host; // used to call home
 
+path = "http://iotawatt.local"; // TODO - TEMP
+
 /**********************************************************************************************
                      Predefined reporting periods that can be selected
 **********************************************************************************************/
@@ -232,7 +234,7 @@ var showUnit = true; // Prefix series with unit: in graph legend
 $("#graph-reset").click(function () {
   feedlist = [];
   response.data = [];
-  graph_load_savedgraphs();
+  graph_load_savedgraphs(() => handle_lite_mode(true));
   $("#graph-name").val("");
   $("#graph-save").hide();
   $("#graph-delete").hide();
@@ -1481,7 +1483,7 @@ $("#graph-delete").click(function () {
   }
 });
 
-function graph_load_savedgraphs() {
+function graph_load_savedgraphs(callback) {
   $.ajax({
     url: path + "/graph/getallplus",
     async: true,
@@ -1495,6 +1497,10 @@ function graph_load_savedgraphs() {
         out += "<option>" + name + "</option>";
       }
       $("#graph-select").html(out);
+
+      if (callback) {
+        callback();
+      }
     },
   });
 }
@@ -1553,6 +1559,8 @@ function sidebar_resize() {
  ********************************************************************************************/
 
 function initialize() {
+  handle_lite_mode(false); // Set styling if lite mode is enabled, will be re-executed once the data has loaded
+
   moment().format(); // Initialize moment
   setTitle(); // Set the document title, async not critical
   sidebar_resize();
@@ -1586,4 +1594,22 @@ function query_series_list() {
       build_source_list();
     },
   });
+}
+
+function handle_lite_mode(dataLoaded) {
+  const queryParameters = new URLSearchParams(window.location.search);
+  if (!queryParameters.has("lite_mode_graph")) {
+    return false;
+  }
+
+  $("body").addClass("lite-mode");
+  $("#sidebar-close").click();
+
+  if (dataLoaded) {
+    $("#graph-select").val(queryParameters.get("lite_mode_graph"));
+    $("#graph-select").change();
+    $("#refresh").click();
+  }
+
+  return true;
 }

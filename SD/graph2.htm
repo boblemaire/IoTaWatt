@@ -408,6 +408,19 @@
         border-radius: 0px 0px 4px 4px;
       }
       
+      .lite-mode #sidebar-wrapper,
+      .lite-mode .container:not(#placeholder_bound) {
+        display: none !important;
+      }
+      
+      .lite-mode #placeholder_bound {
+        position: static !important;
+        margin: auto;
+      }
+      
+      .lite-mode #placeholder_bound #placeholder {
+        position: static !important;
+      }
   </style>
   
 </html>
