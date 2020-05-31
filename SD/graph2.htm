@@ -1,37 +1,37 @@
 <!doctype html>
 <html>
   <head>
+
+    <!--
     
-     <!--
-     
-     This application was originally based on a similar graph application available in the open source Emoncms system.
-     It was forked in 2017 and modified to use the IoTaWatt API, which is significantly different from the datasource of
-     the Emoncms system. Since that time, the Emoncms version was extensively modified.
-     In September of 2019, the HTML and JS of this fork was extensively rewritten and an estimated 90% of the original code
-     was replaced and some of the basic paradigms were altered to unlock all of the data available from IoTaWatt and to
-     provide for more robust time specification in the queries.
-     
-     Thanks to the folks at Open Energy Monitor for the initial design, and whatever copyright applied to that original
-     program is included here by reference.
-     
-     -->
+    This application was originally based on a similar graph application available in the open source Emoncms system.
+    It was forked in 2017 and modified to use the IoTaWatt API, which is significantly different from the datasource of
+    the Emoncms system. Since that time, the Emoncms version was extensively modified.
+    In September of 2019, the HTML and JS of this fork was extensively rewritten and an estimated 90% of the original code
+    was replaced and some of the basic paradigms were altered to unlock all of the data available from IoTaWatt and to
+    provide for more robust time specification in the queries.
     
-      <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>IotaWatt - graph</title>
-      <meta name="apple-mobile-web-app-capable" content="yes">
-      <meta name="apple-mobile-web-app-status-bar-style" content="black">
-          
+    Thanks to the folks at Open Energy Monitor for the initial design, and whatever copyright applied to that original
+    program is included here by reference.
+    
+    -->
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IotaWatt - graph</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    
   </head>
     
   <body onload = initialize()>
     
     <!-- ------------------------------scripts and CSS from CDN ------------------------------------------------------->
-                  
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/todc-bootstrap/3.4.0-3.4.1/css/bootstrap.min.css" integrity="sha256-H0KfTigpUV+0/5tn2HXC0CPwhhDhWgSawJdnFd0CGCo=" crossorigin="anonymous" />    
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/todc-bootstrap/3.4.0-3.4.1/css/bootstrap.min.css" integrity="sha256-H0KfTigpUV+0/5tn2HXC0CPwhhDhWgSawJdnFd0CGCo=" crossorigin="anonymous" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" integrity="sha256-yMjaV542P+q1RnH6XByCPDfUFhmOafWbeLPmqKh11zo=" crossorigin="anonymous" />	
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script> 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment.min.js" integrity="sha256-Cjux44IGDGmZwm+qw4rtfj1swD9zdqmja4gaflupI8o=" crossorigin="anonymous"></script>    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment.min.js" integrity="sha256-Cjux44IGDGmZwm+qw4rtfj1swD9zdqmja4gaflupI8o=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js" integrity="sha256-5YmaxAwMjIpMrVlK84Y/+NjCpKnFYa8bWWBbUHSBGfU=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.1/js/bootstrap.min.js" integrity="sha256-+XG5Aa655VsH1HKv7gm9WuBRWeERnb0W2ZPkc1Zef8A=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
@@ -47,40 +47,40 @@
          <!-- ------------------------------------------------------------------------------------------
                             Sidebar - Feedlist and Graph Save 
           ---------------------------------------------------------------------------------------------->
-      <div id="sidebar-wrapper" >
+      <div id="sidebar-wrapper">
         
-          <div style="padding-left:10px;">
-              <div id="sidebar-close" style="float:right; cursor:pointer; padding:10px;"><i class="glyphicon glyphicon-remove"></i></div>
-            <h4 class="text-center">Units</h4>
-            <div id="units-select" class="btn-group"></div>
-          </div>
-          
-          <div>
-            <h4 class="text-center">Source</h4>
-            <div id="source-table"></div>
-          </div>
-          
-          <div style="padding:10px;">
-              <div class="input-group pad-bottom-5">
-                  <label for="graph-select">Saved Graphs:</label>
-                  <select id="graph-select" class="form-control" style="width:200px">
+        <div style="padding-left:10px;">
+            <div id="sidebar-close" style="float:right; cursor:pointer; padding:10px;"><i class="glyphicon glyphicon-remove"></i></div>
+          <h4 class="text-center">Units</h4>
+          <div id="units-select" class="btn-group"></div>
+        </div>
+        
+        <div>
+          <h4 class="text-center">Source</h4>
+          <div id="source-table"></div>
+        </div>
+        
+        <div style="padding:10px;">
+            <div class="input-group pad-bottom-5">
+                <label for="graph-select">Saved Graphs:</label>
+                <select id="graph-select" class="form-control" style="width:200px">
               </select>
-              </div>
+            </div>
             
-              <div class="input-group pad-bottom-5">
-                  <label for="graph-name">Graph name:</label>
-                  <input id="graph-name" type="text" class="form-control" style="width:200px" />
-              </div>
-              
-              <div class="btn-group pad-bottom-5">
-                  <button id="graph-delete" class="btn-warning" style="display:none">Delete</button>
-                  <button id="graph-save" class="btn-default">Save</button>
-                  <button id="graph-reset" class="btn-default">Reset</button>
-              </div>
-          </div>
+            <div class="input-group pad-bottom-5">
+                <label for="graph-name">Graph name:</label>
+                <input id="graph-name" type="text" class="form-control" style="width:200px" />
+            </div>
+            
+            <div class="btn-group pad-bottom-5">
+                <button id="graph-delete" class="btn-warning" style="display:none">Delete</button>
+                <button id="graph-save" class="btn-default">Save</button>
+                <button id="graph-reset" class="btn-default">Reset</button>
+            </div>
+        </div>
         
       </div>
-    
+      
        <!-- ------------------------------------------------------------------------------------------
                         Main content 
       ---------------------------------------------------------------------------------------------->
@@ -98,7 +98,7 @@
         </div>
         
         <div id="error" style="display:none"></div>
-    
+        
         <!-- ------------------------------------------------------------------------------------------
                           Main content 
         ---------------------------------------------------------------------------------------------->
@@ -108,7 +108,7 @@
         <!-- ------------------------------------------------------------------------------------------
                           Period, Group
         ---------------------------------------------------------------------------------------------->
-            
+        
         <div class="container form-inline" style="width:100%; padding-bottom:5px;">
             <div class="btn-group pad-bottom-5">
               <button class="btn-default" id="sidebar-open"><i class="glyphicon glyphicon-list-alt"></i></button>
@@ -122,7 +122,7 @@
               <select id="select-group" class="form-control select-group" style="width: 150px">
               </select>
             </div>
-        </div>   
+        </div>
 
         <!-- ------------------------------------------------------------------------------------------
                       Start Date, End Date
@@ -150,9 +150,9 @@
                   </span>
               </span>
             </div>
-              
+            
           </form>
-        </div> 
+        </div>
 
         <!-- ------------------------------------------------------------------------------------------
                       Zoom, pan, refresh buttons
@@ -172,11 +172,11 @@
             </button>
           </div>
           <div class="btn-group pull-right">
-            <button id="show-legend" class="btn-default pull-right">Hide Legend</button> 
+            <button id="show-legend" class="btn-default pull-right">Hide Legend</button>
           </div>
         </div>
         
-         <!-- ------------------------------------------------------------------------------------------
+        <!-- ------------------------------------------------------------------------------------------
                           Graph placeholder
         ---------------------------------------------------------------------------------------------->
     
@@ -223,7 +223,7 @@
             </table>
             
             <!-- ------------------ Options table ------------------->
-              
+            
             <table id="sourceOptionsTable" class="table data-table">
               <tr class="table-header">
                 <th></th>
@@ -407,7 +407,7 @@
         border-width: 1px;
         border-radius: 0px 0px 4px 4px;
       }
-
+      
   </style>
   
 </html>
