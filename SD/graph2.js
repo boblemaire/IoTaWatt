@@ -1372,6 +1372,9 @@ $("#graph-select").change(function () {
   for (index = 0; index < savedgraphs.length; index++) {
     if (name == savedgraphs[index].name) break;
   }
+  if (index >= savedgraphs.length) {
+    return;
+  }
 
   $.ajax({
     url: path + "/graphs/" + savedgraphs[index].id,
