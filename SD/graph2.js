@@ -14,7 +14,8 @@ var refreshTimer;
 var refresh = false;
 var selectedunitcolor = "#00a1d8"; // Color to be used for selected unit
 
-var path = ""; //https://" + location.host; // + "/";     // used to call home
+var path = ""; //https://" + location.host; // used to call home
+// path = "http://iotawatt.local"; // Temp: Local development (Can use the following Chrome extension to allow remote Ajax calls: https://chrome.google.com/webstore/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf?hl=en)
 
 //*********************************************************************************************
 //                      Predefined reporting periods that can be selected
@@ -794,7 +795,7 @@ function query() {
 
   var request =
     path +
-    "query?format=json&header=yes&resolution=high&missing=null" +
+    "/query?format=json&header=yes&resolution=high&missing=null" +
     "&begin=" +
     begin +
     "&end=" +
