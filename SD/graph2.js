@@ -11,7 +11,6 @@ var response = {}; // raw response from last data query
 var loading = false; // semaphores used to control asynchronous data query
 var reload = false;
 var refreshTimer;
-var refresh = false;
 var selectedunitcolor = "#00a1d8"; // Color to be used for selected unit
 
 var path = ""; //https://" + location.host; // used to call home
@@ -25,7 +24,7 @@ var initialperiod = "today"; // Initial period on reset
 var period = initialperiod; // Currently selected period
 
 var periodTable = [
-  { label: "custom dates" },
+  { label: "custom dates", begin: "", end: "" },
   { label: "last 10 minutes", begin: "s-10m", end: "s" },
   { label: "last 30 minutes", begin: "s-30m", end: "s" },
   { label: "last 1 hour", begin: "s-1h", end: "s" },
@@ -226,6 +225,7 @@ var periodDuration = 0; // Duration of graph period in seconds
 var interval = 60; // Seconds represented by first group of response
 var showLegend = true; // Show the graph legend
 var showUnit = true; // Prefix series with unit: in graph legend
+var refresh = false;
 
 //********************************************************************************************
 //        Graph Reset - make a fresh start
@@ -239,6 +239,7 @@ $("#graph-reset").click(function () {
   $("#graph-save").hide();
   $("#graph-delete").hide();
   $(".reset-hide").hide();
+  $("#refresh-text").html(" Refresh");
 
   period = initialperiod;
   build_period_selector();
@@ -246,6 +247,8 @@ $("#graph-reset").click(function () {
   build_units_selector();
   group = initialgroup;
   build_group_options();
+  refresh = false;
+  set_refresh();
 
   build_source_list();
 
@@ -360,11 +363,15 @@ $(".pan").click(function () {
   query();
 });
 
-if (periodTable[periodIndex].end == "s" && refresh) {
-  refreshTimer = setTimeout(function () {
-    query();
-  }, interval * 1000);
-  $("#refresh-text").html(" Freeze");
+function set_refresh() {
+  if (periodTable[periodIndex].end == "s" && refresh) {
+    refreshTimer = setTimeout(function () {
+      query();
+    }, interval * 1000);
+    $("#refresh-text").html(" Freeze");
+  } else {
+    $("#refresh-text").html(" Refresh");
+  }
 }
 
 $("#refresh").click(function () {
@@ -894,14 +901,7 @@ function query() {
         reload = false;
         query();
       } else {
-        if (periodTable[periodIndex].end == "s" && refresh) {
-          refreshTimer = setTimeout(function () {
-            query();
-          }, interval * 1000);
-          $("#refresh-text").html(" Freeze");
-        } else {
-          $("#refresh-text").html(" Refresh");
-        }
+        set_refresh();
       }
     },
   });
@@ -1388,6 +1388,10 @@ $("#graph-select").change(function () {
       userDateChange = true;
 
       feedlist = context.feedlist;
+      refresh = false;
+      if(context.refresh !== undefined) {
+        refresh = context.refresh;
+      }
 
       for (y in context.yaxes) {
         var u = unitindex(context.yaxes[y].unit);
@@ -1418,6 +1422,11 @@ $("#graph-save").click(function () {
     feedlist: feedlist,
     yaxes: [],
   };
+  if (refresh) {
+    context.refresh = true;
+  }
+  
+  
   for (z in context.feedlist) {
     delete context.feedlist[z].stats;
   }
