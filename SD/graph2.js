@@ -70,7 +70,7 @@ function build_period_selector() {
 
 // Handle period select
 
-$("#select-period").change(function () {
+$("#select-period").change(function() {
   periodIndex = $(this).val();
   period = periodTable[periodIndex].label;
   custom_dates = periodIndex == 0;
@@ -132,7 +132,7 @@ function unitindex(unit) {
 
 // Handle unit select button click
 
-$("body").on("click", ".unit-buttons", function () {
+$("body").on("click", ".unit-buttons", function() {
   $(".unit-buttons").css("background", "white");
   $(this).css("background", selectedunitcolor);
   unit = $(this).html();
@@ -172,7 +172,7 @@ function build_group_options() {
 
 // Handle group option select
 
-$("#select-group").change(function () {
+$("#select-group").change(function() {
   group = $(this).val();
   query();
 });
@@ -231,7 +231,7 @@ var refresh = false;
 //        Graph Reset - make a fresh start
 //********************************************************************************************
 
-$("#graph-reset").click(function () {
+$("#graph-reset").click(function() {
   feedlist = [];
   response.data = [];
   graph_load_savedgraphs();
@@ -311,22 +311,22 @@ $("#datetimepicker2").datetimepicker({
   format: "MMM D,YYYY h:mm a",
   useCurrent: false,
 });
-$("#datetimepicker1").on("dp.change", function (e) {
+$("#datetimepicker1").on("dp.change", function(e) {
   $("#datetimepicker2").data("DateTimePicker").minDate(e.date);
   if (userDateChange) {
     custom_dates = true;
   }
 });
-$("#datetimepicker2").on("dp.change", function (e) {
+$("#datetimepicker2").on("dp.change", function(e) {
   $("#datetimepicker1").data("DateTimePicker").maxDate(e.date);
   if (userDateChange) {
     custom_dates = true;
   }
 });
-$("#datetimepicker1,#datetimepicker2").on("dp.show", function (e) {
+$("#datetimepicker1,#datetimepicker2").on("dp.show", function(e) {
   widgetOpen = true;
 });
-$("#datetimepicker1,#datetimepicker2").on("dp.hide", function (e) {
+$("#datetimepicker1,#datetimepicker2").on("dp.hide", function(e) {
   widgetOpen = false;
   if (custom_dates) {
     query();
@@ -349,14 +349,14 @@ function set_custom_dates(begin, end) {
 //        Zoom, Pan, Reload, legend
 //********************************************************************************************
 
-$(".zoom").click(function () {
+$(".zoom").click(function() {
   custom_dates = true;
   var time_adj = round2group((periodDuration * (1 - $(this).val())) / 2);
   set_custom_dates(response.range[0] + time_adj, response.range[1] - time_adj);
   query();
 });
 
-$(".pan").click(function () {
+$(".pan").click(function() {
   custom_dates = true;
   var time_adj = round2group(periodDuration * $(this).val());
   set_custom_dates(response.range[0] + time_adj, response.range[1] + time_adj);
@@ -365,7 +365,7 @@ $(".pan").click(function () {
 
 function set_refresh() {
   if (periodTable[periodIndex].end == "s" && refresh) {
-    refreshTimer = setTimeout(function () {
+    refreshTimer = setTimeout(function() {
       query();
     }, interval * 1000);
     $("#refresh-text").html(" Freeze");
@@ -374,7 +374,7 @@ function set_refresh() {
   }
 }
 
-$("#refresh").click(function () {
+$("#refresh").click(function() {
   if (refresh) {
     clearTimeout(refreshTimer);
     $("#refresh-text").html(" Refresh");
@@ -392,7 +392,7 @@ function round2group(time) {
   return time - (time % round);
 }
 
-$("#show-legend").click(function () {
+$("#show-legend").click(function() {
   if (showLegend) {
     showLegend = false;
     $("#show-legend").html("Show Legend");
@@ -408,7 +408,7 @@ $("#show-legend").click(function () {
 //        Handle cursor select range and tooltip
 //********************************************************************************************
 
-$("#placeholder").bind("plotselected", function (event, ranges) {
+$("#placeholder").bind("plotselected", function(event, ranges) {
   custom_dates = true;
   set_custom_dates(
     ranges.xaxis.from / 1000 - (ranges.xaxis.from % interval),
@@ -417,17 +417,17 @@ $("#placeholder").bind("plotselected", function (event, ranges) {
   query();
 });
 
-$("#placeholder").bind("plothover", function (event, pos, item) {
+$("#placeholder").bind("plothover", function(event, pos, item) {
   $("#tooltip").remove();
   if (item) {
     var value = item.series.data[item.dataIndex][1];
     var stackValue = item.datapoint[1];
     var dispValue = unitFormat(value, yaxes[item.series.yaxis.n - 1].unit);
     var dispStackValue =
-      value == stackValue
-        ? ""
-        : "<br><span style='font-size:11px'>stack</span><br>" +
-          unitFormat(stackValue, yaxes[item.series.yaxis.n - 1].unit);
+      value == stackValue ?
+      "" :
+      "<br><span style='font-size:11px'>stack</span><br>" +
+      unitFormat(stackValue, yaxes[item.series.yaxis.n - 1].unit);
     if (item.series.stack) {
       stackValue = "";
     }
@@ -435,13 +435,13 @@ $("#placeholder").bind("plothover", function (event, pos, item) {
       item.pageX,
       item.pageY,
       "<span style='font-size:11px'>" +
-        item.series.label +
-        "</span><br>" +
-        dispValue +
-        dispStackValue +
-        "<br><span style='font-size:11px'>" +
-        moment.unix(item.datapoint[0] / 1000).format("H:mm ddd, MMM D") +
-        "</span>",
+      item.series.label +
+      "</span><br>" +
+      dispValue +
+      dispStackValue +
+      "<br><span style='font-size:11px'>" +
+      moment.unix(item.datapoint[0] / 1000).format("H:mm ddd, MMM D") +
+      "</span>",
       "#fff"
     );
   }
@@ -480,7 +480,7 @@ function tooltip(x, y, contents, bgColour) {
 //        Handle window and graph resize
 //********************************************************************************************
 
-$(window).resize(function () {
+$(window).resize(function() {
   sidebar_resize();
   graph_resize();
   graph();
@@ -501,21 +501,21 @@ function graph_resize() {
 //        CSV time-format, null-values, copy to clipboard, download
 //********************************************************************************************
 
-$("#csvtimeformat").change(function () {
+$("#csvtimeformat").change(function() {
   printcsv();
 });
 
-$("#csvnullvalues").change(function () {
+$("#csvnullvalues").change(function() {
   printcsv();
 });
 
-$("#copycsv").click(function () {
+$("#copycsv").click(function() {
   var textArea = document.getElementById("csv");
   textArea.select();
   document.execCommand("Copy");
 });
 
-$("#downloadcsv").click(function () {
+$("#downloadcsv").click(function() {
   var element = document.createElement("a");
   element.setAttribute(
     "href",
@@ -535,12 +535,12 @@ $("#downloadcsv").click(function () {
 //        Detail Lines - color, type(line/bar), fill, stack, decimals, scale
 //********************************************************************************************
 
-$("body").on("change", ".linecolor", function () {
+$("body").on("change", ".linecolor", function() {
   feedlist[$(this).attr("feedindex")].color = $(this).val();
   graph();
 });
 
-$("body").on("click", ".line-bar", function () {
+$("body").on("click", ".line-bar", function() {
   if ($(this).html() == "Line") {
     $(this).html("Bar");
   } else {
@@ -550,27 +550,27 @@ $("body").on("click", ".line-bar", function () {
   graph();
 });
 
-$("body").on("change", ".fill", function () {
+$("body").on("change", ".fill", function() {
   feedlist[$(this).attr("feedindex")].fill = $(this)[0].checked;
   graph();
 });
 
-$("body").on("change", ".stack", function () {
+$("body").on("change", ".stack", function() {
   feedlist[$(this).attr("feedindex")].stack = $(this)[0].checked;
   graph();
 });
 
-$("body").on("change", ".accrue", function () {
+$("body").on("change", ".accrue", function() {
   feedlist[$(this).attr("feedindex")].accrue = $(this)[0].checked;
   graph();
 });
 
-$("body").on("change", ".decimalpoints", function () {
+$("body").on("change", ".decimalpoints", function() {
   feedlist[$(this).attr("feedindex")].dp = $(this).val();
   query();
 });
 
-$("body").on("change", ".scale", function () {
+$("body").on("change", ".scale", function() {
   feedlist[$(this).attr("feedindex")].scale = $(this).val();
   graph();
 });
@@ -579,7 +579,7 @@ $("body").on("change", ".scale", function () {
 //        Yaxes min and max
 //********************************************************************************************
 
-$("body").on("change", ".ymin", function () {
+$("body").on("change", ".ymin", function() {
   if ($(this).val() == "auto") $(this).val("");
   var val = $(this).val();
   if (val == "" || $.isNumeric(val)) {
@@ -588,7 +588,7 @@ $("body").on("change", ".ymin", function () {
   graph();
 });
 
-$("body").on("change", ".ymax", function () {
+$("body").on("change", ".ymax", function() {
   if ($(this).val() == "auto") $(this).val("");
   var val = $(this).val();
   if (val == "" || $.isNumeric(val)) {
@@ -603,7 +603,7 @@ $("body").on("change", ".ymax", function () {
 
 $(".data-tables").hide();
 $(".data-table").hide();
-$(".show-tables").click(function () {
+$(".show-tables").click(function() {
   $(".show-tables").removeClass("active");
   $(this).addClass("active");
   $(".data-table").hide();
@@ -624,7 +624,7 @@ $("#showSourceOptions").click();
 //        re-arrange detail table entries
 //********************************************************************************************
 
-$("body").on("click", ".move-feed", function () {
+$("body").on("click", ".move-feed", function() {
   var feedid = $(this).attr("feedid") * 1;
   var curpos = parseInt(feedid);
   var moveby = parseInt($(this).attr("moveby"));
@@ -644,7 +644,7 @@ function arrayMove(array, old_index, new_index) {
 //        Handle series select
 //********************************************************************************************
 
-$("#source-table").on("click", ".source-table-entry", function () {
+$("#source-table").on("click", ".source-table-entry", function() {
   for (var z in feedlist) {
     if (feedlist[z].unit == unit && feedlist[z].name == $(this).html()) {
       $(this).next().click();
@@ -670,7 +670,7 @@ $("#source-table").on("click", ".source-table-entry", function () {
 //        Handle delete feed
 //********************************************************************************************
 
-$("body").on("click", ".feed-delete", function () {
+$("body").on("click", ".feed-delete", function() {
   feedlist.splice($(this).attr("feedindex"), 1);
   graph();
 });
@@ -738,12 +738,12 @@ function assign_color() {
 //        Sidebar open, close, resize
 //********************************************************************************************
 
-$("#sidebar-open").click(function () {
+$("#sidebar-open").click(function() {
   $("#sidebar-wrapper").css("left", "250px");
   $("#sidebar-close").show();
 });
 
-$("#sidebar-close").click(function () {
+$("#sidebar-close").click(function() {
   $("#sidebar-wrapper").css("left", "0");
   $("#sidebar-close").hide();
 });
@@ -829,22 +829,22 @@ function query() {
     url: request,
     async: true,
     dataType: "text",
-    error: function (xhr) {
+    error: function(xhr) {
       $("#error")
         .html(
           "<h4>" +
-            xhr.status +
-            " " +
-            xhr.statusText +
-            "</h4><p>" +
-            xhr.responseText +
-            "<br>" +
-            request.substring(0, 400) +
-            "</p>"
+          xhr.status +
+          " " +
+          xhr.statusText +
+          "</h4><p>" +
+          xhr.responseText +
+          "<br>" +
+          request.substring(0, 400) +
+          "</p>"
         )
         .show();
     },
-    success: function (data_in) {
+    success: function(data_in) {
       // Process query response
 
       var valid = true;
@@ -856,9 +856,9 @@ function query() {
       }
       if (!valid)
         errorstr +=
-          "<div class='alert alert-danger'><b>Request error</b> " +
-          data_in +
-          "</div>";
+        "<div class='alert alert-danger'><b>Request error</b> " +
+        data_in +
+        "</div>";
 
       if (errorstr != "") {
         $("#error").html(errorstr).show();
@@ -894,7 +894,7 @@ function query() {
       // If a reload was requested during this load, start a new load.
     },
 
-    complete: function () {
+    complete: function() {
       clearTimeout(refreshTimer);
       loading = false;
       if (reload) {
@@ -1181,7 +1181,7 @@ function build_stats_table() {
                 ((1 - stats.npointsnull / stats.npoints) *
                   stats.mean *
                   periodDuration) /
-                  3600,
+                3600,
                 units[u].unit
               ) + "h";
           }
@@ -1351,7 +1351,7 @@ function unitFormat(val, unit) {
 //            GRAPH SAVE
 //********************************************************************************************
 
-$("#graph-select").change(function () {
+$("#graph-select").change(function() {
   loading = true;
   var name = $(this).val();
   $("graph-reset").click();
@@ -1371,7 +1371,7 @@ $("#graph-select").change(function () {
     url: path + "/graphs/" + savedgraphs[index].id,
     async: true,
     dataType: "json",
-    success: function (result) {
+    success: function(result) {
       var context = result;
       period = context.period;
       build_period_selector();
@@ -1389,7 +1389,7 @@ $("#graph-select").change(function () {
 
       feedlist = context.feedlist;
       refresh = false;
-      if(context.refresh !== undefined) {
+      if (context.refresh !== undefined) {
         refresh = context.refresh;
       }
 
@@ -1404,7 +1404,7 @@ $("#graph-select").change(function () {
   });
 });
 
-$("#graph-save").click(function () {
+$("#graph-save").click(function() {
   var name = $("#graph-name").val();
 
   if (name == undefined || name == "") {
@@ -1425,8 +1425,8 @@ $("#graph-save").click(function () {
   if (refresh) {
     context.refresh = true;
   }
-  
-  
+
+
   for (z in context.feedlist) {
     delete context.feedlist[z].stats;
   }
@@ -1445,7 +1445,7 @@ $("#graph-save").click(function () {
     data: "data=" + JSON.stringify(context),
     async: true,
     //contentType: "text/plain",
-    success: function (result) {
+    success: function(result) {
       if (!result.success) alert("ERROR: " + result.message);
       $("#graph-delete").show();
     },
@@ -1454,7 +1454,7 @@ $("#graph-save").click(function () {
   $("#graph-select").val(name);
 });
 
-$("#graph-name").keyup(function () {
+$("#graph-name").keyup(function() {
   var name = $(this).val();
   $("#graph-delete").hide();
   if (name == "") {
@@ -1470,7 +1470,7 @@ $("#graph-name").keyup(function () {
   $("#graph-save").show();
 });
 
-$("#graph-delete").click(function () {
+$("#graph-delete").click(function() {
   var name = $("#graph-name").val();
   for (var z in savedgraphs) {
     if (savedgraphs[z].name == name) {
@@ -1486,7 +1486,7 @@ function graph_load_savedgraphs() {
     url: path + "/graph/getallplus",
     async: true,
     dataType: "json",
-    success: function (result) {
+    success: function(result) {
       savedgraphs = result;
 
       var out = "<option selected=true>Select graph:</option>";
@@ -1507,7 +1507,7 @@ function graph_delete(id) {
     data: "id=" + id,
     async: true,
     dataType: "json",
-    success: function (result) {
+    success: function(result) {
       if (!result.success) alert("ERROR: " + result.message);
     },
   });
@@ -1518,12 +1518,12 @@ function graph_delete(id) {
 // Sidebar
 //********************************************************************************************
 
-$("#sidebar-open").click(function () {
+$("#sidebar-open").click(function() {
   $("#sidebar-wrapper").css("left", "250px");
   $("#sidebar-close").show();
 });
 
-$("#sidebar-close").click(function () {
+$("#sidebar-close").click(function() {
   $("#sidebar-wrapper").css("left", "0");
   $("#sidebar-close").hide();
 });
@@ -1565,7 +1565,7 @@ function setTitle() {
     url: path + "/status?device=yes",
     async: true,
     dataType: "json",
-    success: function (result) {
+    success: function(result) {
       var title = result.device.name + " " + $("#title").html();
       document.title = title;
       $("#title").html(title);
@@ -1578,7 +1578,7 @@ function query_series_list() {
     url: path + "/query?show=series",
     async: true,
     dataType: "json",
-    success: function (data_in) {
+    success: function(data_in) {
       series = data_in.series;
       build_source_list();
     },
