@@ -26,7 +26,7 @@ We're plotting power for the current day
 14.2 kWh as of 5:42.
 
 .. image:: pics/graphPlus/graphPlus.png
-    :scale: 40 %
+    :scale: 40%
     :align: center
     :alt: Graph+ image
 
@@ -184,6 +184,30 @@ highlighted selection will become the new time period.
     :scale: 40%
     :align: center
     :alt: Screen Selection
+
+Refresh/Freeze
+..............
+
+The |refreshImage| button will immediately refresh the current plot.
+If the time period of the current plot ends at the current time, 
+as in the "Today", "Last 10 minutes", etc., the display 
+will continue to refresh at the "interval" rate.  
+For example if the auto interval is 2 minutes, it will continually refresh every 2 minutes.
+You will know it is auto refresh mode because the Refresh button will change to
+|freezeImage|. If you click this button the auto refresh will stop and the button will
+revert to the manual |refreshImage| button.
+
+The Refresh/Freeze state is retained when saving and subsequently restoring graphs.
+This feature is useful when loading a saved graph as an embeded window where there are
+no controls, allowing an auto refresh graph can be displayed in a frame.
+
+.. |refreshImage| image:: pics/graphPlus/refreshButton.png
+    :scale: 80%
+    :alt: Refresh Button
+
+.. |freezeImage| image:: pics/graphPlus/freezeButton.png
+    :scale: 80%
+    :alt: Freeze Button
 
 Graph window
 -------------
@@ -403,6 +427,28 @@ save a static graph, select the *custom dates* period at the top before saving.
 Whenever a saved graph name is in the *Graph name:* box, the **Delete** key will be 
 available. To change a graph specification, simply load it, make the changes and save 
 it again.
+
+Running Directly with URL
+-------------------------
+
+Graph+ can be loaded directly from the IoTaWatt's web server using the URL
+
+http://iotawatt.local/graph2.htm [?graph=savedgraph [&embed] ]
+
+Substitute your local hostname/IP address if different.
+
+graph=
+......
+
+Optional query parameter to specify a saved graph that is to be loaded initially.
+
+embed
+......
+
+Causes Graph+ to display only the plot window of the selected graph. 
+If the saved graph has refresh enabled, the plot will refresh at the 
+active interval.
+
 
 Reset
 -----
