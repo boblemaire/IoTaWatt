@@ -12,9 +12,11 @@ var loading = false; // semaphores used to control asynchronous data query
 var reload = false;
 var refreshTimer;
 var selectedunitcolor = "#00a1d8"; // Color to be used for selected unit
+var embed = false; // embedded graph i.e. only displays graph placeholder
 
 var path = ""; //https://" + location.host; // used to call home
 // path = "http://iotawatt.local"; // Temp: Local development (Can use the following Chrome extension to allow remote Ajax calls: https://chrome.google.com/webstore/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf?hl=en)
+const queryParameters = new URLSearchParams(window.location.search);
 
 //*********************************************************************************************
 //                      Predefined reporting periods that can be selected
@@ -234,7 +236,6 @@ var refresh = false;
 $("#graph-reset").click(function() {
   feedlist = [];
   response.data = [];
-  graph_load_savedgraphs();
   $("#graph-name").val("");
   $("#graph-save").hide();
   $("#graph-delete").hide();
@@ -481,7 +482,9 @@ function tooltip(x, y, contents, bgColour) {
 //********************************************************************************************
 
 $(window).resize(function() {
-  sidebar_resize();
+  if (!queryParameters.has("embed")) {
+    sidebar_resize();
+  }
   graph_resize();
   graph();
 });
@@ -751,7 +754,7 @@ $("#sidebar-close").click(function() {
 function sidebar_resize() {
   var width = $(window).width();
   var height = $(window).height();
-  $("#sidebar-wrapper").height(height - 41);
+  $("#sidebar-wrapper").height(height);
 
   if (width < 1024) {
     $("#sidebar-wrapper").css("left", "0");
@@ -917,7 +920,6 @@ function graph() {
   var options = {
     lines: { fill: false },
     grid: { hoverable: true, clickable: true },
-    selection: { mode: "x" },
     legend: { show: showLegend, position: "nw", sorted: "reverse" },
     toggle: { scale: "visible" },
     touch: { pan: "x", scale: "x" },
@@ -930,6 +932,9 @@ function graph() {
     yaxis: { alignTicksWithAxis: 1, tickFormatter: tick_format },
     yaxes: [],
   };
+  if (!embed) {
+    options.selection = { mode: "x" };
+  }
 
   // Create yaxes table for active units from feedlist
 
@@ -1481,7 +1486,7 @@ $("#graph-delete").click(function() {
   }
 });
 
-function graph_load_savedgraphs() {
+function graph_load_savedgraphs(callback) {
   $.ajax({
     url: path + "/graph/getallplus",
     async: true,
@@ -1495,6 +1500,9 @@ function graph_load_savedgraphs() {
         out += "<option>" + name + "</option>";
       }
       $("#graph-select").html(out);
+      if (callback) {
+        callback();
+      }
     },
   });
 }
@@ -1552,12 +1560,28 @@ function sidebar_resize() {
 function initialize() {
   moment().format(); // Initialize moment
   setTitle(); // Set the document title, async not critical
-  sidebar_resize();
-  graph_resize();
   build_units_selector();
   query_series_list();
+  sidebar_resize();
   $("#graph-reset").click();
   $(".initHide").show();
+  if (queryParameters.has("embed")) {
+    embed = true;
+    $(".embed").hide();
+    $("#sidebar-close").click();
+    $("#wrapper").css("padding-left", "0");
+    $("#placeholder").off("plotselected");
+  }
+  graph_resize();
+  if (queryParameters.has("graph")) {
+    graph_load_savedgraphs(() => {
+      var graph = queryParameters.get("graph");
+      $("#graph-select").val(graph);
+      $("#graph-select").change();
+    })
+  } else {
+    graph_load_savedgraphs();
+  }
 }
 
 function setTitle() {

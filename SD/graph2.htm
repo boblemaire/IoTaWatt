@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
-  <head>
+
+<head>
 
     <!--
 
@@ -22,9 +23,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-  </head>
+</head>
 
-  <body onload = initialize()>
+<body onload=i nitialize()>
 
     <!-- ------------------------------scripts and CSS from CDN ------------------------------------------------------->
 
@@ -44,367 +45,378 @@
 
     <div id="wrapper" style="max-width:1600px">
 
-      <!-- ------------------------------------------------------------------------------------------
+        <!-- ------------------------------------------------------------------------------------------
                         Sidebar - Feedlist and Graph Save 
       ---------------------------------------------------------------------------------------------->
-      <div id="sidebar-wrapper">
+        <div id="sidebar-wrapper">
 
-        <div style="padding-left:10px;">
-            <div id="sidebar-close" style="float:right; cursor:pointer; padding:10px;"><i class="glyphicon glyphicon-remove"></i></div>
-          <h4 class="text-center">Units</h4>
-          <div id="units-select" class="btn-group"></div>
-        </div>
+            <div style="padding-left:10px;">
+                <div id="sidebar-close" style="float:right; cursor:pointer; padding:10px;"><i class="glyphicon glyphicon-remove"></i></div>
+                <h4 class="text-center">Units</h4>
+                <div id="units-select" class="btn-group"></div>
+            </div>
 
-        <div>
-          <h4 class="text-center">Source</h4>
-          <div id="source-table"></div>
-        </div>
+            <div>
+                <h4 class="text-center">Source</h4>
+                <div id="source-table"></div>
+            </div>
 
-        <div style="padding:10px;">
-            <div class="input-group pad-bottom-5">
-                <label for="graph-select">Saved Graphs:</label>
-                <select id="graph-select" class="form-control" style="width:200px">
+            <div style="padding:10px;">
+                <div class="input-group pad-bottom-5">
+                    <label for="graph-select">Saved Graphs:</label>
+                    <select id="graph-select" class="form-control" style="width:200px">
               </select>
+                </div>
+
+                <div class="input-group pad-bottom-5">
+                    <label for="graph-name">Graph name:</label>
+                    <input id="graph-name" type="text" class="form-control" style="width:200px" />
+                </div>
+
+                <div class="btn-group pad-bottom-5">
+                    <button id="graph-delete" class="btn-warning" style="display:none">Delete</button>
+                    <button id="graph-save" class="btn-default">Save</button>
+                    <button id="graph-reset" class="btn-default">Reset</button>
+                </div>
             </div>
 
-            <div class="input-group pad-bottom-5">
-                <label for="graph-name">Graph name:</label>
-                <input id="graph-name" type="text" class="form-control" style="width:200px" />
-            </div>
-
-            <div class="btn-group pad-bottom-5">
-                <button id="graph-delete" class="btn-warning" style="display:none">Delete</button>
-                <button id="graph-save" class="btn-default">Save</button>
-                <button id="graph-reset" class="btn-default">Reset</button>
-            </div>
         </div>
 
-      </div>
-
-       <!-- ------------------------------------------------------------------------------------------
+        <!-- ------------------------------------------------------------------------------------------
                         Main content 
       ---------------------------------------------------------------------------------------------->
 
-      <div id="body-wrapper" >
+        <div id="body-wrapper">
 
-        <!-- ------------------------------------------------------------------------------------------
+            <!-- ------------------------------------------------------------------------------------------
                         Header
         ---------------------------------------------------------------------------------------------->
 
-        <div id="page-header" class="container" style="width:100%; padding-bottom:5px;">
-            <div class="text-left">
-              <h3 id="title" class="text-left">Graph+</h3>
-            </div>
-        </div>
+            <div id="header-wrapper" class="embed">
+                <div id="page-header" class="container" style="width:100%; padding-bottom:5px;">
+                    <div class="text-left">
+                        <h3 id="title" class="text-left">Graph+</h3>
+                    </div>
+                </div>
 
-        <div id="error" style="display:none"></div>
+                <div id="error" style="display:none"></div>
 
-        <!-- ------------------------------------------------------------------------------------------
+                <!-- ------------------------------------------------------------------------------------------
                           Main content 
         ---------------------------------------------------------------------------------------------->
 
-        <div id="error" style="display:none"></div>
+                <div id="error" style="display:none"></div>
+            </div>
 
-        <!-- ------------------------------------------------------------------------------------------
+            <!-- ------------------------------------------------------------------------------------------
                           Period, Group
         ---------------------------------------------------------------------------------------------->
 
-        <div class="container form-inline" style="width:100%; padding-bottom:5px;">
-            <div class="btn-group pad-bottom-5">
-              <button class="btn-default" id="sidebar-open"><i class="glyphicon glyphicon-list-alt"></i></button>
-            </div>
-            <div class="input-group pad-bottom-5">
-              <select id="select-period" class="form-control" name="options" style="width: 190px"></select>
-            </div>
+            <div id="period-wrapper" class="embed">
+                <div class="container form-inline" style="width:100%; padding-bottom:5px;">
+                    <div class="btn-group pad-bottom-5">
+                        <button class="btn-default" id="sidebar-open"><i class="glyphicon glyphicon-list-alt"></i></button>
+                    </div>
+                    <div class="input-group pad-bottom-5">
+                        <select id="select-period" class="form-control" name="options" style="width: 190px"></select>
+                    </div>
 
-            <div class="input-group pad-bottom-5">
-              <label for="group" class="input-group-addon">Group:</label>
-              <select id="select-group" class="form-control select-group" style="width: 150px">
-              </select>
-            </div>
-        </div>
+                    <div class="input-group pad-bottom-5">
+                        <label for="group" class="input-group-addon">Group:</label>
+                        <select id="select-group" class="form-control select-group" style="width: 150px">
+                </select>
+                    </div>
+                </div>
 
-        <!-- ------------------------------------------------------------------------------------------
+                <!-- ------------------------------------------------------------------------------------------
                       Start Date, End Date
         ---------------------------------------------------------------------------------------------->
 
-        <div class="container" style="width:100%; padding-bottom:5px;">
-          <form class="form-inline">
+                <div class="container" style="width:100%; padding-bottom:5px;">
+                    <form class="form-inline">
 
-            <div class="input-group pad-bottom-5">
-              <label for="request-start" class="input-group-addon" style="text-align:right; width:50px;">Start:</label>
-              <span id='datetimepicker1' class="input-group" style="width: 210px">
-                  <input type='text' class="form-control" id="request-start" />
-                  <span class="input-group-addon">
-                      <span class="glyphicon glyphicon-calendar"></span>
-                  </span>
-              </span>
-            </div>
+                        <div class="input-group pad-bottom-5">
+                            <label for="request-start" class="input-group-addon" style="text-align:right; width:50px;">Start:</label>
+                            <span id='datetimepicker1' class="input-group" style="width: 210px">
+                    <input type='text' class="form-control" id="request-start" />
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                            </span>
+                            </span>
+                        </div>
 
-            <div class="input-group pad-bottom-5">
-              <label for="request-end" class="input-group-addon" style="text-align:right; width:50px">End:</label>
-              <span id='datetimepicker2' class="input-group" style="width: 210px">
-                  <input type='text' class="form-control" id="request-end" />
-                  <span class="input-group-addon">
-                      <span class="glyphicon glyphicon-calendar"></span>
-                  </span>
-              </span>
-            </div>
+                        <div class="input-group pad-bottom-5">
+                            <label for="request-end" class="input-group-addon" style="text-align:right; width:50px">End:</label>
+                            <span id='datetimepicker2' class="input-group" style="width: 210px">
+                    <input type='text' class="form-control" id="request-end" />
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                            </span>
+                            </span>
+                        </div>
 
-          </form>
-        </div>
+                    </form>
+                </div>
 
-        <!-- ------------------------------------------------------------------------------------------
+                <!-- ------------------------------------------------------------------------------------------
                       Zoom, pan, refresh buttons
         ---------------------------------------------------------------------------------------------->
 
-        <div class="container" style="width:100%; padding-bottom:5px;">
-          <div class="btn-group pad-bottom-5">
-            <button class='btn-default zoom' value=.5 title="Zoom in"><i class="glyphicon glyphicon-zoom-in"></i></button>
-            <button class='btn-default zoom' value=2 title="zoom out"><i class="glyphicon glyphicon-zoom-out"></i></button>
-            <button class='btn-default pan' value=-1 title="Back full-frame"><i class="glyphicon glyphicon-fast-backward"></i></button>
-            <button class='btn-default pan' value=-0.5 title="Back half-frame"><i class="glyphicon glyphicon-step-backward"></i></button>
-            <button class='btn-default pan' value=+0.5 title="Forward half-frame"><i class="glyphicon glyphicon-step-forward"></i></button>
-            <button class='btn-default pan' value=+1 title="Forward full-frame"><i class="glyphicon glyphicon-fast-forward"></i></button>
-            <button id="refresh" class="btn-default" title="Refresh">
-              <span class="glyphicon glyphicon-refresh"></span>
-              <span id="refresh-text"> Refresh</span>
-            </button>
-          </div>
-          <div class="btn-group pull-right">
-            <button id="show-legend" class="btn-default pull-right">Hide Legend</button>
-          </div>
-        </div>
+                <div class="container" style="width:100%; padding-bottom:5px;">
+                    <div class="btn-group pad-bottom-5">
+                        <button class='btn-default zoom' value=.5 title="Zoom in"><i class="glyphicon glyphicon-zoom-in"></i></button>
+                        <button class='btn-default zoom' value=2 title="zoom out"><i class="glyphicon glyphicon-zoom-out"></i></button>
+                        <button class='btn-default pan' value=-1 title="Back full-frame"><i class="glyphicon glyphicon-fast-backward"></i></button>
+                        <button class='btn-default pan' value=-0.5 title="Back half-frame"><i class="glyphicon glyphicon-step-backward"></i></button>
+                        <button class='btn-default pan' value=+0.5 title="Forward half-frame"><i class="glyphicon glyphicon-step-forward"></i></button>
+                        <button class='btn-default pan' value=+1 title="Forward full-frame"><i class="glyphicon glyphicon-fast-forward"></i></button>
+                        <button id="refresh" class="btn-default" title="Refresh">
+                <span class="glyphicon glyphicon-refresh"></span>
+                <span id="refresh-text"> Refresh</span>
+              </button>
+                    </div>
+                    <div class="btn-group pull-right">
+                        <button id="show-legend" class="btn-default pull-right">Hide Legend</button>
+                    </div>
+                </div>
+            </div>
 
-        <!-- ------------------------------------------------------------------------------------------
+            <!-- ------------------------------------------------------------------------------------------
                           Graph placeholder
         ---------------------------------------------------------------------------------------------->
 
-        <div id="placeholder_bound" class="container" style="width:100%; height:400px; padding-bottom:5px;">
-          <div id="placeholder"></div>
-        </div>
+            <div id="placeholder_bound" class="container" style="width:100%; height:400px;">
+                <div id="placeholder"></div>
+            </div>
 
-        <!-- ------------------------------------------------------------------------------------------
+            <!-- ------------------------------------------------------------------------------------------
                           Tables - yaxes, options, stats, csv data
         ---------------------------------------------------------------------------------------------->
 
-        <div class="container data-tables" style="width:100%; padding-bottom: 5px;">
-          <div id="graph-tables" class="table-responsive border" style="max-width:768px;">
-            <div class='btn-block table-top'>
-              <button id="showSourceOptions" class='btn pull-right show-tables' value="options"><strong>Plot Options</strong></button>
-              <button id="showSourceStats" class='btn pull-right show-tables' value="stats"><strong>Data Statistics</strong></button>
-              <button id="showYaxis" class='btn pull-right show-tables' value="yaxes"><strong>Yaxes Range</strong></button>
-              <button id="showCSV" class='btn pull-right show-tables' value="CSV"><strong>CSV data</strong></button>
-            </div>
+            <div id="tables-wrapper" class="embed">
+                <div class="container data-tables" style="width:100%; padding-bottom: 5px;">
+                    <div id="graph-tables" class="table-responsive border" style="max-width:768px;">
+                        <div class='btn-block table-top'>
+                            <button id="showSourceOptions" class='btn pull-right show-tables' value="options"><strong>Plot Options</strong></button>
+                            <button id="showSourceStats" class='btn pull-right show-tables' value="stats"><strong>Data Statistics</strong></button>
+                            <button id="showYaxis" class='btn pull-right show-tables' value="yaxes"><strong>Yaxes Range</strong></button>
+                            <button id="showCSV" class='btn pull-right show-tables' value="CSV"><strong>CSV data</strong></button>
+                        </div>
 
-            <!-- ------------------ yaxis range table --------------->
+                        <!-- ------------------ yaxis range table --------------->
 
-            <table id="yaxesTable" class="table data-table">
-              <thead>
-                <colspan>
-                  <col width='40px'>
-                  <col width='150px'>
-                  <col width='150px'>
-                  <col width='50px'>
-                  <col width='30px'>
-                  <col width='50px'>
-                </colspan>
-                <tr class="table-header">
-                  <th style="text-align:left'">Unit</th>
-                  <th style='text-align:center'>Plot Range</th>
-                  <th style='text-align:center'>Data Range</th>
-                  <th style='text-align:center'>Min</th>
-                  <th></th>
-                  <th style='text-align:center'>Max</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="yaxesBody" class="table-border"></tbody>
-            </table>
+                        <table id="yaxesTable" class="table data-table">
+                            <thead>
+                                <colspan>
+                                    <col width='40px'>
+                                    <col width='150px'>
+                                    <col width='150px'>
+                                    <col width='50px'>
+                                    <col width='30px'>
+                                    <col width='50px'>
+                                </colspan>
+                                <tr class="table-header">
+                                    <th style='text-align:left'>Unit</th>
+                                    <th style='text-align:center'>Plot Range</th>
+                                    <th style='text-align:center'>Data Range</th>
+                                    <th style='text-align:center'>Min</th>
+                                    <th></th>
+                                    <th style='text-align:center'>Max</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="yaxesBody" class="table-border"></tbody>
+                        </table>
 
-            <!-- ------------------ Options table ------------------->
+                        <!-- ------------------ Options table ------------------->
 
-            <table id="sourceOptionsTable" class="table data-table">
-              <tr class="table-header">
-                <th></th>
-                <th></th>
-                <th style="text-align:left">Source</th>
-                <th style='text-align:center'>Color</th>
-                <th style='text-align:center'>Line/Bar</th>
-                <th style='text-align:center'>Fill</th>
-                <th style='text-align:center'>Stack</th>
-                <th style='text-align:center'>Accrue</th>
-                <th style='text-align:center'>Decimals</th>
-                <th style='text-align:center'>Scale</th>
-              </tr>
-              <tbody id="sourceOptionsBody" class="table-border"></tbody>
-            </table>
+                        <table id="sourceOptionsTable" class="table data-table">
+                            <tr class="table-header">
+                                <th></th>
+                                <th></th>
+                                <th style="text-align:left">Source</th>
+                                <th style='text-align:center'>Color</th>
+                                <th style='text-align:center'>Line/Bar</th>
+                                <th style='text-align:center'>Fill</th>
+                                <th style='text-align:center'>Stack</th>
+                                <th style='text-align:center'>Accrue</th>
+                                <th style='text-align:center'>Decimals</th>
+                                <th style='text-align:center'>Scale</th>
+                            </tr>
+                            <tbody id="sourceOptionsBody" class="table-border"></tbody>
+                        </table>
 
-            <!-- ------------------ Stats table -------------------->
+                        <!-- ------------------ Stats table -------------------->
 
-            <table id="sourceStatsTable" class="table data-table">
-              <tr class="table-header">
-                <th></th>
-                <th></span></th>
-                <th style="text-align:left">Source</th>
-                <th style='text-align:center'>Quality</th>
-                <th style='text-align:center'>Min</th>
-                <th style='text-align:center'>Max</th>
-                <th style='text-align:center'>Diff</th>
-                <th style='text-align:center'>Average</th>
-                <th style='text-align:center'>Sum/Integral</th>
-              </tr>
-              <tbody id="sourceStatsBody" class="table-border"></tbody>
-            </table>
+                        <table id="sourceStatsTable" class="table data-table">
+                            <tr class="table-header">
+                                <th></th>
+                                <th>
+                                    </span>
+                                </th>
+                                <th style="text-align:left">Source</th>
+                                <th style='text-align:center'>Quality</th>
+                                <th style='text-align:center'>Min</th>
+                                <th style='text-align:center'>Max</th>
+                                <th style='text-align:center'>Diff</th>
+                                <th style='text-align:center'>Average</th>
+                                <th style='text-align:center'>Sum/Integral</th>
+                            </tr>
+                            <tbody id="sourceStatsBody" class="table-border"></tbody>
+                        </table>
 
-            <!-- ------------------CSV data -------------------->
+                        <!-- ------------------CSV data -------------------->
 
-            <div id="CSVgroup" class="container form-inline data-table" style="width:100%; padding:0px; margin:0px;">
-                <div id="csvheader" class="table-header">
-                  <span>&nbspTime Format:</span>
-                  <select id="csvtimeformat" class="form-control" style="width: 180px">
-                    <option value="datestr" selected>Date-time string</option>
-                    <option value="seconds">Seconds from start</option>
-                    <option value="unix">Unix time</option>
-                  </select>
-                  <span>&nbspNull values:</span>
-                  <select id="csvnullvalues" class="form-control" style="width: 150px">
-                    <option value="show" selected>Show</option>
-                    <option value="remove">Remove line</option>
-                  </select>
-                  <button id="copycsv" class="btn-default" title="Copy to clipboard"><span class="glyphicon glyphicon-copy"></span> Copy</button>
-                  <button id="downloadcsv" class="btn-default" title="Download CSV file"><span class="glyphicon glyphicon-download"></span> Download</button>
+                        <div id="CSVgroup" class="container form-inline data-table" style="width:100%; padding:0px; margin:0px;">
+                            <div id="csvheader" class="table-header">
+                                <span>&nbspTime Format:</span>
+                                <select id="csvtimeformat" class="form-control" style="width: 180px">
+                      <option value="datestr" selected>Date-time string</option>
+                      <option value="seconds">Seconds from start</option>
+                      <option value="unix">Unix time</option>
+                    </select>
+                                <span>&nbspNull values:</span>
+                                <select id="csvnullvalues" class="form-control" style="width: 150px">
+                      <option value="show" selected>Show</option>
+                      <option value="remove">Remove line</option>
+                    </select>
+                                <button id="copycsv" class="btn-default" title="Copy to clipboard"><span class="glyphicon glyphicon-copy"></span> Copy</button>
+                                <button id="downloadcsv" class="btn-default" title="Download CSV file"><span class="glyphicon glyphicon-download"></span> Download</button>
+                            </div>
+                            <textarea readonly id="csv" rows=30></textarea>
+                        </div>
+
+                    </div>
                 </div>
-                <textarea readonly id="csv" rows=30></textarea>
             </div>
-
-          </div>
         </div>
-      </div>      <!-- page-content-wrapper -->
-    </div>          <!-- wrapper -->
-  </body>
+        <!-- page-content-wrapper -->
+    </div>
+    <!-- wrapper -->
+</body>
 
-  <script language="javascript" type="text/javascript" src="graph2.js"></script>
+<script language="javascript" type="text/javascript" src="graph2.js"></script>
 
-  <style>
+<style>
     #wrapper {
-      padding:0px;
-      margin:0px;
-      padding-left: 250px;
+        padding: 0px;
+        margin: 0px;
+        padding-left: 250px;
     }
-
+    
     #sidebar-wrapper {
-      margin-top:10px;
-      margin-left: -250px;
-      left: 250px;
-      width: 250px;
-      background: #eee;
-      position: fixed;
-      overflow-y: auto;
-      z-index: 1000;
+        margin-top: 0px;
+        margin-left: -250px;
+        left: 250px;
+        width: 250px;
+        background: #eee;
+        position: fixed;
+        overflow-y: auto;
+        z-index: 1000;
     }
-
+    
     #body-wrapper {
-      margin-top:-15px;
+        margin-top: 0px;
     }
-
+    
     button {
-      height: 30px;
-      min-width: 30px;
-      padding-bottom: 5px;
-      border: 1px solid;
-      border-radius: 4px;
-      text-align: center;
-      cursor: pointer;
+        height: 30px;
+        min-width: 30px;
+        padding-bottom: 5px;
+        border: 1px solid;
+        border-radius: 4px;
+        text-align: center;
+        cursor: pointer;
     }
-
+    
     checkbox {
-      cursor: pointer;
+        cursor: pointer;
     }
-
+    
     td {
-      text-align: center;
+        text-align: center;
     }
-
+    
     .pad-bottom-5 {
-      padding-bottom: 5px;
+        padding-bottom: 5px;
     }
-
+    
     .button-down {
-      color: red;
+        color: red;
     }
-
+    
     .source-table-row {
-      border-width: 1px;
-      border-style: solid none solid none;
-      border-color: silver;
-      height: 25px;
+        border-width: 1px;
+        border-style: solid none solid none;
+        border-color: silver;
+        height: 25px;
     }
-
+    
     .source-table-entry {
-      padding: 5px;
-      font-size: 1.2em;
-      text-align: left;
-      cursor: pointer;
+        padding: 5px;
+        font-size: 1.2em;
+        text-align: left;
+        cursor: pointer;
     }
-
+    
     .table-toggle {
-      text-align: right;
+        text-align: right;
     }
-
+    
     .table-top {
-      height: 35px;
-      border-style: solid solid solid solid;
-      border-color: silver;
-      border-width: 1px;
-      border-radius: 4px 4px 0px 0px;
-      border-color: Silver;
-      background: #eee;
-      font-size: 14px;
+        height: 35px;
+        border-style: solid solid solid solid;
+        border-color: silver;
+        border-width: 1px;
+        border-radius: 4px 4px 0px 0px;
+        border-color: Silver;
+        background: #eee;
+        font-size: 14px;
     }
-
+    
     .table-header {
-      border-style: none solid solid solid;
-      border-color: silver;
-      border-width: 1px;
-      background: #eee;
+        border-style: none solid solid solid;
+        border-color: silver;
+        border-width: 1px;
+        background: #eee;
     }
-
+    
     .table-input {
-      height: 20px;
-      border:1px solid Silver;
-      border-radius: 4px;
+        height: 20px;
+        border: 1px solid Silver;
+        border-radius: 4px;
     }
-
+    
     .table-border {
-      border-style: none solid solid solid;
-      border-width: 1px;
-      border-color: Silver;
-      border-radius: 0px 0px 4px 4px;
+        border-style: none solid solid solid;
+        border-width: 1px;
+        border-color: Silver;
+        border-radius: 0px 0px 4px 4px;
     }
-
+    
     .move-feed,
     .feed-delete {
-      cursor: pointer;
+        cursor: pointer;
     }
-
+    
     #select-period,
     #group,
     #graph-select,
     #graph-name {
-      border: 1px solid Silver;
-      border-radius: 4px;
-      background: white;
+        border: 1px solid Silver;
+        border-radius: 4px;
+        background: white;
     }
-
+    
     #csv {
-      width: 100%;
-      margin: 0px;
-      padding: 5px;
-      border-style: none solid solid solid;
-      border-color: silver;
-      border-width: 1px;
-      border-radius: 0px 0px 4px 4px;
+        width: 100%;
+        margin: 0px;
+        padding: 5px;
+        border-style: none solid solid solid;
+        border-color: silver;
+        border-width: 1px;
+        border-radius: 0px 0px 4px 4px;
     }
-  </style>
+</style>
+
 </html>
