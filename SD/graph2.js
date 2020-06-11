@@ -1565,23 +1565,37 @@ function initialize() {
   sidebar_resize();
   $("#graph-reset").click();
   $(".initHide").show();
+  var validGraph = true;
+  if (queryParameters.has("graph")) {
+    graph_load_savedgraphs(() => {
+      var graph = queryParameters.get("graph");
+      validGraph = false;
+      for (var z in savedgraphs) {
+        if (graph == savedgraphs[z].name) {
+          $("#graph-select").val(graph);
+          $("#graph-select").change();
+          validGraph = true;
+          break;
+        }
+      }
+      if (!validGraph) {
+        alert("Graph " + queryParameters.get("graph") + " not found or invalid.");
+      }
+    })
+  } else {
+    graph_load_savedgraphs();
+  }
   if (queryParameters.has("embed")) {
     embed = true;
     $(".embed").hide();
     $("#sidebar-close").click();
     $("#wrapper").css("padding-left", "0");
     $("#placeholder").off("plotselected");
+    if (!queryParameters.has("graph")) {
+      alert("embed specified with no graph parameter.");
+    }
   }
   graph_resize();
-  if (queryParameters.has("graph")) {
-    graph_load_savedgraphs(() => {
-      var graph = queryParameters.get("graph");
-      $("#graph-select").val(graph);
-      $("#graph-select").change();
-    })
-  } else {
-    graph_load_savedgraphs();
-  }
 }
 
 function setTitle() {
