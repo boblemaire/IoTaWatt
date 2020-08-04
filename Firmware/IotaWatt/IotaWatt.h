@@ -264,7 +264,7 @@ extern bool     hasSD;
 extern File     uploadFile;
 extern SHA256*  uploadSHA;  
 extern boolean  serverAvailable;          // Set false when asynchronous handler active to avoid new requests
-extern boolean  wifiConnected;
+extern uint32_t wifiConnectTime;          // Time of connection (zero if disconnected)
 extern uint8_t  configSHA256[32];         // Hash of config file
 
 #define HTTPrequestMax 2                  // Maximum number of concurrent HTTP requests  

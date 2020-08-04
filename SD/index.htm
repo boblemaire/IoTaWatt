@@ -253,6 +253,7 @@
          *********************************************************************************************************************-->
 
     <div id="divStatus" class="body color_body" style="display:none">
+      
       <button id="tabIO" class="groupTab" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs Status</button>
         <div id="statusIODiv" class="statusDiv" style="display: block;">
           <table id="statusIOBody" width="100%">
@@ -263,6 +264,7 @@
             </tr>
           </table>
         </div>
+        
       <button id="tabStats" class="groupTab" onclick="toggleDisplay('statusStatsDiv')">IoTaWatt Statistics</button>
         <div id="statusStatsDiv" class="statusDiv" style="display: block;">
            <table width="100%">
@@ -274,18 +276,25 @@
           </table>
           <table id="statusTable"></table>
         </div>
+        
+      <button id="tabWifi" class="groupTab" onclick="toggleDisplay('statusWifi')" style="display: none;">WiFi</button>
+        <p id="statusWifi" class="statusDiv" style="display: none;"></p>
+      
       <div id="tabinflux" style="display:none;">
         <button class="groupTab" onclick="toggleDisplay('statusInfluxDiv')">InfluxDB</button>
         <p id="statusInfluxDiv" class="statusDiv" style="display: none;"></p>
       </div>
+      
       <div id="tabEmon" style="display: none;">
         <button class="groupTab" onclick="toggleDisplay('statusEmonDiv')">Emoncms</button>
         <p id="statusEmonDiv" class="statusDiv" style="display: none;"></p>
       </div>
+      
        <div id="tabPVout" style="display: none;">
         <button class="groupTab" onclick="toggleDisplay('statusPVoutDiv')">PVoutput</button>
         <p id="statusPVoutDiv" class="statusDiv" style="display: none;"></p>
       </div>
+      
       <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
         <div id="statusLogsDiv" class="statusDiv" style="display: none;"></div>
     </div> <!-- divStatus -->
@@ -2282,6 +2291,7 @@ function PVoutToggle(){
  *                        Setup and run status display
  * *******************************************************************************************/
 function statusBegin(){
+  EbyId("tabWifi").style.display = "none";
   EbyId("tabinflux").style.display = config.influxdb !== undefined ? "inline" : "none";
   EbyId("tabPVout").style.display = config.pvoutput !== undefined ? "inline" : "none";
   EbyId("tabEmon").style.display = (config.server !== undefined && config.server.type == "emoncms") ? "inline" : "none";
@@ -2297,13 +2307,12 @@ function statusGet(){
       statusDisplay(xmlHttp.responseText);
     }
   }
-  xmlHttp.open("GET","/status?state=yes&inputs=yes&outputs=yes&stats=yes&datalogs=yes&influx=yes&emon=yes&pvoutput=yes", true);
+  xmlHttp.open("GET","/status?state&inputs&outputs&stats&wifi&datalogs&influx&emon&pvoutput", true);
   xmlHttp.send(null);
 }
 
 function statusDisplay(statusMessage){
   var status = JSON.parse(statusMessage);
-  
   var statusTable = EbyId("statusTableL");
   statusTable.innerHTML = null;
   addRow();
@@ -2325,6 +2334,16 @@ function statusDisplay(statusMessage){
   column3.appendChild(document.createTextNode(status.stats.chanrate.toFixed(1) + " AC cycles sampled/second"));
   addRow();
   column3.appendChild(document.createTextNode(status.stats.frequency.toFixed(1) + " Hz"));
+  
+  if(status.wifi !== undefined && status.wifi.connecttime > 0){
+    EbyId("tabWifi").style.display = "inline";
+      wifiStatus = EbyId("statusWifi");
+      wifiStatus.innerHTML = "SSID " + status.wifi.SSID + 
+          ", IP " + status.wifi.IP + 
+          ", chan " + status.wifi.channel + 
+          ", RSSI " + status.wifi.RSSI +
+          ", connected " + formatRunTime(status.stats.currenttime - status.wifi.connecttime);
+  }
   
   if(status.datalogs !== undefined){
     var logs = EbyId("statusLogsDiv");

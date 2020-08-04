@@ -492,6 +492,10 @@ void handleStatus(){
       trace(T_WEB,14);
       stats.set(F("chanrate"),cycleSampleRate);
       trace(T_WEB,14);
+      stats.set(F("starttime"), programStartTime);
+      trace(T_WEB,14);
+      stats.set(F("currenttime"), UTCtime());
+      trace(T_WEB,14);
       stats.set(F("runseconds"), UTCtime()-programStartTime);
       trace(T_WEB,14);
       stats.set(F("stack"),ESP.getFreeHeap());
@@ -602,6 +606,21 @@ void handleStatus(){
       //histlog.set("wrap",History_log._wrap ? true : false);
       datalogs.set(F("histlog"),histlog);
       root.set(F("datalogs"),datalogs);
+    }
+
+    if(server.hasArg(F("wifi"))){
+      trace(T_WEB,17);
+      JsonObject& wifi = jsonBuffer.createObject();
+      wifi.set(F("connecttime"),wifiConnectTime);
+      if(wifiConnectTime){
+        wifi.set(F("SSID"),WiFi.SSID());
+        String ip = WiFi.localIP().toString();
+        wifi.set(F("IP"),ip);
+        //Serial.printf("SSID: %s, IP: %s\r\n", WiFi.SSID().c_str(), ip.c_str());
+        wifi.set(F("channel"),WiFi.channel());
+        wifi.set(F("RSSI"),WiFi.RSSI());
+      }
+      root.set(F("wifi"),wifi);
     }
 
     if(server.hasArg(F("passwords"))){
