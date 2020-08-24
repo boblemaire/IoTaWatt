@@ -278,7 +278,9 @@
         </div>
         
       <button id="tabWifi" class="groupTab" onclick="toggleDisplay('statusWifi')" style="display: none;">WiFi</button>
-        <p id="statusWifi" class="statusDiv" style="display: none;"></p>
+        <div id="statusWifi" class="statusDiv" style="display: none;">
+          <table id="tableWifi" width="100%"></table>
+        </div>
       
       <div id="tabinflux" style="display:none;">
         <button class="groupTab" onclick="toggleDisplay('statusInfluxDiv')">InfluxDB</button>
@@ -2337,12 +2339,11 @@ function statusDisplay(statusMessage){
   
   if(status.wifi !== undefined && status.wifi.connecttime > 0){
     EbyId("tabWifi").style.display = "inline";
-      wifiStatus = EbyId("statusWifi");
-      wifiStatus.innerHTML = "SSID " + status.wifi.SSID + 
-          ", IP " + status.wifi.IP + 
-          ", chan " + status.wifi.channel + 
-          ", RSSI " + status.wifi.RSSI +
-          ", connected " + formatRunTime(status.stats.currenttime - status.wifi.connecttime);
+      wifiStatus = EbyId("tableWifi");
+      wifiStatus.innerHTML = "<tr><th width=\"50%\"></th><th width=\"50%\"></th></tr>";
+      wifiStatus.innerHTML += "<tr><td>SSID: " + status.wifi.SSID + "</td><td>IP: " + status.wifi.IP + "</td></tr>";
+      wifiStatus.innerHTML += "<tr><td>channel: " + status.wifi.channel + "</td><td>RSSI: " + status.wifi.RSSI + "</td></tr>";
+      wifiStatus.innerHTML += "<tr><td>MAC: " + status.wifi.mac + "</td><td>connected: " + formatRunTime(status.stats.currenttime - status.wifi.connecttime) + "</td></tr>";
   }
   
   if(status.datalogs !== undefined){

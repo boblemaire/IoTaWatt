@@ -619,6 +619,7 @@ void handleStatus(){
         //Serial.printf("SSID: %s, IP: %s\r\n", WiFi.SSID().c_str(), ip.c_str());
         wifi.set(F("channel"),WiFi.channel());
         wifi.set(F("RSSI"),WiFi.RSSI());
+        wifi.set(F("mac"), WiFi.macAddress());
       }
       root.set(F("wifi"),wifi);
     }
