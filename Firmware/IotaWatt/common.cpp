@@ -104,6 +104,7 @@
  *   04/20/20 02_05_08 Nothing to see here, just a change to tables.txt to add AccuCTs forced version change
  *   05/03/20 02_05_09 Add VAR VARh to script and query, Disable datalog WDT during update download, rp in influx query
  *   09/14/20 02_05_10 Add WiFi to status query
+ *   09/21/20 02_05_11 Add Graph+ imbed
  * 
  *****************************************************************************************************/
 
