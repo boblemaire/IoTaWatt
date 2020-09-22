@@ -102,7 +102,8 @@
  *   03/27/20 02_05_06 Use legacy mDNS, combine influxDBmeasurements
  *   04/02/20 02_05_07 Overide HTTPS with HTTP in Emonservice, influxService
  *   04/20/20 02_05_08 Nothing to see here, just a change to tables.txt to add AccuCTs forced version change
- *   05/03/20 02_05_08 Add VAR VARh to script and query, Disable datalog WDT during update download, rp in influx query
+ *   05/03/20 02_05_09 Add VAR VARh to script and query, Disable datalog WDT during update download, rp in influx query
+ *   09/14/20 02_05_10 Add WiFi to status query
  * 
  *****************************************************************************************************/
 
@@ -175,9 +176,9 @@ ESP8266WebServer server(80);
 bool    hasSD = false;
 File    uploadFile;
 SHA256* uploadSHA;
-boolean serverAvailable = true;   // Set false when asynchronous handler active to avoid new requests
-boolean wifiConnected = false;
-uint8_t configSHA256[32];         // Hash of config file last time read or written
+boolean serverAvailable = true;           // Set false when asynchronous handler active to avoid new requests
+uint32_t wifiConnectTime = 0;             // Time WiFi was connected, 0 if disconnected
+uint8_t configSHA256[32];                 // Hash of config file last time read or written
 
 uint8_t*          adminH1 = nullptr;      // H1 digest md5("admin":"admin":password) 
 uint8_t*          userH1 = nullptr;       // H1 digest md5("user":"user":password)
