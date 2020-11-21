@@ -853,6 +853,7 @@ void handleQuery(){
   } else {
     trace(T_WEB,52);
     server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    //server.sendHeader(String("Connection"), String("keep-alive"));
     if(server.hasArg(F("download"))){
       trace(T_WEB,53);
       server.send(200,"application/octet-stream","");
@@ -866,19 +867,19 @@ void handleQuery(){
       server.send(200, txtPlain_P, "");
     }
       
-    uint8_t* buf = new uint8_t[1460];
+    uint8_t* buf = new uint8_t[1440];
     int read = 0;
     size_t size = 0;
     trace(T_WEB,56);
-    while((read = query->readResult(buf+6, 1460-8)) && size < 100000){
+    while((read = query->readResult(buf, 1440)) && size < 100000){
       trace(T_WEB,57);
-      sendChunk((char*)buf, read+6);
+      server.sendContent((char*)buf, read);
       size += read;
       trace(T_WEB,58);
       yield();
     }
     trace(T_WEB,56);
-    sendChunk((char*)buf, 6);
+    server.sendContent((char*)buf, 0);
     delete buf;
   }
   delete query;
