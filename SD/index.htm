@@ -1438,7 +1438,7 @@ function calVTsave(obj){
   }
   
   function keyDigit(digit){
-    if(RegExp("^#0").test(tokens[tokens.length-1])){
+    if(RegExp("^#0$").test(tokens[tokens.length-1])){
       tokens[tokens.length-1] = "#" + digit;
     }
     else if(RegExp("^#").test(tokens[tokens.length-1])){
