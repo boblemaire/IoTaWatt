@@ -50,6 +50,7 @@ class  CSVquery {
         uint32_t    _begin;                     // Beginning time - UTC
         uint32_t    _end;                       // Ending time - UTC
         uint32_t    _groupMult;                 // Group unit muliplier as in 7d
+        int32_t     _limit;                     // Output limit in lines, -1 is nolimit  
         tUnits      _groupUnits;                // Basic group time unit
         tformat     _timeFormat;                // Time output format
         format      _format;                    // Output format (Json or CSV)

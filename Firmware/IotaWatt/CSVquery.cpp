@@ -5,6 +5,7 @@ CSVquery::CSVquery()
     ,_newRec(nullptr)
     ,_begin(0)
     ,_end(0)
+    ,_limit(1000)
     ,_format(formatJson)
     ,_query(none)
     ,_header(false)
@@ -132,6 +133,20 @@ bool    CSVquery::setup(){
             else {
                 _failReason = F("Invalid format");
                 return false;
+            }
+        }
+
+        if(server.hasArg(F("limit"))){
+            String arg = server.arg(F("limit"));
+            if (arg.equalsIgnoreCase("none")) {
+                _limit = -1;
+            }
+            else {
+                _limit = arg.toInt();
+                if(_limit == 0){
+                    _failReason = F("Invalid limit");
+                    return false;
+                }
             }
         }
         
@@ -600,16 +615,24 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                     return written;
                 }
 
-                    // If at end of range,
+                    // If at end of range, or limit reached
                     // Finish output stream and break.
 
-                else if(_newRec->UNIXtime >= _end){
+                else if(_newRec->UNIXtime >= _end || _limit == 0){
                     trace(T_CSVquery,45);
                     if(_format == formatJson){
                         _buffer.print(']');
-                        if(_header){
-                            _buffer.print('}');
+                    }
+                    if(_limit == 0 && _newRec->UNIXtime < _end){
+                        if(_format == formatCSV){
+                            _buffer.printf_P(PSTR("\r\nLimit exceeded at %d"), _newRec->UNIXtime);
                         }
+                        else if(_header){
+                            _buffer.printf_P(PSTR(",\"limit\":%d"), _newRec->UNIXtime);
+                        }
+                    }
+                    if(_format == formatJson && _header){
+                        _buffer.print('}');
                     }
                     _lastLine = true;
                 }
@@ -660,6 +683,7 @@ size_t  CSVquery::readResult(uint8_t* buf, int len){
                         }
                         trace(T_CSVquery,54);    
                         buildLine();
+                        _limit--;
                         trace(T_CSVquery,55);
 
                         if(_format == formatJson){
@@ -812,20 +836,6 @@ time_t  CSVquery::parseTimeArg(String timeArg){
         }
         else return 0;
     }
-
-
-        // convert "mo" to 'M'
-
-    // char* out = arg;
-    // while(*ptr != 0){
-    //     if(*ptr == 'm' and *(ptr+1) == 'o'){
-    //         *out++ = 'M';
-    //         ptr += 2;
-    //     } else {
-    //         *out++ = *ptr++;
-    //     }
-    // }
-    // *out = 0;
 
         // Check for starting identifier
 
