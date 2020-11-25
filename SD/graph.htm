@@ -612,7 +612,7 @@
                   var config = JSON.parse(response);
                   if (config.device.name !== null) {
                     EbyId("heading").innerHTML =
-                      config.device.name + " Data Viewer";
+                      "<a href='/'>" + config.device.name + "</a> Data Viewer";
                   }
                 });
               }

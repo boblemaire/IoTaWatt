@@ -1605,8 +1605,9 @@ function setTitle() {
     dataType: "json",
     success: function(result) {
       var title = result.device.name + " " + $("#title").html();
+      var title_link = "<a href='/'>" + result.device.name + "</a> " + $("#title").html();
       document.title = title;
-      $("#title").html(title);
+      $("#title").html(title_link);
     },
   });
 }
