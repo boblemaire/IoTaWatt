@@ -2,10 +2,9 @@
 .piolibdeps
 .vscode/c_cpp_properties.json
 .vscode/
-.pioenvs
-.piolibdeps
 .clang_complete
 .gcc-flags.json
 .vscode/launch.json
 .vscode/*.db
 .vscode/.browse.c_cpp.db*
+.pio

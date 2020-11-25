@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PVoutput_h
+#define PVoutput_h
 #include "IotaWatt.h"
 
 //********************************************************************************************************
@@ -25,7 +26,7 @@
         // Some useful definitions of universal constants and current limits of pvoutput
 
 #define UNIX_DAY 86400UL
-#define PV_REQDATA_LIMIT 5000                       // Maximum size of status batch
+#define PV_REQDATA_LIMIT 3000                       // Maximum size of status batch
 #define PV_DEFAULT_RATE_LIMIT 60                    // writes per hour default
 #define PV_DONATOR_RATE_LIMIT 300                   // writes per hour donator
 #define PV_DEFAULT_STATUS_LIMIT 30                  // max status added per batch default
@@ -150,7 +151,8 @@ private:
                         RATE_LIMIT,
                         NO_STATUS,
                         MOON_POWERED,
-                        HTTP_FAILURE
+                        HTTP_FAILURE,
+                        UNRECOGNIZED
                     } _HTTPresponse;
 
         // Parameters supplied to HTTPost                
@@ -205,4 +207,5 @@ private:
 extern PVoutput* pvoutput;                  // external pointer to the instance of pvoutput
 
 uint32_t PVOutputTick(struct serviceBlock* serviceBlock); // external function used to schedule state machine
-   
+
+#endif  

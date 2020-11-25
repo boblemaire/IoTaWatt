@@ -62,11 +62,11 @@ IoTaWatt with the following information:
     * **Firmware version:** Release of IoTaWatt firmware.
     * **Running Time:** Since last restart.
     * **free Heap:** An indication of the working memory 
-    available to the firmware.
+      available to the firmware.
     * **Samples per AC cycle:** Average samples IoTaWatt is 
-    achieving when sampling a channel.
+      achieving when sampling a channel.
     * **AC cycles sampled/second:** Average number of channels 
-    that are measured per second.
+      that are measured per second.
     * **Hz:** Current AC frequency.
 
 Web Servers

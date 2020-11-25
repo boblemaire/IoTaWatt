@@ -1,4 +1,4 @@
-#include "iotawatt.h"
+#include "IotaWatt.h"
 
 /******************************************************************************************************
 *    PVoutput server class, modeled after framework by Brendon Costa and updated to
@@ -9,6 +9,9 @@
 // null pointer until configured (or if deleted);
 
 PVoutput* pvoutput = nullptr;
+const char P_getstatus[] PROGMEM = "getstatus.jsp";
+const char P_getsystem[] PROGMEM = "getsystem.jsp";
+const char P_addbatchstatus[] PROGMEM = "addbatchstatus.jsp";
 
     // This is the worm hole that the scheduler uses to get into the class state machine.
     // It invokes the tick method of the class.
@@ -113,7 +116,7 @@ uint32_t PVoutput::tickStopped(){
 
 uint32_t PVoutput::tickInitialize(){
     trace(T_PVoutput,10);
-    if( ! histLog.isOpen()){
+    if( ! History_log.isOpen()){
         return UTCtime() + 10;
     }
     log("PVoutput: started");
@@ -124,8 +127,8 @@ uint32_t PVoutput::tickInitialize(){
 
 uint32_t PVoutput::tickGetSystemService(){
     trace(T_PVoutput,20);
-    reqData.print("donations=1");
-    HTTPPost(F("getsystem.jsp"), checkSystemService);
+    reqData.print(F("donations=1"));
+    HTTPPost(FPSTR(P_getsystem), checkSystemService);
     return 1;
 }
 
@@ -134,7 +137,8 @@ uint32_t PVoutput::tickCheckSystemService(){
     switch (_HTTPresponse) {
         default:{
             log("PVoutput: Unrecognized HTTP completion, getSystemService %.40s", response->peek(40).c_str());
-            return 0;
+            _state = getSystemService;
+            return UTCtime() + 3600;
         }
         case OK: {
             trace(T_PVoutput,30);
@@ -159,7 +163,7 @@ uint32_t PVoutput::tickCheckSystemService(){
 
 uint32_t PVoutput::tickGetStatus(){
     trace(T_PVoutput,70);
-    HTTPPost(F("getstatus.jsp"), gotStatus);
+    HTTPPost(FPSTR(P_getstatus), gotStatus);
     return 1;
 }
 
@@ -168,7 +172,8 @@ uint32_t PVoutput::tickGotStatus(){
     switch (_HTTPresponse) {
         default: {
             log("PVoutput: Unrecognized HTTP completion, gotStatus %.40s", response->peek(40).c_str());
-            return 0;
+            _state = getSystemService;
+            return UTCtime() + 3600;
         }
         case LOAD_IN_PROGRESS:
         case RATE_LIMIT:
@@ -194,8 +199,8 @@ uint32_t PVoutput::tickGotStatus(){
     if(_lastPostTime < lookback || _reload){
         _lastPostTime = lookback;
     }
-    if(UTC2Local(histLog.firstKey()) > _lastPostTime){
-        _lastPostTime = UTC2Local(histLog.firstKey()) + _interval;
+    if(UTC2Local(History_log.firstKey()) > _lastPostTime){
+        _lastPostTime = UTC2Local(History_log.firstKey()) + _interval;
         _lastPostTime -= _lastPostTime % _interval;
     }
     if(_lastPostTime < _beginPosting){
@@ -263,14 +268,14 @@ uint32_t PVoutput::tickUploadStatus(){
             oldRecord = new IotaLogRecord;
         }
         oldRecord->UNIXtime = local2UTC(_lastReqTime - _lastReqTime % UNIX_DAY);
-        histLog.readKey(oldRecord);
+        History_log.readKey(oldRecord);
         Script* script = _outputs->first();
         while(script){
             if(strcmp(script->name(),"generation") == 0){
-                _baseGeneration = script->run(nullptr, oldRecord, 1.0, unitsWh);
+                _baseGeneration = script->run(nullptr, oldRecord, 1.0, Wh);
             }
             else if(strcmp(script->name(),"consumption") == 0){
-                _baseConsumption = script->run(nullptr, oldRecord, 1.0, unitsWh);
+                _baseConsumption = script->run(nullptr, oldRecord, 1.0, Wh);
             }
             script = script->next();
         }
@@ -286,20 +291,20 @@ uint32_t PVoutput::tickUploadStatus(){
     if(_reqEntries &&
       (_reqEntries >= (_donator ? PV_DONATOR_STATUS_LIMIT : PV_DEFAULT_STATUS_LIMIT) ||
       (reqData.available() >= PV_REQDATA_LIMIT) ||
-      (_lastReqTime + _interval) > UTC2Local(histLog.lastKey()) ||
+      (_lastReqTime + _interval) > UTC2Local(History_log.lastKey()) ||
       (_lastReqTime % UNIX_DAY) == 0)){
         delete oldRecord;
         oldRecord = nullptr;
         delete newRecord;
         newRecord = nullptr;  
-        HTTPPost(F("addbatchstatus.jsp"), checkUploadStatus);
+        HTTPPost(FPSTR(P_addbatchstatus), checkUploadStatus);
         _reqEntries = 0;
         return 1;
     }
 
             // If up-to-date, just return.
 
-    if((_lastReqTime + _interval) > UTC2Local(histLog.lastKey())){
+    if((_lastReqTime + _interval) > UTC2Local(History_log.lastKey())){
         trace(T_PVoutput,85);
         delete oldRecord;
         oldRecord = nullptr;
@@ -324,11 +329,11 @@ uint32_t PVoutput::tickUploadStatus(){
             newRecord = temp;
         } else {
             oldRecord->UNIXtime = local2UTC(_lastReqTime);
-            histLog.readKey(oldRecord);
+            History_log.readKey(oldRecord);
         }
     }
     newRecord->UNIXtime = local2UTC(_lastReqTime + _interval);
-    histLog.readKey(newRecord);
+    History_log.readKey(newRecord);
 
             // See if there was any measurement during this interval
             // Skip ahead if not.
@@ -370,15 +375,15 @@ uint32_t PVoutput::tickUploadStatus(){
     trace(T_PVoutput,88);
     while(script){
         if(strcmp(script->name(),"generation") == 0){
-            energyGeneration = script->run(nullptr, newRecord, 1.0, unitsWh) - _baseGeneration;
-            powerGeneration = script->run(oldRecord, newRecord, elapsedHours, unitsWatts);
+            energyGeneration = script->run(nullptr, newRecord, 1.0, Wh) - _baseGeneration;
+            powerGeneration = script->run(oldRecord, newRecord, elapsedHours, Watts);
         }
         else if(strcmp(script->name(),"consumption") == 0){
-            energyConsumption = script->run(nullptr, newRecord, 1.0, unitsWh) - _baseConsumption;
-            powerConsumption = script->run(oldRecord, newRecord, elapsedHours, unitsWatts);  
+            energyConsumption = script->run(nullptr, newRecord, 1.0, Wh) - _baseConsumption;
+            powerConsumption = script->run(oldRecord, newRecord, elapsedHours, Watts);  
         }
         else if(strcmp(script->name(),"voltage") == 0){
-            voltage = script->run(oldRecord, newRecord, elapsedHours, unitsVolts);    
+            voltage = script->run(oldRecord, newRecord, elapsedHours, Volts);    
         }
         else if(strstr(script->name(),"extended_") == script->name()){
             long ndx = strtol(script->name()+9,nullptr,10) - 1;
@@ -432,8 +437,9 @@ uint32_t PVoutput::tickCheckUploadStatus(){
     trace(T_PVoutput,90);
     switch (_HTTPresponse) {
         default:{
-            log("PVoutput: Unrecognized HTTP completion, uploadMissing %.40s", response->peek(40).c_str());
-            return 0;
+            log("PVoutput: Unrecognized HTTP completion, upload %.40s", response->peek(40).c_str());
+            _state = getSystemService;
+            return UTCtime() + 3600;
         }
         case DATE_TOO_OLD:
         case DATE_IN_FUTURE:
@@ -464,13 +470,13 @@ uint32_t PVoutput::tickCheckUploadStatus(){
 
 //*********************************************************************************************************************
 
-const char reqHeaderApikey[] = "X-Pvoutput-Apikey";
-const char reqHeaderRate[] = "X-Rate-Limit";
-const char reqHeaderSystemId[] = "X-Pvoutput-SystemId";
-const char respHeaderRemaining[] = "X-Rate-Limit-Remaining";
-const char respHeaderLimit[] = "X-Rate-Limit-Limit";
-const char respHeaderReset[] = "X-Rate-Limit-Reset";
-const char reqHeaderContentType[] = "Content-type";
+const char reqHeaderApikey[] PROGMEM = "X-Pvoutput-Apikey";
+const char reqHeaderRate[] PROGMEM = "X-Rate-Limit";
+const char reqHeaderSystemId[] PROGMEM = "X-Pvoutput-SystemId";
+const char respHeaderRemaining[] PROGMEM = "X-Rate-Limit-Remaining";
+const char respHeaderLimit[] PROGMEM = "X-Rate-Limit-Limit";
+const char respHeaderReset[] PROGMEM = "X-Rate-Limit-Reset";
+const char reqHeaderContentType[] PROGMEM = "Content-type";
 
 //void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, const __FlashStringHelper *contentType){
     
@@ -485,7 +491,7 @@ void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, 
     if(contentType){
         _POSTrequest->contentType = charstar(contentType);
     } else {
-        _POSTrequest->contentType = charstar("application/x-www-form-urlencoded");
+        _POSTrequest->contentType = charstar(F("application/x-www-form-urlencoded"));
     }
     _POSTrequest->completionState = completionState;
     _state = HTTPpost;
@@ -516,11 +522,11 @@ uint32_t PVoutput::tickHTTPPost(){
         HTTPrelease(_HTTPtoken);
         return UTCtime() + 10;
     }
-    request->setReqHeader(reqHeaderApikey, _apiKey);
-    request->setReqHeader(reqHeaderSystemId, _systemID);
-    request->setReqHeader(reqHeaderRate, "1");
+    request->setReqHeader(FPSTR(reqHeaderApikey), _apiKey);
+    request->setReqHeader(FPSTR(reqHeaderSystemId), _systemID);
+    request->setReqHeader(FPSTR(reqHeaderRate), "1");
     if(_POSTrequest->contentType){
-        request->setReqHeader(reqHeaderContentType, _POSTrequest->contentType);
+        request->setReqHeader(FPSTR(reqHeaderContentType), _POSTrequest->contentType);
     }
     if(reqData.available()){
         request->send(&reqData, reqData.available());
@@ -545,14 +551,14 @@ uint32_t PVoutput::tickHTTPWait(){
             // Get the flow control headers from PVoutput
 
     trace(T_PVoutput,120);
-    if(request->respHeaderExists(respHeaderLimit)){
-        _rateLimitLimit = strtol(request->respHeaderValue(respHeaderLimit),nullptr,10);
+    if(request->respHeaderExists(FPSTR(respHeaderLimit))){
+        _rateLimitLimit = strtol(request->respHeaderValue(FPSTR(respHeaderLimit)),nullptr,10);
     }
-    if(request->respHeaderExists(respHeaderRemaining)){
-        _rateLimitRemaining = strtol(request->respHeaderValue(respHeaderRemaining),nullptr,10);
+    if(request->respHeaderExists(FPSTR(respHeaderRemaining))){
+        _rateLimitRemaining = strtol(request->respHeaderValue(FPSTR(respHeaderRemaining)),nullptr,10);
     }
-    if(request->respHeaderExists(respHeaderReset)){
-        _rateLimitReset = strtoul(request->respHeaderValue(respHeaderReset),nullptr,10);
+    if(request->respHeaderExists(FPSTR(respHeaderReset))){
+        _rateLimitReset = strtoul(request->respHeaderValue(FPSTR(respHeaderReset)),nullptr,10);
     }
     trace(T_PVoutput,122);
 
@@ -562,7 +568,7 @@ uint32_t PVoutput::tickHTTPWait(){
     trace(T_PVoutput,120);
     if(request->responseHTTPcode() < 0){
         _HTTPresponse = HTTP_FAILURE;
-        return UTCtime() + 1;
+        return UTCtime() + 3;
     }
     trace(T_PVoutput,122);
 
@@ -612,11 +618,11 @@ uint32_t PVoutput::tickHTTPWait(){
         }
     }
 
-                // No recovery from other responses.
-    
-    log("PVoutput: Fatal response %s", request->responseText().c_str());
+                // Unrecognized response.
+
     Serial.println(response->peek(response->length()));
-    return 0;
+    _HTTPresponse = UNRECOGNIZED;
+    return 1;
 }
 
 uint32_t PVoutput::tickLimitWait(){

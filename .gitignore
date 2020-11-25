@@ -3,3 +3,7 @@
 .clang_complete
 .gcc-flags.json
 .vscode
+Firmware\.pio
+*.dblite
+*.dblite
+Firmware/.pio/build/.sconsign.dblite

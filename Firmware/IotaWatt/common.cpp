@@ -88,31 +88,43 @@
  *   10/27/18 02_03_18 Improvements to influx, set WiFi hostname
  *   12/09/18 02_03_19 Add PVoutput support, local-time with DST, reduce use of WiFi Manager
  *   12/14/18 02_03_20 Upload live status only in PVoutput 
- *   01/18/19 02_03_21 EEprom, influx error recovery+, RTC battery warning, graph from IoTaWatt.com                          
+ *   01/18/19 02_03_21 EEprom, influx error recovery+, RTC battery warning, graph from IoTaWatt.com 
+ *   03/05/19 02_04_00 Frequency and current based phase correction 
+ *   07/23/19 02_04_01 Maintenance. Ongoing heap battle, tables, etc.
+ *   08/13/19 02_04_02 Maintenance. PVoutput recovery, Save last config, safe mode on config problems
+ *   10/04/19 02_05_00 Changes to new query and new Graph+ 
+ *   10/12/19 02_05_01 Graph+ add download, add datalog WTD, add Query progress check, increase Query limit to 100K
+ *   12/04/19 02_05_02 Graph+ improvements
+ *   01/19/20 02_05_03 Update use versions.json, derived phase-phase support, Issue #252 query seconds, Fix Graph+ delete,
+ *                     Fix and improve authorization, instantiate WiFiManager in local scope.
+ *   02/12/20 02_05_04 Update to core 2.6.3, Fix URL handling influx, fix heap requirement issues during config start and update.                 
+ *   02/27/20 02_05_05 Fix problem creating datalogs 
+ *   03/27/20 02_05_06 Use legacy mDNS, combine influxDBmeasurements
+ *   04/02/20 02_05_07 Overide HTTPS with HTTP in Emonservice, influxService
+ *   04/20/20 02_05_08 Nothing to see here, just a change to tables.txt to add AccuCTs forced version change
+ *   05/03/20 02_05_09 Add VAR VARh to script and query, Disable datalog WDT during update download, rp in influx query
+ *   09/14/20 02_05_10 Add WiFi to status query
+ *   09/21/20 02_05_11 Add Graph+ imbed
  * 
  *****************************************************************************************************/
 
       // Define instances of major classes to be used
 
 WiFiClient WifiClient;
-WiFiManager wifiManager;
-DNSServer dnsServer;    
-IotaLog currLog(5,365);                     // current data log  (1 year) 
-IotaLog histLog(60,3652);                   // history data log  (10 years)  
-RTC_PCF8523 rtc;                            // Instance of RTC_PCF8523
-Ticker ticker;
-messageLog msglog;
+DNSServer DNS_server;
+MDNSResponder MDNS;    
+IotaLog Current_log(256,5,365);                 // current data log  (1 year) 
+IotaLog History_log(256,60,3652);               // history data log  (10 years)
+IotaLog *Export_log = nullptr;                  // Optional export log    
+RTC_PCF8523 rtc;                                // Instance of RTC_PCF8523
+Ticker Led_timer;
+messageLog Message_log;                         // Message log handler    
 
       // Define filename Strings of system files.          
 
 char* deviceName;             
-const char* IotaLogFile = "iotawatt/iotalog";
-const char* historyLogFile = "iotawatt/histLog";
-const char* IotaMsgLog = "iotawatt/iotamsgs.txt";
-const char* ntpServerName = "pool.ntp.org";
-
                        
-uint8_t ADC_selectPin[2] = {pin_CS_ADC0,    // indexable reference for ADC select pins
+uint8_t ADC_selectPin[2] = {pin_CS_ADC0,        // indexable reference for ADC select pins
                             pin_CS_ADC1};  
 
 
@@ -128,18 +140,20 @@ traceUnion traceEntry;
        * We try to run everything else during the half-wave intervals between power sampling.  
        **************************************************************************************************/
        
-uint32_t lastCrossMs = 0;             // Timestamp at last zero crossing (ms) (set in samplePower)
-uint32_t nextCrossMs = 0;             // Time just before next zero crossing (ms) (computed in Loop)
+uint32_t lastCrossMs = 0;                 // Timestamp at last zero crossing (ms) (set in samplePower)
+uint32_t nextCrossMs = 0;                 // Time just before next zero crossing (ms) (computed in Loop)
 
       // Various queues and lists of resources.
 
-serviceBlock* serviceQueue;           // Head of active services list in order of dispatch time.       
-IotaInputChannel* *inputChannel;      // -->s to incidences of input channels (maxInputs entries) 
-uint8_t maxInputs = 0;                        // channel limit based on configured hardware (set in Config)      
-ScriptSet* outputs;                   // -> scriptSet for output channels
+serviceBlock* serviceQueue;               // Head of active services list in order of dispatch time.       
+IotaInputChannel* *inputChannel = nullptr; // -->s to incidences of input channels (maxInputs entries) 
+uint8_t     maxInputs = 0;                // channel limit based on configured hardware (set in Config)
+int16_t*    masterPhaseArray = nullptr;   // Single array containing all individual phase shift arrays          
+ScriptSet*  outputs;                      // -> scriptSet for output channels
 
-uint16_t  deviceVersion = (4 << 8) + 8;  // Default to 4.8
-float     VrefVolts = 2.5;            // Voltage reference shunt value used to calibrate
+uint8_t     deviceMajorVersion = 4;       // Default to 4.8
+uint8_t     deviceMinorVersion = 8;                 
+float       VrefVolts = 2.5;              // Voltage reference shunt value used to calibrate
 
       // ****************************************************************************
       // statService maintains current averages of the channel values
@@ -148,6 +162,7 @@ float     VrefVolts = 2.5;            // Voltage reference shunt value used to c
       // handlers if the statistics are used.
 
 float   frequency = 55;                  // Split the difference to start
+float   configFrequency;                 // Frequency at last config (phase corrrection basis)    
 float   samplesPerCycle = 550;           // Here as well
 float   cycleSampleRate = 0;
 int16_t cycleSamples = 0;
@@ -162,9 +177,9 @@ ESP8266WebServer server(80);
 bool    hasSD = false;
 File    uploadFile;
 SHA256* uploadSHA;
-boolean serverAvailable = true;   // Set false when asynchronous handler active to avoid new requests
-boolean wifiConnected = false;
-uint8_t configSHA256[32];         // Hash of config file last time read or written
+boolean serverAvailable = true;           // Set false when asynchronous handler active to avoid new requests
+uint32_t wifiConnectTime = 0;             // Time WiFi was connected, 0 if disconnected
+uint8_t configSHA256[32];                 // Hash of config file last time read or written
 
 uint8_t*          adminH1 = nullptr;      // H1 digest md5("admin":"admin":password) 
 uint8_t*          userH1 = nullptr;       // H1 digest md5("user":"user":password)
@@ -184,7 +199,7 @@ uint32_t HTTPlock = 0;                      // Time(ms) HTTP was locked (no new 
 int32_t  localTimeDiff = 0;                  // Hours from UTC 
 tzRule*  timezoneRule = nullptr;             // Rule for DST 
 uint32_t programStartTime = 0;               // Time program started (UnixTime)
-uint32_t timeRefNTP = SEVENTY_YEAR_SECONDS;  // Last time from NTP server (NTPtime)
+uint32_t timeRefNTP = SECONDS_PER_SEVENTY_YEARS;  // Last time from NTP server (NTPtime)
 uint32_t timeRefMs = 0;                      // Internal MS clock corresponding to timeRefNTP
 uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forward and try to refresh
 uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS
@@ -195,7 +210,9 @@ uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for soft
 bool     hasRTC = false;
 bool     RTCrunning = false;
 bool     powerFailRestart = false;
-bool     RTClowBat = false;                  // RTC Battery is low   
+bool     validConfig = false;                // Config exists and Json parses first level
+bool     RTClowBat = false;                  // RTC Battery is low
+bool     sampling = false;                   // All channels have been sampled     
 
 char     ledColor[12];                       // Pattern to display led, each char is 500ms color - R, G, Blank
 uint8_t  ledCount;                           // Current index into cycle
@@ -203,8 +220,8 @@ uint8_t  ledCount;                           // Current index into cycle
       // ****************************** Firmware update ****************************
       
 const char* updateURL = "iotawatt.com";
-const char* updatePath = "/firmware/iotaupdt.php";
-char*    updateClass;                                   // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
+const char* updatePath = "/firmware/versions.json";
+char*    updateClass = nullptr;                                   // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
 const uint8_t publicKey[32] PROGMEM = {
                         0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
                         0xcc, 0x2c, 0xea, 0x2e, 0x88, 0x9c, 0xe0, 0xea,
@@ -216,7 +233,10 @@ const char hexcodes_P[] PROGMEM = "0123456789abcdef";
 const char base64codes_P[] PROGMEM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";  
 
       // ************************ ADC sample pairs ************************************
- 
+
+uint32_t  sumVsq;                                   // sampleCycle will compute these while collecting samples    
+uint32_t  sumIsq;
+int32_t   sumVI; 
 int16_t   samples = 0;                              // Number of samples taken in last sampling
 int16_t   Vsample [MAX_SAMPLES];                    // voltage/current pairs during sampling
 int16_t   Isample [MAX_SAMPLES];

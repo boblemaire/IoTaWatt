@@ -1,4 +1,5 @@
 #include "IotaWatt.h"
+#include <xurl.h>
       
 bool      EmonStarted = false;                    // set true when Service started
 bool      EmonStop = false;                       // set true to stop the Service
@@ -7,12 +8,11 @@ uint32_t  EmonLastPost = 0;                       // Last acknowledged post for 
 
       // Configuration settings
 
-char*     EmonURL = nullptr;                                // These are set from the config file 
-char*     EmonURI = nullptr;
+
+xurl*     EmonURL = nullptr;                      // These are set from the config file 
 char*     apiKey = nullptr;
 char*     emonNode = nullptr;
 char*     EmonUsername = nullptr;
-uint16_t  EmonPort = 80;
 int16_t   EmonBulkSend = 1;
 int32_t   EmonRevision = -1;
 uint32_t  EmonBeginPosting = 0;
@@ -80,10 +80,10 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           // We post the log to EmonCMS,
           // so wait until the log service is up and running.
       
-      if(!currLog.isOpen()){
+      if(!Current_log.isOpen()){
         return UTCtime() + 5;
       }
-      log("EmonService: started. url=%s:%d%s, node=%s, interval=%d%s", EmonURL, EmonPort, EmonURI, 
+      log("EmonService: started. url=%s, node=%s, interval=%d%s", EmonURL->build().c_str(),
            emonNode, EmonCMSInterval, (EmonSend == EmonSendGET ? "" : ", encrypted"));
       retryCount = 0;
       EmonLastPost = EmonBeginPosting;
@@ -103,12 +103,16 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if( ! request){
         request = new asyncHTTPrequest;
       }
-      String URL(EmonURL);
-      URL += ":" + String(EmonPort) + EmonURI + "/input/get?node=" + String(emonNode);
+      String URL = EmonURL->build() + "/input/get?node=" + String(emonNode);
       request->setTimeout (10);
       request->setDebug(false);
       trace(T_Emon,3);
-      request->open("GET", URL.c_str());
+      if( ! request->open("GET", URL.c_str())){
+        log("EmonService: query open failed.");
+        HTTPrelease(HTTPtoken);
+        state = queryLastGet;
+        return UTCtime() + 60;
+      };
       String auth("Bearer ");
       auth += apiKey;
       request->setReqHeader("Authorization", auth.c_str());
@@ -153,11 +157,11 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           EmonLastPost = MAX(EmonLastPost, _time);
         }
       }
-      if(EmonLastPost == 0 || EmonLastPost > currLog.lastKey()) {
-        EmonLastPost = currLog.lastKey();
+      if(EmonLastPost == 0 || EmonLastPost > Current_log.lastKey()) {
+        EmonLastPost = Current_log.lastKey();
       }  
-      if(EmonLastPost < currLog.firstKey()){
-        EmonLastPost = currLog.firstKey();
+      if(EmonLastPost < Current_log.firstKey()){
+        EmonLastPost = Current_log.firstKey();
       }
       log("EmonService: Start posting at %s", localDateString(EmonLastPost + EmonCMSInterval).c_str());
       state = getLastRecord;
@@ -175,7 +179,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       }
       trace(T_Emon,5);
       oldRecord->UNIXtime = EmonLastPost;      
-      currLog.readKey(oldRecord);
+      Current_log.readKey(oldRecord);
 
             // Assume that record was posted (not important).
             // Plan to start posting one interval later
@@ -210,10 +214,8 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
         delete request;
         request = nullptr;
         reqData.flush();
-        delete[] EmonURL;
+        delete   EmonURL;
         EmonURL = nullptr;
-        delete[] EmonURI;                                // These are set from the config file 
-        EmonURI = nullptr;
         delete[] apiKey;
         apiKey = nullptr;
         delete[] emonNode;
@@ -227,14 +229,14 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
 
           // If not enough entries for bulk-send, come back in one second;
 
-      if(((currLog.lastKey() - EmonLastPost) / EmonCMSInterval + reqEntries) < EmonBulkSend){
+      if(((Current_log.lastKey() - EmonLastPost) / EmonCMSInterval + reqEntries) < EmonBulkSend){
         return UTCtime() + 1;
       }
 
           // If buffer isn't full,
           // add another measurement.
 
-      if(reqData.available() < reqDataLimit && UnixNextPost <= currLog.lastKey()){  
+      if(reqData.available() < reqDataLimit && UnixNextPost <= Current_log.lastKey()){  
  
             // Read the next log record.
             
@@ -243,14 +245,14 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
           logRecord = new IotaLogRecord;
         }
         logRecord->UNIXtime = UnixNextPost;
-        currLog.readKey(logRecord);    
+        Current_log.readKey(logRecord);    
       
             // Compute the time difference between log entries.
             // If zero, read ahead to skip over a potentially lengthy gap.
             
         double elapsedHours = logRecord->logHours - oldRecord->logHours;
         if(elapsedHours == 0 || elapsedHours != elapsedHours){
-          if(currLog.readNext(logRecord) == 0) {
+          if(Current_log.readNext(logRecord) == 0) {
             UnixNextPost = logRecord->UNIXtime - (logRecord->UNIXtime % EmonCMSInterval);
           }
           UnixNextPost += EmonCMSInterval;
@@ -322,7 +324,7 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
             // If buffer not full and there is a data backlog,
             // return to fill buffer.
 
-      if(reqData.available() < reqDataLimit && UnixNextPost < currLog.lastKey()){
+      if(reqData.available() < reqDataLimit && UnixNextPost < Current_log.lastKey()){
         return 1;
       }
 
@@ -345,14 +347,17 @@ uint32_t EmonService(struct serviceBlock* _serviceBlock){
       if( ! request){
         request = new asyncHTTPrequest;
       }
-      String URL(EmonURL);
-      URL += ":" + String(EmonPort) + EmonURI + "/input/bulk";
+      String URL = EmonURL->build() + "/input/bulk";
       request->setTimeout(2);
       request->setDebug(false);
       if(request->debug()){
         Serial.println(datef(localTime(),"hh:mm:ss"));
       }
-      request->open("POST", URL.c_str());
+      if( ! request->open("POST", URL.c_str())){
+        HTTPrelease(HTTPtoken);
+        state = getLastRecord;
+        return UTCtime() + 1;
+      }
       trace(T_Emon,7);
       String auth("Bearer ");
       auth += apiKey;
@@ -435,8 +440,7 @@ case sendSecure:{
 
       base64encode(&reqData); 
       trace(T_Emon,10);
-      String URL(EmonURL);
-      URL += ":" + String(EmonPort) + EmonURI + "/input/bulk";
+      String URL = EmonURL->build() + "/input/bulk";
       request->setTimeout(2);
       request->setDebug(false);
       trace(T_Emon,10); 
@@ -527,27 +531,12 @@ bool EmonConfig(const char* configObj){
   }
   EmonRevision = revision;
   EmonStop = config["stop"].as<bool>();
-  String URL = config["url"].as<String>();
-  URL = config["url"].as<String>();
-  if(URL.substring(0,7).equalsIgnoreCase("http://")){
-    URL.remove(0,7);
-  } 
-  else if(URL.substring(0,8).equalsIgnoreCase("https://")){
-    URL.remove(0,8);
+  if(! EmonURL){
+    EmonURL = new xurl;
   }
-  delete[] EmonURI;
-  if(URL.indexOf("/") > 0){
-    EmonURI = charstar(URL.substring(URL.indexOf("/")).c_str());
-    URL.remove(URL.indexOf("/"));
-  } else {
-    EmonURI = charstar("");
-  }
-  if(URL.indexOf(":") > 0){
-    EmonPort = URL.substring(URL.indexOf(":")+1).toInt();
-    URL.remove(URL.indexOf(":"));
-  }
-  delete[] EmonURL;
-  EmonURL = charstar(URL.c_str());
+  EmonURL->parse(config.get<char*>("url"));
+  EmonURL->query(nullptr);
+  EmonURL->method("HTTP://");
   trace(T_EmonConfig,2);
   EmonBeginPosting = config.get<uint32_t>("begdate");
   delete[] apiKey;

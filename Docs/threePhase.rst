@@ -1,6 +1,6 @@
-=================
+=============================
 Three-phase Power
-=================
+=============================
 
 IoTaWatt has the capability to measure power in polyphase systems. 
 In the interest of keeping the user interface simple for the majority 
@@ -9,6 +9,11 @@ until needed. There has been a lot of interest in using IoTaWatt
 for three-phase monitoring, particularly in three phase countries like
 Australia and Germany. For home energy monitoring, the *derived reference*
 method is very popular.
+
+This chapter explains two methods for measuring a so calld "four wire"
+or "wye" system, by far the most common implementation of three-phase.
+IoTaWatt can also be used with "three wire" or "delta" systems using 
+different methods.
 
 As explained in the introductory single phase section, 
 a voltage reference is needed to measure real power. 
@@ -42,15 +47,20 @@ it's necessary to install two additional
 VTs (total of three), and to plug each of them into a 
 receptacle that is supplied by a unique phase. 
 
-Version 4.9 of IoTaWatt, available second quarter 2019,
+Version 5 of IoTaWatt, available second quarter 2019,
 will have native plugs to connect the additional VTs.
-This tutorial will assume you have the new version 4.9
+This tutorial will assume you have the new version 5
 IoTaWatt.
 
 The additional VTs will plug into two sockets at the rear
 of the unit.  They are labelled VT-13 and VT-14.
 When these are used, the standard channel 13 and 14
 jacks should not be used.
+
+.. image:: pics/V5inputs.jpg
+    :scale: 10 %
+    :align: center
+    :alt: **V5 VT Inputs**
 
 Configuring the voltage inputs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

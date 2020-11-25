@@ -1,4 +1,4 @@
-#include "IotaWatt.h"
+ #include "IotaWatt.h"
 
 #define graphDir "graphs"
 String hashName(const char* name);
@@ -40,9 +40,6 @@ void handleGraphDelete(){
   String filePath = graphDir;
   String fileName = server.arg("id");
   filePath += "/" + fileName;
-  if(!fileName.endsWith(".txt")){
-    fileName += ".txt";
-  }
   SD.remove(filePath);
   server.send(200, txtJson_P, F("{\"success\":true,\"message\":\"deleted\"}"));
 }
@@ -52,35 +49,73 @@ void handleGraphGetall(){
   File graphFile;
   if( !(directory) || !(directory.isDirectory()) || !(graphFile = directory.openNextFile())){
     if(directory){
-      directory.close();
+      directory.close(); 
     }
     server.send(200, appJson_P, "[]");
     return;
   }
-  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(200, appJson_P, "");
   String response = "[";
   while(graphFile){
     uint32_t fileSize = graphFile.size();
     char* bufr = new char[fileSize];
-    graphFile.read(bufr, fileSize);
+    graphFile.read((uint8_t*)bufr, fileSize);
     bufr[fileSize-1] = 0;
-    response += bufr;
+    char* ptr = bufr;
+    for(int i=0; i<fileSize-9; i++){
+      if(memcmp(ptr++, "\"start\"", 7) == 0){
+        if( ! response.endsWith("[")) response += ',';
+        response += bufr;
+        response += ",\"id\":\"";
+        response += graphFile.name();
+        response += "\"}";
+        break;
+      }   
+    }
     delete[] bufr;
     graphFile.close();
-    response += ",\"id\":\"";
-    response += graphFile.name();
-    response += "\"},";
-    graphFile.close();
     graphFile = directory.openNextFile();
-    if( ! graphFile){
-      response[response.length()-1] = ']';
-    }
-    server.sendContent(response);
-    response.remove(0);
   }
-  server.sendContent(response);
-  server.client().stop();
+  response += ']';
+  server.send(200, appJson_P, response);
   directory.close();
   return;
 }
+
+void handleGraphGetallplus(){
+  File directory = SD.open(graphDir);
+  File graphFile;
+  if( !(directory) || !(directory.isDirectory()) || !(graphFile = directory.openNextFile())){
+    if(directory){
+      directory.close(); 
+    }
+    server.send(200, appJson_P, "[]");
+    return;
+  }
+  String response = "[";
+  while(graphFile){
+    uint32_t fileSize = graphFile.size();
+    char* bufr = new char[fileSize+1];
+    graphFile.read((uint8_t*)bufr, fileSize);
+    bufr[fileSize] = 0;
+    DynamicJsonBuffer Json;
+    JsonObject& graph = Json.parseObject(bufr);
+    if(graph.success()){
+      if( ! graph.containsKey(F("start"))){
+        if( ! response.endsWith("[")) response += ',';
+        response += "{\"name\":\"";
+        response += graph[F("name")].as<char*>();
+        response += "\",\"id\":\"";
+        response += graphFile.name();
+        response += "\"}";
+      }
+    }
+    delete[] bufr;
+    graphFile.close();
+    graphFile = directory.openNextFile();
+  }
+  response += ']';
+  server.send(200, appJson_P, response);
+  directory.close();
+  return;
+}
+

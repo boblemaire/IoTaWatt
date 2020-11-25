@@ -20,7 +20,7 @@ int strcmp_ci(const char* str1, const char* str2){
  * ************************************************************************************************/
 char* charstar(const __FlashStringHelper * str){
   if( ! str) return nullptr;
-  char* ptr = new char[strlen_P((PGM_P)str)];
+  char* ptr = new char[strlen_P((PGM_P)str)+1];
   strcpy_P(ptr, (PGM_P)str);
   return ptr;
 }
@@ -47,11 +47,13 @@ char* charstar(const char str){
  * Hash the input string to an eight character base64 String 
  * ************************************************************************************************/
 String hashName(const char* name){
+  trace(T_utility,10);  
   SHA256 sha256;
   uint8_t hash[6];
   sha256.reset();
   sha256.update(name, strlen(name));
   sha256.finalize(hash, 6);
+  trace (T_utility,11);
   return base64encode(hash, 6);
 }
 
@@ -90,13 +92,19 @@ void   hex2bin(uint8_t* out, const char* in, size_t len){
 /**************************************************************************************************
  * Convert the contents of an xbuf to base64
  * ************************************************************************************************/
-void base64encode(xbuf* buf){
+void base64encode(xbuf* buf){ 
+  trace(T_base64,10);  
   char* base64codes = new char[65];
+  if( ! base64codes){
+      trace(T_base64,11);
+  }
+  trace(T_base64,12);
   strcpy_P(base64codes, base64codes_P);
+  trace(T_base64,13);  
   size_t supply = buf->available();
   uint8_t in[3];
   uint8_t out[4];
-  trace(T_base64,0);
+  trace(T_base64,14,supply);
   while(supply >= 3){
     buf->read(in,3);
     out[0] = (uint8_t) base64codes[in[0]>>2];
@@ -106,7 +114,7 @@ void base64encode(xbuf* buf){
     buf->write(out, 4);
     supply -= 3;
   }
-  trace(T_base64,1);
+  trace(T_base64,15,supply);
   if(supply > 0){
     in[0] = in[1] = in[2] = 0;
     buf->read(in,supply);
@@ -122,16 +130,27 @@ void base64encode(xbuf* buf){
     }
     buf->write(out, 4);
   }
+  trace(T_base64,16);
   delete[] base64codes;
+  trace(T_base64,17);
 }
 
 String base64encode(const uint8_t* in, size_t len){
-  trace(T_base64,1);
-  size_t _len = len * 2 + len;
-  xbuf work(_len < 64 ? _len : 64);
+  trace(T_base64,0,len);
+  if(len <= 0){
+     trace(T_base64,1);
+     return String("");
+  }
+  trace(T_base64,1,len);
+  xbuf work(128);
+  trace(T_base64,2,len);
   work.write(in, len);
+  trace(T_base64,3,len);
   base64encode(&work);
-  return work.readString(work.available());
+  trace(T_base64,4);
+  //Serial.printf("base64 %s %d\n",work.peekString().c_str(), ESP.getFreeHeap());
+  String result = work.readString(work.available());
+  return result;
 }
 
 /**************************************************************************************************
@@ -150,8 +169,8 @@ String  JsonSummary(File file, int depth){
     bool    escape = false;
     int     varBeg = 0;
     int     varLen = 0;
-    String  JsonOut;
-
+    xbuf    JsonOut;
+    
     while(file.available()){
         _char = file.read();
         if(escape){
@@ -192,17 +211,14 @@ String  JsonSummary(File file, int depth){
             else if(_char == delim[level]){
                 level--;
                 if(level == depth - 1){
-                    JsonOut += '[';
-                    JsonOut += String(varBeg);
-                    JsonOut += ',';
-                    JsonOut += String(varLen+1);
+                    JsonOut.printf_P(PSTR("[%d,%d"), varBeg, varLen+1);
                     _char = ']';
                 }
             }
         }
-        if(level < depth) JsonOut += _char;
+        if(level < depth) JsonOut.print(_char);
     }
-    return JsonOut;
+    return JsonOut.readString();
 }
 
 char*  JsonDetail(File file, JsonArray& locator){
@@ -348,4 +364,44 @@ void hashFile(uint8_t* sha, File file){
   delete[] buff;
   sha256.finalize(sha,32);
   file.seek(pos);
+}
+
+/**************************************************************************************************
+ *     copyFile(dest, source) Make a copy of a file                                               *  
+ * ***********************************************************************************************/
+bool copyFile(const char* dest, const char* source){
+    bool outSPIFFS = false;
+    File outFile;
+    String sourcePath = source;
+    sourcePath.toLowerCase();
+    File inFile = SD.open(sourcePath, FILE_READ);
+    if( ! inFile) return false;
+    String destPath = dest;
+    destPath.toLowerCase();
+    if(destPath.startsWith(F("/esp_spiffs/"))){
+        outSPIFFS = true;
+        spiffsWrite(destPath.substring(11).c_str(), "", false);        // Create a null file
+    } else {
+        if(SD.exists(dest)) SD.remove(dest);
+        File outFile = SD.open(destPath, FILE_WRITE);
+        if( ! outFile){
+            inFile.close();
+            return false;
+        }
+    }
+    uint8_t* buff = new uint8_t[512];
+    int read = 0;
+    while(int read = inFile.read(buff, 512)) {
+        if(outSPIFFS){
+            spiffsWrite(destPath.substring(11).c_str(), buff, read, true);     // append to the file
+        } else {
+            outFile.write(buff, read);
+        }
+    }
+    delete[] buff;
+    inFile.close();
+    if( ! outSPIFFS){
+        outFile.close();
+    }
+    return true;
 }

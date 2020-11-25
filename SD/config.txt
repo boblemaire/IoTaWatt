@@ -1,7 +1,7 @@
 {
 	"format": 2,
 	"timezone": 0,
-	"update": "ALPHA",
+	"update": "MINOR",
 	"device": {
 		"name": "IotaWatt",
 		"version": 3,

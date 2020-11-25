@@ -20,9 +20,14 @@ IoTaWatt documentation
     Configure influxDB <influxDB>
     Three-phase power <threePhase>
     CT Basics <CTbasics>
-    Graphing the Data <graphing>
+    Split-phase power <split-phase.rst>
+    Data Visualization <dataVisualization>
+    Graph+ <graphPlus>
+    Original Graph <originalGraph>
     File Manager and Editor <fileManager>
+    Query API <query.rst>
     Message Log <messageLog>
     Troubleshooting <troubleshooting>
+    Accessing iotawatt.local <dotlocal>
     
 

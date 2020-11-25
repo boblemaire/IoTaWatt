@@ -19,8 +19,8 @@ void setup()
   //Serial.println(F("Serial Initialized"));
   
   //*************************************** Start SPI *************************************************
-    
-  pinMode(pin_CS_ADC0,OUTPUT);                    // Make sure all the CS pins are HIGH
+
+  pinMode(pin_CS_ADC0, OUTPUT);                // Make sure all the CS pins are HIGH
   digitalWrite(pin_CS_ADC0,HIGH);
   pinMode(pin_CS_ADC1,OUTPUT);
   digitalWrite(pin_CS_ADC1,HIGH);
@@ -64,7 +64,7 @@ void setup()
   byte Control_3 = Wire.read();
   
   if(rtc.initialized()){
-    timeRefNTP = rtc.now().unixtime() + SEVENTY_YEAR_SECONDS;
+    timeRefNTP = rtc.now().unixtime() + SECONDS_PER_SEVENTY_YEARS;
     timeRefMs = millis();
     RTCrunning = true;
     log("Real Time Clock is running. Unix time %d ", UTCtime());
@@ -83,7 +83,7 @@ void setup()
       log("Real Time Clock battery is low.");
       RTClowBat = true;
     }
-    SdFile::dateTimeCallback(dateTime);
+    //SdFile::dateTimeCallback(dateTime);
   }
   else {
     log("Real Time Clock not initialized.");
@@ -108,23 +108,20 @@ void setup()
   traceEntry.seq = 0;
   for(int i=0; i<32; i++) trace(0,0);
 
-
-
 //*************************************** Process the EEPROM ****************************************
-
-
 
 EEprom* EE = new EEprom;
 uint8_t* EEbytes = (uint8_t*) EE;
 size_t EEsize = sizeof(EEprom);
 
-  // Create the EEprom
+    // Initialize the EEprom for testing
+    // Ordinarily to be done in manufacturing.
 
 // EEPROM.begin(EEsize);
 // memcpy(EE->id, "IoTaWatt", 8);
 // EE->EEversion = 0;
-// EE->deviceMajorVersion = 4;
-// EE->deviceMinorVersion = 9;
+// EE->deviceMajorVersion = 5;
+// EE->deviceMinorVersion = 0;
 // EE->mfgDate = 0;
 // EE->mfgLot = 0;
 // EE->mfgBurden = 20;
@@ -142,18 +139,22 @@ if( ! memcmp(EE->id, "IoTaWatt", 8)){
   if(EE->EEversion > 0){
     log("EEPROM unrecognized version %d", EE->EEversion);
   } else {
-    deviceVersion = EE->deviceMajorVersion * 256 + EE->deviceMinorVersion;
+    deviceMajorVersion = EE->deviceMajorVersion;
+    deviceMinorVersion  = EE->deviceMinorVersion;
     VrefVolts = (float)EE->mfgRefVolts / 1000.0;
   }
-}
+} 
 EEPROM.end();
 delete EE;
 EE = nullptr;
 
 //**************************************** Display software version *********************************
 
-  log("IoTaWatt revision %d.%d, firmware version %s", deviceVersion/256, deviceVersion%256, IOTAWATT_VERSION);
-  copyUpdate(String(IOTAWATT_VERSION));
+log("IoTaWatt %d.%s, Firmware version %s", deviceMajorVersion, deviceMajorVersion < 5 ? "x" : String(deviceMinorVersion).c_str(), IOTAWATT_VERSION);
+
+//**************************************** Install any pending updates ******************************
+
+copyUpdate(String(IOTAWATT_VERSION));
 
 //*************************************** Mount the SPIFFS ******************************************
 
@@ -171,10 +172,9 @@ if(spiffsBegin()){
 }
 
 //************************************* Process Config file *****************************************
-  if(!getConfig()) {
-    log("Configuration failed");
-    dropDead();
-  }
+  deviceName = charstar(F(DEVICE_NAME));
+  updateClass = charstar(F("NONE"));
+  validConfig = getConfig("config.txt");
   log("Local time zone: %+d:%02d", (int)localTimeDiff/60, (int)localTimeDiff%60);
   if(timezoneRule){
     log("Using Daylight Saving Time (BST) when in effect.");
@@ -186,21 +186,25 @@ if(spiffsBegin()){
   authLoadPwds();  
 
 //*************************************** Start the WiFi  connection *****************************
-  
   WiFi.hostname(deviceName);
   WiFi.setAutoConnect(true);
+  WiFi.setAutoReconnect(true);
   WiFi.begin();
+  if(WiFi.status() != WL_CONNECTED){
+    WiFi.reconnect();
+  }
 
         // If the RTC is not running or power fail restart
         // Use the WiFi Manager.
 
-  if( ! RTCrunning || powerFailRestart){
+  if( (! RTCrunning) || powerFailRestart){
     uint32_t autoConnectTimeout = millis() + 3000UL;
     while(WiFi.status() != WL_CONNECTED){
       if(millis() > autoConnectTimeout){
         setLedCycle(LED_CONNECT_WIFI);
+        WiFiManager wifiManager;
         wifiManager.setDebugOutput(false);
-        wifiManager.setConfigPortalTimeout(180);
+        wifiManager.setConfigPortalTimeout(120);
         String ssid = "iota" + String(ESP.getChipId());
         String pwd = deviceName;
         log("Connecting with WiFiManager.");
@@ -213,22 +217,17 @@ if(spiffsBegin()){
           wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
           endLedCycle();
         }
+        if(! WiFi.isConnected()){
+          log("Did not connect after power-fail. Restarting to reset WiFi.");
+          delay(500);
+          ESP.restart();
+        }
         break;
       }
       yield();
     }
   }
 
-      //*************************************** Startup the Zeroconfig responders *********************
-
-  if (MDNS.begin(deviceName)) {
-    MDNS.addService("http", "tcp", 80);
-    log("MDNS responder started for hostname %s", deviceName);
-  }
-  if (LLMNR.begin(deviceName)){
-    log("LLMNR responder started for hostname %s", deviceName);
-  } 
-  
  //*************************************** Start the web server ****************************
 
   server.on(F("/edit"), HTTP_POST, returnOK, handleFileUpload);
@@ -248,6 +247,10 @@ if(spiffsBegin()){
   NewService(updater, T_UPDATE);
   NewService(dataLog, T_datalog);
   NewService(historyLog, T_history);
+
+  if(! validConfig){
+    setLedCycle(LED_BAD_CONFIG);
+  }
   
 }  // setup()
 /***************************************** End of Setup **********************************************/
@@ -267,11 +270,11 @@ void setLedCycle(const char* pattern){
     ledColor[i] = pattern[i];
     if(pattern[i] == 0) break;
   }
-  ticker.attach(0.5, ledBlink);
+  Led_timer.attach(0.5, ledBlink);
 }
 
 void endLedCycle(){
-  ticker.detach();
+  Led_timer.detach();
   setLedState();
 }
 
@@ -285,9 +288,11 @@ void ledBlink(){
 }
 
 void setLedState(){
-  digitalWrite(greenLed, HIGH);
-  digitalWrite(redLed, LOW);
-  if( !RTCrunning || WiFi.status() != WL_CONNECTED){
-    digitalWrite(redLed, HIGH);
+  if(validConfig){
+    digitalWrite(greenLed, HIGH);
+    digitalWrite(redLed, LOW);
+    if( !RTCrunning || WiFi.status() != WL_CONNECTED){
+      digitalWrite(redLed, HIGH);
+    }
   }
-}
+} 

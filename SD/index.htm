@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <title>IoTaWatt Configuration app</title>
-<link rel="stylesheet" type="text/css" href="/cnfstyle.css">
+<link rel="stylesheet" type="text/css" href="cnfstyle.css">
 
 </head>
 <body onload="setup()">
@@ -13,10 +13,16 @@
   <h3 id="heading">IoTaWatt Power Monitor</h3>
   
   <div id="mainMenu" class="menu color_menu" display="block">
+    
+    <!-- ************************************************************************************************************************
+                                                      MAIN MENU BUTTONS
+         *********************************************************************************************************************-->
+    
     <table id="bigIdeasTable">
+      <tr><th width="50%"></th><th width="50%"></th></tr>
       <tr>
         <td class="dropdown">
-          <button class="mainMenuButton buttonUp dropbtn"
+          <button id="setupButton" class="mainMenuButton buttonUp dropbtn"
               title="Select setup category">Setup</button>
           <span class="dropContent">
             <button class="mainMenuButton" onclick="mainMenuButton(this,configDevice)"
@@ -33,7 +39,7 @@
                 title="Specify data export to external servers">Web Server</button>
           </span>
         </td>
-        <td width="50%"><button class="mainMenuButton" onclick="mainMenuButton(this,statusBegin)"
+        <td><button class="mainMenuButton buttonUp" onclick="mainMenuButton(this,statusBegin)"
             title="Display current measurements, outputs and device status">Status</button></td>
       </tr>
       <tr>
@@ -45,32 +51,53 @@
                 title="manage and edit files on the SDcard">File Manager and Editor</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,showMsgs)"
                 title="View recent entries in the message log">Message Log</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsWiFi)">WIFi</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsRestart)"
                 title="Restart the IoTaWatt">Restart</button>
+                
        <!-- <button class="mainMenuButton" onclick="mainMenuButton(this,toolsDatalogs)">Datalogs</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsWiFi)">WIFi</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsUpdate)">Software Update</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsPhase)">Phase Measurement</button> -->
+            
           </span>
         </td>
-        <td width="50%"><button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph)"
-            title="Graphically visualize and compare accumulated data">Graphs</button></td>
+        <td>
+          <span class="dropdown">
+            <button class="mainMenuButton buttonUp dropbtn"
+              title="Graphically visualize and compare accumulated data">Data</button>
+            <span class="dropContent">
+              <button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph2)"
+                  title="Enhanced graph utility">Graph+</button>
+              <button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph)"
+                  title="Original graph utility">Original Graph</button>
+              
+            </span> 
+          </span>
+        </td>
       </tr>
     </table>
   </div>
   
-  <div id="mainBody" class="color_body" style="display:none">
+  <!-- ************************************************************************************************************************
+                                                      PANIC MESSAGES
+         *********************************************************************************************************************-->
+
+  <div id="panicMessageDiv" class="body color_body" style="display:none">
+    <div id="panicList">
+    </div>
+  </div> 
   
-    <div id="configMenu" style="display:none">
-      <table><tr><th width="33%"></th><th width="33%"></th><th width="33%"></th></tr>
-        <tr>
-          <td><button id="tabDevice" class="configButton buttonUp" onclick="configButton(this,configDevice)">Device</button></td>
-          <td><button id="tabInputs" class="configButton buttonUp" onclick="configButton(this,configInputs)">Inputs</button></td>
-          <td><button id="tabOutputs" class="configButton buttonUp" onclick="configButton(this,configOutputs)">Outputs</button></td>
-        </tr>
-      </table>
-    </div> <!-- configMenu -->
-     
+  <!-- ************************************************************************************************************************
+                                                      MAIN BODY AREA
+         *********************************************************************************************************************-->
+    
+  <div id="mainBody" class="color_body" style="display:none">
+    
+    <!-- ************************************************************************************************************************
+                                                      SETUP MENUS
+         *********************************************************************************************************************-->
+                                     
+   
                   <!-- *************** Device configuration ******************-->  
         
     <div id="configDevice" class="body color_body" style="display: none">
@@ -81,6 +108,70 @@
         <button class="actionSave" id="deviceSave" onclick="deviceSave()">save</button>
       </p>
     </div> 
+   
+              <!-- *************** Inputs configuration ******************-->  
+  
+    <div id="configInputs" class="body" style="display: none">
+      <div class="bodyDiv color_body" id="inputList">
+        <h3>Inputs</h3>
+        <table id="inputTable">
+          <tbody id="inputTableBody"></tbody>
+        </table>
+        <div align="center">
+          <input type="checkbox" id="derive3ph" onclick="derive3ph()" title="For 3-phase power with one voltage reference">Enable derived three-phase
+        </div>
+      </div>
+    </div>
+    
+    <div class="body color_body" id="inputEdit" style="display: none">
+      <h3 id="inputChannel"></h3>
+      <table id="inputEditTable"></table>
+      <div>
+        <button class="actionDelete" id="inputEditDelete" onclick="inputEditDelete()">delete</button>
+        <button class="actionCancel" id="inputEditCancel" onclick="inputEditCancel()">cancel</button>
+        <button class="actionSave"   id="inputEditSave"   onclick="inputEditSave()">save</button>
+      </div>
+    </div>
+
+    <div class="body color_body" id="inputCalVT" style="display: none">
+      <h3 id="inputCalChannel"></h3>
+      <h1 id="inputCalVolts"></h1>
+      <p>
+        <span>calibration factor: </span>
+        <input id="inputCalCal" type="number" onchange="inputCalCal(this)" min="5" max="300" step="0.01" width="100px"></p>
+      <p>
+        <button class="actionCancel" onclick="calVTexit(this)">cancel</button>
+        <button class="actionSave" onclick="calVTsave(this)">save</button>
+      </p>
+      <p>Using a voltmeter to display the AC line voltage, adjust the calibration factor until the displayed
+      voltage reasonably matches the voltmeter reading.  Click save to update the channel
+      with the new calibration factor.</p>
+    </div>
+    
+              <!-- *************** Outputs configuration ******************-->
+
+    <div id="configOutputs" class="body" style="display: none;">
+      <div class="bodyDiv color_body" id="divOutputs">
+        <h3>Outputs</h3>
+        <table id="outputTable"></table>
+      </div>
+    </div>
+    
+                  <!-- *************** Burden configuration ******************--> 
+    
+    <div id="configBurden" class="body color_body" style="display: none">
+      <h3>Specify on-board burden resistors</h3>
+      <p>Burden resistors are internal components that allow IoTaWatt to convert the input current to a voltage that can be measured.
+      The factory supplied burden values were selected to work best with the range of CTs that can be connected and most users will 
+      never have a need to modify them or the corresponding values in this menu.</p>
+      <p>For the benefit of advanced users that have a need to remove or change the factory resistors, this menu has been provided
+      so that a changed value can be specified and IoTaWatt can calculate the correct current using the new value.</p>
+      <table id="burdenTable"></table>
+      <p>
+        <button class="actionCancel" id="burdenCancel" onclick="burdenCancel()">cancel</button>
+        <button class="actionSave" id="burdenSave" onclick="burdenSave()">save</button>
+      </p>
+    </div>
     
                   <!-- *************** Password configuration ******************-->  
         
@@ -110,73 +201,7 @@
         <button class="actionSave" id="pwdSave" onclick="pwdSave()">save</button>
         <button class="actionSave" id="pwdCheck" onclick="pwdValidate()">Validate Current Password</button>
       </p>
-    </div> 
-    
-                  <!-- *************** Burden configuration ******************--> 
-    
-    <div id="configBurden" class="body color_body" style="display: none">
-      <h3>Specify on-board burden resistors</h3>
-      <p>Burden resistors are internal components that allow IoTaWatt to convert the input current to a voltage that can be measured.
-      The factory supplied burden values were selected to work best with the range of CTs that can be connected and most users will 
-      never have a need to modify them or the corresponding values in this menu.</p>
-      <p>For the benefit of advanced users that have a need to remove or change the factory resistors, this menu has been provided
-      so that a changed value can be specified and IoTaWatt can calculate the correct current using the new value.</p>
-      <table id="burdenTable"></table>
-      <p>
-        <button class="actionCancel" id="burdenCancel" onclick="burdenCancel()">cancel</button>
-        <button class="actionSave" id="burdenSave" onclick="burdenSave()">save</button>
-      </p>
-    </div>
-    
-
-              <!-- *************** Inputs configuration ******************-->  
-  
-    <div id="configInputs" class="body" style="display: none">
-      <div class="bodyDiv color_body" id="inputList">
-        <h3>Inputs</h3>
-        <table id="inputTable">
-          <tbody id="inputTableBody"></tbody>
-        </table>
-        <div align="center">
-          <input type="checkbox" id="derive3ph" onclick="derive3ph()" title="For 3-phase power with one voltage reference">Enable derived three-phase
-        </div>
-      </div>
-    </div>
-    
-    <div class="body color_body" id="inputEdit" style="display: none">
-      <h3 id="inputChannel"></h3>
-      <table id="inputEditTable"></table>
-      <p>
-        <button class="actionDelete" id="inputEditDelete" onclick="inputEditDelete()">delete</button>
-        <button class="actionCancel" id="inputEditCancel" onclick="inputEditCancel()">cancel</button>
-        <button class="actionSave" id="inputEditSave" onclick="inputEditSave()">save</button>
-      </p>
-    </div>
-
-    <div class="body color_body" id="inputCalVT" style="display: none">
-      <h3 id="inputCalChannel"></h3>
-      <h1 id="inputCalVolts"></h1>
-      <p>
-        <span>calibration factor: </span>
-        <input id="inputCalCal" type="number" onchange="inputCalCal(this)" min="5" max="300" step="0.01" width="100px"></p>
-      <p>
-        <button class="actionCancel" onclick="calVTexit(this)">cancel</button>
-        <button class="actionSave" onclick="calVTsave(this)">save</button>
-      </p>
-      <p>Using a voltmeter to display the AC line voltage, adjust the calibration factor until the displayed
-      voltage reasonably matches the voltmeter reading.  Click save to update the channel
-      with the new calibration factor.</p>
-    </div>
-    
-              <!-- *************** Outputs configuration ******************-->
-
-    <div id="configOutputs" class="body" style="display: none;">
-      <div class="bodyDiv color_body" id="divOutputs">
-        <h3>Outputs</h3>
-        <table id="outputTable"></table>
-      </div>
-    </div>
-    
+    </div>  
                 <!-- ************* WebServer ********************--> 
     
     <div class="body color_body" id="divWebServer" style="display:none">
@@ -223,10 +248,12 @@
       </p>
     </div>
               
-    
-    <!-- ****************************** divStatus **********************************--> 
-    
+        <!-- ************************************************************************************************************************
+                                                      STATUS DISPLAY
+         *********************************************************************************************************************-->
+
     <div id="divStatus" class="body color_body" style="display:none">
+      
       <button id="tabIO" class="groupTab" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs Status</button>
         <div id="statusIODiv" class="statusDiv" style="display: block;">
           <table id="statusIOBody" width="100%">
@@ -237,6 +264,7 @@
             </tr>
           </table>
         </div>
+        
       <button id="tabStats" class="groupTab" onclick="toggleDisplay('statusStatsDiv')">IoTaWatt Statistics</button>
         <div id="statusStatsDiv" class="statusDiv" style="display: block;">
            <table width="100%">
@@ -248,30 +276,49 @@
           </table>
           <table id="statusTable"></table>
         </div>
+        
+      <button id="tabWifi" class="groupTab" onclick="toggleDisplay('statusWifi')" style="display: none;">WiFi</button>
+        <div id="statusWifi" class="statusDiv" style="display: none;">
+          <table id="tableWifi" width="100%"></table>
+        </div>
+      
       <div id="tabinflux" style="display:none;">
         <button class="groupTab" onclick="toggleDisplay('statusInfluxDiv')">InfluxDB</button>
         <p id="statusInfluxDiv" class="statusDiv" style="display: none;"></p>
       </div>
+      
       <div id="tabEmon" style="display: none;">
         <button class="groupTab" onclick="toggleDisplay('statusEmonDiv')">Emoncms</button>
         <p id="statusEmonDiv" class="statusDiv" style="display: none;"></p>
       </div>
+      
        <div id="tabPVout" style="display: none;">
         <button class="groupTab" onclick="toggleDisplay('statusPVoutDiv')">PVoutput</button>
         <p id="statusPVoutDiv" class="statusDiv" style="display: none;"></p>
       </div>
+      
       <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
         <div id="statusLogsDiv" class="statusDiv" style="display: none;"></div>
     </div> <!-- divStatus -->
   
-    <!--*************************************************************************************************
+        <!-- ************************************************************************************************************************
+                                                      TOOLS MENUS
+         *********************************************************************************************************************-->
   
-                                    Tools
-  
-     ***************************************************************************************************-->
+    <!-- ****************************** WiFi **********************************--> 
+      
+    <div id="divWiFi" class="body tools color_body" style="display:none">
+      <h3>Disconnect WiFi</h3>
+      <p>
+        Use this tool to permanently disconnect from the current WiFi network.<br>
+      </p>
+      <h3 id="WiFiMsg"></h3>
+      <button id="WiFiButton" class="actionDelete" onclick="sendDisconnect()">Disconnect</button>
+      <button class="actionCancel" onclick="currentBodyPop()">cancel</button>
+    </div> 
   
     <!-- ****************************** Restart **********************************--> 
-      
+    
     <div id="divRestart" class="body tools color_body" style="display:none">
       <h3>Reset IoTaWatt!</h3>
       <p>
@@ -282,17 +329,6 @@
       <h3 id="restartMsg"></h3>
       <button id="restartButton" onclick="sendRestart()">Restart</button>
     </div> <!-- divrestart -->
-    
-    <!-- ****************************** WiFi **********************************--> 
-      
-    <div id="divWiFi" class="body tools color_body" style="display:none">
-      <h3>Manage WiFi</h3>
-      <p>
-        Use this tool to permanently disconnect from the current WiFi network.<br>
-      </p>
-      <h3 id="WiFiMsg"></h3>
-      <button id="WiFiButton" onclick="sendDisconnect()">Disconnect</button>
-    </div> 
     
     <!-- **************************** Datalogs ****************************** --> 
       
@@ -328,11 +364,9 @@
       </div>
     </div> <!--
   
-    <!- *************************************************************************************************
-  
-                                    Calculator
-  
-    ****************************************************************************************************-->
+        <!-- ************************************************************************************************************************
+                                                      CALCULATOR
+         *********************************************************************************************************************-->
     
     <div id="divCalc" class="color_body" style="display:none">
       <div id="calcBody" class="color_inputcontainer">
@@ -392,17 +426,17 @@
 
 <script>
 // configuration files
-var configFileURL = "config.txt";
-var configNewURL = "config.txt";
+var configFileURL = "/config.txt";
+var configNewURL = "/config.txt";
 var burdenFileURL = "/esp_spiffs/config/device/burden.txt";
-var configTablesURL = "tables.txt";
+var configTablesURL = "/tables.txt";
 var editURL = "edit.htm";
 var graphURL = "graph.htm";
+var graph2URL = "graph2.htm";
 var msgsFileURL = "/iotawatt/iotamsgs.txt?textpos=-10000";
-var demo = false;
-var demoConfig = null;
 var currentBody = [];
 var configSHA256;
+var noConfig = true;
 
 var config;                         // configuration as Js Object
 var tables;                         // tables as Js Object
@@ -421,7 +455,8 @@ var parenLevel = 0;
 var inputEditChannel;
 var voltageChannels = [];
 var vchanUsed = [];
-var vphaseNames = ["A", "B", "C"];
+var derivedTable = [{phase:"A",vphase:0,vmult:1},{phase:"B",vphase:120,vmult:1},{phase:"C",vphase:240,vmult:1},
+                   {phase:"A-B",vphase:-30,vmult:1.732},{phase:"B-C",vphase:+90,vmult:1.732},{phase:"C-A",vphase:-150,vmult:1.732}];
 var scriptEditTable;
 var scriptEditSet;
 var scriptEditIndex = -1;
@@ -431,8 +466,9 @@ var scriptEditNameList = [];
 var scriptEditNameTitle = "";
 var scriptEditNamePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
 var scriptEditUnits = [];
-var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA"];
-var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh"];
+var scriptEditUniqueNames = true;
+var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA","VAR"];
+var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh","VAR","VARh"];
 var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:false,begin:{month:3,weekday:1,instance:2,time:120},end:{month:11,weekday:1,instance:1,time:120}}},
                 {id:"Europe",begOffset:0,endOffset:2,dstrule:{adj:60,utc:true,begin:{month:3,weekday:1,instance:-1,time:60},end:{month:10,weekday:1,instance:-1,time:60}}},
                 {id:"Australia",begOffset:9.5,endOffset:10.0,dstrule:{adj:60,utc:false,begin:{month:10,weekday:1,instance:1,time:120},end:{month:4,weekday:1,instance:1,time:180}}},
@@ -443,6 +479,8 @@ var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:
  *                       Shorthand functions
 * ************************************************************************************************/
 function EbyId(id) {return document.getElementById(id)};
+function hide(id) {document.getElementById(id).style.display = "none";}
+function show(id) {document.getElementById(id).style.display = "inline";}
 
 /***************************************************************************************************
  *                       setPasswords
@@ -462,17 +500,19 @@ function setPasswords() {
         var oldAdmin = addTableRow(pwdTable, "Current Admin password", "oldAdminPwd", "input", 16);
         oldAdmin.setAttribute("onblur","pwdValidate();");
         oldAdmin.title = "Required to proceed";
-        EbyId("pwdCheck").style.display = "inline";
+        show("pwdCheck");
+        //EbyId("pwdCheck").style.display = "inline";
       } else {
-        EbyId("pwdCheck").style.display = "none";
+        hide("pwdCheck");
+        //EbyId("pwdCheck").style.display = "none";
         pwdValid();
       }
     }
   }
   xmlHttp.open("GET","/status?passwords=yes", true);
   xmlHttp.send(null);
-  
-  EbyId("pwdSave").style.display = "none";
+  hide("pwdCheck");
+  //EbyId("pwdSave").style.display = "none";
 }
   
 function pwdValidate(){
@@ -697,8 +737,6 @@ function configInputs(){
       if(config.inputs[i].turns != undefined){
         config.inputs[i].cal = config.inputs[i].turns / config.device.burden[i];
       }
-      newColumn.innerHTML += ", cal:<strong>" + Number(config.inputs[i].cal).toFixed(2) + "</strong>";
-      newColumn.innerHTML += ", lead:<strong>" + Number(config.inputs[i].phase).toFixed(2) + "&#176</strong>";
       if(config.inputs[i].vchan !== undefined){
         vchanUsed[config.inputs[i].vchan] = true;
         if(config.inputs[i].vchan != 0){
@@ -707,8 +745,18 @@ function configInputs(){
       }
       
       if(config.derive3ph){
-        var phase = (config.inputs[i].vphase === undefined) ? vphaseNames[0] : vphaseNames[config.inputs[i].vphase/120];
-        newColumn.innerHTML += ", phase:<strong>" + phase + "</strong>";
+        if(config.inputs[i].vphase === undefined){
+          config.inputs[i].vphase = 0;
+        }
+        if(config.inputs[i].vmult === undefined){
+          config.inputs[i].vmult = 1;
+        }
+        for(j in derivedTable){
+          if(derivedTable[j].vphase == config.inputs[i].vphase){
+            newColumn.innerHTML += ", phase:<strong>" + derivedTable[j].phase + "</strong>";
+            break;
+          }
+        }
       }
     }
   }
@@ -827,13 +875,16 @@ function refreshInputEdit(){
     (inputEditObject.type == "CT" && config.device.burden[inputEditChannel] == 0))){
     inputCal = addTableRow(table, "Cal: ", "inputCal", "input", 5);
     inputCal.setAttribute("onblur","inputEditObject.cal=this.value.trim(); refreshInputEdit();");
-    inputCal.value = inputEditObject.cal;
-    if(Number.isNaN(inputCal.value)){
-      inputEditMsg(inputCal,"Numeric value required");
+     if(inputEditObject.cal === undefined){
       complete = false;
-    }
-    else{
+    } 
+    else {
+      inputCal.value = inputEditObject.cal;
       inputCal.value = parseFloat(inputCal.value).toPrecision(4);
+      if(inputCal.value == 0){
+        inputEditMsg(inputCal,"Cannot be zero");
+        complete = false;
+      }
     }
   }
   
@@ -856,17 +907,15 @@ function refreshInputEdit(){
       }
     }
   }
- 
+  
+ //************************************************************************************************************************************
   if(inputEditObject.model == "generic"){
     inputPhase = addTableRow(table, "Phase lead: ", "inputPhase", "input", 4);
-    inputPhase.setAttribute("onblur","inputEditObject.phase = this.value.trim(); refreshInputEdit();");
-    inputPhase.value = inputEditObject.phase;
-    if(Number.isNaN(inputPhase.value)){
+    inputPhase.setAttribute("onblur","inputEditObject.phase = this.value; refreshInputEdit();");
+    inputPhase.value = (inputEditObject.phase !== undefined) ? inputEditObject.phase : 0;
+    if(isNaN(inputEditObject.phase)){
       inputEditMsg(inputPhase, "Numeric value required");
       complete = false;
-    }
-    else {
-      inputPhase.value = Number(inputPhase.value).toFixed(2);
     }
   }
   
@@ -886,16 +935,19 @@ function refreshInputEdit(){
     }
     if(config.derive3ph){
       inputVchan = addTableRow(table, "Mains Phase", "inputVphase", "select");
-      inputVchan.setAttribute("oninput","inputEditObject.vphase = Number(this.value); refreshInputEdit();");
-      for(i in vphaseNames){
+      inputVchan.setAttribute("oninput",
+        "inputEditObject.vphase=derivedTable[this.value].vphase; inputEditObject.vmult=derivedTable[this.value].vmult; refreshInputEdit();");
+      for(i in derivedTable){
         option = document.createElement("option");
-        option.value = i * 120;
-        option.innerHTML = vphaseNames[i];
-        if(i > 0){
-          option.innerHTML += " (+" + option.value + "&#176)";
+        option.value = Number(i);
+        option.innerHTML = derivedTable[i].phase;
+        if(derivedTable[i].vphase != 0){
+          option.innerHTML += " (";
+          option.innerHTML += (derivedTable[i].vphase >= 0) ? "+" : "";
+          option.innerHTML += derivedTable[i].vphase + "&#176)";
         }
         inputVchan.add(option);
-        if(inputEditObject.vphase !== undefined && inputEditObject.vphase == option.value){
+        if(inputEditObject.vphase !== undefined && inputEditObject.vphase == derivedTable[i].vphase){
           option.selected = true;
         } 
       }
@@ -916,15 +968,17 @@ function refreshInputEdit(){
       inputEditObject.signed = undefined;
     }
     
-    inputDouble = addTableRow(table, "", "inputMult", "input");
-    inputDouble.parentNode.appendChild(document.createTextNode("Double"));
-    addInfo(inputDouble, "Double measured power.  Use with balanced 240V circuit with CT on one conductor.");
-    inputDouble.setAttribute("type","checkbox");
-    inputDouble.setAttribute("onchange","inputEditObject.double = this.checked; refreshInputEdit();");
-    if(inputEditObject.double != undefined && inputEditObject.double){
-      inputDouble.checked = true;
-    } else {
-      inputEditObject.double = undefined;
+    if( ! config.derive3ph || inputEditObject.double != undefined){
+      inputDouble = addTableRow(table, "", "inputMult", "input");
+      inputDouble.parentNode.appendChild(document.createTextNode("Double"));
+      addInfo(inputDouble, "Double measured power.  Use with balanced 240V circuit with CT on one conductor.");
+      inputDouble.setAttribute("type","checkbox");
+      inputDouble.setAttribute("onchange","inputEditObject.double = this.checked; refreshInputEdit();");
+      if(inputEditObject.double != undefined && inputEditObject.double){
+        inputDouble.checked = true;
+      } else {
+        inputEditObject.double = undefined;
+      }
     }
     
     EbyId("inputEditDelete").style.display = (config.inputs[inputEditChannel] == null) ? "none" : "inline";
@@ -951,8 +1005,9 @@ function refreshInputEdit(){
       inputCal.setAttribute("onclick","calVTvoltage();");
     }
   }
-
-  EbyId("inputEditSave").style.display = complete ? "inline" : "none";
+  
+  if(complete) show("inputEditSave");
+  else hide("inputEditSave");
 }
 
 function addInfo(element, title){
@@ -1128,6 +1183,7 @@ function calVTsave(obj){
     scriptEditSet = config.outputs;
     scriptEditUnits = scriptEditUnitsOutput;
     scriptEditNameList = [];
+    scriptEditUniqueNames = true;
     scriptEditNameTitle="Name must be alphanumeric and start with a letter";
     scriptEditNamePattern="^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
     editScript();
@@ -1243,8 +1299,10 @@ function calVTsave(obj){
                         script:tokens.join("") 
                       });
     scriptEditSet.sort(function(a, b){return a.name.toString().localeCompare(b.name.toString())});
-    for(var i=0; i<scriptEditSet.length-1; i++){
-      if(scriptEditSet[i].name == scriptEditSet[i+1].name) scriptEditSet.splice(i,1);
+    if(scriptEditUniqueNames){
+      for(var i=0; i<scriptEditSet.length-1; i++){
+        if(scriptEditSet[i].name == scriptEditSet[i+1].name) scriptEditSet.splice(i,1);
+      }
     }
     scriptEditSave();
     currentBodyPop();
@@ -1380,7 +1438,7 @@ function calVTsave(obj){
   }
   
   function keyDigit(digit){
-    if(RegExp("^#0").test(tokens[tokens.length-1])){
+    if(RegExp("^#0$").test(tokens[tokens.length-1])){
       tokens[tokens.length-1] = "#" + digit;
     }
     else if(RegExp("^#").test(tokens[tokens.length-1])){
@@ -1800,6 +1858,7 @@ function editEmoncms(){
   scriptEditSet = config.server.outputs;
   scriptEditUnits = scriptEditUnitsUpload;
   scriptEditNameList = [];
+  scriptEditUniqueNames = true;
   scriptEditNamePattern="^[1-9]{1}$|^[1-2]{1}[0-9]{1}$";
   scriptEditNameTitle="Name is Emoncms Input Key 1-29";
   editScript();
@@ -1928,10 +1987,10 @@ function editInfluxdb(){
   userInput.placeholder = "optional";
 
   if(config.influxdb.pwd === undefined) config.influxdb.pwd = "";
-  var pwdInput = addTableRow(serverTable, "password:", "serverPwd", "input", 16);
+  var pwdInput = addTableRow(serverTable, "password:", "serverPwd", "input", 32);
   pwdInput.value = config.influxdb.pwd;
   pwdInput.setAttribute("oninput","config.influxdb.pwd = this.value; checkInfluxdb();"); 
-  pwdInput.pattern = "^[A-Za-z0-9_!%@#]{0,16}";
+  pwdInput.pattern = "^[A-Za-z0-9_!%@#]{0,32}";
   pwdInput.type = "password";
   pwdInput.placeholder = "optional";
   
@@ -1975,6 +2034,7 @@ function editInfluxdb(){
   scriptEditSet = config.influxdb.outputs;
   scriptEditUnits = scriptEditUnitsUpload;
   scriptEditNameList = [];
+  scriptEditUniqueNames = false;
   scriptEditNameTitle="Name must be valid influxDB field name";
   scriptEditNamePattern="^[0-9a-zA-Z_$-/\.\+]+$";
   editScript();
@@ -2189,6 +2249,7 @@ function editPVoutput(){
   scriptEditSet = config.pvoutput.outputs;
   scriptEditUnits = scriptEditUnitsUpload;
   scriptEditNameList = ["generation", "consumption", "voltage", "extended_1(v7)", "extended_2(v8)", "extended_3(v9)", "extended_4(v10)", "extended_5(v11)", "extended_6(v12)"];
+  scriptEditUniqueNames = true;
   scriptEditNamePattern = undefined;
   scriptEditNameTitle = "extended is used for donator mode only";
   editScript();
@@ -2232,6 +2293,7 @@ function PVoutToggle(){
  *                        Setup and run status display
  * *******************************************************************************************/
 function statusBegin(){
+  EbyId("tabWifi").style.display = "none";
   EbyId("tabinflux").style.display = config.influxdb !== undefined ? "inline" : "none";
   EbyId("tabPVout").style.display = config.pvoutput !== undefined ? "inline" : "none";
   EbyId("tabEmon").style.display = (config.server !== undefined && config.server.type == "emoncms") ? "inline" : "none";
@@ -2241,23 +2303,18 @@ function statusBegin(){
 }
 
 function statusGet(){
-  if(demo){
-    statusDisplay(demoStatus());
-    return;
-  }
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       statusDisplay(xmlHttp.responseText);
     }
   }
-  xmlHttp.open("GET","/status?state=yes&inputs=yes&outputs=yes&stats=yes&datalogs=yes&influx=yes&emon=yes&pvoutput=yes", true);
+  xmlHttp.open("GET","/status?state&inputs&outputs&stats&wifi&datalogs&influx&emon&pvoutput", true);
   xmlHttp.send(null);
 }
 
 function statusDisplay(statusMessage){
   var status = JSON.parse(statusMessage);
-  
   var statusTable = EbyId("statusTableL");
   statusTable.innerHTML = null;
   addRow();
@@ -2279,6 +2336,15 @@ function statusDisplay(statusMessage){
   column3.appendChild(document.createTextNode(status.stats.chanrate.toFixed(1) + " AC cycles sampled/second"));
   addRow();
   column3.appendChild(document.createTextNode(status.stats.frequency.toFixed(1) + " Hz"));
+  
+  if(status.wifi !== undefined && status.wifi.connecttime > 0){
+    EbyId("tabWifi").style.display = "inline";
+      wifiStatus = EbyId("tableWifi");
+      wifiStatus.innerHTML = "<tr><th width=\"50%\"></th><th width=\"50%\"></th></tr>";
+      wifiStatus.innerHTML += "<tr><td>SSID: " + status.wifi.SSID + "</td><td>IP: " + status.wifi.IP + "</td></tr>";
+      wifiStatus.innerHTML += "<tr><td>channel: " + status.wifi.channel + "</td><td>RSSI: " + status.wifi.RSSI + "</td></tr>";
+      wifiStatus.innerHTML += "<tr><td>MAC: " + status.wifi.mac + "</td><td>connected: " + formatRunTime(status.stats.currenttime - status.wifi.connecttime) + "</td></tr>";
+  }
   
   if(status.datalogs !== undefined){
     var logs = EbyId("statusLogsDiv");
@@ -2498,27 +2564,6 @@ function old2newScript(oldScript){
   return newScript;
 }
 
-function demoStatus(){
-  var status = {};
-  status.stats = {cyclerate:635, chanrate:38.4, runseconds:3046, stack:17632, frequency:60.0, version:"2:02:09"};
-  status.inputs = [];
-  status.outputs = [];
-  for(i in config.inputs){
-    if(config.inputs[i] != null){
-      if(config.inputs[i].type == "VT"){
-       status.inputs.push({channel:i,Vrms:120.4});
-      }
-      else {
-       status.inputs.push({channel:i,Watts:0});
-      }
-    }
-  }
-  for(i in config.outputs){
-    status.outputs.push({name:config.outputs[i].name, Watts:0});
-  }
-  return JSON.stringify(status);
-}
-  
 /********************************************************************************************
  *                       Main menu navigation.
  * *****************************************************************************************/
@@ -2558,14 +2603,22 @@ function loadGraph(){
   var myWindow = window.open(graphURL, "_self");
   resetDisplay();
 }
+
+function loadGraph2(){
+  var myWindow = window.open(graph2URL, "_self");
+  resetDisplay();
+}
+
 function loadEdit(){
   resetDisplay();
   var myWindow = window.open(editURL, "_self");
 }
+
 function showMsgs(){
   resetDisplay();
   var myWindow = window.open(msgsFileURL, "_self");
 }
+
 function toggleDisplay(id){
   var element = EbyId(id);
   if(! editing){
@@ -2578,20 +2631,33 @@ function toggleDisplay(id){
  * *******************************************************************************************/
 
 function getConfig(callback){
-  if(demo && demoConfig != null){
-    config = JSON.parse(demoConfig);
-    checkConfig();
-    if(callback !== undefined) callback();
-    return;
-  }
+  EbyId("panicMessageDiv").style.display = "none";
   readFile(configFileURL, function(response){
-    config = JSON.parse(response);
-    checkConfig();
-    document.title = config.device.name;
-    EbyId("heading").innerHTML = config.device.name + " Power Monitor";
-    if(callback !== undefined) callback();
-    });
-    EbyId("mainMenu").style.display = "block";
+                            if(response == undefined){
+                              panic("configuration not found.");
+                            }
+                            else {
+                              try {
+                                config = JSON.parse(response);
+                              }
+                              catch (e) {
+                                panic("configuration parse failed: " + e.message);
+                                return;
+                              }
+                              noConfig = false;
+                              checkConfig();
+                              document.title = config.device.name;
+                              EbyId("heading").innerHTML = config.device.name + " Power Monitor";
+                              if(callback !== undefined) callback();
+                              EbyId("mainMenu").style.display = "block";
+                            }
+                          })
+}
+
+function panic(message){
+  EbyId("panicList").innerHTML = "<p>" + message + "</p>";
+  EbyId("panicMessageDiv").style.display = "block";
+  noConfig = true;
 }
 
 function getTables(){
@@ -2601,11 +2667,16 @@ function getTables(){
 function readFile(path, responseHandler){
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      if(this.getResponseHeader("X-configSHA256") !== null){
-        configSHA256 = this.getResponseHeader("X-configSHA256");
+    if (this.readyState == 4) {
+      if(this.status == 200){
+        if(this.getResponseHeader("X-configSHA256") !== null){
+          configSHA256 = this.getResponseHeader("X-configSHA256");
+        }
+        responseHandler(this.responseText);
+      } 
+      else {
+        responseHandler(undefined);
       }
-      responseHandler(this.responseText);
     }
   };
   xmlHttp.open("GET", path, true);
@@ -2613,6 +2684,7 @@ function readFile(path, responseHandler){
 }
 
 function uploadConfig(callback, action="reload"){
+  if(noConfig) return;
   writeFile(JSON.stringify(config, null, "\t"), configNewURL, function(){
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() {
@@ -2626,11 +2698,6 @@ function uploadConfig(callback, action="reload"){
 }
 
 function writeFile(fileString, url, responseHandler){
-  if(demo){
-    demoConfig = fileString;
-    responseHandler();
-    return;
-  }
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
     if (this.readyState == 4) {
@@ -2662,10 +2729,6 @@ function writeFile(fileString, url, responseHandler){
 function setup(){
   getTables();
   getConfig();
-  if(document.domain == "iotawatt.com"){
-    demo = true;
-    EbyId("heading").innerHTML += " Demo Mode";
-  }
   resetDisplay();
 }
 

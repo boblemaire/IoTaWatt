@@ -38,7 +38,7 @@ that new name will be the password required in this step.
 
 After connecting, a page will be rendered with several choices.  Select ``Configure WiFi``.
 
-.. image:: pics/captivePortal.jpg
+.. image:: pics/CaptivePortal.jpg
     :scale: 50 %
     :align: center
     :alt: captive portal image
@@ -46,6 +46,10 @@ After connecting, a page will be rendered with several choices.  Select ``Config
 A few seconds may elapse while the IoTaWatt scans for the local networks,
 then another page will be rendered allowing you to select one of the listed
 networks, or specify another network not listed.
+
+Note that the IotaWatt only supports 2.4 GHz wireless networks. If you have a 5 GHz
+only network you can either enable 2.4 GHz on it, or create a separate (optionally hidden)
+network on 2.4 GHz for the IotaWatt to use.
 
 .. image:: pics/SSIDpwd.jpg
     :scale: 50 %
@@ -60,3 +64,18 @@ the `troubleshooting <troubleshooting.html>`__ section.
 
 When the LED glows dull green, proceed to the next step
 `Device Configuration  <devConfig.html>`__
+
+Resetting WiFi to Defaults
+--------------------------
+
+If you wish to change the WiFi SSID that the IoTaWatt is connected to (you might have done some testing in the lab and want to deploy 'live' somewhere where the SSID is different) BEFORE moving the device you need to reset the WiFi.
+
+In the URL bar of your browser type:
+
+ > ``IoTaWatt.local/command?disconnect=yes``
+
+You could replace IoTaWatt.local with the IP address of your device.
+
+After the command to disconnect the existing WiFi connection has been sent, IoTaWatt will respond "ok" and the LED will change from a dull green to a dull red as the IoTaWatt disconnects, indicating that the WiFi link has been severed.
+
+Then power cycle the IoTaWatt. It should restart with the RED-GREEN-GREEN led sequence like a new IoTaWatt ready to connect to the new SSID

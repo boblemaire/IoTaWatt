@@ -14,11 +14,13 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   static String updateVersion;
   static File releaseFile;
   static bool upToDate = false;
+  static bool parseError = false;
   static int checkResponse = 0;
   static char* _updateClass = nullptr;
   static uint32_t lastVersionCheck = 0;
   static uint32_t HTTPtoken = 0;
 
+  trace(T_UPDATE,0); 
   if( ! WiFi.isConnected()){
     return UTCtime() + 1;
   }
@@ -26,6 +28,10 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   switch(state){
 
     case initialize: {
+      trace(T_UPDATE,1);
+      if( ! updateClass){
+        updateClass = charstar("NONE");
+      } 
       log("Updater: service started. Auto-update class is %s", updateClass);
       _updateClass = charstar(updateClass);
       state = checkAutoUpdate;
@@ -33,11 +39,15 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
 
     case checkAutoUpdate: {
+      trace(T_UPDATE,2); 
+      if( ! updateClass){
+        updateClass = charstar("NONE");
+      }
       if(strcmp(updateClass, _updateClass) != 0){
         delete[] _updateClass;
         _updateClass = charstar(updateClass);
         log("Updater: Auto-update class changed to %s", _updateClass);
-        if (strcmp(_updateClass, "NONE") != 0){
+        if (strcmp(updateClass, "NONE") != 0){
           lastVersionCheck = 0;
           upToDate = false;
           state = getVersion;
@@ -53,6 +63,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
 
     case getVersion: {
+      trace(T_UPDATE,3); 
       if( ! WiFi.isConnected()){
         return UTCtime() + 1;
       }
@@ -67,80 +78,111 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       String URL = String(updateURL) + updatePath;
       if( ! request->open("GET", URL.c_str())){
         HTTPrelease(HTTPtoken);
-        break;
+        return UTCtime() + 60;
       }
       request->setTimeout(10);
-      request->setReqHeader("USER_AGENT","IotaWatt");
-      request->setReqHeader("X_STA_MAC", WiFi.macAddress().c_str());
-      request->setReqHeader("X-UPDATE-CLASS", updateClass);
-      request->setReqHeader("X_CURRENT_VERSION", IOTAWATT_VERSION);
       if( ! request->send()){
         request->abort();
         HTTPrelease(HTTPtoken);;
-        break;
+        return UTCtime() + 60;
       }
       state = waitVersion;
       return 1;
     }
 
     case waitVersion: {
+      trace(T_UPDATE,4); 
       if(request->readyState() != 4){
         return UTCtime() + 1;
       }
-      HTTPrelease(HTTPtoken);;
-      if(request->responseHTTPcode() != 200 || request->available() != 8){
-        int responseCode = request->responseHTTPcode();
-        delete request;
-        request = nullptr;
+      HTTPrelease(HTTPtoken);
+      int responseCode = request->responseHTTPcode();
+      String responseText = request->responseText();
+      delete request;
+      request = nullptr;
+
+          // Handle error response
+
+      if(responseCode != 200){
         if( responseCode != checkResponse){
           log("Updater: Invalid response from server. HTTPcode: %d", responseCode);
         }
         checkResponse = responseCode;
-        state = getVersion;
         state = checkAutoUpdate;
         if(responseCode == 403){
           lastVersionCheck = UTCtime();
         }
-        return UTCtime() + 11 ;
+        return UTCtime() + 301;
       }
-      checkResponse = 0;
-      updateVersion = request->responseText();
-      delete request;
-      request = nullptr;
-      if(strcmp(updateVersion.c_str(), IOTAWATT_VERSION) == 0){
-        if( ! upToDate){
-          log("Updater: Auto-update is current for class %s.", updateClass);
-          upToDate = true;
+      
+      DynamicJsonBuffer Json;
+      JsonObject& response = Json.parseObject(responseText);
+      if( ! response.success()){
+        if(!parseError){
+          log("Updater: could not parse versions.json file.");
         }
+        parseError = true;
         state = checkAutoUpdate;
+        lastVersionCheck = UTCtime();
         return 1;
       }
-      log("Updater: Update from %s to %s", IOTAWATT_VERSION, updateVersion.c_str());
-      state = createFile;
+      parseError = false;
+
+            // Check for "classes" object
+
+      JsonObject& classes = response[F("classes")];
+      if( ! classes.success()){
+        if(!parseError){
+          log("Updater: versions.json is invalid.");
+        }
+        parseError = true;
+        state = checkAutoUpdate;
+        lastVersionCheck = UTCtime();
+        return 1;
+      }      
+
+            // Check if response contains the configured auto-update class
+
+      if(classes.containsKey(updateClass)){
+        updateVersion = classes[updateClass].as<char*>();
+        if(updateVersion.equals(IOTAWATT_VERSION)){
+          if( ! upToDate){
+            log("Updater: Auto-update is current for class %s.", updateClass);
+            upToDate = true;
+          }
+        }
+        else {
+          log("Updater: Update from %s to %s", IOTAWATT_VERSION, updateVersion.c_str());
+          state = createFile;
+          return 1;
+        }
+      }
+      else {
+        log("Updater: Unrecognized auto-update class %s.", updateClass);
+        upToDate = true;
+      }
+      state = checkAutoUpdate;
+      lastVersionCheck = UTCtime();
       return 1;
     }
 
     case createFile: {
+      trace(T_UPDATE,5); 
       log("Updater: download %s", updateVersion.c_str());
-      deleteRecursive("download");
-      if( ! SD.mkdir("download")){
-        log("Cannot create download directory");
-        state = checkAutoUpdate;
-        break;
-      }
       String filePath = "download/" + updateVersion + ".bin";
+      deleteRecursive(filePath);
       releaseFile = SD.open(filePath.c_str(), FILE_WRITE);
       if(! releaseFile){
         log("Updater: Cannot create download file.");
-        deleteRecursive("download");
         state = checkAutoUpdate;
-        break;
+        return UTCtime() + 60;
       }
       state = download;
       return 1;
     }
       
-    case download: {  
+    case download: {
+      trace(T_UPDATE,6);   
       if( ! WiFi.isConnected()){
         return UTCtime() + 1;
       }
@@ -153,7 +195,15 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       }
       String URL = String(updateURL) + "/firmware/bin/" + updateVersion + ".bin";
       request->setDebug(false);
-      request->open("GET", URL.c_str());
+      trace(T_UPDATE,6);   
+      if( ! request->open("GET", URL.c_str())){
+        log("Updater: Cannot GET %s.", URL.c_str());
+        HTTPrelease(HTTPtoken);
+        state = checkAutoUpdate;
+        lastVersionCheck = UTCtime();
+        return 1;
+      }
+      trace(T_UPDATE,6);   
       request->setTimeout(5);
       request->onData([](void* arg, asyncHTTPrequest* request, size_t available){
         uint8_t *buf = new uint8_t[500];
@@ -175,19 +225,24 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       while(request->readyState() != 4){
         yield();
       }
+      trace(T_UPDATE,6);   
       endLedCycle();
       HTTPrelease(HTTPtoken);
       size_t fileSize = releaseFile.size();
       releaseFile.close();
+      trace(T_UPDATE,6);   
       if(request->responseHTTPcode() != 200){
-        log("Updater: Download failed HTTPcode %s", request->responseHTTPcode());
+        log("Updater: Download failed HTTPcode %d", request->responseHTTPcode());
         delete request;
         request = nullptr;
-        deleteRecursive("download");
-        state = getVersion;
-        break;
+        String filePath = "download/" + updateVersion + ".bin";
+        deleteRecursive(filePath);
+        state = checkAutoUpdate;
+        lastVersionCheck = UTCtime();
+        return 1;
       }
       log("Updater: Release downloaded %dms, size %d", request->elapsedTime(), fileSize);
+      releaseFile.close();
       delete request;
       request = nullptr;
       state = install;
@@ -195,9 +250,10 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
     }
 
     case install: {
+      trace(T_UPDATE,7); 
       if(unpackUpdate(updateVersion)){
         if(installUpdate(updateVersion)){
-          log ("Firmware updated, restarting.");
+          log ("Updater: Firmware updated, restarting.");
           delay(500);
           ESP.restart();
         }
@@ -245,6 +301,7 @@ bool unpackUpdate(String version){
   String filePath = "download/" + version + ".bin";
   File releaseFile = SD.open((char*)filePath.c_str(), FILE_READ);
   if(! releaseFile){
+    log("Updater: %s not found", filePath.c_str());
     return false;
   }
   int signatureSize = 64;
@@ -259,7 +316,7 @@ bool unpackUpdate(String version){
     binarySize -= sizeof(headers.updtHeader);
     if((memcmp(headers.updtHeader.IotaWatt, "IotaWatt", 8) != 0) ||
        (memcmp(headers.updtHeader.release, version.c_str(), 8) != 0)) {
-      log("Update file header invalid. %s %s",headers.updtHeader.IotaWatt,headers.updtHeader.release);
+      log("Updater: release file header invalid. %s %s",headers.updtHeader.IotaWatt,headers.updtHeader.release);
       releaseFile.close();
       return false;
     }
@@ -268,7 +325,7 @@ bool unpackUpdate(String version){
 
   deleteRecursive(String(version));
   if( ! SD.mkdir(version.c_str())){
-    log("Cannot create update directory");
+    log("Updater: Cannot create update directory");
     releaseFile.close();
     return false;
   }
@@ -279,7 +336,7 @@ bool unpackUpdate(String version){
     sha256.update(headers.header,sizeof(headers.fileHeader));
     binarySize -= sizeof(headers.fileHeader);
     if(memcmp(headers.fileHeader.file,"FILE",4) != 0) {
-      log("Update file format error.");
+      log("Updater: Release file format error.");
       releaseFile.close();
       return false;
     }
@@ -293,7 +350,7 @@ bool unpackUpdate(String version){
     uint32_t fileSize = headers.fileHeader.len;
     File outFile = SD.open((char*)filePath.c_str(), FILE_WRITE);
     if( ! outFile){
-      log("Update: unable to create file: %s", filePath.c_str());
+      log("Updater: unable to create file: %s", filePath.c_str());
       releaseFile.close();
       return false;
     }
@@ -343,7 +400,7 @@ bool unpackUpdate(String version){
     return false;
   }
   delete[] key;
-  log("Updater: Update downloaded and signature verified");
+  log("Updater: signature verified");
   return binaryFound;
 }
 
@@ -378,7 +435,11 @@ bool installUpdate(String version){
   update.setMD5((char*)buff);
   delete[] buff;
   if( ! update.end()){
-    log("Updater: update end failed. %d", update.getError());
+    int error = update.getError();
+    xbuf errorMsg;
+    update.printError(errorMsg);
+    log("Updater: %s", errorMsg.readStringUntil('\r').c_str());
+    log("Updater: update failed");
     return false; 
   }
   SD.remove((char*)inPath.c_str());

@@ -37,7 +37,6 @@ extern char*    influxPwd;
 extern char*    influxRetention;
 extern char*    influxMeasurement;
 extern char*    influxFieldKey;
-extern char*    influxURL;
 extern char*    influxDataBase;
 extern influxTag* influxTagSet;  
 extern ScriptSet* influxOutputs;

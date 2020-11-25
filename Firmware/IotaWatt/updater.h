@@ -5,5 +5,6 @@ bool      checkUpdate();
 bool      downloadUpdate(String version);
 bool      installUpdate(String version);
 bool      copyUpdate(String version);
+bool      unpackUpdate(String version);
 
 #endif

@@ -18,7 +18,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.   
 ***********************************************************************************/
-#define IOTAWATT_VERSION "02_03_21"
+#define IOTAWATT_VERSION "02_05_11"
+#define DEVICE_NAME "IotaWatt"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
@@ -26,12 +27,13 @@
 #define MAX(a,b) ((a>b)?a:b)
 
 #include <Arduino.h>
+#include <time.h>
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <WiFiManager.h>
-#include <ESP8266mDNS.h>
+#include "ESP8266mDNS_Legacy.h"
 #include <ESP8266LLMNR.h>
-#include <DNSServer.h>
+#include <DNSServer.h> 
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESPAsyncTCP.h>
@@ -65,33 +67,42 @@
 #include "auth.h"
 #include "spiffs.h"
 #include "timeServices.h"
-#include "pvoutput.h"
+#include "PVoutput.h"
+#include "CSVquery.h"
+#include "xurl.h"
 
-
-      // Declare instances of major classes
+      // Declare global instances of classes
 
 extern WiFiClient WifiClient;
 extern WiFiManager wifiManager;
 extern ESP8266WebServer server;
-extern DNSServer dnsServer;
-extern IotaLog currLog;
-extern IotaLog histLog;
+extern DNSServer DNS_server;
+using MDNSResponder = Legacy_MDNSResponder::MDNSResponder;
+extern MDNSResponder MDNS;
+extern IotaLog Current_log;
+extern IotaLog History_log;
+extern IotaLog *Export_log;
 extern RTC_PCF8523 rtc;
-extern Ticker ticker;
-extern messageLog msglog;
+extern Ticker Led_timer;
+extern messageLog Message_log;
+
+#define SECONDS_PER_MINUTE 60
+#define SECONDS_PER_HOUR 3600
+#define SECONDS_PER_SEVENTY_YEARS 2208988800UL
 
 #define MS_PER_HOUR   3600000UL
-#define SEVENTY_YEAR_SECONDS  2208988800UL
 
       // Declare filename Strings of system files.
 
+#define IOTA_EXPORT_LOG_PATH  "iotawatt/export.log"
+#define IOTA_CURRENT_LOG_PATH "iotawatt/iotalog.log"
+#define IOTA_HISTORY_LOG_PATH "iotawatt/histlog.log"
+#define IOTA_MESSAGE_LOG_PATH "iotawatt/iotamsgs.txt"
+
 extern char* deviceName;
-extern const char* IotaLogFile;
-extern const char* historyLogFile;
-extern const char* IotaMsgLog;
-extern const char*  ntpServerName;
 
         // Define the hardware pins
+
 
 #define pin_CS_ADC0 0                       // Define the hardware SPI chip select pins
 #define pin_CS_ADC1 2
@@ -165,7 +176,11 @@ struct EEprom {
 #define T_WiFi 21          // WiFi service
 #define T_PVoutput 22      // PVoutput class 
 #define T_samplePhase 23   // Sample phase (within samplePower) 
-#define T_RTCWDT 24        // Dead man pedal service         
+#define T_RTCWDT 24        // Dead man pedal service
+#define T_CSVquery 25      // CSVquery
+#define T_xurl 26          // xurl 
+#define T_utility 27       // Miscelaneous utilities 
+#define T_EXPORTLOG 28     // Export log                      
 
       // LED codes
 
@@ -186,11 +201,18 @@ struct EEprom {
 extern uint32_t lastCrossMs;           // Timestamp at last zero crossing (ms) (set in samplePower)
 extern uint32_t nextCrossMs;           // Time just before next zero crossing (ms) (computed in Loop)
 
-enum priorities: byte {priorityLow=3, priorityMed=2, priorityHigh=1};
+enum priorities: byte { priorityLow=2, 
+                        priorityLM=3, 
+                        priorityML=4,
+                        priorityMed=5,
+                        priorityMH=6,
+                        priorityHM=7,
+                        priorityHigh=8
+                      };
 
 struct serviceBlock {                  // Scheduler/Dispatcher list item (see comments in Loop)
   serviceBlock* next;                  // Next serviceBlock in list
-  uint32_t callTime;                   // Time (in NTP seconds) to dispatch
+  uint32_t callTime;                   // Time in millis to dispatch
   uint32_t (*service)(serviceBlock*);  // the SERVICE
   priorities priority;                 // All things equal tie breaker
   uint8_t   taskID;
@@ -209,9 +231,11 @@ extern serviceBlock* serviceQueue;     // Head of ordered list of services
 #define MAXINPUTS 15                          // Compile time input channels, can't be changed easily 
 extern IotaInputChannel* *inputChannel;       // -->s to incidences of input channels (maxInputs entries)
 extern uint8_t  maxInputs;                    // channel limit based on configured hardware (set in Config)
-extern uint16_t deviceVersion;                // high byte major version low byte minor version
+extern uint8_t  deviceMajorVersion;           // Major version of hardware 
+extern uint8_t  deviceMinorVersion;           // Minor version of hardware 
 extern float    VrefVolts;                    // Voltage reference shunt value used to calibrate
                                               // the ADCs. (can be specified in config.device.refvolts)
+extern int16_t* masterPhaseArray;             // Single array containing all individual phase shift arrays    
 #define Vadj_3 13                             // Voltage channel attenuation ratio
 
       // ****************************************************************************
@@ -221,6 +245,7 @@ extern float    VrefVolts;                    // Voltage reference shunt value u
       // handlers if the statistics are used.
 
 extern float   frequency;                             // Split the difference to start
+extern float   configFrequency;                       // Frequency at last config (phase corrrection basis)         
 extern float   samplesPerCycle;                       // Here as well
 extern float   cycleSampleRate;
 extern int16_t cycleSamples;
@@ -239,7 +264,7 @@ extern bool     hasSD;
 extern File     uploadFile;
 extern SHA256*  uploadSHA;  
 extern boolean  serverAvailable;          // Set false when asynchronous handler active to avoid new requests
-extern boolean  wifiConnected;
+extern uint32_t wifiConnectTime;          // Time of connection (zero if disconnected)
 extern uint8_t  configSHA256[32];         // Hash of config file
 
 #define HTTPrequestMax 2                  // Maximum number of concurrent HTTP requests  
@@ -254,7 +279,7 @@ extern authSession* authSessions;         // authSessions list head;
 extern uint16_t   authTimeout;            // Timeout interval of authSession in seconds;   
 
       // ****************************** Timing and time data *************************
-#define  SEVENTY_YEAR_SECONDS 2208988800UL
+#define  SECONDS_PER_SEVENTY_YEARS 2208988800UL
 extern int32_t  localTimeDiff;                 // Local time Difference in minutes
 extern tzRule*  timezoneRule;                  // Rule for DST 
 extern uint32_t programStartTime;;             // Time program started (UnixTime)
@@ -268,8 +293,10 @@ extern uint32_t updaterServiceInterval;        // Interval (sec) to check for so
 
 extern bool     hasRTC;
 extern bool     RTCrunning;
-extern bool     powerFailRestart;               // Set true on power fail restart (detected by RTC)  
+extern bool     powerFailRestart;               // Set true on power fail restart (detected by RTC)
+extern bool     validConfig;                    // Config exists and Json parses first level     
 extern bool     RTClowBat;                      // Set true when battery is low
+extern bool     sampling;                       // All channels have been sampled  
 
 extern char     ledColor[12];                   // Pattern to display led, each char is 500ms color - R, G, Blank
 extern uint8_t  ledCount;                       // Current index into cycle
@@ -285,9 +312,13 @@ extern const char     base64codes_P[];
       // ************************ ADC sample pairs ************************************
 
 #define MAX_SAMPLES 1000
-extern int16_t samples;                           // Number of samples taken in last sampling
-extern int16_t Vsample [MAX_SAMPLES];             // voltage/current pairs during sampling
-extern int16_t Isample [MAX_SAMPLES];
+
+extern uint32_t sumVsq;                           // sampleCycle will compute these while collecting samples    
+extern uint32_t sumIsq;
+extern int32_t  sumVI;
+extern int16_t  samples;                          // Number of samples taken in last sampling
+extern int16_t  Vsample [MAX_SAMPLES];            // voltage/current pairs during sampling
+extern int16_t  Isample [MAX_SAMPLES];
 
       // ************************ Declare global functions
 void      setup();
@@ -305,6 +336,7 @@ uint32_t  influxService(struct serviceBlock*);
 uint32_t  timeSync(struct serviceBlock*);
 uint32_t  updater(struct serviceBlock*);
 uint32_t  WiFiService(struct serviceBlock*);
+uint32_t  exportLog(struct serviceBlock *_serviceBlock);
 uint32_t  getFeedData(); //(struct serviceBlock*);
 
 uint32_t  logReadKey(IotaLogRecord* callerRecord);
@@ -317,7 +349,7 @@ void      setLedState();
 void      dropDead(void);
 void      dropDead(const char*);
 
-boolean   getConfig(void);
+boolean   getConfig(const char* configPath);
 
 size_t    sendChunk(char* buf, size_t bufPos);
 

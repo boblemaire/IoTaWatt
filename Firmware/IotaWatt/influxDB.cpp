@@ -1,10 +1,12 @@
 #include "IotaWatt.h"
 #include "xbuf.h"
+#include "xurl.h"
 
 bool      influxStarted = false;                    // True when Service started
 bool      influxStop = false;                       // Stop the influx service
 bool      influxRestart = false;                    // Restart the influx service
 bool      influxLogHeap = false;                    // Post a heap size measurement (diag)
+bool      influxStaticKeyset = true;                // True if keyset has no variables (except $device)
 uint32_t  influxLastPost = 0;                       // Last acknowledge post for status report
 
     // Configuration settings
@@ -18,7 +20,7 @@ char*     influxPwd = nullptr;
 char*     influxRetention = nullptr;
 char*     influxMeasurement = nullptr;
 char*     influxFieldKey = nullptr; 
-char*     influxURL = nullptr;
+xurl*      influxURL = nullptr;
 char*     influxDataBase = nullptr;
 influxTag* influxTagSet = nullptr;  
 ScriptSet* influxOutputs;      
@@ -41,15 +43,15 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
   static IotaLogRecord* oldRecord = nullptr;
   static uint32_t lastRequestTime = 0;          // Time of last measurement in last or current request
   static uint32_t lastBufferTime = 0;           // Time of last measurement reqData buffer
-  static uint32_t UnixNextPost = UTCtime();    // Next measurement to be posted
+  static uint32_t UnixNextPost = UTCtime();     // Next measurement to be posted
   static xbuf reqData;                          // Current request buffer
   static uint32_t reqUnixtime = 0;              // First measurement in current reqData buffer
   static int  reqEntries = 0;                   // Number of measurement intervals in current reqData
   static int16_t retryCount = 0;                // HTTP error count
   static asyncHTTPrequest* request = nullptr;   // -> instance of asyncHTTPrequest
-  static uint32_t postFirstTime = UTCtime();   // First measurement in outstanding post request
-  static uint32_t postLastTime = UTCtime();    // Last measurement in outstanding post request
-  static size_t reqDataLimit = 4000;            // transaction yellow light size
+  static uint32_t postFirstTime = UTCtime();    // First measurement in outstanding post request
+  static uint32_t postLastTime = UTCtime();     // Last measurement in outstanding post request
+  static size_t reqDataLimit = 3000;            // transaction yellow light size
   static uint32_t HTTPtoken = 0;                // HTTP resource reservation token
   static Script* script = nullptr;              // current Script
 
@@ -70,10 +72,10 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
 
           // We post from the log, so wait if not available.          
 
-      if(!currLog.isOpen()){                  
+      if(!Current_log.isOpen()){                  
         return UTCtime() + 5;
       }
-      log("influxDB: started, url=%s:%d, db=%s, interval=%d", influxURL, influxPort,
+      log("influxDB: started, url=%s, db=%s, interval=%d", influxURL->build().c_str(),
               influxDataBase, influxDBInterval);
       state = queryLastPostTime;
       trace(T_influx,2);
@@ -111,7 +113,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       request->setDebug(false);
       {
         char URL[100];
-        sprintf_P(URL, PSTR("%s:%d/query"),influxURL,influxPort);
+        sprintf_P(URL, PSTR("%s/query"),influxURL->build().c_str());
         if( ! request->open("POST", URL)){
           HTTPrelease(HTTPtoken);
           return UTCtime() + 2;
@@ -129,9 +131,11 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       trace(T_influx,4);
       request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
       reqData.flush();
-      reqData.printf_P(PSTR("db=%s&epoch=s&q=SELECT LAST(%s) FROM %s"), influxDataBase,
-            influxVarStr(influxFieldKey, script).c_str(),
-            influxVarStr(influxMeasurement, script).c_str());
+      reqData.printf_P(PSTR("db=%s&epoch=s"), influxDataBase); 
+      if(influxRetention){
+        reqData.printf_P(PSTR("&rp=%s"), influxRetention);
+      }
+      reqData.printf_P(PSTR("&q= SELECT LAST(% s) FROM % s "),influxVarStr(influxFieldKey, script).c_str(),influxVarStr(influxMeasurement, script).c_str());
       influxTag* tag = influxTagSet;
       trace(T_influx,41);
       while(tag){
@@ -166,49 +170,71 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       }
       String response = request->responseText(); 
       int HTTPcode = request->responseHTTPcode();
-      delete request;
-      request = nullptr;
+      
       if(HTTPcode < 0){
-        if(retryCount++ == 20){
+        if(retryCount++ == 10){
           log("influxDB: last entry query failed: %d, retrying.", HTTPcode);
         }
         state = queryLast;
-        return UTCtime() + (retryCount < 20 ? 1 : retryCount / 10);
+        return UTCtime() + (retryCount <= 10 ? 2 : 10);
       }
+      delete request;
+      request = nullptr;
       retryCount = 0;
       trace(T_influx,5);
-      
+
+            // Check for authentication error
+
+      if(HTTPcode == 401){
+        log("influxDB: Authentication failed. Stopping influx service.");
+        influxStop = true;
+        state = post;
+        return 1;
+      }
+
+            // Check for invalid request.
+
+      if(HTTPcode != 200){
+        log("influxDB: Last entry query failed.");
+        log("influxDB: HTTPcode %d, %.60s", HTTPcode, response.c_str());
+        influxStop = true;
+        state = post;
+        return 1;
+      }
+
             // Json parse the response to get the columns and values arrays
             // and extract time
 
-      DynamicJsonBuffer Json;
-      JsonObject& results = Json.parseObject(response);
-      if(results.success()){ 
-        const char* error = results.get<const char*>("error");
-        if(error){
-          log("influxDB: last entry query failed %d %s", HTTPcode, error);
-          influxStop = true;
-          state = post;
-          return 1;
-        }
-        JsonArray& columns = results["results"][0]["series"][0]["columns"];
-        JsonArray& values = results["results"][0]["series"][0]["values"][0];
-        if(columns.success() && values.success()){
-          for(int i=0; i<columns.size(); i++){
-            if(strcmp("time",columns[i].as<char*>()) == 0){
-              if(values[i].as<unsigned long>() > influxLastPost){
-                influxLastPost = values[i].as<unsigned long>();
-              }
-              break;
-            }
-          }
-        } else {
-          const char* error = results["results"][0]["error"].as<const char*>();
+      {
+        DynamicJsonBuffer Json;
+        JsonObject& results = Json.parseObject(response);
+        if(results.success()){ 
+          const char* error = results.get<const char*>("error");
           if(error){
             log("influxDB: last entry query failed %d %s", HTTPcode, error);
             influxStop = true;
             state = post;
             return 1;
+          }
+          JsonArray& columns = results["results"][0]["series"][0]["columns"];
+          JsonArray& values = results["results"][0]["series"][0]["values"][0];
+          if(columns.success() && values.success()){
+            for(int i=0; i<columns.size(); i++){
+              if(strcmp("time",columns[i].as<char*>()) == 0){
+                if(values[i].as<unsigned long>() > influxLastPost){
+                  influxLastPost = values[i].as<unsigned long>();
+                }
+                break;
+              }
+            }
+          } else {
+            const char* error = results["results"][0]["error"].as<const char*>();
+            if(error){
+              log("influxDB: last entry query failed %d %s", HTTPcode, error);
+              influxStop = true;
+              state = post;
+              return 1;
+            }
           }
         }
       }
@@ -236,7 +262,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         oldRecord = new IotaLogRecord;
       }
       oldRecord->UNIXtime = influxLastPost;      
-      currLog.readKey(oldRecord);
+      Current_log.readKey(oldRecord);
       trace(T_influx,6);
 
           // Assume that record was posted (not important).
@@ -286,7 +312,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           influxMeasurement = nullptr;
           delete[] influxFieldKey;
           influxFieldKey = nullptr; 
-          delete[] influxURL;
+          delete influxURL;
           influxURL = nullptr;
           delete[] influxDataBase;
           influxDataBase = nullptr;
@@ -299,17 +325,17 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         }
         
       }
-
+      
           // If not enough entries for bulk-send, come back in one second;
 
-      if(((currLog.lastKey() - influxLastPost) / influxDBInterval + reqEntries) < influxBulkSend){
+      if(((Current_log.lastKey() - influxLastPost) / influxDBInterval + reqEntries) < influxBulkSend){
         return UTCtime() + 1;
-      } 
+      }
 
           // If buffer isn't full,
           // add another measurement.
 
-      if(reqData.available() < reqDataLimit && UnixNextPost <= currLog.lastKey()){  
+      if(reqData.available() < reqDataLimit && UnixNextPost <= Current_log.lastKey()){  
 
             // Read the next log record.
 
@@ -318,7 +344,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         }
         trace(T_influx,7);
         logRecord->UNIXtime = UnixNextPost;
-        currLog.readKey(logRecord);
+        Current_log.readKey(logRecord);
         trace(T_influx,7);
         
             // Compute the time difference between log entries.
@@ -326,7 +352,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
             
         double elapsedHours = logRecord->logHours - oldRecord->logHours;
         if(elapsedHours == 0){
-          if(currLog.readNext(logRecord) == 0) {
+          if(Current_log.readNext(logRecord) == 0) {
             UnixNextPost = logRecord->UNIXtime - (logRecord->UNIXtime % influxDBInterval);
           }
           UnixNextPost += influxDBInterval;
@@ -339,23 +365,35 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       
         script = influxOutputs->first();
         trace(T_influx,7);
+        String lastMeasurement;
+        String thisMeasurement;
         while(script){
           double value = script->run(oldRecord, logRecord, elapsedHours);
           if(value == value){
-            reqData.write(influxVarStr(influxMeasurement, script));
-            if(influxTagSet){
-              trace(T_influx,71);
-              influxTag* tag = influxTagSet;
-              while(tag){
-                reqData.printf_P(PSTR(",%s=%s"), tag->key, influxVarStr(tag->value, script).c_str());
-                tag = tag->next;
+            thisMeasurement = influxVarStr(influxMeasurement, script);
+            if(influxStaticKeyset && thisMeasurement.equals(lastMeasurement)){
+              reqData.printf_P(PSTR(",%s=%.*f"), influxVarStr(influxFieldKey, script).c_str(), script->precision(), value);
+            } else {
+              if(lastMeasurement.length()){
+                reqData.printf(" %d\n", UnixNextPost);
               }
+              reqData.write(thisMeasurement);
+              if(influxTagSet){
+                trace(T_influx,71);
+                influxTag* tag = influxTagSet;
+                while(tag){
+                  reqData.printf_P(PSTR(",%s=%s"), tag->key, influxVarStr(tag->value, script).c_str());
+                  tag = tag->next;
+                }
+              }
+              reqData.printf_P(PSTR(" %s=%.*f"), influxVarStr(influxFieldKey, script).c_str(), script->precision(), value);
             }
-            reqData.printf_P(PSTR(" %s=%.*f"), influxVarStr(influxFieldKey, script).c_str(), script->precision(), value);
-            reqData.printf(" %d\n", UnixNextPost);
           }
+          lastMeasurement = thisMeasurement;
           script = script->next();
         }
+        reqData.printf(" %d\n", UnixNextPost);
+
         trace(T_influx,7);
         delete oldRecord;
         oldRecord = logRecord;
@@ -365,6 +403,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
         reqEntries++;
         lastBufferTime = UnixNextPost;
         UnixNextPost +=  influxDBInterval - (UnixNextPost % influxDBInterval);
+        return 1;
       }
 
             // If there's no request pending and we have bulksend entries,
@@ -410,7 +449,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       trace(T_influx,8);
       {
         char URL[128];
-        size_t len = sprintf_P(URL, PSTR("%s:%d/write?precision=s&db=%s"), influxURL, influxPort, influxDataBase);
+        size_t len = sprintf_P(URL, PSTR("%s/write?precision=s&db=%s"), influxURL->build().c_str(), influxDataBase);
         if(influxRetention){
           sprintf(URL+len,"&rp=%s", influxRetention);
         }
@@ -437,7 +476,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       reqEntries = 0;
       lastRequestTime = lastBufferTime;
       state = waitPost;
-        1;
+      return 1;
     } 
 
     case waitPost: {
@@ -445,7 +484,7 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
       if(request && request->readyState() == 4){
         HTTPrelease(HTTPtoken);
         trace(T_influx,9);
-        if(request->responseHTTPcode() != 204){
+        if(request->responseHTTPcode() < 0){
           if(++retryCount == 50){
             log("influxDB: Post Failed: %d", request->responseHTTPcode());
           }
@@ -454,6 +493,25 @@ uint32_t influxService(struct serviceBlock* _serviceBlock){
           state = getLastRecord;
           return UTCtime() + (retryCount < 30 ? 1 : retryCount / 10);
         }
+
+            // Check for unsuccessful post.
+
+        if(request->responseHTTPcode() != 204){
+          if(++retryCount == 10){
+            DynamicJsonBuffer Json;
+            JsonObject& results = Json.parseObject(request->responseText().c_str());
+            if(results.success()){ 
+              log("influxDB: Post Failed: %d %s", request->responseHTTPcode(), results.get<const char*>("error"));
+            } else {
+              log("influxDB: Post Failed: %d", request->responseHTTPcode());
+            }
+          }
+          delete request;
+          request = nullptr; 
+          state = getLastRecord;
+          return UTCtime() + (retryCount < 10 ? 1 : 30);
+        }
+
         trace(T_influx,9);
         retryCount = 0;
         influxLastPost = lastRequestTime; 
@@ -485,19 +543,16 @@ bool influxConfig(const char* configObj){
   influxRevision = revision;
   influxStop = config["stop"].as<bool>();
   influxLogHeap = config["heap"].as<bool>();
-  String URL = config.get<String>("url");
-  if(URL.substring(0,7).equalsIgnoreCase("http://")){
-    URL.remove(0,7);
-  } 
-  else if(URL.substring(0,8).equalsIgnoreCase("https://")){
-    URL.remove(0,8);
-  }  
-  if(URL.indexOf(":") > 0){
-    influxPort = URL.substring(URL.indexOf(":")+1).toInt();
-    URL.remove(URL.indexOf(":"));
+  if( ! influxURL){
+    influxURL = new xurl;
   }
-  delete[] influxURL;
-  influxURL = charstar(URL.c_str());
+  
+  influxURL->parse(config.get<char*>("url"));
+  influxURL->query(nullptr);
+  if( ! influxURL->port()){
+    influxURL->port(":8086");
+  }
+  influxURL->method("HTTP://");
   trace(T_influxConfig,4);
   delete[] influxDataBase;
   influxDataBase = charstar(config.get<char*>("database"));
@@ -539,16 +594,29 @@ bool influxConfig(const char* configObj){
       influxTagSet = tag;
       tag->key = charstar(tagset[i]["key"].as<const char*>());
       tag->value = charstar(tagset[i]["value"].as<const char*>());
+      if((strstr(tag->value,"$units") != nullptr) || (strstr(tag->value,"$name") != nullptr)) influxStaticKeyset = false;
     }
   }
+
+        // Build the measurement scriptset
 
   delete influxOutputs;
   influxOutputs = nullptr;
   JsonVariant var = config["outputs"];
   if(var.success()){
     trace(T_influxConfig,9);
-    influxOutputs = new ScriptSet(var.as<JsonArray>()); 
+    influxOutputs = new ScriptSet(var.as<JsonArray>());
   }
+  else {
+    return false;
+  }
+
+        // sort the measurements by measurement name
+
+  influxOutputs->sort([](Script* a, Script* b)->int {
+    return strcmp(influxVarStr(influxMeasurement, a).c_str(), influxVarStr(influxMeasurement, b).c_str());
+  });
+
   if( ! influxStarted) {
     trace(T_influxConfig,10);
     NewService(influxService, T_influx);

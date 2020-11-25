@@ -1,7 +1,8 @@
 #ifndef webServer_h
 #define webServer_h
+#include "iotawatt.h"
 #include "auth.h"
-#include "libb64/cdecode.h"
+#include <libb64/cdecode.h>
 
 extern const char txtPlain_P[];
 extern const char appJson_P[];
@@ -32,9 +33,13 @@ void handleGetFeedData();
 void handleGraphCreate();
 void handleGraphUpdate();
 void handleGraphGetall();
+void handleGraphGetallplus();
 void handleGraphDelete();
 void sendMsgFile(File &dataFile, int32_t relPos);
 void handleGetConfig();
 void handlePasswords();
+void handleQuery();
+void handleUpdate();
+void handleDSTtest();
 
 #endif

@@ -1,471 +1,635 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-    <head>
-        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Emoncms - graph</title>
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-status-bar-style" content="black">
-            <!-- Latest compiled and minified CSS -->
-            <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css">
-            
-            <!-- jQuery library -->
-            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-            
-            <!-- Popper JS -->
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
-            
-            <!-- Latest compiled JavaScript -->
-            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script> 
-    </head>
-    <body>
-        <div id="wrap">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IotaWatt - graph</title>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <!-- Latest compiled and minified CSS -->
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css"
+    />
 
-                <div class = "container-fluid"><div class="row-fluid"><div class="span12">
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
-<script language="javascript" type="text/javascript" src="https://iotawatt.com/flot/flot.min.js"></script>            
-<script language="javascript" type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery.flot@0.8.3/jquery.flot.time.min.js"></script>
+    <!-- Popper JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
 
-<style>
-#wrapper {
-  padding:0px;
-  margin:0px;
-  padding-left: 250px;
-}
+    <!-- Latest compiled JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+  </head>
+  <body>
+    <div id="wrap">
+      <div class="container-fluid">
+        <div class="row-fluid">
+          <div class="span12">
+            <script
+              language="javascript"
+              type="text/javascript"
+              src="https://iotawatt.com/flot/flot.min.js"
+            ></script>
+            <script
+              language="javascript"
+              type="text/javascript"
+              src="https://cdn.jsdelivr.net/npm/jquery.flot@0.8.3/jquery.flot.time.min.js"
+            ></script>
 
-#sidebar-wrapper {
-  margin-top:-10px;
-  margin-left: -250px;
-  left: 250px;
-  width: 250px;
-  background: #eee;
-  position: fixed;
-  overflow-y: auto;
-  z-index: 1000;
-}
+            <style>
+              #wrapper {
+                padding: 0px;
+                margin: 0px;
+                padding-left: 250px;
+              }
 
-#page-content-wrapper {
-  width: 100%;
-  padding-left:0px;
-}
+              #sidebar-wrapper {
+                margin-top: -10px;
+                margin-left: -250px;
+                left: 250px;
+                width: 250px;
+                background: #eee;
+                position: fixed;
+                overflow-y: auto;
+                z-index: 1000;
+              }
 
+              #page-content-wrapper {
+                width: 100%;
+                padding-left: 0px;
+              }
+            </style>
 
-</style>
+            <div id="wrapper">
+              <div id="sidebar-wrapper">
+                <div style="padding-left: 10px;">
+                  <div
+                    id="sidebar-close"
+                    style="float: right; cursor: pointer; padding: 10px;"
+                  >
+                    <i class="icon-remove"></i>
+                  </div>
+                  <h3>Feeds</h3>
+                </div>
+                <div
+                  style="
+                    overflow-x: hidden;
+                    background-color: #f3f3f3;
+                    width: 100%;
+                  "
+                >
+                  <table class="table" id="feeds"></table>
+                </div>
 
-<div id="wrapper">
-    <div id="sidebar-wrapper">
-            <div style="padding-left:10px;">
-                <div id="sidebar-close" style="float:right; cursor:pointer; padding:10px;"><i class="icon-remove"></i></div>
-                <h3>Feeds</h3>
-                
-            </div>
-            <div style="overflow-x: hidden; background-color:#f3f3f3; width:100%">
-                <table class="table" id="feeds">
-                </table>
-            </div>
-            
-            <div style="padding:10px;">
-                <h4>My Graphs</h4>
-                
-                <select id="graph-select" style="width:215px">
-                </select>
-                
-                <br><br>
-                <b>Graph Name:</b><br>
-                <input id="graph-name" type="text" style="width:200px" />
-                <button id="graph-delete" class="btn" style="display:none">Delete</button>
-                <button id="graph-save" class="btn">Save</button>
-            </div>
-    </div>
+                <div style="padding: 10px;">
+                  <h4>My Graphs</h4>
 
-    <div id="page-content-wrapper" style="max-width:1280px">
-        
-        <h3 id="heading">Data viewer</h3> 
+                  <select id="graph-select" style="width: 215px;"> </select>
 
-        <div id="error" style="display:none"></div>
+                  <br /><br />
+                  <b>Graph Name:</b><br />
+                  <input id="graph-name" type="text" style="width: 200px;" />
+                  <button id="graph-delete" class="btn" style="display: none;">
+                    Delete
+                  </button>
+                  <button id="graph-save" class="btn">Save</button>
+                </div>
+              </div>
 
-        <div id="navigation" style="padding-bottom:5px;">
-            <button class="btn" id="sidebar-open"><i class="icon-list"></i></button>
-            <select id="select-time" class="btn sel graph_time" name="options" style="width: 150px">
+              <div id="page-content-wrapper" style="max-width: 1280px;">
+                <h3 id="heading">Data viewer</h3>
+
+                <div id="error" style="display: none;"></div>
+
+                <div id="navigation" style="padding-bottom: 5px;">
+                  <button class="btn" id="sidebar-open">
+                    <i class="icon-list"></i>
+                  </button>
+                  <select
+                    id="select-time"
+                    class="btn sel graph_time"
+                    name="options"
+                    style="width: 150px;"
+                  >
                     <option value="1" disabled>Select period</option>
-                    <option value='60'>Last 1 min</option>
-                    <option value='180'>Last 3 min</option>
-                    <option value='300'>Last 5 min</option>
-                    <option value='600'>Last 10 min</option>
-                    <option value='900'>Last 15 min</option>
-                    <option value='1800'>Last 30 min</option>
-                    <option value='3600' selected>Last 1 hour</option>
-                    <option value='10800'>Last 3 hours</option>
-                    <option value='21600'>Last 6 hours</option>
-                    <option value='43200'>Last 12 hours</option>
-                    <option value='86400'>Last 1 day</option>
-                    <option value='259200'>Last 3 days</option>
-                    <option value='604800'>Last 7 days</option>
-                    <option value='2592000'>Last 30 days</option>
-                    <option value='7776000'>Last 90 days</option>
-                    <option value='15552000'>Last 180 days</option>
-                    <option value='31536000'>Last 365 days</option>
-            </select>
-            <button id='graph_zoomin' class='btn'>+</button>
-            <button id='graph_zoomout' class='btn'>-</button>
-            <button id='graph_left' class='btn'><</button>
-            <button id='graph_right' class='btn'>></button>
-            
-            <div class="input-prepend input-append" style="float:right; margin-right:22px">
-            <span class="add-on">Show</span>
-            <span class="add-on">missing data: <input type="checkbox" id="showmissing" style="margin-top:1px" /></span>
-            <span class="add-on">legend: <input type="checkbox" id="showlegend" style="margin-top:1px" /></span>
-            <span class="add-on">feed tag: <input type="checkbox" id="showtag" style="margin-top:1px" /></span>
+                    <option value="60">Last 1 min</option>
+                    <option value="180">Last 3 min</option>
+                    <option value="300">Last 5 min</option>
+                    <option value="600">Last 10 min</option>
+                    <option value="900">Last 15 min</option>
+                    <option value="1800">Last 30 min</option>
+                    <option value="3600">Last 1 hour</option>
+                    <option value="10800">Last 3 hours</option>
+                    <option value="21600">Last 6 hours</option>
+                    <option value="43200">Last 12 hours</option>
+                    <option value="86400" selected>Last 1 day</option>
+                    <option value="259200">Last 3 days</option>
+                    <option value="604800">Last 7 days</option>
+                    <option value="2592000">Last 30 days</option>
+                    <option value="7776000">Last 90 days</option>
+                    <option value="15552000">Last 180 days</option>
+                    <option value="31536000">Last 365 days</option>
+                  </select>
+                  <button id="graph_zoomin" class="btn">+</button>
+                  <button id="graph_zoomout" class="btn">-</button>
+                  <button id="graph_left" class="btn"><</button>
+                  <button id="graph_right" class="btn">></button>
+
+                  <div
+                    class="input-prepend input-append"
+                    style="float: right; margin-right: 22px;"
+                  >
+                    <span class="add-on">Show</span>
+                    <span class="add-on"
+                      >missing data:
+                      <input
+                        type="checkbox"
+                        id="showmissing"
+                        style="margin-top: 1px;"
+                    /></span>
+                    <span class="add-on"
+                      >legend:
+                      <input
+                        type="checkbox"
+                        id="showlegend"
+                        style="margin-top: 1px;"
+                    /></span>
+                    <span class="add-on"
+                      >feed tag:
+                      <input
+                        type="checkbox"
+                        id="showtag"
+                        style="margin-top: 1px;"
+                    /></span>
+                  </div>
+
+                  <div style="clear: both;"></div>
+                </div>
+
+                <div
+                  id="histogram-controls"
+                  style="padding-bottom: 5px; display: none;"
+                >
+                  <div class="input-prepend input-append">
+                    <span class="add-on" style="width: 75px;"
+                      ><b>Histogram</b></span
+                    >
+                    <span class="add-on" style="width: 75px;">Type</span>
+                    <select id="histogram-type" style="width: 150px;">
+                      <option value="timeatvalue">Time at value</option>
+                      <option value="kwhatpower">kWh at Power</option>
+                    </select>
+                    <span class="add-on" style="width: 75px;">Resolution</span>
+                    <input
+                      id="histogram-resolution"
+                      type="text"
+                      style="width: 60px;"
+                    />
+                  </div>
+
+                  <button id="histogram-back" class="btn" style="float: right;">
+                    Back to main view
+                  </button>
+                </div>
+
+                <div id="placeholder_bound" style="width: 100%; height: 400px;">
+                  <div id="placeholder"></div>
+                </div>
+
+                <div id="info" style="padding: 20px; display: none;">
+                  <div
+                    class="input-prepend input-append"
+                    style="padding-right: 5px;"
+                  >
+                    <span class="add-on" style="width: 50px;">Start</span>
+                    <input
+                      id="request-start"
+                      type="text"
+                      style="width: 80px;"
+                    />
+
+                    <span class="add-on" style="width: 50px;">End</span>
+                    <input id="request-end" type="text" style="width: 80px;" />
+
+                    <span class="add-on" style="width: 50px;">Type</span>
+                    <select id="request-type" style="width: 120px;">
+                      <option value="interval">Fixed Interval</option>
+                      <option>Daily</option>
+                      <option>Weekly</option>
+                      <option>Monthly</option>
+                      <option>Annual</option>
+                    </select>
+
+                    <span class="fixed-interval-options">
+                      <input
+                        id="request-interval"
+                        type="text"
+                        style="width: 60px;"
+                      />
+                      <span class="add-on"
+                        >Fix
+                        <input
+                          id="request-fixinterval"
+                          type="checkbox"
+                          style="margin-top: 1px;"
+                      /></span>
+                      <span class="add-on"
+                        >Limit to data interval
+                        <input
+                          id="request-limitinterval"
+                          type="checkbox"
+                          style="margin-top: 1px;"
+                      /></span>
+                    </span>
+                  </div>
+
+                  <br />
+                  <div class="input-prepend input-append">
+                    <span class="add-on" style="width: 50px;">Y-axis:</span>
+                    <span class="add-on" style="width: 30px;">min</span>
+                    <input
+                      id="yaxis-min"
+                      type="text"
+                      style="width: 50px;"
+                      value="auto"
+                    />
+
+                    <span class="add-on" style="width: 30px;">max</span>
+                    <input
+                      id="yaxis-max"
+                      type="text"
+                      style="width: 50px;"
+                      value="auto"
+                    />
+                  </div>
+
+                  <div class="input-prepend input-append">
+                    <span class="add-on" style="width: 50px;">Y2-axis:</span>
+                    <span class="add-on" style="width: 30px;">min</span>
+                    <input
+                      id="y2axis-min"
+                      type="text"
+                      style="width: 50px;"
+                      value="auto"
+                    />
+
+                    <span class="add-on" style="width: 30px;">max</span>
+                    <input
+                      id="y2axis-max"
+                      type="text"
+                      style="width: 50px;"
+                      value="auto"
+                    />
+
+                    <button id="reload" class="btn">Reload</button>
+                  </div>
+
+                  <div id="window-info" style=""></div>
+                  <br />
+
+                  <table class="table">
+                    <tr>
+                      <th>Feed</th>
+                      <th>Type</th>
+                      <th>Color</th>
+                      <th>Fill</th>
+                      <th>Quality</th>
+                      <th>Min</th>
+                      <th>Max</th>
+                      <th>Diff</th>
+                      <th>Mean</th>
+                      <th>Stdev</th>
+                      <th>Wh</th>
+                      <th style="text-align: center;">Scale</th>
+                      <th style="text-align: center;">Delta</th>
+                      <th style="text-align: center;">Average</th>
+                      <th>DP</th>
+                      <th style="width: 120px;"></th>
+                    </tr>
+                    <tbody id="stats"></tbody>
+                  </table>
+
+                  <div class="input-prepend input-append">
+                    <button class="btn" id="showcsv">Show CSV Output</button>
+                    <span class="add-on csvoptions">Time format:</span>
+                    <select id="csvtimeformat" class="csvoptions">
+                      <option value="unix">Unix timestamp</option>
+                      <option value="seconds">Seconds since start</option>
+                      <option value="datestr">Date-time string</option>
+                    </select>
+                    <span class="add-on csvoptions">Null values:</span>
+                    <select id="csvnullvalues" class="csvoptions">
+                      <option value="show">Show</option>
+                      <option value="lastvalue">Replace with last value</option>
+                      <option value="remove">Remove whole line</option>
+                    </select>
+                  </div>
+
+                  <textarea
+                    id="csv"
+                    style="
+                      width: 98%;
+                      height: 500px;
+                      display: none;
+                      margin-top: 10px;
+                    "
+                  ></textarea>
+                </div>
+              </div>
             </div>
-            
-            <div style="clear:both"></div>
+
+            <!-- copy of https://emoncms.org/Modules/graph/vis.helper.js -->
+            <script>
+              var view = {
+                start: 0,
+                end: 0,
+                fixinterval: false,
+
+                clearTimeSelect: function () {
+                  $("#select-time").val(1);
+                },
+
+                zoomout: function () {
+                  var time_window = this.end - this.start;
+                  var middle = this.start + time_window / 2;
+                  time_window = time_window * 2;
+                  this.start = middle - time_window / 2;
+                  this.end = middle + time_window / 2;
+                  this.calc_interval();
+                  this.clearTimeSelect();
+                },
+
+                zoomin: function () {
+                  var time_window = this.end - this.start;
+                  var middle = this.start + time_window / 2;
+                  time_window = time_window * 0.5;
+                  this.start = middle - time_window / 2;
+                  this.end = middle + time_window / 2;
+                  this.calc_interval();
+                  this.clearTimeSelect();
+                },
+
+                panright: function () {
+                  var time_window = this.end - this.start;
+                  var shiftsize = time_window * 0.2;
+                  this.start += shiftsize;
+                  this.end += shiftsize;
+                  this.calc_interval();
+                },
+
+                panleft: function () {
+                  var time_window = this.end - this.start;
+                  var shiftsize = time_window * 0.2;
+                  this.start -= shiftsize;
+                  this.end -= shiftsize;
+                  this.calc_interval();
+                },
+
+                timewindow: function (time) {
+                  //time is now in seconds
+                  this.start = new Date().getTime() - 1000 * time; //Get start time
+                  this.end = new Date().getTime(); //Get end time
+                  this.calc_interval();
+                },
+
+                calc_interval: function () {
+                  var npoints = 600;
+                  var interval = Math.round(
+                    ((this.end - this.start) * 0.001) / npoints
+                  );
+
+                  var outinterval = 5;
+                  if (interval > 10) outinterval = 10;
+                  if (interval > 15) outinterval = 15;
+                  if (interval > 20) outinterval = 20;
+                  if (interval > 30) outinterval = 30;
+                  if (interval > 60) outinterval = 60;
+                  if (interval > 120) outinterval = 120;
+                  if (interval > 180) outinterval = 180;
+                  if (interval > 300) outinterval = 300;
+                  if (interval > 600) outinterval = 600;
+                  if (interval > 900) outinterval = 900;
+                  if (interval > 1200) outinterval = 1200;
+                  if (interval > 1800) outinterval = 1800;
+                  if (interval > 3600 * 1) outinterval = 3600 * 1;
+                  if (interval > 3600 * 2) outinterval = 3600 * 2;
+                  if (interval > 3600 * 3) outinterval = 3600 * 3;
+                  if (interval > 3600 * 4) outinterval = 3600 * 4;
+                  if (interval > 3600 * 5) outinterval = 3600 * 5;
+                  if (interval > 3600 * 6) outinterval = 3600 * 6;
+                  if (interval > 3600 * 12) outinterval = 3600 * 12;
+                  if (interval > 3600 * 24) outinterval = 3600 * 24;
+
+                  if (!this.fixinterval) this.interval = outinterval;
+
+                  this.start =
+                    Math.floor((this.start * 0.001) / this.interval) *
+                    this.interval *
+                    1000;
+                  this.end =
+                    Math.ceil((this.end * 0.001) / this.interval) *
+                    this.interval *
+                    1000;
+                },
+              };
+
+              function stats(data) {
+                var sum = 0;
+                var i = 0;
+                var minval = 0;
+                var maxval = 0;
+                var npoints = 0;
+                var npointsnull = 0;
+
+                var val = null;
+                for (var z in data) {
+                  // var val = data[z][1];                   // 1) only calculated based on present values
+                  if (data[z][1] != null) val = data[z][1]; // 2) if value is missing use last value
+                  if (val != null) {
+                    if (i == 0) {
+                      maxval = val;
+                      minval = val;
+                    }
+                    if (val > maxval) maxval = val;
+                    if (val < minval) minval = val;
+                    sum += val;
+                    i++;
+                  }
+                  if (data[z][1] == null) npointsnull++;
+
+                  npoints++;
+                }
+                var mean = sum / i;
+                (sum = 0), (i = 0);
+                for (z in data) {
+                  sum += (data[z][1] - mean) * (data[z][1] - mean);
+                  i++;
+                }
+                var stdev = Math.sqrt(sum / i);
+
+                return {
+                  minval: minval,
+                  maxval: maxval,
+                  diff: maxval - minval,
+                  mean: mean,
+                  stdev: stdev,
+                  npointsnull: npointsnull,
+                  npoints: npoints,
+                };
+              }
+
+              // http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values/901144#901144
+              var urlParams;
+              (window.onpopstate = function () {
+                var match,
+                  pl = /\+/g, // Regex for replacing addition symbol with a space
+                  search = /([^&=]+)=?([^&]*)/g,
+                  decode = function (s) {
+                    return decodeURIComponent(s.replace(pl, " "));
+                  },
+                  query = window.location.search.substring(1);
+
+                urlParams = {};
+                while ((match = search.exec(query)))
+                  urlParams[decode(match[1])] = decode(match[2]);
+              })();
+
+              function tooltip(x, y, contents, bgColour) {
+                var offset = 15; // use higher values for a little spacing between `x,y` and tooltip
+                var elem = $('<div id="tooltip">' + contents + "</div>")
+                  .css({
+                    position: "absolute",
+                    display: "none",
+                    "font-weight": "bold",
+                    border: "1px solid rgb(255, 221, 221)",
+                    padding: "2px",
+                    "background-color": bgColour,
+                    opacity: "0.8",
+                  })
+                  .appendTo("body")
+                  .fadeIn(200);
+
+                var elemY = y - elem.height() - offset;
+                var elemX = x - elem.width() - offset;
+                if (elemY < 0) {
+                  elemY = 0;
+                }
+                if (elemX < 0) {
+                  elemX = 0;
+                }
+                elem.css({
+                  top: elemY,
+                  left: elemX,
+                });
+              }
+
+              function parseTimepickerTime(timestr) {
+                var tmp = timestr.split(" ");
+                if (tmp.length != 2) return false;
+
+                var date = tmp[0].split("/");
+                if (date.length != 3) return false;
+
+                var time = tmp[1].split(":");
+                if (time.length != 3) return false;
+
+                return (
+                  new Date(
+                    date[2],
+                    date[1] - 1,
+                    date[0],
+                    time[0],
+                    time[1],
+                    time[2],
+                    0
+                  ).getTime() / 1000
+                );
+              }
+
+              function readFile(path, responseHandler) {
+                var xmlHttp = new XMLHttpRequest();
+                xmlHttp.onreadystatechange = function () {
+                  if (this.readyState == 4 && this.status == 200) {
+                    if (this.getResponseHeader("X-configSHA256") !== null) {
+                      configSHA256 = this.getResponseHeader("X-configSHA256");
+                    }
+                    responseHandler(this.responseText);
+                  }
+                };
+                xmlHttp.open("GET", path, true);
+                xmlHttp.send();
+              }
+
+              function EbyId(id) {
+                return document.getElementById(id);
+              }
+            </script>
+
+            <script
+              language="javascript"
+              type="text/javascript"
+              src="graph.js"
+            ></script>
+
+            <script>
+              var path = location.protocol + "//" + location.host; // + "/";
+              var getbackup = false;
+              var configFileURL = "config.txt";
+
+              sidebar_resize();
+              graph_init_editor();
+
+              // Assign active feedid from URL
+              var urlparts = window.location.pathname.split("graph/");
+              if (urlparts.length == 2) {
+                feedid = parseInt(urlparts[1]);
+                f = getfeed(feedid);
+                feedlist.push({
+                  id: feedid,
+                  name: f.name,
+                  tag: f.tag,
+                  yaxis: 1,
+                  fill: 0,
+                  scale: 1.0,
+                  delta: false,
+                  dp: 1,
+                  plottype: "lines",
+                });
+              }
+
+              load_feed_selector();
+              graph_resize();
+
+              var timeWindow = 3600000 * 24; //default to 1 hour
+              var now = Math.round(+new Date() * 0.001) * 1000;
+              view.start = now - timeWindow;
+              view.end = now;
+              view.calc_interval();
+
+              if (document.domain != "iotawatt.com") {
+                readFile(configFileURL, function (response) {
+                  var config = JSON.parse(response);
+                  if (config.device.name !== null) {
+                    EbyId("heading").innerHTML =
+                      config.device.name + " Data Viewer";
+                  }
+                });
+              }
+
+              graph_reload();
+            </script>
+          </div>
         </div>
+      </div>
 
-        <div id="histogram-controls" style="padding-bottom:5px; display:none;">
-            <div class="input-prepend input-append">
-                <span class="add-on" style="width:75px"><b>Histogram</b></span>
-                <span class="add-on" style="width:75px">Type</span>
-                <select id="histogram-type" style="width:150px">
-                    <option value="timeatvalue" >Time at value</option>
-                    <option value="kwhatpower" >kWh at Power</option>
-                </select>
-                <span class="add-on" style="width:75px">Resolution</span>
-                <input id="histogram-resolution" type="text" style="width:60px"/>
-            </div>
-            
-            <button id="histogram-back" class="btn" style="float:right">Back to main view</button>
-        </div>
-
-        <div id="placeholder_bound" style="width:100%; height:400px;">
-            <div id="placeholder"></div>
-        </div>
-
-        <div id="info" style="padding:20px; display:none">
-            
-            <div class="input-prepend input-append" style="padding-right:5px">
-                <span class="add-on" style="width:50px">Start</span>
-                <input id="request-start" type="text" style="width:80px" />
-
-                <span class="add-on" style="width:50px">End</span>
-                <input id="request-end" type="text" style="width:80px" />
-
-                <span class="add-on" style="width:50px">Type</span>
-                <select id="request-type" style="width:120px">
-                    <option value="interval">Fixed Interval</option>
-                    <option>Daily</option>
-                    <option>Weekly</option>
-                    <option>Monthly</option>
-                    <option>Annual</option>
-                </select>
-                
-                <span class="fixed-interval-options">
-                    <input id="request-interval" type="text" style="width:60px" />
-                    <span class="add-on">Fix <input id="request-fixinterval" type="checkbox" style="margin-top:1px" /></span>
-                    <span class="add-on">Limit to data interval <input id="request-limitinterval" type="checkbox" style="margin-top:1px" /></span>
-                </span>
-            </div>
-            
-            <div class="input-prepend input-append">
-                <span class="add-on" style="width:50px">Y-axis:</span>
-                <span class="add-on" style="width:30px">min</span>
-                <input id="yaxis-min" type="text" style="width:50px" value="auto"/>
-
-                <span class="add-on" style="width:30px">max</span>
-                <input id="yaxis-max" type="text" style="width:50px" value="auto"/>
-                
-                <button id="reload" class="btn">Reload</button>
-            </div>
-            
-            <div id="window-info" style=""></div><br>
-                
-            <table class="table">
-                <tr><th>Feed</th><th>Type</th><th>Color</th><th>Fill</th><th>Quality</th><th>Min</th><th>Max</th><th>Diff</th><th>Mean</th><th>Stdev</th><th>Wh</th><th style='text-align:center'>Scale</th><th style='text-align:center'>Delta</th><th style='text-align:center'>Average</th><th>DP</th><th style="width:120px"></th></tr>
-                <tbody id="stats"></tbody>
-            </table>
-            
-            
-            <div class="input-prepend input-append">
-                <button class="btn" id="showcsv" >Show CSV Output</button>
-                <span class="add-on csvoptions">Time format:</span>
-                <select id="csvtimeformat" class="csvoptions">
-                    <option value="unix">Unix timestamp</option>
-                    <option value="seconds">Seconds since start</option>
-                    <option value="datestr">Date-time string</option>
-                </select>
-                <span class="add-on csvoptions">Null values:</span>
-                <select id="csvnullvalues" class="csvoptions">
-                    <option value="show">Show</option>
-                    <option value="lastvalue">Replace with last value</option>
-                    <option value="remove">Remove whole line</option>
-                </select>
-            </div> 
-            
-            
-            <textarea id="csv" style="width:98%; height:500px; display:none; margin-top:10px"></textarea>
-        </div>
+      <div style="clear: both; height: 60px;"></div>
     </div>
-</div>
 
-<!-- copy of https://emoncms.org/Modules/graph/vis.helper.js -->
-<script>
-  var view =
-{
-  start:0,
-  end:0,
-  fixinterval:false,
-
-  'clearTimeSelect':function ()
-  {
-    $("#select-time").val(1);
-  },
-
-  'zoomout':function ()
-  {
-    var time_window = this.end - this.start;
-    var middle = this.start + time_window / 2;
-    time_window = time_window * 2;
-    this.start = middle - (time_window/2);
-    this.end = middle + (time_window/2);
-    this.calc_interval();
-    this.clearTimeSelect();
-  },
-
-  'zoomin':function ()
-  {
-    var time_window = this.end - this.start;
-    var middle = this.start + time_window / 2;
-    time_window = time_window * 0.5;
-    this.start = middle - (time_window/2);
-    this.end = middle + (time_window/2);
-    this.calc_interval();
-    this.clearTimeSelect();
-  },
-
-  'panright':function ()
-  {
-    var time_window = this.end - this.start;
-    var shiftsize = time_window * 0.2;
-    this.start += shiftsize;
-    this.end += shiftsize;
-    this.calc_interval();
-  },
-
-  'panleft':function ()
-  {
-    var time_window = this.end - this.start;
-    var shiftsize = time_window * 0.2;
-    this.start -= shiftsize;
-    this.end -= shiftsize;
-    this.calc_interval();
-  },
-
-  'timewindow':function(time)
-  {
-    //time is now in seconds
-    this.start = ((new Date()).getTime())-(1000*time);	//Get start time
-    this.end = (new Date()).getTime();	//Get end time
-    this.calc_interval();
-  },
-  
-  'calc_interval':function()
-  {
-    var npoints = 600;
-    var interval = Math.round(((this.end - this.start)*0.001)/npoints);
-    
-    var outinterval = 5;
-    if (interval>10) outinterval = 10;
-    if (interval>15) outinterval = 15;
-    if (interval>20) outinterval = 20;
-    if (interval>30) outinterval = 30;
-    if (interval>60) outinterval = 60;
-    if (interval>120) outinterval = 120;
-    if (interval>180) outinterval = 180;
-    if (interval>300) outinterval = 300;
-    if (interval>600) outinterval = 600;
-    if (interval>900) outinterval = 900;
-    if (interval>1200) outinterval = 1200;
-    if (interval>1800) outinterval = 1800;
-    if (interval>3600*1) outinterval = 3600*1;
-    if (interval>3600*2) outinterval = 3600*2;
-    if (interval>3600*3) outinterval = 3600*3;
-    if (interval>3600*4) outinterval = 3600*4;
-    if (interval>3600*5) outinterval = 3600*5;
-    if (interval>3600*6) outinterval = 3600*6;
-    if (interval>3600*12) outinterval = 3600*12;
-    if (interval>3600*24) outinterval = 3600*24;
-    
-    if (!this.fixinterval) this.interval = outinterval;
-    
-    this.start = Math.floor((this.start*0.001) / this.interval) * this.interval * 1000;
-    this.end = Math.ceil((this.end*0.001) / this.interval) * this.interval * 1000;
-  }
-}
-
-function stats(data)
-{
-    var sum = 0;
-    var i=0;
-    var minval = 0;
-    var maxval = 0;
-    var npoints = 0;
-    var npointsnull = 0;
-    
-    var val = null;
-    for (var z in data)
-    {
-        // var val = data[z][1];                   // 1) only calculated based on present values
-        if (data[z][1]!=null) val = data[z][1];    // 2) if value is missing use last value
-        if (val!=null) 
-        {
-            if (i==0) {
-                maxval = val;
-                minval = val;
-            }
-            if (val>maxval) maxval = val;
-            if (val<minval) minval = val;
-            sum += val;
-            i++;
-        }
-        if (data[z][1]==null) npointsnull++;
-        
-        npoints ++;
-    }
-    var mean = sum / i;
-    sum = 0, i=0;
-    for (z in data)
-    {
-        sum += (data[z][1] - mean) * (data[z][1] - mean);
-        i++;
-    }
-    var stdev = Math.sqrt(sum / i);
-    
-    return {
-        "minval":minval,
-        "maxval":maxval,
-        "diff":maxval-minval,
-        "mean":mean,
-        "stdev":stdev,
-        "npointsnull":npointsnull,
-        "npoints":npoints
-    };
-};
-
-// http://stackoverflow.com/questions/901115/how-can-i-get-query-string-values/901144#901144
-var urlParams;
-(window.onpopstate = function () {
-    var match,
-        pl = /\+/g, // Regex for replacing addition symbol with a space
-        search = /([^&=]+)=?([^&]*)/g,
-        decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
-        query = window.location.search.substring(1);
-
-    urlParams = {};
-    while (match = search.exec(query))
-       urlParams[decode(match[1])] = decode(match[2]);
-})();
-
-function tooltip(x, y, contents, bgColour)
-{
-    var offset = 15; // use higher values for a little spacing between `x,y` and tooltip
-    var elem = $('<div id="tooltip">' + contents + '</div>').css({
-        position: 'absolute',
-        display: 'none',
-        'font-weight':'bold',
-        border: '1px solid rgb(255, 221, 221)',
-        padding: '2px',
-        'background-color': bgColour,
-        opacity: '0.8'
-    }).appendTo("body").fadeIn(200);
-
-    var elemY = y - elem.height() - offset;
-    var elemX = x - elem.width()  - offset;
-    if (elemY < 0) { elemY = 0; } 
-    if (elemX < 0) { elemX = 0; } 
-    elem.css({
-        top: elemY,
-        left: elemX
-    });
-};
-
-function parseTimepickerTime(timestr){
-    var tmp = timestr.split(" ");
-    if (tmp.length!=2) return false;
-
-    var date = tmp[0].split("/");
-    if (date.length!=3) return false;
-
-    var time = tmp[1].split(":");
-    if (time.length!=3) return false;
-
-    return new Date(date[2],date[1]-1,date[0],time[0],time[1],time[2],0).getTime() / 1000;
-}
-
-function readFile(path, responseHandler){
-  var xmlHttp = new XMLHttpRequest();
-  xmlHttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      if(this.getResponseHeader("X-configSHA256") !== null){
-        configSHA256 = this.getResponseHeader("X-configSHA256");
-      }
-      responseHandler(this.responseText);
-    }
-  };
-  xmlHttp.open("GET", path, true);
-  xmlHttp.send();
-}
-
-function EbyId(id) {return document.getElementById(id)};
-
-</script>
-
-<script language="javascript" type="text/javascript" src="graph.js"></script>
-
-<script>
-    var path = "http://" + location.host; // + "/";
-	var getbackup = false;
-    var configFileURL = "config.txt";
-    
-    sidebar_resize();
-    graph_init_editor();
-    
-    // Assign active feedid from URL
-    var urlparts = window.location.pathname.split("graph/");
-    if (urlparts.length==2) {
-        feedid = parseInt(urlparts[1]);
-        f = getfeed(feedid);
-        feedlist.push({id:feedid, name:f.name, tag:f.tag, yaxis:1, fill:0, scale: 1.0, delta:false, dp:1, plottype:'lines'});
-    }
-    
-    load_feed_selector();
-    graph_resize();
-    
-    var timeWindow = 3600000*1; //default to 1 hour
-    var now = Math.round(+new Date * 0.001)*1000;
-    view.start = now - timeWindow;
-    view.end = now;
-    view.calc_interval();
-    
-    if (document.domain != "iotawatt.com") {
-        readFile(configFileURL, function(response){
-        var config = JSON.parse(response);
-        if (config.device.name !== null) {
-            EbyId("heading").innerHTML = config.device.name + " Data Viewer";
-        }
-        });
-    }
-    
-    graph_reload();
-    
-</script>
-
-        </div></div></div>
-        
-        <div style="clear:both; height:60px;"></div>
-        </div>
-
-        <div id="footer">
-            Powered by             <a href="http://openenergymonitor.org">openenergymonitor.org</a>
-            <span></span>
-        </div>
-    </body>
+    <div id="footer">
+      Powered by
+      <a href="http://openenergymonitor.org">openenergymonitor.org</a>
+      <span></span>
+    </div>
+  </body>
 </html>

@@ -147,10 +147,10 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
       logRecord = new IotaLogRecord;
       lastRecord = new IotaLogRecord;
      
-      if(startUnixTime >= histLog.firstKey()){   
+      if(startUnixTime >= History_log.firstKey()){   
         lastRecord->UNIXtime = startUnixTime - intervalSeconds;
       } else {
-        lastRecord->UNIXtime = histLog.firstKey();
+        lastRecord->UNIXtime = History_log.firstKey();
       }
       logReadKey(lastRecord);
       
@@ -166,7 +166,7 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
           // Setup buffer to do it "chunky-style"
       
       server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-      server.send(200,"application/json","");
+      server.send(200,"application/octet-stream","");
       *replyData= "[";
       UnixTime = startUnixTime;
       state = process;

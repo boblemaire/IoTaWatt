@@ -1,7 +1,7 @@
 #include "IotaWatt.h"
 
-#define NTP2018 (1514796044UL + SEVENTY_YEAR_SECONDS)
-#define NTP2028 (1830328844UL + SEVENTY_YEAR_SECONDS)
+#define NTP2018 (1514796044UL + SECONDS_PER_SEVENTY_YEARS)
+#define NTP2028 (1830328844UL + SECONDS_PER_SEVENTY_YEARS)
 
 #define ntpPort 2390 
   struct ntpPacket {  /* courtesy Eugene Ma */
@@ -53,6 +53,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   static bool started = false;
   static uint32_t prevDiff = 0;
   static IPAddress prevIP;
+  static uint8_t  serverIndex = 0;     
   uint32_t sendMillis = 0;
   uint32_t origin_sec = 0;
   uint32_t origin_frac = 0;
@@ -63,7 +64,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     log("timeSync: service started.");
     lastNTPupdate = UTCtime();
     started = true; 
-  }
+  } 
  
           // The ms clock will rollover after ~49 days.  To be on the safe side,
           // restart the ESP after about 42 days to reset the ms clock.
@@ -82,26 +83,30 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     lastNTPupdate = UTCtime();
   }
 
+  if( ! WiFi.isConnected()){ 
+    trace(T_timeSync, 3);
+    return UTCtime() + (RTCrunning ? 5 : 1);
+  }
+
         // Send an SNTP request.
 
-  trace(T_timeSync, 3);
-  if(WiFi.isConnected()){
-    trace(T_timeSync, 31);
-    if(WiFi.hostByName(ntpServerName, timeServerIP) == 1){    // get a random server from the pool
-      trace(T_timeSync, 32);
-      ntpPacket packet;
-      sendMillis = millis();
-      packet.trans_ts_sec = origin_sec = sendMillis / 1000;
-      packet.trans_ts_frac = origin_frac = sendMillis % 1000;
-      udp.begin(ntpPort);
-      udp.beginPacket(timeServerIP, 123);
-      udp.write((uint8_t*)&packet, sizeof(ntpPacket));        // send an NTP packet to a time server
-      udp.endPacket();
-    } 
-    else {
-      trace(T_timeSync, 33);
-      return RTCrunning ? (UTCtime() + 60) : 1;
-    }
+  trace(T_timeSync, 31);
+  String serverName("time1.google.com");
+  serverName[4] += (++serverIndex % 4);    
+  if(WiFi.hostByName(serverName.c_str(), timeServerIP) == 1){    // get a random server from the pool
+    trace(T_timeSync, 32);
+    ntpPacket packet;
+    sendMillis = millis();
+    packet.trans_ts_sec = origin_sec = sendMillis / 1000;
+    packet.trans_ts_frac = origin_frac = sendMillis % 1000;
+    udp.begin(ntpPort);
+    udp.beginPacket(timeServerIP, 123);
+    udp.write((uint8_t*)&packet, sizeof(ntpPacket));        // send an NTP packet to a time server
+    udp.endPacket();
+  } 
+  else {
+    trace(T_timeSync, 33);
+    return UTCtime() + (RTCrunning ? 60 : 5);
   }
   
         // Poll for completion
@@ -112,7 +117,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     if(millis() - sendMillis > (RTCrunning ? 3000 : 10000)){
       trace(T_timeSync, 42);
       udp.stop();
-      return RTCrunning ? (UTCtime() + 60) : 1;
+      return UTCtime() + (RTCrunning ? 60 : 5);
     }
   }
 
@@ -133,7 +138,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
   trace(T_timeSync, 6);
   if(packetSize < sizeof(ntpPacket) || recvMillis - sendMillis > (RTCrunning ? 3000 : 10000)){
-    return RTCrunning ? (UTCtime() + 60) : 1;
+    return UTCtime() + (RTCrunning ? 60 : 5);
   }
 
         // Check for Kiss-o'-Death packet
@@ -142,17 +147,17 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
   if(packet.stratum == 0){
     log("timesync: Kiss-o'-Death, code %c%c%c%c, ip: %s", 
     packet.referenceID[0], packet.referenceID[1], packet.referenceID[2], packet.referenceID[3], timeServerIP.toString().c_str());
-    return UTCtime() + 15;
+    return UTCtime() + (RTCrunning ? 60 : 15);
   } 
 
   trace(T_timeSync, 8);
   if(packet.origin_ts_sec != origin_sec || packet.origin_ts_frac != origin_frac){
     trace(T_timeSync, 81);
-    return RTCrunning ? (UTCtime() + 60) : 1;
+    return UTCtime() + (RTCrunning ? 60 : 5);
   }
   if(packet.trans_ts_sec < NTP2018 || packet.trans_ts_sec > NTP2028){
     trace(T_timeSync, 82);
-    return RTCrunning ? (UTCtime() + 60) : 1;
+    return UTCtime() + (RTCrunning ? 60 : 5);
   }
 
         // compute time as NTP transmit time + 1/2 transaction duration.
@@ -170,18 +175,18 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     trace(T_timeSync, 91);
     prevDiff = presDiff; 
     prevIP = timeServerIP;
-    return RTCrunning ? (UTCtime() + 60) : 1;
+    return UTCtime() + (RTCrunning ? 60 : 1);
   }
-  if(prevDiff){
-    trace(T_timeSync, 92);
-    if(prevIP == timeServerIP){
-      trace(T_timeSync, 93);
-      return RTCrunning ? (UTCtime() + 60) : 1;
-    }
-    //log("IPs: %s, %s, prevDiff: %d", prevIP.toString().c_str(), timeServerIP.toString().c_str(), prevDiff);
+  // if(prevDiff){
+  //   trace(T_timeSync, 92);
+  //   if(prevIP == timeServerIP){
+  //     trace(T_timeSync, 93);
+  //     return UTCtime() + 20;
+  //   }
+  //   log("IPs: %s, %s, prevDiff: %d", prevIP.toString().c_str(), timeServerIP.toString().c_str(), prevDiff);
     //log("packet sec: %u, frac: %u",packet.trans_ts_sec, packet.trans_ts_frac);
     //log("Comput sec: %u, frac: %u, duration: %d", current_ts_sec, current_ts_frac, duration);
-  } 
+  // } 
   prevDiff = 0;
   
         // Set/adjust internal clock
@@ -199,7 +204,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     rtc.adjust(UTCtime());
     RTCrunning = true;
     log("timeSync: RTC initalized to NTP time");
-    SdFile::dateTimeCallback(dateTime);
+    //SdFile::dateTimeCallback(dateTime);
   }
 
         // RTC is running, 
@@ -256,18 +261,18 @@ uint32_t littleEndian(uint32_t in){
  *   dateTime callback for SD so it can maintain dates in the directory.
  ********************************************************************************/
 
-void dateTime(uint16_t* date, uint16_t* time) {
+// void dateTime(uint16_t* date, uint16_t* time) {
    
-  // return date using FAT_DATE macro to format fields
-  *date = FAT_DATE(DateTime(localTime()).year(),
-                   DateTime(localTime()).month(),
-                   DateTime(localTime()).day());
+//   // return date using FAT_DATE macro to format fields
+//   *date = FAT_DATE(DateTime(localTime()).year(),
+//                    DateTime(localTime()).month(),
+//                    DateTime(localTime()).day());
 
-  // return time using FAT_TIME macro to format fields
-  *time = FAT_TIME(DateTime(localTime()).hour(), 
-                   DateTime(localTime()).minute(),
-                   DateTime(localTime()).second());
-}
+//   // return time using FAT_TIME macro to format fields
+//   *time = FAT_TIME(DateTime(localTime()).hour(), 
+//                    DateTime(localTime()).minute(),
+//                    DateTime(localTime()).second());
+// }
 
 /********************************************************************************************
  * 
@@ -284,15 +289,23 @@ uint32_t NTPtime() {
  }
   
 uint32_t UTCtime() {
-  return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000 - SEVENTY_YEAR_SECONDS;
- }
+  return timeRefNTP + ((uint32_t)(millis() - timeRefMs)) / 1000 - SECONDS_PER_SEVENTY_YEARS;
+}
+
+uint32_t UTCtime(uint32_t localtime){
+  return local2UTC(localtime);
+}
 
 uint32_t localTime() {
   return UTC2Local(UTCtime());
-} 
+}
+
+uint32_t localTime(uint32_t utctime){
+  return UTC2Local(utctime);
+}
  
 uint32_t millisAtUTCTime(uint32_t UnixTime){                  
-  return (uint32_t)timeRefMs + 1000 * (UnixTime - SEVENTY_YEAR_SECONDS - timeRefNTP);
+  return (uint32_t)timeRefMs + 1000 * (UnixTime + SECONDS_PER_SEVENTY_YEARS - timeRefNTP);
  }
 
 uint32_t UTC2Local(uint32_t UTCtime){

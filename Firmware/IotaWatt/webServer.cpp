@@ -66,22 +66,26 @@ bool authenticate(authLevel level){
 
 void handleRequest(){
   String uri = server.uri();
-      
-  if(serverOn(authAdmin, F("/status"),HTTP_GET, handleStatus)) return;
+  if(serverOn(authUser,  F("/status"),HTTP_GET, handleStatus)) return;
   if(serverOn(authAdmin, F("/vcal"),HTTP_GET, handleVcal)) return;
   if(serverOn(authAdmin, F("/command"), HTTP_GET, handleCommand)) return;
-  if(serverOn(authUser, F("/list"), HTTP_GET, printDirectory)) return;
+  if(serverOn(authUser,  F("/list"), HTTP_GET, printDirectory)) return;
   if(serverOn(authAdmin, F("/config"), HTTP_GET, handleGetConfig)) return;
   if(serverOn(authAdmin, F("/edit"), HTTP_DELETE, handleDelete)) return;
   if(serverOn(authAdmin, F("/edit"), HTTP_PUT, handleCreate)) return;
-  if(serverOn(authUser, F("/feed/list.json"), HTTP_GET, handleGetFeedList)) return;
-  if(serverOn(authUser, F("/feed/data.json"), HTTP_GET, handleGetFeedData)) return;
+  if(serverOn(authUser,  F("/feed/list.json"), HTTP_GET, handleGetFeedList)) return;
+  if(serverOn(authUser,  F("/feed/data.json"), HTTP_GET, handleGetFeedData)) return;
   if(serverOn(authAdmin, F("/graph/create"),HTTP_POST, handleGraphCreate)) return;
   if(serverOn(authAdmin, F("/graph/update"),HTTP_POST, handleGraphCreate)) return;
   if(serverOn(authAdmin, F("/graph/delete"),HTTP_POST, handleGraphDelete)) return;
-  if(serverOn(authUser, F("/graph/getall"), HTTP_GET, handleGraphGetall)) return;
+  if(serverOn(authUser,  F("/graph/getall"), HTTP_GET, handleGraphGetall)) return;
+  if(serverOn(authUser,  F("/graph/getallplus"), HTTP_GET, handleGraphGetallplus)) return;
   if(serverOn(authAdmin, F("/auth"), HTTP_POST, handlePasswords)) return;
-  if(serverOn(authUser, F("/nullreq"), HTTP_GET, returnOK)) return;
+  if(serverOn(authUser,  F("/nullreq"), HTTP_GET, returnOK)) return;
+  if(serverOn(authUser,  F("/query"), HTTP_GET, handleQuery)) return;
+  if(serverOn(authUser,  F("/DSTtest"), HTTP_GET, handleDSTtest)) return;
+  if(serverOn(authAdmin, F("/update"), HTTP_GET, handleUpdate)) return;
+
 
   if(loadFromSdCard(uri)){
     return;
@@ -95,7 +99,7 @@ void handleRequest(){
   server.send(404, txtPlain_P, message);
 }
 
-bool serverOn(authLevel level, const __FlashStringHelper* uri, HTTPMethod method, genericHandler fn){
+bool serverOn(authLevel level, const __FlashStringHelper *uri, HTTPMethod method, genericHandler fn){
   if(strcmp_P(server.uri().c_str(),(PGM_P)uri) == 0 && server.method() == method){
     if( ! authenticate(level)) return true;
     fn();
@@ -116,36 +120,32 @@ bool loadFromSdCard(String path){
   trace(T_WEB,13);
   if( ! path.startsWith("/")) path = '/' + path;
   String dataType = txtPlain_P;
-  if(path.endsWith("/")) path += "index.htm";
-  if(path == "/edit" || path == "/graph"){
-    path += ".htm";
+  if(path.endsWith("/")) path += F("index.htm");
+  if(path.equals(F("/edit")) || path.equals(F("/graph")) || path.equals(F("/graph2"))){
+    path += F(".htm");
   }
   
-  if(path.endsWith(".src")) path = path.substring(0, path.lastIndexOf("."));
-  else if(path.endsWith(".htm")) dataType = F("text/html");
-  else if(path.endsWith(".css")) dataType = F("text/css");
-  else if(path.endsWith(".js"))  dataType = F("application/javascript");
-  else if(path.endsWith(".png")) dataType = F("image/png");
-  else if(path.endsWith(".gif")) dataType = F("image/gif");
-  else if(path.endsWith(".jpg")) dataType = F("image/jpeg");
-  else if(path.endsWith(".ico")) dataType = F("image/x-icon");
-  else if(path.endsWith(".xml")) dataType = F("text/xml");
-  else if(path.endsWith(".pdf")) dataType = F("application/pdf");
-  else if(path.endsWith(".zip")) dataType = F("application/zip");
+  if(path.endsWith(F(".src"))) path = path.substring(0, path.lastIndexOf("."));
+  else if(path.endsWith(F(".htm"))) dataType = F("text/html");
+  else if(path.endsWith(F(".css"))) dataType = F("text/css");
+  else if(path.endsWith(F(".js")))  dataType = F("application/javascript");
+  else if(path.endsWith(F(".png"))) dataType = F("image/png");
+  else if(path.endsWith(F(".gif"))) dataType = F("image/gif");
+  else if(path.endsWith(F(".jpg"))) dataType = F("image/jpeg");
+  else if(path.endsWith(F(".ico"))) dataType = F("image/x-icon");
+  else if(path.endsWith(F(".xml"))) dataType = F("text/xml");
+  else if(path.endsWith(F(".pdf"))) dataType = F("application/pdf");
+  else if(path.endsWith(F(".zip"))) dataType = F("application/zip");
 
-  if(path.startsWith("/esp_spiffs/")){
+  if(path.startsWith(F("/esp_spiffs/"))){
     return loadFromSpiffs(path.substring(11), dataType);
   }
 
   File dataFile = SD.open(path.c_str());
   if(dataFile.isDirectory()){
-    path += "/index.htm";
-    dataType = "text/html";
+    path += F("/index.htm");
+    dataType = F("text/html");
     dataFile = SD.open(path.c_str());
-  }
-
-  if (!dataFile){
-    return false;
   }
 
           // If reading user directory,
@@ -153,20 +153,33 @@ bool loadFromSdCard(String path){
           // otherwise require admin.
 
   authLevel level = authAdmin;
-  if(path.startsWith("/user/")){
+  if(path.startsWith(F("/user/")) ||
+     path.startsWith(F("/graphs/")) ||
+     path.startsWith(F("/graph.")) ||
+     path.startsWith(F("/graph2."))){
     level = authUser;
   }
   if( ! authenticate(level)) return true;
 
-  if (server.hasArg("download")) dataType = F("application/octet-stream");
+  if (server.hasArg(F("download"))){
+    if(server.arg(F("download")) == "true") dataType = F("application/octet-stream");  
+    else if(server.arg(F("download")) == "yes"){
+      handleQuery();
+      return true;
+    }
+  } 
 
-  if(server.hasArg("textpos")){
-    sendMsgFile(dataFile, server.arg("textpos").toInt());
+  if (!dataFile){
+    return false;
+  }
+
+  if(server.hasArg(F("textpos"))){
+    sendMsgFile(dataFile, server.arg(F("textpos")).toInt());
   }
 
   else {
-    if(path.equalsIgnoreCase("/config.txt")){
-      server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
+    if(path.equalsIgnoreCase(F("/config.txt"))){
+      server.sendHeader(F("X-configSHA256"), base64encode(configSHA256, 32));
     }
     size_t sent = server.streamFile(dataFile, dataType);
     if ( sent != dataFile.size()) {
@@ -195,22 +208,22 @@ void handleFileUpload(){
     upload.filename = String('/') + upload.filename;
   }
   upload.filename.toLowerCase();
-  if(upload.filename.startsWith("/esp_spiffs/")){
+  if(upload.filename.startsWith(F("/esp_spiffs/"))){
     handleSpiffsUpload();
   }
   if(upload.status == UPLOAD_FILE_START){
     if( ! authenticate(authAdmin)) return;
-      if(upload.filename.equals("/config.txt")){
+      if(upload.filename.equals(F("/config.txt"))){
       if(server.hasHeader(F("X-configSHA256"))){
         if(server.header(F("X-configSHA256")) != base64encode(configSHA256, 32)){
-          server.send(409, txtPlain_P, "Config not current");
+          server.send(409, txtPlain_P, F("Config not current"));
           return;
         }
       }
     }
     if(SD.exists((char *)upload.filename.c_str())) SD.remove((char *)upload.filename.c_str());
     if(uploadFile = SD.open(upload.filename.c_str(), FILE_WRITE)){
-      DBG_OUTPUT_PORT.print("Upload: START, filename: "); DBG_OUTPUT_PORT.println(upload.filename);
+      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
     }
 
   } else if(upload.status == UPLOAD_FILE_WRITE){
@@ -221,7 +234,7 @@ void handleFileUpload(){
   } else if(upload.status == UPLOAD_FILE_END){
     if(uploadFile){
       uploadFile.close();
-      DBG_OUTPUT_PORT.print("Upload: END, Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
+      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
       if(upload.filename.equals("/config.txt")){
         uploadFile = SD.open(upload.filename.c_str(), FILE_READ);
         hashFile(configSHA256, uploadFile);
@@ -238,14 +251,14 @@ void handleSpiffsUpload(){
   if(upload.status == UPLOAD_FILE_START){
 
     if( ! authenticate(authAdmin)) return;
-      DBG_OUTPUT_PORT.print("Upload: START, filename: "); DBG_OUTPUT_PORT.println(upload.filename);
+      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
       spiffsWrite(upload.filename.substring(11).c_str(), "", 0);        // Create a null file
 
   } else if(upload.status == UPLOAD_FILE_WRITE){
       spiffsWrite(upload.filename.substring(11).c_str(), upload.buf, upload.currentSize, true);   // append to the file (true)
 
   } else if(upload.status == UPLOAD_FILE_END){
-      DBG_OUTPUT_PORT.print("Upload: END, Size: "); DBG_OUTPUT_PORT.println(upload.totalSize);
+      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
   }
 }
 
@@ -280,7 +293,7 @@ void handleDelete(){
   trace(T_WEB,9); 
   if(server.args() == 0) return returnFail("BAD ARGS");
   String path = server.arg(0);
-  if(path.startsWith("/esp_spiffs")){
+  if(path.startsWith(F("/esp_spiffs"))){
     spiffsRemove(path.substring(11).c_str());
     returnOK();
     return;
@@ -289,9 +302,9 @@ void handleDelete(){
     returnFail("BAD PATH");
     return;
   }
-  if(path == "/config.txt" ||
-     path.startsWith(IotaLogFile) ||
-     path.startsWith(historyLogFile)){
+  if(path == F("/config.txt") ||
+     path.equals(IOTA_CURRENT_LOG_PATH) ||
+     path.equals(IOTA_HISTORY_LOG_PATH)){
     returnFail("Restricted File");
     return;
   }
@@ -304,7 +317,7 @@ void handleCreate(){
   if(server.args() == 0) return returnFail("BAD ARGS");
   String path = server.arg(0);
 
-  if(path.startsWith("/esp_spiffs")){
+  if(path.startsWith(F("/esp_spiffs"))){
     if(spiffsFileExists(path.substring(11).c_str())) return returnFail("BAD PATH");
     spiffsWrite(path.substring(11).c_str(),"");
     returnOK();
@@ -338,28 +351,32 @@ void printDirectory() {
   }
   else {
     if(path != "/" && !SD.exists((char *)path.c_str())) return returnFail("BAD PATH");
-    File dir = SD.open((char *)path.c_str());
-    if(!dir.isDirectory()){
-      dir.close();
-      return returnFail("NOT DIR");
-    }
+    Dir dir = SDFS.openDir(path);
     DynamicJsonBuffer jsonBuffer;
     JsonArray& array = jsonBuffer.createArray();
-    dir.rewindDirectory();
-    File entry;
-    while(entry = dir.openNextFile()){
-      JsonObject& object = jsonBuffer.createObject();
-      object["type"] = (entry.isDirectory()) ? "dir" : "file";
-      object["name"] = String(entry.name());
-      array.add(object);
-      entry.close();
-    }
-    dir.close();
     if(path == "/"){
       JsonObject& object = jsonBuffer.createObject();
       object["type"] = "dir";
-      object["name"] = String("esp_spiffs");
+      object["name"] = "esp_spiffs";
       array.add(object);
+    }
+    dir.rewind();
+    while(dir.next()){
+      if(dir.isDirectory() && !dir.fileName().equalsIgnoreCase(F("system volume information"))){
+        JsonObject& object = jsonBuffer.createObject();
+        object["type"] = "dir";
+        object["name"] = String(dir.fileName());
+        array.add(object);
+      }
+    }
+    dir.rewind();
+    while(dir.next()){
+      if(dir.isFile()){
+        JsonObject& object = jsonBuffer.createObject();
+        object["type"] = "file";
+        object["name"] = String(dir.fileName());
+        array.add(object);
+      }
     }
     array.printTo(response);
   }  
@@ -397,7 +414,6 @@ void printSpiffsDirectory(String path) {
  * Following handlers added to WebServer for IotaWatt specific requests
  * 
  **********************************************************************************************/
-
 void handlePasswords(){
   trace(T_WEB,21);
   int len = server.arg("plain").length();
@@ -409,7 +425,7 @@ void handlePasswords(){
   DynamicJsonBuffer Json;
   JsonObject& request = Json.parseObject(body);
   if( ! request.success()){
-    server.send(400, txtPlain_P, "Json parse failed.");
+    server.send(400, txtPlain_P, F("Json parse failed."));
     return;
   }
   if(adminH1){
@@ -420,18 +436,18 @@ void handlePasswords(){
     }
   }
   
-  if(request.containsKey("newadmin")){
+  if(request.containsKey(F("newadmin"))){
     delete[] adminH1;
     adminH1 = nullptr;
     delete[] userH1;
     userH1 = nullptr;
-    String newAdmin = request["newadmin"].as<char*>();
+    String newAdmin = request[F("newadmin")].as<char*>();
     if(newAdmin.length()){
       String newAdminH1 = calcH1("admin", deviceName, request["newadmin"].as<char*>());
       adminH1 = new uint8_t[16];
       hex2bin(adminH1, newAdminH1.c_str(), 16);
     } 
-    if(request.containsKey("newuser")){
+    if(request.containsKey(F("newuser"))){
       String newAdmin = request["newuser"].as<char*>();
       if(newAdmin.length()){
         String newUserH1 = calcH1("user", deviceName, request["newuser"].as<char*>());
@@ -453,63 +469,85 @@ void handlePasswords(){
 }
 
 void handleStatus(){
-  trace(T_WEB,0); 
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& root = jsonBuffer.createObject(); 
-  
-  if(server.hasArg(F("stats"))){
-    trace(T_WEB,14);
-    JsonObject& stats = jsonBuffer.createObject();
-    stats.set(F("cyclerate"), samplesPerCycle);
-    trace(T_WEB,14);
-    stats.set(F("chanrate"),cycleSampleRate);
-    trace(T_WEB,14);
-    stats.set(F("runseconds"), UTCtime()-programStartTime);
-    trace(T_WEB,14);
-    stats.set(F("stack"),ESP.getFreeHeap());
-    trace(T_WEB,14);
-    stats.set(F("version"),IOTAWATT_VERSION);
-    trace(T_WEB,14);
-    stats.set(F("frequency"),frequency);
-    trace(T_WEB,14);
-    stats.set(F("lowbat"), RTClowBat);
-    root.set(F("stats"),stats);
-  }
-  
-  if(server.hasArg(F("inputs"))){
-    trace(T_WEB,15);
-    JsonArray& channelArray = jsonBuffer.createArray();
-    for(int i=0; i<maxInputs; i++){
-      if(inputChannel[i]->isActive()){
-        JsonObject& channelObject = jsonBuffer.createObject();
-        channelObject.set(F("channel"),inputChannel[i]->_channel);
-        if(inputChannel[i]->_type == channelTypeVoltage){
-          channelObject.set(F("Vrms"),statRecord.accum1[i]);
-          channelObject.set(F("Hz"),statRecord.accum2[i]);
-        }
-        else if(inputChannel[i]->_type == channelTypePower){
-          if(statRecord.accum1[i] > -2 && statRecord.accum1[i] < 2) statRecord.accum1[i] = 0;
-          channelObject.set(F("Watts"),String(statRecord.accum1[i],0));
-          double pf = statRecord.accum2[i];
-          if(pf != 0){
-            pf = statRecord.accum1[i] / pf;
-          }
-          channelObject.set("Pf",pf);
-          if(inputChannel[i]->_reversed){
-            channelObject.set(F("reversed"),true);
-          }
-        }
-        channelArray.add(channelObject);
-      }
+  trace(T_WEB,0);
+  uint32_t heapEntry = ESP.getFreeHeap();
+  String response = "";
+  {
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+
+    if(server.hasArg(F("device"))){
+      JsonObject& device = jsonBuffer.createObject();
+      device.set(F("name"), deviceName);
+      device.set(F("timediff"), localTimeDiff);
+      device.set(F("allowdst"), timezoneRule?true:false);
+      device.set(F("update"), updateClass);
+      root.set(F("device"),device);
     }
-    root["inputs"] = channelArray;
-  }
+    
+    if(server.hasArg(F("stats"))){
+      trace(T_WEB,14);
+      JsonObject& stats = jsonBuffer.createObject();
+      stats.set(F("cyclerate"), samplesPerCycle);
+      trace(T_WEB,14);
+      stats.set(F("chanrate"),cycleSampleRate);
+      trace(T_WEB,14);
+      stats.set(F("starttime"), programStartTime);
+      trace(T_WEB,14);
+      stats.set(F("currenttime"), UTCtime());
+      trace(T_WEB,14);
+      stats.set(F("runseconds"), UTCtime()-programStartTime);
+      trace(T_WEB,14);
+      stats.set(F("stack"),ESP.getFreeHeap());
+      trace(T_WEB,14);
+      stats.set(F("version"),IOTAWATT_VERSION);
+      trace(T_WEB,14);
+      stats.set(F("frequency"),frequency);
+      trace(T_WEB,14);
+      stats.set(F("lowbat"), RTClowBat);
+      root.set(F("stats"),stats);
+    }
+    
+    if(server.hasArg(F("inputs"))){
+      trace(T_WEB,15);
+      JsonArray& channelArray = jsonBuffer.createArray();
+      for(int i=0; i<maxInputs; i++){
+        if(inputChannel[i]->isActive()){
+          JsonObject& channelObject = jsonBuffer.createObject();
+          channelObject.set(F("channel"),inputChannel[i]->_channel);
+          if(inputChannel[i]->_type == channelTypeVoltage){
+            channelObject.set(F("Vrms"),statRecord.accum1[i]);
+            channelObject.set(F("Hz"),statRecord.accum2[i]);
+            channelObject.set("phase", inputChannel[i]->getPhase(inputChannel[i]->dataBucket.volts));
+          }
+          else if(inputChannel[i]->_type == channelTypePower){
+            if(statRecord.accum1[i] > -2 && statRecord.accum1[i] < 2) statRecord.accum1[i] = 0;
+            channelObject.set(F("Watts"),String(statRecord.accum1[i],0));
+            double pf = statRecord.accum2[i];
+            if(pf != 0){
+              pf = statRecord.accum1[i] / pf;
+            }
+            channelObject.set("Pf",pf);
+            if(inputChannel[i]->_reversed){
+              channelObject.set(F("reversed"),true);
+            }
+            double volts = inputChannel[inputChannel[i]->_vchannel]->dataBucket.volts;
+            double amps = (volts < 50) ? 0 : inputChannel[i]->dataBucket.VA / volts;
+            channelObject.set("phase", inputChannel[i]->getPhase(amps));
+            channelObject.set("lastphase", inputChannel[i]->_lastPhase);
+          }
+          channelArray.add(channelObject);
+        }
+      }
+      root["inputs"] = channelArray;
+    }
 
   if(server.hasArg(F("outputs"))){
     trace(T_WEB,16);
     JsonArray& outputArray = jsonBuffer.createArray();
     Script* script = outputs->first();
     while(script){
+      trace(T_WEB,16,1);
       JsonObject& channelObject = jsonBuffer.createObject();
       channelObject.set(F("name"),script->name());
       channelObject.set(F("units"),script->getUnits());
@@ -518,67 +556,84 @@ void handleStatus(){
       outputArray.add(channelObject);
       script = script->next();
     }
+    trace(T_WEB,16,2);
     root["outputs"] = outputArray;
   }
 
-  if(server.hasArg(F("influx"))){
-    trace(T_WEB,17);
-    JsonObject& influx = jsonBuffer.createObject();
-    influx.set(F("running"),influxStarted);
-    influx.set(F("lastpost"),influxLastPost);  
-    root["influx"] = influx;
-  }
 
-  if(server.hasArg(F("emon"))){
-    trace(T_WEB,22);
-    JsonObject& emon = jsonBuffer.createObject();
-    emon.set(F("running"),EmonStarted);
-    emon.set(F("lastpost"),EmonLastPost);  
-    root["emon"] = emon;
-  }
-
-  if(server.hasArg(F("pvoutput"))){
-    trace(T_WEB,23);
-    JsonObject& status = jsonBuffer.createObject();
-    if(!pvoutput){
-      status.set(F("state"),"stopped");
-    } else {
-      pvoutput->getStatusJson(status);
+    if(server.hasArg(F("influx"))){
+      trace(T_WEB,17);
+      JsonObject& influx = jsonBuffer.createObject();
+      influx.set(F("running"),influxStarted);
+      influx.set(F("lastpost"),influxLastPost);  
+      root["influx"] = influx;
     }
-    root["pvoutput"] = status;
-  }
 
-  if(server.hasArg(F("datalogs"))){
-    trace(T_WEB,17);
-    JsonObject& datalogs = jsonBuffer.createObject();
-    JsonObject& currlog = jsonBuffer.createObject();
-    currlog.set(F("firstkey"),currLog.firstKey());
-    currlog.set(F("lastkey"),currLog.lastKey());
-    currlog.set(F("size"),currLog.fileSize());
-    currlog.set(F("interval"),currLog.interval());
-    //currlog.set("wrap",currLog._wrap ? true : false);
-    datalogs.set(F("currlog"),currlog);
-    JsonObject& histlog = jsonBuffer.createObject();
-    histlog.set(F("firstkey"),histLog.firstKey());
-    histlog.set(F("lastkey"),histLog.lastKey());
-    histlog.set(F("size"),histLog.fileSize());
-    histlog.set(F("interval"),histLog.interval());
-    //histlog.set("wrap",histLog._wrap ? true : false);
-    datalogs.set(F("histlog"),histlog);
-    root.set(F("datalogs"),datalogs);
-  }
+    if(server.hasArg(F("emon"))){
+      trace(T_WEB,22);
+      JsonObject& emon = jsonBuffer.createObject();
+      emon.set(F("running"),EmonStarted);
+      emon.set(F("lastpost"),EmonLastPost);  
+      root["emon"] = emon;
+    }
 
-  if(server.hasArg(F("passwords"))){
-    trace(T_WEB,18);
-    JsonObject& passwords = jsonBuffer.createObject();
-    passwords.set(F("admin"),adminH1 != nullptr);
-    passwords.set(F("user"),userH1 != nullptr);  
-    root["passwords"] = passwords;
-  }
+    if(server.hasArg(F("pvoutput"))){
+      trace(T_WEB,23);
+      JsonObject& status = jsonBuffer.createObject();
+      if(!pvoutput){
+        status.set(F("state"),"stopped");
+      } else {
+        pvoutput->getStatusJson(status);
+      }
+      root["pvoutput"] = status;
+    }
 
-  String response = "";
-  root.printTo(response);
-  server.send(200, txtJson_P, response);  
+    if(server.hasArg(F("datalogs"))){
+      trace(T_WEB,17);
+      JsonObject& datalogs = jsonBuffer.createObject();
+      JsonObject& currlog = jsonBuffer.createObject();
+      currlog.set(F("firstkey"),Current_log.firstKey());
+      currlog.set(F("lastkey"),Current_log.lastKey());
+      currlog.set(F("size"),Current_log.fileSize());
+      currlog.set(F("interval"),Current_log.interval());
+      //currlog.set("wrap",Current_log._wrap ? true : false);
+      datalogs.set(F("currlog"),currlog);
+      JsonObject& histlog = jsonBuffer.createObject();
+      histlog.set(F("firstkey"),History_log.firstKey());
+      histlog.set(F("lastkey"),History_log.lastKey());
+      histlog.set(F("size"),History_log.fileSize());
+      histlog.set(F("interval"),History_log.interval());
+      //histlog.set("wrap",History_log._wrap ? true : false);
+      datalogs.set(F("histlog"),histlog);
+      root.set(F("datalogs"),datalogs);
+    }
+
+    if(server.hasArg(F("wifi"))){
+      trace(T_WEB,17);
+      JsonObject& wifi = jsonBuffer.createObject();
+      wifi.set(F("connecttime"),wifiConnectTime);
+      if(wifiConnectTime){
+        wifi.set(F("SSID"),WiFi.SSID());
+        String ip = WiFi.localIP().toString();
+        wifi.set(F("IP"),ip);
+        //Serial.printf("SSID: %s, IP: %s\r\n", WiFi.SSID().c_str(), ip.c_str());
+        wifi.set(F("channel"),WiFi.channel());
+        wifi.set(F("RSSI"),WiFi.RSSI());
+        wifi.set(F("mac"), WiFi.macAddress());
+      }
+      root.set(F("wifi"),wifi);
+    }
+
+    if(server.hasArg(F("passwords"))){
+      trace(T_WEB,18);
+      JsonObject& passwords = jsonBuffer.createObject();
+      passwords.set(F("admin"),adminH1 != nullptr);
+      passwords.set(F("user"),userH1 != nullptr);  
+      root[F("passwords")] = passwords;
+    }
+    root.printTo(response);
+  }
+  server.send(200, txtJson_P, response);
 }
 
 void handleVcal(){
@@ -617,7 +672,9 @@ void handleCommand(){
     if(server.hasArg(F("shift"))){
       shift = server.arg(F("shift")).toInt();
     }
-    server.send(200, txtPlain_P, samplePhase(refChan, chan, shift));
+    char response[100];
+    sprintf_P(response, PSTR("Phase Shift chan %d ref %d, %.2f"), chan, refChan, samplePhase(refChan, chan, shift));
+    server.send(200, txtPlain_P, response);
     return; 
   }
   if(server.hasArg(F("sample"))){
@@ -640,24 +697,20 @@ void handleCommand(){
     log("deletelog=%s command received.", arg.c_str());
     if(arg == "current"){
       trace(T_WEB,21); 
-      currLog.end();
-      deleteRecursive(String(IotaLogFile) + ".log");
-      deleteRecursive(String(IotaLogFile) + ".ndx");
+      Current_log.end();
+      deleteRecursive(IOTA_CURRENT_LOG_PATH);
     } 
     else if(arg == "history"){
       trace(T_WEB,22); 
-      histLog.end();
-      deleteRecursive(String(historyLogFile) + ".log");
-      deleteRecursive(String(historyLogFile) + ".ndx");
+      History_log.end();
+      deleteRecursive(IOTA_HISTORY_LOG_PATH);
     }
     else if(arg == "both"){
       trace(T_WEB,23);
-      currLog.end();
-      deleteRecursive(String(IotaLogFile) + ".log");
-      deleteRecursive(String(IotaLogFile) + ".ndx");
-      histLog.end();
-      deleteRecursive(String(historyLogFile) + ".log");
-      deleteRecursive(String(historyLogFile) + ".ndx");
+      Current_log.end();
+      deleteRecursive(IOTA_CURRENT_LOG_PATH);
+      History_log.end();
+      deleteRecursive(IOTA_HISTORY_LOG_PATH);
     }
     else {
       server.send(400, txtPlain_P, F("Specify current, history, or both."));
@@ -672,70 +725,73 @@ void handleCommand(){
 
 void handleGetFeedList(){ 
   trace(T_WEB,18);
-  DynamicJsonBuffer jsonBuffer;
-  JsonArray& array = jsonBuffer.createArray();
-  for(int i=0; i<maxInputs; i++){
-    if(inputChannel[i]->isActive()){
-      if(inputChannel[i]->_type == channelTypeVoltage){
-        JsonObject& voltage = jsonBuffer.createObject();
-        voltage["id"] = String("IV") + String(inputChannel[i]->_name);
-        voltage["tag"] = F("Voltage");
-        voltage["name"] = inputChannel[i]->_name;
-        array.add(voltage);
-      } 
-      else
-        if(inputChannel[i]->_type == channelTypePower){
-        JsonObject& power = jsonBuffer.createObject();
-        power["id"] = String("IP") + String(inputChannel[i]->_name);
-        power["tag"] = F("Power");
-        power["name"] = inputChannel[i]->_name;
-        array.add(power);
-        JsonObject& energy = jsonBuffer.createObject();
-        energy["id"] = String("IE") + String(inputChannel[i]->_name);
-        energy["tag"] = F("Energy");
-        energy["name"] = inputChannel[i]->_name;
-        array.add(energy);
-      }
-    }
-  }
-  trace(T_WEB,18);
-  Script* script = outputs->first();
-  int outndx = 100;
-  while(script){
-    if(String(script->name()).indexOf(' ') == -1){
-      String units = script->getUnits();
-      if(units.equalsIgnoreCase("volts")){
-        JsonObject& voltage = jsonBuffer.createObject();
-        voltage["id"] = String("OV") + String(script->name());
-        voltage["tag"] = F("Voltage");
-        voltage["name"] = script->name();
-        array.add(voltage);
-      } 
-      else if(units.equalsIgnoreCase("watts")) {
-        JsonObject& power = jsonBuffer.createObject();
-        power["id"] = String("OP") + String(script->name());
-        power["tag"] = F("Power");
-        power["name"] = script->name();
-        array.add(power);
-        JsonObject& energy = jsonBuffer.createObject();
-        energy["id"] = String("OE") + String(script->name());
-        energy["tag"] = F("Energy");
-        energy["name"] = script->name();
-        array.add(energy);
-      }
-      else {
-        JsonObject& other = jsonBuffer.createObject();
-        other["id"] = String("OO") + String(script->name());
-        other["tag"] = F("Outputs");
-        other["name"] = script->name();
-        array.add(other);
-      }
-    }
-    script = script->next();
-  }
-  
   String response;
-  array.printTo(response);
+  {
+    DynamicJsonBuffer jsonBuffer;
+    JsonArray& array = jsonBuffer.createArray();
+    for(int i=0; i<maxInputs; i++){
+      if(inputChannel[i]->isActive()){
+        if(inputChannel[i]->_type == channelTypeVoltage){
+          JsonObject& voltage = jsonBuffer.createObject();
+          voltage["id"] = String("IV") + String(inputChannel[i]->_name);
+          voltage["tag"] = F("Voltage");
+          voltage["name"] = inputChannel[i]->_name;
+          array.add(voltage);
+        } 
+        else
+          if(inputChannel[i]->_type == channelTypePower){
+          JsonObject& power = jsonBuffer.createObject();
+          power["id"] = String("IP") + String(inputChannel[i]->_name);
+          power["tag"] = F("Power");
+          power["name"] = inputChannel[i]->_name;
+          array.add(power);
+          JsonObject& energy = jsonBuffer.createObject();
+          energy["id"] = String("IE") + String(inputChannel[i]->_name);
+          energy["tag"] = F("Energy");
+          energy["name"] = inputChannel[i]->_name;
+          array.add(energy);
+        }
+      }
+    }
+    trace(T_WEB,18);
+    if(outputs){
+      Script* script = outputs->first();
+      int outndx = 100;
+      while(script){
+        if(String(script->name()).indexOf(' ') == -1){
+          String units = script->getUnits();
+          if(units.equalsIgnoreCase("volts")){
+            JsonObject& voltage = jsonBuffer.createObject();
+            voltage["id"] = String("OV") + String(script->name());
+            voltage["tag"] = F("Voltage");
+            voltage["name"] = script->name();
+            array.add(voltage);
+          } 
+          else if(units.equalsIgnoreCase("watts")) {
+            JsonObject& power = jsonBuffer.createObject();
+            power["id"] = String("OP") + String(script->name());
+            power["tag"] = F("Power");
+            power["name"] = script->name();
+            array.add(power);
+            JsonObject& energy = jsonBuffer.createObject();
+            energy["id"] = String("OE") + String(script->name());
+            energy["tag"] = F("Energy");
+            energy["name"] = script->name();
+            array.add(energy);
+          }
+          else {
+            JsonObject& other = jsonBuffer.createObject();
+            other["id"] = String("OO") + String(script->name());
+            other["tag"] = F("Outputs");
+            other["name"] = script->name();
+            array.add(other);
+          }
+        }
+        script = script->next();
+      }
+    }
+    array.printTo(response);
+  }
   server.send(200, appJson_P,response);
 }
 
@@ -775,7 +831,10 @@ void handleGetConfig(){
       ESP.restart();
     }
     else if(server.arg(F("update")) == "reload"){
-      getConfig(); 
+      validConfig = getConfig("config.txt");
+      if(validConfig){
+        copyFile("/esp_spiffs/config.txt", "config.txt");
+      }
       server.send(200, txtPlain_P, "OK");
       return;  
     }
@@ -783,6 +842,96 @@ void handleGetConfig(){
   server.send(400, txtPlain_P, "Bad Request.");
 }
 
+void handleQuery(){
+  trace(T_WEB,50);
+  CSVquery* query = new CSVquery();
+  if( ! query->setup()){
+    trace(T_WEB,51);
+    String response("{\"error\":\"invalid query. ");
+    response += query->failReason() + "\"}";
+    server.send(400, txtPlain_P, response);
+  } else {
+    trace(T_WEB,52);
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    //server.sendHeader(String("Connection"), String("keep-alive"));
+    if(server.hasArg(F("download"))){
+      trace(T_WEB,53);
+      server.send(200,"application/octet-stream","");
+    }
+    else if(query->isJson()){
+      trace(T_WEB,54);
+      server.send(200, appJson_P, "");
+    }
+    else {
+      trace(T_WEB,55);
+      server.send(200, txtPlain_P, "");
+    }
+      
+    uint8_t* buf = new uint8_t[1440];
+    int read = 0;
+    size_t size = 0;
+    trace(T_WEB,56);
+    while((read = query->readResult(buf, 1440)) && size < 100000){
+      trace(T_WEB,57);
+      server.sendContent((char*)buf, read);
+      size += read;
+      trace(T_WEB,58);
+      yield();
+    }
+    trace(T_WEB,56);
+    server.sendContent((char*)buf, 0);
+    delete buf;
+  }
+  delete query;
+  trace(T_WEB,59);
+}
+
+void handleUpdate(){
+  if( ! server.hasArg(F("release"))){
+    server.send(400, txtPlain_P, F("No release specified."));
+    return;
+  }
+  String release = server.arg(F("release"));
+  if(unpackUpdate(release)){
+    if(installUpdate(release)){
+      log ("Updater: Firmware updated, restarting.");
+      server.send(200, txtPlain_P, F("Firmware updated, restarting."));
+      delay(1000);
+      ESP.restart();
+    }
+    else {
+      server.send(400, txtPlain_P, F("Firmware update failed."));
+    }
+  }
+  else {
+    server.send(400, txtPlain_P, F("Release file not validated."));
+    return;
+  }
+}
+  
+    
+
+void handleDSTtest(){
+    uint32_t begin = server.arg(F("begin")).toInt();
+    uint32_t end = server.arg(F("end")).toInt();
+    xbuf buf;
+    while(begin <= end){
+      buf.printf_P(PSTR("UTC %d, %s, Local %d, %s, UTC %d, %s"),
+        begin, datef(begin).c_str(),
+        localTime(begin), datef(localTime(begin)).c_str(),
+        UTCtime(localTime(begin)), datef(UTCtime(localTime(begin))).c_str());
+      if(begin != UTCtime(localTime(begin))){
+        buf.print(" FAILED");
+      }
+      buf.println();
+      begin += 60;
+      if(buf.available() > 8000){
+        buf.println("too big");
+        break;
+      }
+    }
+    server.send(200, txtPlain_P, buf.readString(buf.available()).c_str());
+}
         // Seems to work better when sending chunk as a single write
         // including chunk header, body, and footer (\r\n).
         // This function accepts a char* buffer and length to send.

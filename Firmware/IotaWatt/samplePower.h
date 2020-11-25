@@ -6,7 +6,8 @@ int     sampleCycle(IotaInputChannel* Vchannel, IotaInputChannel* Ichannel, int 
 float   getAref(int channel);
 int     readADC(uint8_t channel);
 float   sampleVoltage(uint8_t Vchan, float Vcal);
-String  samplePhase(uint8_t Vchan, uint8_t Ichan, uint16_t Ishift = 100);
+float   samplePhase(uint8_t Vchan, uint8_t Ichan, int Ishift = 100);
+float   samplePhase(uint8_t Ichan, uint8_t Cchan, int shift, double *VPri, double *VSec);
 void    printSamples();
 
 #endif
