@@ -105,6 +105,7 @@
  *   05/03/20 02_05_09 Add VAR VARh to script and query, Disable datalog WDT during update download, rp in influx query
  *   09/14/20 02_05_10 Add WiFi to status query
  *   09/21/20 02_05_11 Add Graph+ imbed
+ *   12/02/20 02_05_12 Maintenance. Fix query chunking, Tables updates, contributed app changes.
  * 
  *****************************************************************************************************/
 
