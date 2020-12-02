@@ -3,6 +3,7 @@
 <html lang="en-US">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=0.86, maximum-scale=5.0, minimum-scale=0.86">
 <title>IoTaWatt Configuration app</title>
 <link rel="stylesheet" type="text/css" href="cnfstyle.css">
 
@@ -421,7 +422,10 @@
         </div> 
       </div>
     </div>
-  </div> <!-- mainBody -->  
+  </div> <!-- mainBody --> 
+  <div id="copyright">
+    <p style="text-align:center; padding:0px; margin:0px"><small>&#xA9 2020 IoTaWatt, Inc.</small></p>
+  </div>
 </div> <!-- outerContainer -->
 
 <script>
@@ -2597,6 +2601,7 @@ function resetDisplay(){
   getStatus = false;
   editing = false;
   while(currentBody.length > 0) currentBodyPop();
+  hide("mainBody");
 }
 
 function loadGraph(){

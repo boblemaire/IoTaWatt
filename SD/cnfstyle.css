@@ -183,7 +183,7 @@
   #outerContainer {
       border: 2px solid;
       max-width: 600px;
-      padding: 4px;
+      padding: 4px 4px 4px 4px;
       border-radius: 6px;
     }
     
@@ -191,14 +191,21 @@
     width: 100%;
     border: 2px solid;
     padding: 4px;
-    margin-bottom: 1px;
+    margin: 0px;
   }
   
   #mainBody{
     width: 100%;
     border: 2px solid;
-    padding: 1px 4px 1px 4px;
-    margin: auto;
+    padding: 1px 4px;
+    margin: 0px;
+  }
+  
+  #copyright{
+    width: 100%;
+    height: 12px;
+    margin: 0px;
+    padding: 0px;
   }
   
   #panicMessageDiv{
