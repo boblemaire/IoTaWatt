@@ -871,7 +871,7 @@ void handleQuery(){
     int read = 0;
     size_t size = 0;
     trace(T_WEB,56);
-    while((read = query->readResult(buf, 1440)) && size < 100000){
+    while((read = query->readResult(buf, 1440))){
       trace(T_WEB,57);
       server.sendContent((char*)buf, read);
       size += read;
@@ -879,7 +879,7 @@ void handleQuery(){
       yield();
     }
     trace(T_WEB,56);
-    server.sendContent((char*)buf, 0);
+    //server.sendContent((char*)buf, 0);
     delete buf;
   }
   delete query;
