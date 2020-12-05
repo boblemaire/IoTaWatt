@@ -85,7 +85,7 @@ select=[*series1* [, *series2* ...]]
         The .d<n> modifier overides the default number of decimal digits.
 
     An example might be:
-        ``select=[time.local.unix,mains.watts.d0,solar.wh.d1]``
+        `select=[time.local.unix,mains.watts.d0,solar.wh.d1]`
 
 &begin=<time specifier>
 .......................
@@ -171,6 +171,38 @@ select=[*series1* [, *series2* ...]]
     Optional parameter specifies the relative resolution of the response table 
     when *&group=auto*. The default is **low**. For more information see 
     *&group=* above.
+
+&limit={**n** | none }
+......................
+
+    Optional parameter overides the default output limit.
+    The default is 1,000 lines.
+
+    :n:
+        Maximum lines generated
+
+    :none:
+        No limit, query runs to completion
+    
+    Query is a blocking request. 
+    The IoTaWatt does not sample power while responding to a query.
+    Short queries, as issued by Graph+, are of little consequence.
+    They process in a second or less.
+    To avoid unintended long lapses, a limit is placed on the  number
+    of lines (groups) that are returned by the query.
+    To understand the time required for longer queries,
+    you can experiment with a subset and scale the time up.
+
+    If the limit is reached, output will stop with a full line.
+    If the format is json and header=yes,
+    the response will include an object called "limit" 
+    with a value of the UTC timestamp of the next line that
+    would have been produced. 
+    If the format is CSV, the following message will be appended with
+    the UTC timestamp of the next line that would have been produced.
+
+    ``Limit exceeded at <UTCtime>``
+    
 
 ---------------
 time specifiers 
