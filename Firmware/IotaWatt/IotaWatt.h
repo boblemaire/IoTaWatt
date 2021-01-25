@@ -25,6 +25,7 @@
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
 #define MIN(a,b) ((a<b)?a:b)
 #define MAX(a,b) ((a>b)?a:b)
+#define RANGE(x,min,max) (x<=min?min:(x>=max?max:x))
 
 #include <Arduino.h>
 #include <time.h>
@@ -63,6 +64,8 @@
 #include "updater.h"
 #include "samplePower.h"
 #include "influxDB.h"
+#include "influxDB2.h"
+#include "influxDB_v2_uploader.h"
 #include "Emonservice.h"
 #include "auth.h"
 #include "spiffs.h"
@@ -180,7 +183,9 @@ struct EEprom {
 #define T_CSVquery 25      // CSVquery
 #define T_xurl 26          // xurl 
 #define T_utility 27       // Miscelaneous utilities 
-#define T_EXPORTLOG 28     // Export log                      
+#define T_EXPORTLOG 28     // Export log
+#define T_influx2 29       // influxDB2 service 
+#define T_influx2Config 30 // influx2 configuration                        
 
       // LED codes
 
@@ -271,7 +276,11 @@ extern uint8_t  configSHA256[32];         // Hash of config file
 extern int16_t  HTTPrequestFree;          // Request semaphore
 extern uint32_t HTTPrequestStart[HTTPrequestMax]; // request start time tokens
 extern uint16_t HTTPrequestId[HTTPrequestMax];    // Module ID of requestor
-extern uint32_t HTTPlock;                 // start time token of locking request      
+extern uint32_t HTTPlock;                 // start time token of locking request  
+
+      // ************************** HTTPS proxy host ******************************************
+
+extern char *HTTPSproxy;                  // Host for nginx (or other) reverse HTTPS proxy server
 
 extern uint8_t*   adminH1;                // H1 digest md5("admin":"admin":password) 
 extern uint8_t*   userH1;                 // H1 digest md5("user":"user":password) 
@@ -288,6 +297,7 @@ extern uint32_t timeRefMs;                     // Internal MS clock correspondin
 extern uint32_t timeSynchInterval;             // Interval (sec) to roll NTP forward and try to refresh
 extern uint32_t EmonCMSInterval;               // Interval (sec) to invoke EmonCMS
 extern uint32_t influxDBInterval;              // Interval (sec) to invoke inflexDB
+extern uint32_t influxDB2Interval;             // Interval (sec) to invoke inflexDB2
 extern uint32_t statServiceInterval;           // Interval (sec) to invoke statService
 extern uint32_t updaterServiceInterval;        // Interval (sec) to check for software updates
 

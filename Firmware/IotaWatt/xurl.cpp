@@ -4,6 +4,8 @@ bool    xurl::parse(const char* _url_){
 
         delete[] _method;
         _method = nullptr;
+        delete[] _auth;
+        _auth = nullptr;
         delete[] _domain;
         _domain = nullptr;
         delete[] _port;
@@ -23,6 +25,9 @@ bool    xurl::parse(const char* _url_){
             memcpy(_method, pos, loc-pos+3);
             _method[loc-pos+3] = 0;
             pos = loc + 3;
+        } else {
+            _method = new char[8];
+            strcpy(_method, "http://");
         }
 
             // Check for auth

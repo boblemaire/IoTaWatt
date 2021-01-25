@@ -569,6 +569,17 @@ void handleStatus(){
       root["influx"] = influx;
     }
 
+    if(server.hasArg(F("influx2"))){
+      trace(T_WEB,17);
+      JsonObject& status = jsonBuffer.createObject();
+      if(!influxDB_v2){
+        status.set(F("state"),"not running");
+      } else {
+        influxDB_v2->getStatusJson(status);
+      }  
+      root["influx2"] = status;
+    }
+
     if(server.hasArg(F("emon"))){
       trace(T_WEB,22);
       JsonObject& emon = jsonBuffer.createObject();

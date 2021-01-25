@@ -167,6 +167,29 @@ boolean getConfig(const char* configPath){
       influxStop = true;
     }
   }
+
+        // ************************************** configure influxDB2 **********************************
+
+  {
+    trace(T_CONFIG,10);
+    JsonArray& influx2Array = Config[F("influxdb2")];
+    if(influx2Array.success()){
+      char* influx2Str = JsonDetail(ConfigFile, influx2Array);
+      if(! influxDB_v2){
+        influxDB_v2 = new influxDB_v2_uploader;
+      }
+      if( ! influxDB_v2->config(influx2Str)){
+        log("influxDB_v2: Invalid configuration.");
+        influxDB_v2->end();
+        influxDB_v2 = nullptr;
+      }
+      delete[] influx2Str;
+    }   
+    else if(influxDB_v2){
+      influxDB_v2->end();
+      influxDB_v2 = nullptr;
+    }
+  }
       // ************************************** configure PVoutput **********************************
 
   {
@@ -290,6 +313,12 @@ bool configDevice(const char* JsonStr){
     for(int i=0; i<MIN(maxInputs,device[F("burden")].size()); i++){
       inputChannel[i]->_burden = device[F("burden")][i].as<float>();
     }
+  }
+
+  delete[] HTTPSproxy;
+  HTTPSproxy = nullptr;
+  if(device.containsKey(F("HTTPSproxy"))){
+    HTTPSproxy = charstar(device[F("HTTPSproxy")].as<const char *>());
   }
 }
 

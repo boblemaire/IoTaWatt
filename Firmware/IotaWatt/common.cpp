@@ -119,9 +119,9 @@ IotaLog History_log(256,60,3652);               // history data log  (10 years)
 IotaLog *Export_log = nullptr;                  // Optional export log    
 RTC_PCF8523 rtc;                                // Instance of RTC_PCF8523
 Ticker Led_timer;
-messageLog Message_log;                         // Message log handler    
+messageLog Message_log;                         // Message log handler
 
-      // Define filename Strings of system files.          
+// Define filename Strings of system files.          
 
 char* deviceName;             
                        
@@ -193,9 +193,13 @@ uint16_t          authTimeout = 600;      // Timeout interval of authSession in 
 int16_t  HTTPrequestFree = HTTPrequestMax;  // Request semaphore
 uint32_t HTTPrequestStart[HTTPrequestMax];  // Reservation time(ms)
 uint16_t HTTPrequestId[HTTPrequestMax];     // Module ID of reserver    
-uint32_t HTTPlock = 0;                      // Time(ms) HTTP was locked (no new requests)   
+uint32_t HTTPlock = 0;                      // Time(ms) HTTP was locked (no new requests)  
 
-      // ****************************** Timing and time data **********************************
+      // ************************** HTTPS proxy host ******************************************
+
+char *HTTPSproxy = nullptr;
+
+// ****************************** Timing and time data **********************************
 
 int32_t  localTimeDiff = 0;                  // Hours from UTC 
 tzRule*  timezoneRule = nullptr;             // Rule for DST 
@@ -205,6 +209,7 @@ uint32_t timeRefMs = 0;                      // Internal MS clock corresponding 
 uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forward and try to refresh
 uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS
 uint32_t influxDBInterval = 10;              // Interval (sec) to invoke inflexDB 
+uint32_t influxDB2Interval = 10;             // Interval (sec) to invoke inflexDB2 
 uint32_t statServiceInterval = 1;            // Interval (sec) to invoke statService
 uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for software updates 
 
