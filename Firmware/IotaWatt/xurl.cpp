@@ -1,30 +1,30 @@
 #include <xurl.h>
 
 bool    xurl::parse(const char* _url_){
+    delete[] _method;
+    _method = nullptr;
+    delete[] _auth;
+    _auth = nullptr;
+    delete[] _domain;
+    _domain = nullptr;
+    delete[] _port;
+    _port = nullptr;
+    delete[] _path;
+    _path = nullptr;
+    delete[] _query;
+    _query = nullptr;
 
-        delete[] _method;
-        _method = nullptr;
-        delete[] _auth;
-        _auth = nullptr;
-        delete[] _domain;
-        _domain = nullptr;
-        delete[] _port;
-        _port = nullptr;
-        delete[] _path;
-        _path = nullptr;
-        delete[] _query;
-        _query = nullptr;
+    const char *pos = _url_;
 
-        const char* pos = _url_;
+    // parse method
 
-            // parse method
-
-        const char* loc = strstr(pos, "://");
-        if(loc){
-            _method = new char[loc-pos+4];
-            memcpy(_method, pos, loc-pos+3);
-            _method[loc-pos+3] = 0;
-            pos = loc + 3;
+    const char *loc = strstr(pos, "://");
+    if (loc)
+    {
+        _method = new char[loc - pos + 4];
+        memcpy(_method, pos, loc - pos + 3);
+        _method[loc - pos + 3] = 0;
+        pos = loc + 3;
         } else {
             _method = new char[8];
             strcpy(_method, "http://");
@@ -158,9 +158,7 @@ void    xurl::query(const char *_query_){
     }
 
 String  xurl::build(){
-        //int resultLen = strlen(_method) + strlen(_auth) + strlen(_domain) + strlen(_port) + strlen(_path) + strlen(_query);
         String result;
-        //result.reserve(resultLen); 
         result += _method;
         result += _auth;
         result += _domain;

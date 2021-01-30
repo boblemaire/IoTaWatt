@@ -16,11 +16,14 @@ class influxDB_v2_uploader
                                  oldRecord(0),
                                  _tagSet(0),
                                  _outputs(0),
-                                 _state(initialize),
+                                 _state(initialize_s),
+                                 _url(0),
                                  _request(0),
                                  _interval(0),
                                  _bulkSend(1),
                                  _revision(0),
+                                 _lookbackHours(0),
+                                 _uploadStartDate(0),
                                  _orgID(0),
                                  _bucket(0),
                                  _token(0),
@@ -30,6 +33,7 @@ class influxDB_v2_uploader
                                  _lastPost(0),
                                  _bufferLimit(INFLUXDB_V2_BUFFER_LIMIT),
                                  _statusMessage(0),
+                                 _POSTrequest(0),
                                  _stop(false),
                                  _end(false),
                                  _staticKeySet(false),
@@ -38,7 +42,14 @@ class influxDB_v2_uploader
         {};
         
         ~influxDB_v2_uploader(){
-
+            delete[] _orgID;
+            delete[] _bucket;
+            delete[] _token;
+            delete[] _measurement;
+            delete[] _fieldKey;
+            delete[] _statusMessage;
+            delete _POSTrequest;
+            delete _request;
         };
 
         bool config(const char *JsonText);
@@ -47,28 +58,46 @@ class influxDB_v2_uploader
         void end();
 
     private:
+
         IotaLogRecord *newRecord;
         IotaLogRecord *oldRecord;
 
         influxTag *_tagSet;
         ScriptSet *_outputs;
 
-        enum {
-            initialize,
-            getLastPost,
-            post,
-            sendPost,
-            waitPost,
-            stopped
+        enum states {
+            initialize_s,
+            buildLastSent_s,
+            checkLastSent_s,
+            buildPost_s,
+            checkPost_s,
+            HTTPpost_s,
+            HTTPwait_s,
+            delay_s,
+            stopped_s
         } _state;
 
-        xurl _url;
+        // Parameters supplied to HTTPost                
+
+        struct      POSTrequest{
+            char*   endpoint;
+            char*   contentType;
+            states  completionState;
+            POSTrequest():endpoint(nullptr),contentType(nullptr){};
+            ~POSTrequest(){delete[] endpoint; delete[] contentType;}
+        };
+
+        xurl* _url;
         xbuf reqData;
         asyncHTTPrequest *_request;
 
         int16_t _interval;
         int16_t _bulkSend;
         uint32_t _revision;
+        uint32_t _delayResumeTime;
+        states _delayResumeState;
+        uint32_t _lookbackHours;
+        uint32_t _uploadStartDate;
         char *_orgID;
         char *_bucket;
         char *_token;
@@ -86,15 +115,21 @@ class influxDB_v2_uploader
         char *_statusMessage;
 
         uint32_t tickInitialize();
-        uint32_t tickGetLastSent();
-        uint32_t tickPost();
-        uint32_t tickSendPost();
-        uint32_t tickWaitPost();
+        uint32_t tickBuildLastSent();
+        uint32_t tickCheckLastSent();
+        uint32_t tickBuildPost();
+        uint32_t tickCheckPost();
         uint32_t tickStopped();
+        uint32_t tickHTTPPost();
+        uint32_t tickHTTPWait();
+        uint32_t tickDelay();
 
+        POSTrequest *_POSTrequest;
+
+        void HTTPPost(const char *endpoint, states completionState, const char *contentType);
         String varStr(const char *in, Script *script);
         int scriptCompare(Script *a, Script *b);
-
+        void delay(uint32_t seconds, states resumeState);
 };
 
 extern influxDB_v2_uploader *influxDB_v2;
