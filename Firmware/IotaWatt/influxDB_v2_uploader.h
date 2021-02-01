@@ -55,6 +55,7 @@ class influxDB_v2_uploader
         bool config(const char *JsonText);
         void getStatusJson(JsonObject&);
         uint32_t tick(struct serviceBlock *serviceBlock);
+        uint32_t stop();
         void end();
 
     private:

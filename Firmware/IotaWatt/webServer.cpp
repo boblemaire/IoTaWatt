@@ -565,6 +565,7 @@ void handleStatus(){
       trace(T_WEB,17);
       JsonObject& influx = jsonBuffer.createObject();
       influx.set(F("running"),influxStarted);
+      influx.set(F("status"), influxStarted ? "running" : "stopped");
       influx.set(F("lastpost"),influxLastPost);  
       root["influx"] = influx;
     }

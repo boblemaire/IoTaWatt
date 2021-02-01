@@ -85,6 +85,11 @@ uint32_t influxDB_v2_uploader::tick(struct serviceBlock *serviceBlock)
     return 0;
 }
 
+uint32_t influxDB_v2_uploader::stop(){
+    log("influxDB_v2: stopped, Last post %s", localDateString(_lastSent).c_str());
+    _state = stopped_s;
+}
+
 uint32_t influxDB_v2_uploader::tickStopped(){
     trace(T_influx2,5);
     if(_end){
@@ -116,7 +121,7 @@ uint32_t influxDB_v2_uploader::tickStopped(){
 
 uint32_t influxDB_v2_uploader::tickInitialize(){
     trace(T_influx2,10);
-    log("influxDB_v2: Starting");
+    log("influxDB_v2: Starting, bucket:%s, interval:%d, url:%s", _bucket, _interval, _url->build().c_str());
     _state = buildLastSent_s;
     return 1;
 }
@@ -143,7 +148,7 @@ uint32_t influxDB_v2_uploader::tickBuildLastSent(){
             _lastSent = rangeFloor;
         }
         _lastSent -= _lastSent % _interval;
-        log("influxDB_v2: Begin posting at %s", localDateString(_lastSent + _interval).c_str());
+        log("influxDB_v2: Start posting %s", localDateString(_lastSent + _interval).c_str());
         _state = buildPost_s;
         return 1;
     }
@@ -234,7 +239,7 @@ uint32_t influxDB_v2_uploader::tickCheckLastSent(){
             if(data){
                 _lastSent = strtol(data, 0, 10);
                 if(_lastSent >= MAX(Current_log.firstKey(), _uploadStartDate)){
-                    log("influxDB_v2: start posting %s", localDateString(_lastSent + _interval).c_str());
+                    log("influxDB_v2: Resume posting %s", localDateString(_lastSent + _interval).c_str());
                     _state = buildPost_s;
                     return 1;
                 }
@@ -244,7 +249,7 @@ uint32_t influxDB_v2_uploader::tickCheckLastSent(){
     delete _statusMessage;
     _statusMessage = charstar("Last sent query invalid response stopping");
     _stop = true;
-    _state = stopped_s;
+    stop();
     return 1;
 }
 
@@ -256,13 +261,13 @@ uint32_t influxDB_v2_uploader::tickBuildPost(){
     // then build the payload and initiate the post operation.
 
     if(_stop){
-        _state = stopped_s;
+        stop();
         return 1;
     }
 
     // If not enough data to post, set wait and return.
 
-    if(Current_log.lastKey() < (_lastSent + _interval * _bulkSend)){
+    if(Current_log.lastKey() < (_lastSent + _interval + (_interval * _bulkSend))){
         return UTCtime() + 1;
     }
 
@@ -273,7 +278,7 @@ uint32_t influxDB_v2_uploader::tickBuildPost(){
         trace(T_influx2,61);
         oldRecord = new IotaLogRecord;
         newRecord = new IotaLogRecord;
-        newRecord->UNIXtime = _lastSent;
+        newRecord->UNIXtime = _lastSent + _interval;
         Current_log.readKey(newRecord);
     }
 
@@ -320,7 +325,7 @@ uint32_t influxDB_v2_uploader::tickBuildPost(){
                     reqData.printf_P(PSTR(",%s=%.*f"), varStr(_fieldKey, script).c_str(), script->precision(), value);
                 } else {
                     if(lastMeasurement.length()){
-                        reqData.printf(" %d\n", newRecord->UNIXtime);
+                        reqData.printf(" %d\n", oldRecord->UNIXtime);
                     }
                     reqData.write(thisMeasurement);
                     if(_tagSet){
@@ -338,7 +343,7 @@ uint32_t influxDB_v2_uploader::tickBuildPost(){
             lastMeasurement = thisMeasurement;
             script = script->next();
         }
-        _lastPost = newRecord->UNIXtime;
+        _lastPost = oldRecord->UNIXtime;
         reqData.printf(" %d\n", _lastPost);
     }
 
@@ -367,6 +372,8 @@ uint32_t influxDB_v2_uploader::tickCheckPost(){
     // return to buildPost.
 
     if(_request->responseHTTPcode() == 204){
+        delete[] _statusMessage;
+        _statusMessage = nullptr;
         _lastSent = _lastPost; 
         _state = buildPost_s;
         trace(T_influx2,93);
@@ -515,7 +522,7 @@ void influxDB_v2_uploader::delay(uint32_t seconds, states resumeState){
 
 uint32_t influxDB_v2_uploader::tickDelay(){
     if(_stop){
-        _state = stopped_s;
+        stop();
         return 1;
     }
     if(UTCtime() >= _delayResumeTime){
