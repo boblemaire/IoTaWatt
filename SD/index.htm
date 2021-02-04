@@ -1711,7 +1711,7 @@ function burdenSave(){
  * ******************************************************************************************/
 
 function buildWebServer(){
-  var servers = ["Emoncms", "InfluxDB_v1", "influx2Button_v2", "PVoutput"];
+  var servers = ["Emoncms", "InfluxDB_v1", "influxDB_v2", "PVoutput"];
   EbyId("serverHead").innerHTML = "Web Server Setup";
   EbyId("divInfluxTagSet").style.display = "none";
   EbyId("divServerOutputs").style.display = "none";
@@ -1961,7 +1961,7 @@ function emonToggle(){
 }
 
 /***********************************************************************************************
- *                                Configure influx2Button
+ *                                Configure influxDB_v2
  * ********************************************************************************************/
 function editInfluxdb(version){
   editing = true;
@@ -1972,12 +1972,12 @@ function editInfluxdb(version){
   if(version == 1){
     if(serverConfig !== undefined){
       serverConfig.revision++;
-      EbyId("serverHead").innerHTML = "Edit influx2Button_v1 Uploader";
+      EbyId("serverHead").innerHTML = "Edit influxDB_v1 Uploader";
       EbyId("serverDelete").style.display = "inline";
       EbyId("serverDelete").setAttribute("onclick","deleteInfluxdb();");
     }
     else {
-      EbyId("serverHead").innerHTML = "Add influx2Button_v2 Uploader";
+      EbyId("serverHead").innerHTML = "Add influxDB_v2 Uploader";
       serverConfig = {type:"influxdb",
                     revision: 0,
                     postInterval:10,
@@ -1995,12 +1995,12 @@ function editInfluxdb(version){
   else { // version 2
     if(serverConfig !== undefined){
       serverConfig.revision++;
-      EbyId("serverHead").innerHTML = "Edit influx2Button_v1 Uploader";
+      EbyId("serverHead").innerHTML = "Edit influxDB_v1 Uploader";
       EbyId("serverDelete").style.display = "inline";
       EbyId("serverDelete").setAttribute("onclick","deleteInfluxdb();");
     }
     else {
-      EbyId("serverHead").innerHTML = "Add influx2Button_v2 Uploader";
+      EbyId("serverHead").innerHTML = "Add influxDB_v2 Uploader";
       serverConfig = {type:"influxdb2",
                     revision: 0,
                     postInterval:10,
@@ -2021,7 +2021,7 @@ function editInfluxdb(version){
   postInput.setAttribute("onchange","serverConfig.postInterval = Number(this.value); checkInfluxdb();");
   postInput.setAttribute("style","width: 40px;");
   postInput.type = "number";
-  postInput.setAttribute("min","0");
+  postInput.setAttribute("min","5");
   postInput.setAttribute("max","3600");
   postInput.setAttribute("step","5");
   
@@ -2044,10 +2044,10 @@ function editInfluxdb(version){
     var dbInput = addTableRow(serverTable, "database:", "serverDb", "input", 16);
     dbInput.value = serverConfig.database;
     dbInput.setAttribute("oninput","serverConfig.database = this.value; checkInfluxdb();");
-    dbInput.pattern = "^[A-Za-z0-9_]*$";
+    dbInput.placeholder = "required";
+    
     var RetpInput = addTableRow(serverTable, "retention policy", "serverRetp", "input", 16);
     RetpInput.setAttribute("oninput","serverConfig.retp = this.value; checkInfluxdb();");
-    RetpInput.pattern = "^[A-Za-z0-9_]*$";
     if(serverConfig.retp !== undefined){
       RetpInput.value = serverConfig.retp;
     } else {
@@ -2059,34 +2059,31 @@ function editInfluxdb(version){
     var userInput = addTableRow(serverTable, "username:", "serverUser", "input", 16);
     userInput.value = serverConfig.user;
     userInput.setAttribute("oninput","serverConfig.user = this.value; checkInfluxdb();");
-    userInput.pattern = "^[A-Za-z0-9@_]*$";
     userInput.placeholder = "optional";
   
     if(serverConfig.pwd === undefined) serverConfig.pwd = "";
     var pwdInput = addTableRow(serverTable, "password:", "serverPwd", "input", 32);
     pwdInput.value = serverConfig.pwd;
     pwdInput.setAttribute("oninput","serverConfig.pwd = this.value; checkInfluxdb();"); 
-    pwdInput.pattern = "^[A-Za-z0-9_!%@#]{0,32}";
-    pwdInput.type = "password";
     pwdInput.placeholder = "optional";
   }
   else { // version 2
     var dbInput = addTableRow(serverTable, "Bucket:", "serverBucket", "input", 16);
     dbInput.value = serverConfig.bucket;
     dbInput.setAttribute("oninput","serverConfig.bucket = this.value; checkInfluxdb();");
-    dbInput.pattern = "^[^_0-9]{1}[A-Za-z0-9_.\-]{0,16}$";
-  
+    dbInput.placeholder = "required";
+
     if(serverConfig.orgid === undefined) serverConfig.orgid = "";
     var userInput = addTableRow(serverTable, "Organization ID:", "serverOrgID", "input", 16);
     userInput.value = serverConfig.orgid;
     userInput.setAttribute("oninput","serverConfig.orgid = this.value; checkInfluxdb();");
-    userInput.pattern = "^[A-Za-z0-9]{16}$";
+    userInput.placeholder = "required";
     
     if(serverConfig.authtoken === undefined) serverConfig.authtoken = "";
-    var userInput = addTableRow(serverTable, "Authorization token:", "serverAuthToken", "input", 48);
-    userInput.value = serverConfig.authtoken;
-    userInput.setAttribute("oninput","serverConfig.authtoken = this.value; checkInfluxdb();");
-    userInput.pattern = "^[A-Za-z0-9_\-]{86}[=]{2}$";
+    var tokenInput = addTableRow(serverTable, "Authorization token:", "serverAuthToken", "input", 48);
+    tokenInput.value = serverConfig.authtoken;
+    tokenInput.setAttribute("oninput","serverConfig.authtoken = this.value; checkInfluxdb();");
+    tokenInput.placeholder = "required";
   }
 
   var begdateInput = addTableRow(serverTable, "upload history from:", "serverBegd", "input", 16);
@@ -2099,17 +2096,13 @@ function editInfluxdb(version){
   var measInput = addTableRow(serverTable, "measurement", "serverMeas", "input", 16);
   measInput.setAttribute("oninput","serverConfig.measurement = this.value; checkInfluxdb();");
   measInput.value = serverConfig.measurement;
-  measInput.pattern = "^[^'\"\\s]*$";
   measInput.placeholder = "default is $name";
-  measInput.title = "enter a string or $name, $units, if not specified $name will be used.";
-  
+
   if(serverConfig.fieldkey === undefined) serverConfig.fieldkey = "";
   var fkeyInput = addTableRow(serverTable, "field-key", "serverFkey", "input", 16);
   fkeyInput.setAttribute("oninput","serverConfig.fieldkey = this.value; checkInfluxdb();");
   fkeyInput.value = serverConfig.fieldkey;
-  fkeyInput.pattern = "^[^'\"\\s]*$";
   fkeyInput.placeholder = "default is 'value'";
-  fkeyInput.title = "enter a string or $name, $units. if not specified, 'value' will be used.";
   
   EbyId("divInfluxTagSet").style.display = "inline";
   buildTagSet();
@@ -2143,29 +2136,55 @@ function toInputDate(unixtime){
   return date.getUTCFullYear() + '-' + (month < 10 ? '0' : '') + month.toString() + '-' + (day < 10 ? '0' : '') + day.toString();
 }
 
+function validateRegex(id, pattern, message){
+  var obj = EbyId(id);
+  var match = pattern.test(obj.value);
+  while(obj.nextSibling !== null) obj.parentNode.removeChild(obj.nextSibling);
+  if(!match){
+    obj.parentNode.appendChild(document.createElement("BR"));
+    obj.parentNode.appendChild(document.createTextNode(message));
+    return false;
+  }
+return true;
+}
+
+var pattern_URL = new RegExp('^(https?:\\/\\/)?'+ // protocol
+    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+    '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*$','i');  // port and path X
+var pattern_bucket = new RegExp('^[^_\\d]{1}[A-Z\\d_.\\-]{0,16}$', 'i');
+var pattern_org = new RegExp('^[A-Z\\d]{16}$','i');
+var pattern_token = new RegExp('^[A-Z\\d_\\-]{86}[=]{2}$','i');
+var pattern_db = new RegExp('^[A-Z\\d_\\-]+$', 'i');
+var pattern_retp = new RegExp('^[A-Z\\d_]*$', 'i');
+var pattern_user = new RegExp('^[A-Z\\d@_]*$', 'i');
+var pattern_pwd = new RegExp('^[A-Z\\d_!@#$%^&*_+?-]{0,32}$', 'i');
+var pattern_meas = new RegExp('^[A-Z\\d_$-]*$', 'i');
+var pattern_fkey = new RegExp('^[A-Z\\d_$-]*$', 'i');
+    
 function checkInfluxdb(){
   var complete = true;
+  complete &= validateRegex("serverURL", pattern_URL, "Please enter a valid URL.");
   if( ! validateInput("serverPost")) complete = false;
   if( ! validateInput("serverBulk")) complete = false;
-  if( ! validateInput("serverURL", true, "not a valid url")) complete = false;
   if(serverConfig.version == 1){
+    complete &= validateRegex("serverDb", pattern_db, "Alphanumeric database name required");
+    complete &= validateRegex("serverRetp", pattern_retp, "Must be Alphanumeric");
+    complete &= validateRegex("serverUser", pattern_user, "Must be Alphanumeric");
+    complete &= validateRegex("serverPwd", pattern_pwd, "Letters, numbers and !@#$%^&*_+?-");
     if(serverConfig.retp == "") serverConfig.retp = undefined;
     if(serverConfig.user == "") serverConfig.user = undefined;
     if(serverConfig.pwd == "") serverConfig.pwd = undefined;
-    if( ! validateInput("serverDb", true, "alphanumeric")) complete = false;
-    if( ! validateInput("serverRetp", false, "invalid string")) complete = false;
-    if( ! validateInput("serverUser", serverConfig.pwd !== undefined, "invalid string")) complete = false;
-    if( ! validateInput("serverPwd", serverConfig.user !== undefined, "invalid string")) complete = false;
   }
   else {
-    if( ! validateInput("serverBucket")) complete = false;
-    if( ! validateInput("serverOrgID")) complete = false;
-    if( ! validateInput("serverAuthToken")) complete = false;
+    complete &= validateRegex("serverBucket", pattern_bucket, "Alphanumeric._- bucket name required.");
+    complete &= validateRegex("serverOrgID", pattern_org, "16 character orgID required.");
+    complete &= validateRegex("serverAuthToken", pattern_token, "88 character authorization token required.");
   }
+  complete &= validateRegex("serverMeas", pattern_meas, "enter a string or $name, $units, if not specified $name will be used.");
+  complete &= validateRegex("serverFkey", pattern_fkey, "enter a string or $name, $units. if not specified, 'value' will be used.");
   if(serverConfig.measurement == "") serverConfig.measurement = undefined;
   if(serverConfig.fieldkey == "") serverConfig.fieldkey = undefined;
-  if( ! validateInput("serverMeas",false, "invalid string")) complete = false;
-  if( ! validateInput("serverFkey", false, "invalid string")) complete = false;
   if( ! validateInput("serverBegd", false)) complete = false;
   if(serverConfig.outputs.length == 0) complete = false;
   EbyId("serverSave").style.display = complete ? "inline" : "none";

@@ -5,7 +5,9 @@
 #include "xbuf.h"
 #include "xurl.h"
 
+#ifndef INFLUXDB_V2_BUFFER_LIMIT
 #define INFLUXDB_V2_BUFFER_LIMIT 4000
+#endif
 
 extern uint32_t influxDB_v2_tick(struct serviceBlock *serviceBlock);
 
@@ -50,6 +52,11 @@ class influxDB_v2_uploader
             delete[] _statusMessage;
             delete _POSTrequest;
             delete _request;
+            delete newRecord;
+            delete oldRecord;
+            delete _tagSet;
+            delete _outputs;
+            delete _url;
         };
 
         bool config(const char *JsonText);

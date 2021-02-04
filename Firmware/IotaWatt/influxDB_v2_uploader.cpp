@@ -87,7 +87,19 @@ uint32_t influxDB_v2_uploader::tick(struct serviceBlock *serviceBlock)
 
 uint32_t influxDB_v2_uploader::stop(){
     log("influxDB_v2: stopped, Last post %s", localDateString(_lastSent).c_str());
+    delete oldRecord;
+    oldRecord = nullptr;
+    delete newRecord;
+    newRecord = nullptr;
+    delete _request;
+    _request = nullptr;
+    reqData.flush();
+    delete _url;
+    _url = nullptr;
+    trace(T_influx2, 7);
+    _stop = true;
     _state = stopped_s;
+    return 1;
 }
 
 uint32_t influxDB_v2_uploader::tickStopped(){
@@ -99,20 +111,10 @@ uint32_t influxDB_v2_uploader::tickStopped(){
         return 0;
     }
     if(_stop){
-        delete oldRecord;
-        oldRecord = nullptr;
-        delete newRecord;
-        newRecord = nullptr;
-        delete _request;
-        _request = nullptr;
-        reqData.flush();
-        delete _url;
-        _url = nullptr;
-        trace(T_influx2, 7);
-        delete[] _statusMessage;
-        _statusMessage = nullptr;
         return UTCtime() + 1;
     }
+    delete[] _statusMessage;
+    _statusMessage = nullptr;
     trace(T_influx2,8);
     _lookbackHours = 0;
     _state = buildLastSent_s;
@@ -268,6 +270,12 @@ uint32_t influxDB_v2_uploader::tickBuildPost(){
     // If not enough data to post, set wait and return.
 
     if(Current_log.lastKey() < (_lastSent + _interval + (_interval * _bulkSend))){
+        if(oldRecord){
+            delete oldRecord;
+            oldRecord = nullptr;
+            delete newRecord;
+            newRecord = nullptr;
+        }
         return UTCtime() + 1;
     }
 
@@ -433,6 +441,14 @@ uint32_t influxDB_v2_uploader::tickHTTPPost(){
     if( ! WiFi.isConnected()){
         return UTCtime() + 1;
     }
+
+    if(_useProxyServer && HTTPSproxy == nullptr){
+        log("influxDB_v2: No HTTPS proxy - stopping.");
+        _statusMessage = charstar(F("No HTTPS proxy configured."));
+        stop();
+        return 1;
+    }
+
     _HTTPtoken = HTTPreserve(T_influx2);
     if( ! _HTTPtoken){
         return 1;
@@ -453,7 +469,7 @@ uint32_t influxDB_v2_uploader::tickHTTPPost(){
     trace(T_influx2,120);
     {
         char URL[128];
-        if(_useProxyServer && HTTPSproxy){
+        if(_useProxyServer){
             trace(T_influx2,121);
             size_t len = sprintf_P(URL, PSTR("%s/api/v2%s"), HTTPSproxy, _POSTrequest->endpoint);
         }
@@ -577,15 +593,19 @@ uint32_t influxDB_v2_uploader::tickDelay(){
             return false;
         }
          _url->query(nullptr);
+         _useProxyServer = false;
+         if(strcmp_ci(_url->method(),"https://")== 0){
+             _useProxyServer = true;
+         }
 
-        // Gather and check parameters
+         // Gather and check parameters
 
-        trace(T_influx2, 100);
-        _interval = config.get<unsigned int>("postInterval");
-        if (!_interval || (_interval % 5 != 0))
-        {
-            log("influxDB_v2: Invalid interval");
-            return false;
+         trace(T_influx2, 100);
+         _interval = config.get<unsigned int>("postInterval");
+         if (!_interval || (_interval % 5 != 0))
+         {
+             log("influxDB_v2: Invalid interval");
+             return false;
         }
         _bulkSend = config.get<unsigned int>("bulksend");
         _bulkSend = constrain(_bulkSend, 1, 10);

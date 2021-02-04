@@ -317,8 +317,8 @@ bool configDevice(const char* JsonStr){
 
   delete[] HTTPSproxy;
   HTTPSproxy = nullptr;
-  if(device.containsKey(F("HTTPSproxy"))){
-    HTTPSproxy = charstar(device[F("HTTPSproxy")].as<const char *>());
+  if(device.containsKey(F("httpsproxy"))){
+    HTTPSproxy = charstar(device[F("httpsproxy")].as<const char *>());
   }
 }
 
