@@ -198,6 +198,9 @@ uint32_t HTTPlock = 0;                      // Time(ms) HTTP was locked (no new 
       // ************************** HTTPS proxy host ******************************************
 
 char *HTTPSproxy = nullptr;
+uploader *influxDB_v1 = nullptr;
+uploader *influxDB_v2 = nullptr;
+uploader *Emoncms = nullptr;
 
 // ****************************** Timing and time data **********************************
 

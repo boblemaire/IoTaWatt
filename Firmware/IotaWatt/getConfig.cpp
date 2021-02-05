@@ -1,4 +1,5 @@
 #include "IotaWatt.h"
+#include "influxDB_v2_uploader.h"
 
 bool configDevice(const char*);
 bool configDST(const char* JsonStr);

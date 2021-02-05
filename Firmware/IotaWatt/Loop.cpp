@@ -47,15 +47,15 @@ void loop()
 // ---------- If the head of the service queue is dispatchable
 //            call the SERVICE.
 
-  if(serviceQueue != NULL && UTCtime() >= serviceQueue->callTime){
+  if(serviceQueue != NULL && UTCtime() >= serviceQueue->scheduleTime){
     serviceBlock* thisBlock = serviceQueue;
     serviceQueue = thisBlock->next;
     ESP.wdtFeed();
     trace(T_LOOP,5,thisBlock->taskID);
-    thisBlock->callTime = thisBlock->service(thisBlock);
+    thisBlock->scheduleTime = thisBlock->service(thisBlock);
     yield();
     trace(T_LOOP,6);
-    if(thisBlock->callTime > 0){
+    if(thisBlock->scheduleTime > 0){
       AddService(thisBlock); 
     } else {
       delete thisBlock;    
@@ -101,26 +101,28 @@ void loop()
  * polls for activity.
  ********************************************************************************************************/
 
-void NewService(uint32_t (*serviceFunction)(struct serviceBlock*), const uint8_t taskID){
+serviceBlock* NewService(Service serviceFunction, const uint8_t taskID, void* parm){
     serviceBlock* newBlock = new serviceBlock;
     newBlock->service = serviceFunction;
     newBlock->taskID = taskID;
+    newBlock->serviceParm = parm;
     AddService (newBlock);
+    return newBlock;
   }
 
 void AddService(struct serviceBlock* newBlock){
-  if(newBlock->callTime < UTCtime()) newBlock->callTime = UTCtime();
+  if(newBlock->scheduleTime < UTCtime()) newBlock->scheduleTime = UTCtime();
   if(serviceQueue == NULL ||
-    (newBlock->callTime < serviceQueue->callTime) ||
-    (newBlock->callTime == serviceQueue->callTime && newBlock->priority > serviceQueue->priority)){
+    (newBlock->scheduleTime < serviceQueue->scheduleTime) ||
+    (newBlock->scheduleTime == serviceQueue->scheduleTime && newBlock->priority > serviceQueue->priority)){
     newBlock->next = serviceQueue;
     serviceQueue = newBlock;
   }
   else {
     serviceBlock* link = serviceQueue;
     while(link->next != NULL){
-      if((newBlock->callTime < link->next->callTime) ||
-        (newBlock->callTime == link->next->callTime && newBlock->priority > link->next->priority)){
+      if((newBlock->scheduleTime < link->next->scheduleTime) ||
+        (newBlock->scheduleTime == link->next->scheduleTime && newBlock->priority > link->next->priority)){
         break;
       }        
       link = link->next;

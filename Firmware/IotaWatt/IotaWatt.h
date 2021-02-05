@@ -65,13 +65,14 @@
 #include "samplePower.h"
 #include "influxDB.h"
 #include "influxDB2.h"
-#include "influxDB_v2_uploader.h"
+#include "uploader.h"
 #include "Emonservice.h"
 #include "auth.h"
 #include "spiffs.h"
 #include "timeServices.h"
 #include "PVoutput.h"
 #include "CSVquery.h"
+#include "xbuf.h"
 #include "xurl.h"
 
       // Declare global instances of classes
@@ -214,14 +215,15 @@ enum priorities: byte { priorityLow=2,
                         priorityHM=7,
                         priorityHigh=8
                       };
-
+typedef std::function<uint32_t(struct serviceBlock*)> Service;
 struct serviceBlock {                  // Scheduler/Dispatcher list item (see comments in Loop)
   serviceBlock* next;                  // Next serviceBlock in list
-  uint32_t callTime;                   // Time in millis to dispatch
-  uint32_t (*service)(serviceBlock*);  // the SERVICE
+  uint32_t scheduleTime;               // Time in millis to dispatch
+  Service service;                     // the Service function
+  void *serviceParm;                   // Service specific parameter   
   priorities priority;                 // All things equal tie breaker
   uint8_t   taskID;
-  serviceBlock(){next=NULL; callTime=0; priority=priorityMed; service=NULL; taskID=0;}
+  serviceBlock(){next=NULL; scheduleTime=0; priority=priorityMed; service=NULL; taskID=0;}
 };
 
 extern serviceBlock* serviceQueue;     // Head of ordered list of services
@@ -282,6 +284,12 @@ extern uint32_t HTTPlock;                 // start time token of locking request
 
 extern char *HTTPSproxy;                  // Host for nginx (or other) reverse HTTPS proxy server
 
+extern uploader *influxDB_v1;
+extern uploader *influxDB_v2;
+extern uploader *Emoncms;
+
+      // Password and authorization data
+
 extern uint8_t*   adminH1;                // H1 digest md5("admin":"admin":password) 
 extern uint8_t*   userH1;                 // H1 digest md5("user":"user":password) 
 extern authSession* authSessions;         // authSessions list head; 
@@ -336,7 +344,7 @@ void      loop();
 void      trace(const uint8_t module, const uint8_t id, const uint8_t det=0); 
 void      logTrace(void);
 
-void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*), const uint8_t taskID=0);
+serviceBlock* NewService(Service, const uint8_t taskID=0, void* parm=0);
 void      AddService(struct serviceBlock*);
 uint32_t  dataLog(struct serviceBlock*);
 uint32_t  historyLog(struct serviceBlock*);
