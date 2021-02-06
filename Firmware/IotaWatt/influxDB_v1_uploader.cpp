@@ -10,7 +10,7 @@ void influxDB_v1_uploader::queryLast(){
 }
 
 /*****************************************************************************************
- *          TickBuildLastSent()
+ *          handle_query_s()
  * **************************************************************************************/
 uint32_t influxDB_v1_uploader::handle_query_s(){
         
@@ -39,7 +39,7 @@ uint32_t influxDB_v1_uploader::handle_query_s(){
 }
 
 /*****************************************************************************************
- *          TickCheckLastSent()
+ *          handle_checkQuery_s()
  * **************************************************************************************/
 uint32_t influxDB_v1_uploader::handle_checkQuery_s(){
     trace(T_influx1,30);
@@ -214,13 +214,6 @@ uint32_t influxDB_v1_uploader::handle_write_s(){
         _lastPost = oldRecord->UNIXtime;
         reqData.printf(" %d\n", _lastPost);
     }
-
-    // Free the buffers
-
-    delete oldRecord;
-    oldRecord = nullptr;
-    delete newRecord;
-    newRecord = nullptr;
 
     // Initiate HTTP post.
 

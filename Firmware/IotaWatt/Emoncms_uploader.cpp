@@ -1,154 +1,41 @@
-#include "influxDB_v2_uploader.h"
+#include "emoncms_uploader.h"
 #include "splitstr.h"
 
 /*****************************************************************************************
- *          handle_query_s()
+ *          queryLast() // Use this to initiate the last sent query.
  * **************************************************************************************/
-uint32_t influxDB_v2_uploader::handle_query_s(){
-    trace(T_influx2,20);
+void emoncms_uploader::queryLast(){
+    _script = _outputs->first();
+    _state = query_s;
+}
 
-    // Set range for lookback.
-    // Initially 1 hour, then x10 each successive iteration.
-
-    uint32_t rangeFloor = MAX(Current_log.firstKey(), _uploadStartDate);
-    uint32_t timenow = UTCtime();
-    timenow -= timenow % _interval;
-    uint32_t rangeStop = MAX(timenow - (_lookbackHours * 3600), rangeFloor);
-    _lookbackHours = _lookbackHours ? (_lookbackHours * 10) : 1;
-    uint32_t rangeBegin = MAX(timenow - (_lookbackHours * 3600), rangeFloor);
+/*****************************************************************************************
+ *          TickBuildLastSent()
+ * **************************************************************************************/
+uint32_t emoncms_uploader::handle_query_s(){
+        
+    trace(T_influx1,20);
     
-    // If entire range searched (with no success),
-    // Set to start at _uploadStartDate or now()
-    
-    if(rangeBegin >= rangeStop){
-        _lastSent = timenow;
-        if(_uploadStartDate){
-            _lastSent = rangeFloor;
-        }
-        _lastSent -= _lastSent % _interval;
-        log("%s: Start posting %s", _id, localDateString(_lastSent + _interval).c_str());
-        _state = write_s;
-        return 1;
-    }
-
-    // Build a flux query to find last record in set of measurements.
-    
-    reqData.flush();
-    reqData.printf_P(PSTR("from(bucket: \"%s\")\n  |> range(start: %d, stop: %d)\n  |> "), _bucket, rangeBegin, rangeStop);
-    reqData.print(F("filter(fn: (r) => "));
-    trace(T_influx2,20);
-    if(_tagSet){
-        trace(T_influx2,21);    
-        influxTag* tag = _tagSet;
-        while(tag){
-            String tagValue = tag->value;
-            if( ! (strstr(tag->value,"$name") || strstr(tag->value,"$units"))){
-                reqData.printf_P(PSTR("r[\"%s\"] == \"%s\" and "), tag->key, tag->value);
-                tag = tag->next;
-            }
-        }
-    }
-    String prefix = "(";
-    Script *script = _outputs->first();
-    trace(T_influx2,20);
-    while(script)
-    {
-        trace(T_influx2,21);
-        reqData.printf_P(PSTR("%sr[\"_measurement\"] == \"%s\""), prefix.c_str(), varStr(_measurement, script).c_str());
-        prefix = " or ";
-        script = script->next();
-    }
-    trace(T_influx2,20);
-    reqData.print(F("))\n  |> last()\n  |> map(fn: (r) => ({_measurement: r._measurement, _time: (uint(v:r._time)) / uint(v:1000000000)}))\n"));
-    reqData.print(F("  |> sort (columns: [\"_time\"], desc: true)\n"));
-
-    // Initiate the HTTP request.
-
-    String endpoint = "/query?orgID=";
-    endpoint += _orgID;
-    HTTPPost(endpoint.c_str(), checkQuery_s, "application/vnd.flux");
+        // Send the request
+    trace(T_influx1,20);
+    HTTPPost("/query", checkQuery_s, "application/x-www-form-urlencoded");
     return 1;
 }
 
 /*****************************************************************************************
- *          setRequestHeaders()
+ *          TickCheckLastSent()
  * **************************************************************************************/
-void influxDB_v2_uploader::setRequestHeaders(){
-    String auth = "Token ";
-    auth += _token;
-    _request->setReqHeader(F("Authorization"), auth.c_str());
-}
-
-/*****************************************************************************************
- *         handle_checkQuery_s()
- * **************************************************************************************/
-uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
-    trace(T_influx2,30);
-
-    // Deal with failure.
-
-    if(_request->responseHTTPcode() != 200){
-        trace(T_influx2,31);
-        log("HTTPcode %d\n", _request->responseHTTPcode());
-        delete[] _statusMessage;
-        _statusMessage = charstar("Last sent query failed");
-        Serial.println(_request->responseText());
-        delay(60, checkQuery_s);
-        return 1;
-    }
-
-    // retrieve the response and parse first line.
-
-    String response = _request->responseText();
-    trace(T_influx2,30);
-    splitstr headline(response.c_str());
-    trace(T_influx2,32);
-
-    // If no second line, query again.
-
-    char *datapos = strchr(response.c_str(), '\n');
-    trace(T_influx2,32);
-    if(!datapos){
-        trace(T_influx2,33);
-        _state = query_s;
-        return 1;
-    }
-
-    // Have second line, parse that
-
-    trace(T_influx2,34);
-    splitstr dataline(datapos + 1);
-    trace(T_influx2,34);
-    if(dataline.length() == 0 || dataline.length() != headline.length()){
-        _state = query_s;
-        return 1;
-    }
-    for (int i = 0; i < headline.length(); i++){
-        if(strcmp(headline[i],"_time")){
-            char *data = dataline[i];
-            if(data){
-                _lastSent = strtol(data, 0, 10);
-                if(_lastSent >= MAX(Current_log.firstKey(), _uploadStartDate)){
-                    log("%s: Resume posting %s", _id, localDateString(_lastSent + _interval).c_str());
-                    _lookbackHours = 0;
-                    _state = write_s;
-                    return 1;
-                }
-            }
-        }
-    }
-    delete _statusMessage;
-    _statusMessage = charstar("Last sent query invalid response stopping");
-    _stop = true;
-    stop();
+uint32_t emoncms_uploader::handle_checkQuery_s(){
+    // trace 30
+    
     return 1;
 }
 
 /*****************************************************************************************
- *          handle_write_s
+ *          handle_write_s())
  * **************************************************************************************/
-uint32_t influxDB_v2_uploader::handle_write_s(){
-    trace(T_influx2,60);
+uint32_t emoncms_uploader::handle_write_s(){
+    trace(T_influx1,60);
 
     // This is the predominant state of the uploader
     // It will wait until there is enough data for the next post
@@ -173,9 +60,9 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
 
     // If datalog buffers not allocated, do so now and prime latest.
 
-    trace(T_influx2,60);
+    trace(T_influx1,60);
     if(! oldRecord){
-        trace(T_influx2,61);
+        trace(T_influx1,61);
         oldRecord = new IotaLogRecord;
         newRecord = new IotaLogRecord;
         newRecord->UNIXtime = _lastSent + _interval;
@@ -188,7 +75,7 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
 
         // Swap newRecord top oldRecord, read next into newRecord.
 
-        trace(T_influx2,60);
+        trace(T_influx1,60);
         IotaLogRecord *swap = oldRecord;
         oldRecord = newRecord;
         newRecord = swap;
@@ -198,10 +85,10 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
         // Compute the time difference between log entries.
         // If zero, don't bother.
 
-        trace(T_influx2,62);    
+        trace(T_influx1,62);    
         double elapsedHours = newRecord->logHours - oldRecord->logHours;
         if(elapsedHours == 0){
-            trace(T_influx2,63);
+            trace(T_influx1,63);
             if((newRecord->UNIXtime + _interval) <= Current_log.lastKey()){
                 return 1;
             }
@@ -210,16 +97,16 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
 
         // Build measurements for this interval
 
-        trace(T_influx2,62); 
+        trace(T_influx1,62); 
         String lastMeasurement;
         String thisMeasurement;
         Script *script = _outputs->first();
         while(script)
         {
-            trace(T_influx2,63);     
+            trace(T_influx1,63);     
             double value = script->run(oldRecord, newRecord, elapsedHours);
             if(value == value){
-                trace(T_influx2,64);   
+                trace(T_influx1,64);   
                 thisMeasurement = varStr(_measurement, script);
                 if(_staticKeySet && thisMeasurement.equals(lastMeasurement)){
                     reqData.printf_P(PSTR(",%s=%.*f"), varStr(_fieldKey, script).c_str(), script->precision(), value);
@@ -229,14 +116,14 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
                     }
                     reqData.write(thisMeasurement);
                     if(_tagSet){
-                        trace(T_influx2,64);
+                        trace(T_influx1,64);
                         influxTag* tag = _tagSet;
                         while(tag){
                             reqData.printf_P(PSTR(",%s=%s"), tag->key, varStr(tag->value, script).c_str());
                             tag = tag->next;
                         }
                     }
-                    trace(T_influx2,65);
+                    trace(T_influx1,65);
                     reqData.printf_P(PSTR(" %s=%.*f"), varStr(_fieldKey, script).c_str(), script->precision(), value);
                 }
             }
@@ -247,12 +134,21 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
         reqData.printf(" %d\n", _lastPost);
     }
 
+    // Free the buffers
+
+    delete oldRecord;
+    oldRecord = nullptr;
+    delete newRecord;
+    newRecord = nullptr;
+
     // Initiate HTTP post.
 
-    String endpoint = "/write?precision=s&orgID=";
-    endpoint += _orgID;
-    endpoint += "&bucket=";
-    endpoint += _bucket;
+    String endpoint = "/write?precision=s&db=";
+    endpoint += _database;
+    if(_retention){
+        endpoint += "&rp=";
+        endpoint += _retention;
+    }
     HTTPPost(endpoint.c_str(), checkWrite_s, "text/plain");
     return 1;
 }
@@ -260,8 +156,8 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
 /*****************************************************************************************
  *          handle_checkWrite_s()
  * **************************************************************************************/
-uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
-    trace(T_influx2,91);
+uint32_t emoncms_uploader::handle_checkWrite_s(){
+    trace(T_influx1,91);
 
     // Check the result of a write transaction.
     // Usually success (204) just note the lastSent and
@@ -272,20 +168,13 @@ uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
         _statusMessage = nullptr;
         _lastSent = _lastPost; 
         _state = write_s;
-        trace(T_influx2,93);
+        trace(T_influx1,93);
         return 1;
     }
 
     // Deal with failure.
 
-    if(_request->responseHTTPcode() == 429){
-        log("influxDB2_v2: Rate exceeded");
-        Serial.println(_request->responseText());
-        delay(5, HTTPpost_s);
-        return 1;
-    }
-
-    trace(T_influx2,92);
+    trace(T_influx1,92);
     char msg[100];
     sprintf_P(msg, PSTR("Post failed %d"), _request->responseHTTPcode());
     delete[] _statusMessage;
@@ -293,8 +182,26 @@ uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
     delete _request;
     _request = nullptr; 
     _state = write_s;
-    return UTCtime() + 2;
+    return UTCtime() + 10;
 }
+
+/*****************************************************************************************
+ *          setRequestHeaders()
+ * **************************************************************************************/
+void emoncms_uploader::setRequestHeaders(){
+    trace(T_influx1,95);
+    if(_user && _pwd){
+        xbuf xb;
+        xb.printf("%s:%s", _user, _pwd);
+        base64encode(&xb);
+        String auth = "Basic ";
+        auth += xb.readString(xb.available());
+        _request->setReqHeader("Authorization", auth.c_str()); 
+    }
+    _request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
+    trace(T_influx1,95);
+}
+
 
     //********************************************************************************************************************
     //
@@ -305,60 +212,44 @@ uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
     //               CCC     OOO    N   N   F       III    GGG    CCC   B BBB
     //
     //********************************************************************************************************************
-    bool influxDB_v2_uploader::configCB(JsonObject& config){
-        trace(T_influx2, 101);
-        delete[] _bucket;
-        _bucket = charstar(config.get<char *>("bucket"));
-        if (strlen(_bucket) == 0)
-        {
-            log("%s: Bucket not specified", _id);
-            return false;
-        }
-
-        trace(T_influx2, 101);
-        delete[] _orgID;
-        _orgID = charstar(config.get<const char *>("orgid"));
-        if (strlen(_orgID) != 16)
-        {
-            log("%s: Invalid organization ID", _id);
-            return false;
-        }
-        trace(T_influx2, 101);
-        delete[] _token;
-        _token = charstar(config.get<const char *>("authtoken"));
-        if (_token && strlen(_token) != 88)
-        {
-            log("%s: Invalid authorization token", _id);
-            return false;
-        }
-        trace(T_influx2, 101);
+    bool emoncms_uploader::configCB(JsonObject& config){
+        trace(T_influx1, 101);
+        delete[] _database;
+        _database = charstar(config.get<char*>("database"));
+        delete[] _user;
+        _user = charstar(config.get<const char*>("user"));
+        delete[] _pwd;
+        _pwd = charstar(config.get<char *>("pwd"));
+        delete _retention;
+        _retention = charstar(config.get<const char*>("retp"));
+        
+        trace(T_influx1, 101);
         delete[] _measurement;
         _measurement = charstar(config.get<const char *>("measurement"));
         if (!_measurement)
         {
             _measurement = charstar("$name");
         }
-        trace(T_influx2, 102);
+        trace(T_influx1, 102);
         delete[] _fieldKey;
-        ;
         _fieldKey = charstar(config.get<const char *>("fieldkey"));
         if (!_fieldKey)
         {
             _fieldKey = charstar("value");
         }
-        trace(T_influx2, 102);
+        trace(T_influx1, 102);
         _stop = config.get<bool>("stop");
 
         // Build tagSet
 
-        trace(T_influx2, 103);
+        trace(T_influx1, 103);
         delete _tagSet;
         _tagSet = nullptr;
         JsonArray &tagset = config["tagset"];
         _staticKeySet = true;
         if (tagset.success())
         {
-            trace(T_influx2, 103);
+            trace(T_influx1, 103);
             for (int i = tagset.size(); i > 0;)
             {
                 i--;
@@ -374,12 +265,12 @@ uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
     
         // Build the measurement scriptset
 
-    trace(T_influx2,104);
+    trace(T_influx1,104);
     delete _outputs;
     _outputs = nullptr;
     JsonVariant var = config["outputs"];
     if(var.success()){
-        trace(T_influx2,105);
+        trace(T_influx1,105);
         _outputs = new ScriptSet(var.as<JsonArray>());
     }
     else {
@@ -388,6 +279,7 @@ uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
     }
 
             // sort the measurements by measurement name
+
     const char *measurement = _measurement;
     _outputs->sort([this](Script* a, Script* b)->int {
         return strcmp(varStr(_measurement, a).c_str(), varStr(_measurement, b).c_str());
@@ -397,7 +289,7 @@ uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
 }
     
 
-String influxDB_v2_uploader::varStr(const char* in, Script* script)
+String emoncms_uploader::varStr(const char* in, Script* script)
 {
     // Return String with variable substitutions.
 

@@ -209,11 +209,13 @@ uint32_t uploader::handle_HTTPpost_s(){
     if( ! _request->send(&reqData, reqData.available())){
         trace(T_uploader,125);
         HTTPrelease(_HTTPtoken);
+        reqData.flush();
         delete _request;
         _request = nullptr;
         _lastPost = _lastSent;
         return UTCtime() + 5;
     }
+    reqData.flush();
     trace(T_uploader,126);
     _state = HTTPwait_s;
     return 1; 
