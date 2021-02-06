@@ -87,6 +87,9 @@ bool    xurl::parse(const char* _url_){
                 _path = new char[loc-pos+1];
                 memcpy(_path, pos, loc-pos);
                 _path[loc-pos] = 0;
+                if(_path[loc-pos-1] == '/'){
+                    _path[loc-pos-1] = 0;
+                }
             }
             pos = loc;
         }

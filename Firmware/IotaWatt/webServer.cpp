@@ -561,13 +561,15 @@ void handleStatus(){
   }
 
 
-    if(server.hasArg(F("influx"))){
+    if(server.hasArg(F("influx1"))){
       trace(T_WEB,17);
-      JsonObject& influx = jsonBuffer.createObject();
-      influx.set(F("running"),influxStarted);
-      influx.set(F("status"), influxStarted ? "running" : "stopped");
-      influx.set(F("lastpost"),influxLastPost);  
-      root["influx"] = influx;
+      JsonObject& status = jsonBuffer.createObject();
+      if(!influxDB_v1){
+        status.set(F("state"),"not running");
+      } else {
+        influxDB_v1->getStatusJson(status);
+      }  
+      root["influx1"] = status;
     }
 
     if(server.hasArg(F("influx2"))){

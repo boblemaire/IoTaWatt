@@ -1,4 +1,5 @@
 #include "IotaWatt.h"
+#include "influxDB_v1_uploader.h"
 #include "influxDB_v2_uploader.h"
 
 bool configDevice(const char*);
@@ -152,20 +153,23 @@ boolean getConfig(const char* configPath){
     }
   }
 
-        // ************************************** configure influxDB **********************************
+        // ************************************** configure influxDB1 *********************************
 
   {
     trace(T_CONFIG,10);
     JsonArray& influxArray = Config[F("influxdb")];
     if(influxArray.success()){
       char* influxStr = JsonDetail(ConfigFile, influxArray);
-      if( ! influxConfig(influxStr)){
-        log("influxService: Invalid configuration.");
+      if(! influxDB_v1){
+        influxDB_v1 = new influxDB_v1_uploader;
+      }
+      if( ! influxDB_v1->config(influxStr)){
+        log("influxDB_v1: Invalid configuration.");
       }
       delete[] influxStr;
     }   
-    else {
-      influxStop = true;
+    else if(influxDB_v1){
+      influxDB_v1->end();
     }
   }
 
@@ -188,7 +192,6 @@ boolean getConfig(const char* configPath){
     }   
     else if(influxDB_v2){
       influxDB_v2->end();
-      influxDB_v2 = nullptr;
     }
   }
       // ************************************** configure PVoutput **********************************

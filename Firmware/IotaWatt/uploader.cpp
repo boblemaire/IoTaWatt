@@ -6,7 +6,7 @@ void uploader::getStatusJson(JsonObject& status)
 {
     // Set status information in callers's json object.
 
-    trace(T_influx2,110);    
+    trace(T_uploader,110);    
     if(_state == stopped_s){
         status.set(F("status"), "stopped");
     } else {
@@ -16,67 +16,58 @@ void uploader::getStatusJson(JsonObject& status)
     if(_statusMessage){
         status.set(F("message"), _statusMessage);
     }
-    trace(T_influx2,110);
+    trace(T_uploader,110);
 }
 
 void uploader::end()
 {
-    trace(T_influx2,120);    
+    trace(T_uploader,120);    
     _stop = true;
     _end = true;
 }
  
-//********************************************************************************************************************
-//          
-//                                 TTTTT   III    CCC   K   K   
-//                                   T      I    C   C  K  K                   
-//                                   T      I    C      K K                  
-//                                   T      I    C   C  K  K                  
-//                                   T     III    CCC   K   K
-// 
-//******************************************************************************************************************/
     // This is the worm hole that the scheduler uses to get into the class state machine.
-    // It invokes the tick method of the class.
+    // It invokes the dispatch method of the class.
     // On return, it checks for no_schedule return and invokes the stop() method. 
 
-uint32_t uploader_tick(struct serviceBlock* serviceBlock) {
-    trace(T_influx2,0);
+uint32_t uploader_dispatch(struct serviceBlock* serviceBlock) {
+    trace(T_uploader,0);
     uploader *_this = (uploader *)serviceBlock->serviceParm;
-    trace(T_influx2,1);
-    uint32_t reschedule = _this->tick(serviceBlock);
-    trace(T_influx2,1);
+    trace(T_uploader,1);
+    uint32_t reschedule = _this->dispatch(serviceBlock);
+    trace(T_uploader,1);
     if(reschedule){
         return reschedule;
     } 
-    trace(T_influx2,0);
+    trace(T_uploader,0);
     return 0;
 }
 
 
-uint32_t uploader::tick(struct serviceBlock *serviceBlock)
+uint32_t uploader::dispatch(struct serviceBlock *serviceBlock)
 {
-    trace(T_influx2,2,_state);
+    trace(T_uploader,2,_state);
     switch (_state) {
         case initialize_s:
-            return tickInitialize();
-        case buildLastSent_s:
-            return tickBuildLastSent();
-        case checkLastSent_s:
-            return tickCheckLastSent();
-        case buildPost_s:              
-            return tickBuildPost();
-        case checkPost_s:
-            return tickCheckPost();
+            return handle_initialize_s();
+        case query_s:
+            return handle_query_s();
+        case checkQuery_s:
+            return handle_checkQuery_s();
+        case write_s:              
+            return handle_write_s();
+        case checkWrite_s:
+            return handle_checkWrite_s();
         case stopped_s:
-            return tickStopped();
+            return handle_stopped_s();
         case HTTPpost_s:
-            return tickHTTPPost();
+            return handle_HTTPpost_s();
         case HTTPwait_s:
-            return tickHTTPWait();
+            return handle_HTTPwait_s();
         case delay_s:
-            return tickDelay();
+            return handle_delay_s();
     }
-    trace(T_influx2,3,_state);
+    trace(T_uploader,3,_state);
     log("%s: Unrecognized state, stopping;",_id);
     delete this;
     return 0;
@@ -93,15 +84,15 @@ void uploader::stop(){
     reqData.flush();
     delete _url;
     _url = nullptr;
-    trace(T_influx2, 7);
+    trace(T_uploader, 7);
     _stop = true;
     _state = stopped_s;
 }
 
-uint32_t uploader::tickStopped(){
-    trace(T_influx2,5);
+uint32_t uploader::handle_stopped_s(){
+    trace(T_uploader,5);
     if(_end){
-        trace(T_influx2,6);
+        trace(T_uploader,6);
         delete this;
         return 0;
     }
@@ -110,15 +101,15 @@ uint32_t uploader::tickStopped(){
     }
     delete[] _statusMessage;
     _statusMessage = nullptr;
-    trace(T_influx2,8);
-    _state = buildLastSent_s;
+    trace(T_uploader,8);
+    _state = query_s;
     return 1;
 }
 
-uint32_t uploader::tickInitialize(){
-    trace(T_influx2,10);
+uint32_t uploader::handle_initialize_s(){
+    trace(T_uploader,10);
     log("%s: Starting, interval:%d, url:%s", _id, _interval, _url->build().c_str());
-    _state = buildLastSent_s;
+    _state = query_s;
     return 1;
 }
 
@@ -154,13 +145,13 @@ void uploader::HTTPPost(const char* endpoint, states completionState, const char
     _state = HTTPpost_s;
 }
 
-uint32_t uploader::tickHTTPPost(){
+uint32_t uploader::handle_HTTPpost_s(){
 
     // Initiate the post request.
     // If WiFi not connected or can't get semaphore
     // just return.
 
-    trace(T_influx2,120);
+    trace(T_uploader,120);
     if( ! WiFi.isConnected()){
         return UTCtime() + 1;
     }
@@ -172,7 +163,7 @@ uint32_t uploader::tickHTTPPost(){
         return 1;
     }
 
-    _HTTPtoken = HTTPreserve(T_influx2);
+    _HTTPtoken = HTTPreserve(T_uploader);
     if( ! _HTTPtoken){
         return 1;
     }
@@ -189,20 +180,20 @@ uint32_t uploader::tickHTTPPost(){
         Serial.println(datef(localTime(),"hh:mm:ss"));
         Serial.println(reqData.peekString(reqData.available()));
     }
-    trace(T_influx2,120);
+    trace(T_uploader,120);
     {
         char URL[128];
         if(_useProxyServer){
-            trace(T_influx2,121);
-            size_t len = sprintf_P(URL, PSTR("%s/api/v2%s"), HTTPSproxy, _POSTrequest->endpoint);
+            trace(T_uploader,121);
+            size_t len = sprintf_P(URL, PSTR("%s%s"), HTTPSproxy, _POSTrequest->endpoint);
         }
         else {
-            trace(T_influx2,122);
-            size_t len = sprintf_P(URL, PSTR("%s/api/v2%s"),  _url->build().c_str(), _POSTrequest->endpoint);
+            trace(T_uploader,122);
+            size_t len = sprintf_P(URL, PSTR("%s%s"),  _url->build().c_str(), _POSTrequest->endpoint);
         }
-        trace(T_influx2,123);
+        trace(T_uploader,123);
         if( ! _request->open("POST", URL)){
-            trace(T_influx2,123);
+            trace(T_uploader,123);
             HTTPrelease(_HTTPtoken);
             delete _request;
             _request = nullptr;
@@ -213,41 +204,35 @@ uint32_t uploader::tickHTTPPost(){
         _request->setReqHeader(F("X-proxypass"),  _url->build().c_str());
     }
     _request->setReqHeader(F("content-type"), _POSTrequest->contentType);
-    trace(T_influx2,124);
+    trace(T_uploader,124);
     setRequestHeaders();
     if( ! _request->send(&reqData, reqData.available())){
-        trace(T_influx2,125);
+        trace(T_uploader,125);
         HTTPrelease(_HTTPtoken);
         delete _request;
         _request = nullptr;
         _lastPost = _lastSent;
         return UTCtime() + 5;
     }
-    trace(T_influx2,126);
+    trace(T_uploader,126);
     _state = HTTPwait_s;
     return 1; 
 }
 
-uint32_t uploader::tickHTTPWait(){
-    trace(T_influx2,90);
+uint32_t uploader::handle_HTTPwait_s(){
+    trace(T_uploader,90);
     if(_request && _request->readyState() == 4){
         HTTPrelease(_HTTPtoken);
-        trace(T_influx2,91);
-        if(_request->responseHTTPcode() == 429){
-            log("influxDB2_v2: Rate exceeded");
-            Serial.println(_request->responseText());
-            delay(5, HTTPpost_s);
-            return 1;
-        }
+        trace(T_uploader,91);
         delete[] _statusMessage;
         _statusMessage = nullptr;
         _state = _POSTrequest->completionState;
         delete _POSTrequest;
         _POSTrequest = nullptr;
-        trace(T_influx2,9);
+        trace(T_uploader,9);
         return 1;
     }
-    trace(T_influx2,93);
+    trace(T_uploader,93);
     return 1;
 }
 
@@ -259,7 +244,7 @@ void uploader::delay(uint32_t seconds, states resumeState){
     _state = delay_s;
 }
 
-uint32_t uploader::tickDelay(){
+uint32_t uploader::handle_delay_s(){
     if(_stop){
         stop();
         return 1;
@@ -271,3 +256,85 @@ uint32_t uploader::tickDelay(){
     return UTCtime() + 1;
 }
 
+//********************************************************************************************************************
+//
+//               CCC     OOO    N   N   FFFFF   III    GGG
+//              C   C   O   O   NN  N   F        I    G
+//              C       O   O   N N N   FFF      I    G  GG
+//              C   C   O   O   N  NN   F        I    G   G
+//               CCC     OOO    N   N   F       III    GGG
+//
+//********************************************************************************************************************
+
+bool uploader::config(const char *jsonConfig)
+{
+    trace(T_uploader, 100);
+
+    // Parse json configuration
+
+    DynamicJsonBuffer Json;
+    JsonObject &config = Json.parseObject(jsonConfig);
+    if (!config.success())
+    {
+        log("%s: Config parse failed", _id);
+        return false;
+    }
+
+    // If config not changed, return success.
+
+    trace(T_uploader, 100);
+    if (_revision == config["revision"])
+    {
+        return true;
+    }
+    _revision = config["revision"];
+
+    // parse and validate url
+
+    trace(T_uploader, 100);
+    if(!_url){
+        _url = new xurl;
+    }
+    if (! _url->parse(config.get<char *>("url")))
+    {
+        log("%s: invalid URL", _id);
+        return false;
+    }
+        _url->query(nullptr);
+        _useProxyServer = false;
+        if(strcmp_ci(_url->method(),"https://")== 0){
+            _useProxyServer = true;
+        }
+
+        // Gather and check parameters
+
+        trace(T_uploader, 100);
+        _interval = config.get<unsigned int>("postInterval");
+        if (!_interval || (_interval % 5 != 0))
+        {
+            log("%s: Invalid interval", _id);
+            return false;
+    }
+    _bulkSend = config.get<unsigned int>("bulksend");
+    _bulkSend = constrain(_bulkSend, 1, 10);
+
+    // Callback to derived class for unique configuration requirements
+    // if that goes OK (true) then start the Service.
+    
+    if(configCB(config)){
+        trace(T_uploader,105);    
+        if(_state == initialize_s) {
+            trace(T_uploader,105);
+            serviceBlock *sb = NewService(uploader_dispatch, T_uploader);
+            sb->serviceParm = (void *)this;
+        }
+        trace(T_uploader,106);
+        return true; 
+    }
+
+    // Callback failed, return false;
+
+    return false;
+}
+
+bool uploader::configCB(JsonObject &){};

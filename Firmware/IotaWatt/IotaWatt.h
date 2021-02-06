@@ -63,8 +63,6 @@
 #include "webServer.h"
 #include "updater.h"
 #include "samplePower.h"
-#include "influxDB.h"
-#include "influxDB2.h"
 #include "uploader.h"
 #include "Emonservice.h"
 #include "auth.h"
@@ -185,8 +183,10 @@ struct EEprom {
 #define T_xurl 26          // xurl 
 #define T_utility 27       // Miscelaneous utilities 
 #define T_EXPORTLOG 28     // Export log
-#define T_influx2 29       // influxDB2 service 
-#define T_influx2Config 30 // influx2 configuration                        
+#define T_influx2 29       // influxDB_v2_uploader 
+#define T_influx2Config 30 // influx2 configuration 
+#define T_uploader 31      // Uploader base class
+#define T_influx1 32       // influxDB_v1_uploader                          
 
       // LED codes
 

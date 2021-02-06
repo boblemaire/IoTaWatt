@@ -226,24 +226,7 @@
       </p>
     </div>
     
-                    <!-- ************* HTTPS Proxy Server ********************--> 
-    
-    <div id="setProxy" class="body color_body" style="display:none">
-      <h3>Specify HTTPS Proxy Server</h3>
-      <p>
-        Secure (HTTPS) internet connections are possible using a proxy server on the local LAN.
-        Information about setting up an NGINX proxy server and using this feature are included
-        in the <a href="https://docs.iotawatt.com" target="_blank">IoTaWatt online documentation</a>.<br><br>
-        When you specify the URL of your proxy server here, uploaders and other services will
-        use the proxy when https is specified.<br><br>
-      </p>
-        Proxy URL <input id="proxyURL" oninput="validateProxy()" size="48">
-      <p>
-        <button class="actionDelete" id="proxyDelete" onclick="proxyDelete()">delete</button>
-        <button class="actionCancel" id="proxyCancel" onclick="proxyCancel()">cancel</button>
-        <button class="actionSave"   id="proxySave"   onclick="proxySave()">save</button>
-      </p>
-    </div>
+                  <!-- ************* Influx tags ********************--> 
     
     <div class="body color_body" id="divInfluxTag" style="display:none">
       <h3>Edit influx tag</h3>
@@ -268,6 +251,25 @@
         <button class="actionDelete" id="influxTagDelete">delete</button>
         <button class="actionCancel" id="influxTagCancel" onclick="influxTagCancel()">cancel</button>
         <button class="actionSave" id="influxTagSave">save</button>
+      </p>
+    </div>
+    
+                    <!-- ************* HTTPS Proxy Server ********************--> 
+    
+    <div id="setProxy" class="body color_body" style="display:none">
+      <h3>Specify HTTPS Proxy Server</h3>
+      <p>
+        Secure (HTTPS) internet connections are possible using a proxy server on the local LAN.
+        Information about setting up an NGINX proxy server and using this feature are included
+        in the <a href="https://docs.iotawatt.com" target="_blank">IoTaWatt online documentation</a>.<br><br>
+        When you specify the URL of your proxy server here, uploaders and other services will
+        use the proxy when https is specified.<br><br>
+      </p>
+        Proxy URL <input id="proxyURL" oninput="validateProxy()" size="48">
+      <p>
+        <button class="actionDelete" id="proxyDelete" onclick="proxyDelete()">delete</button>
+        <button class="actionCancel" id="proxyCancel" onclick="proxyCancel()">cancel</button>
+        <button class="actionSave"   id="proxySave"   onclick="proxySave()">save</button>
       </p>
     </div>
               
@@ -305,12 +307,12 @@
           <table id="tableWifi" width="100%"></table>
         </div>
       
-      <div id="tabinflux" style="display:none;">
-        <button class="groupTab" onclick="toggleDisplay('statusInfluxDiv')">InfluxDB</button>
-        <div id="statusInfluxDiv" class="statusDiv" style="display: none;">
-          <button id="influxButton" style = "configButton" value = "influxdb" onclick="serverToggle(this,this.value)"></button>
-          <span id="influxtext"></span>
-          <span id="influxmsg"></span>
+      <div id="tabinflux1" style="display:none;">
+        <button class="groupTab" onclick="toggleDisplay('statusInflux1Div')">InfluxDB1</button>
+        <div id="statusInflux1Div" class="statusDiv" style="display: none;">
+          <button id="influx1Button" style = "configButton" value = "influxdb1" onclick="serverToggle(this,this.value)"></button>
+          <span id="influx1text"></span>
+          <span id="influx1msg"></span>
         </div>
       </div>
       
@@ -2029,7 +2031,7 @@ function emonToggle(){
 }
 
 /***********************************************************************************************
- *                                Configure influxDB_v2
+ *                                Configure influxDB
  * ********************************************************************************************/
 function editInfluxdb(version){
   editing = true;
@@ -2045,7 +2047,7 @@ function editInfluxdb(version){
       EbyId("serverDelete").setAttribute("onclick","deleteInfluxdb();");
     }
     else {
-      EbyId("serverHead").innerHTML = "Add influxDB_v2 Uploader";
+      EbyId("serverHead").innerHTML = "Add influxDB_v1 Uploader";
       serverConfig = {type:"influxdb",
                     revision: 0,
                     postInterval:10,
@@ -2063,7 +2065,7 @@ function editInfluxdb(version){
   else { // version 2
     if(serverConfig !== undefined){
       serverConfig.revision++;
-      EbyId("serverHead").innerHTML = "Edit influxDB_v1 Uploader";
+      EbyId("serverHead").innerHTML = "Edit influxDB_v2 Uploader";
       EbyId("serverDelete").style.display = "inline";
       EbyId("serverDelete").setAttribute("onclick","deleteInfluxdb();");
     }
@@ -2103,7 +2105,7 @@ function editInfluxdb(version){
   bulksendInput.setAttribute("max","10");
   bulksendInput.setAttribute("step","1");
   
-  var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 48);
+  var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 60);
   urlInput.value = serverConfig.url
   urlInput.setAttribute("oninput","serverConfig.url = this.value; checkInfluxdb();");
   urlInput.type = "url";
@@ -2355,7 +2357,7 @@ function influxTagCheck(){
 function serverToggle(button){
   var stop;
   if(button.value == "emoncms") stop = config.emoncms.stop;
-  if(button.value == "influxdb") stop = config.influxdb.stop;
+  if(button.value == "influxdb1") stop = config.influxdb.stop;
   if(button.value == "influxdb2") stop = config.influxdb2.stop;
   if(button.value == "pvoutput") stop = config.pvoutput.stop;
   
@@ -2372,7 +2374,7 @@ function serverToggle(button){
     config.emoncms.revision++;
     config.emoncms.stop = stop;
   }
-  if(button.value == "influxdb"){
+  if(button.value == "influxdb1"){
     config.influxdb.revision++;
     config.influxdb.stop = stop;
   }
@@ -2507,7 +2509,7 @@ function PVoutToggle(){
  * *******************************************************************************************/
 function statusBegin(){
   EbyId("tabWifi").style.display = "none";
-  EbyId("tabinflux").style.display = config.influxdb !== undefined ? "inline" : "none";
+  EbyId("tabinflux1").style.display = config.influxdb !== undefined ? "inline" : "none";
   EbyId("tabinflux2").style.display = config.influxdb2 !== undefined ? "inline" : "none";
   EbyId("tabPVout").style.display = config.pvoutput !== undefined ? "inline" : "none";
   EbyId("tabEmon").style.display = (config.server !== undefined && config.server.type == "emoncms") ? "inline" : "none";
@@ -2523,7 +2525,7 @@ function statusGet(){
       statusDisplay(xmlHttp.responseText);
     }
   }
-  xmlHttp.open("GET","/status?state&inputs&outputs&stats&wifi&datalogs&influx&influx2&emon&pvoutput", true);
+  xmlHttp.open("GET","/status?state&inputs&outputs&stats&wifi&datalogs&influx1&influx2&emon&pvoutput", true);
   xmlHttp.send(null);
 }
 
@@ -2568,22 +2570,22 @@ function statusDisplay(statusMessage){
     logs.appendChild(document.createTextNode("History Log from: " + formatDateTime(status.datalogs.histlog.firstkey) + " to: " + formatDateTime(status.datalogs.histlog.lastkey)));
   }
   
-  var influxDiv = EbyId("statusInfluxDiv");
-  if(status.influx !== undefined){
-    var button = EbyId("influxButton")
+  var influx1Div = EbyId("statusInflux1Div");
+  if(status.influx1 !== undefined){
+    var button = EbyId("influx1Button");
     button.disabled = false;
-    if(status.influx.status == "running"){
+    if(status.influx1.status == "running"){
       button.innerHTML = "Stop";
-      EbyId("influxtext").innerHTML = "Running"
+      EbyId("influx1text").innerHTML = "Running"
     }
     else {
       button.innerHTML = "Start";
-      EbyId("influxtext").innerHTML = "Stopped"
+      EbyId("influx1text").innerHTML = "Stopped"
     }
-    EbyId("influxtext").innerHTML += ", Last update " + formatDateTime(status.influx.lastpost);
-    EbyId("influxmsg").innerHTML = "";
-    if(status.influx.message){
-      EbyId("influxmsg").innerHTML = "<br>" + status.influx.message;
+    EbyId("influx1text").innerHTML += ", Last update " + formatDateTime(status.influx1.lastpost);
+    EbyId("influx1msg").innerHTML = "";
+    if(status.influx1.message){
+      EbyId("influx1msg").innerHTML = "<br>" + status.influx1.message;
     }
   } 
   

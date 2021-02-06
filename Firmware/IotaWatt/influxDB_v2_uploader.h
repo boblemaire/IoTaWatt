@@ -7,7 +7,7 @@
 #define INFLUXDB_V2_BUFFER_LIMIT 4000
 #endif
 
-extern uint32_t influxDB_v2_tick(struct serviceBlock *serviceBlock);
+extern uint32_t influxDB_v2_dispatch(struct serviceBlock *serviceBlock);
 
 class influxDB_v2_uploader : public uploader 
 {
@@ -37,13 +37,28 @@ class influxDB_v2_uploader : public uploader
             influxDB_v2 = nullptr;
         };
 
-        bool config(const char *JsonText);
-        uint32_t tick(struct serviceBlock *serviceBlock);
+        bool configCB(const char *JsonText);
+        uint32_t dispatch(struct serviceBlock *serviceBlock);
 
     private:
 
 
-        influxTag *_tagSet;
+        struct influxTag {
+            influxTag* next;
+            char*      key;
+            char*      value;
+            influxTag()
+                :next(nullptr)
+                ,key(nullptr)
+                ,value(nullptr)
+                {}
+            ~influxTag(){
+                delete[] key;
+                delete[] value;
+                delete   next;
+            }
+        } *_tagSet;
+        
         ScriptSet *_outputs;
 
         uint32_t _lookbackHours;
@@ -53,12 +68,12 @@ class influxDB_v2_uploader : public uploader
         char *_measurement;
         char *_fieldKey;
         bool _staticKeySet;
-        bool _useProxyServer;
 
-        uint32_t tickBuildLastSent();
-        uint32_t tickCheckLastSent();
-        uint32_t tickBuildPost();
-        uint32_t tickCheckPost();
+        uint32_t handle_query_s();
+        uint32_t handle_checkQuery_s();
+        uint32_t handle_write_s();
+        uint32_t handle_checkWrite_s();
+        bool configCB(JsonObject &);
 
         void setRequestHeaders();
         String varStr(const char *in, Script *script);

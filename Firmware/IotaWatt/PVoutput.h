@@ -130,17 +130,17 @@ private:
     
         // State machine handlers corresponding to like named states.
 
-    uint32_t    tickInitialize();
+    uint32_t    handle_initialize_s();
     uint32_t    tickGetSystemService();
     uint32_t    tickCheckSystemService();
     uint32_t    tickGetStatus();
     uint32_t    tickGotStatus();
     uint32_t    tickUploadStatus();
     uint32_t    tickCheckUploadStatus();
-    uint32_t    tickHTTPPost();
-    uint32_t    tickHTTPWait();
+    uint32_t    handle_HTTPpost_s();
+    uint32_t    handle_HTTPwait_s();
     uint32_t    tickLimitWait();
-    uint32_t    tickStopped();
+    uint32_t    handle_stopped_s();
 
         // Possible response from any HTTP request
 

@@ -77,7 +77,7 @@ void PVoutput::getStatusJson(JsonObject& status){
 uint32_t PVoutput::tick(struct serviceBlock* serviceBlock){
     trace(T_PVoutput,0);
     switch (_state) {
-        case initialize:            {return tickInitialize();}
+        case initialize:            {return handle_initialize_s();}
         case getSystemService:      {return tickGetSystemService();}
         case checkSystemService:    {return tickCheckSystemService();}
         case getStatus:             {return tickGetStatus();}
@@ -85,16 +85,16 @@ uint32_t PVoutput::tick(struct serviceBlock* serviceBlock){
         case uploadStatus:          {return tickUploadStatus();}
         case checkUploadStatus:     {return tickCheckUploadStatus();}
 
-        case HTTPpost:              {return tickHTTPPost();}
-        case HTTPwait:              {return tickHTTPWait();}
+        case HTTPpost:              {return handle_HTTPpost_s();}
+        case HTTPwait:              {return handle_HTTPwait_s();}
         case limitWait:             {return tickLimitWait();}
-        case stopped:               {return tickStopped();}
+        case stopped:               {return handle_stopped_s();}
     }
     log("PVoutput: Unrecognize state, stopping");
     return 0;
 }
 
-uint32_t PVoutput::tickStopped(){
+uint32_t PVoutput::handle_stopped_s(){
     if(_end){
         pvoutput = nullptr;
         delete this;
@@ -114,7 +114,7 @@ uint32_t PVoutput::tickStopped(){
     
 }
 
-uint32_t PVoutput::tickInitialize(){
+uint32_t PVoutput::handle_initialize_s(){
     trace(T_PVoutput,10);
     if( ! History_log.isOpen()){
         return UTCtime() + 10;
@@ -497,7 +497,7 @@ void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, 
     _state = HTTPpost;
 }
 
-uint32_t PVoutput::tickHTTPPost(){
+uint32_t PVoutput::handle_HTTPpost_s(){
     trace(T_PVoutput,110);
     if(_rateLimitRemaining <= 0  && UTCtime() < _rateLimitReset){
         log("PVoutput: Transaction Rate-Limit exceeded.  Waiting until %s", datef(UTC2Local(_rateLimitReset), "hh:mm").c_str());
@@ -537,7 +537,7 @@ uint32_t PVoutput::tickHTTPPost(){
     return 1;
 }
 
-uint32_t PVoutput::tickHTTPWait(){
+uint32_t PVoutput::handle_HTTPwait_s(){
     trace(T_PVoutput,120);
     if(request->readyState() != 4){
         return 1;

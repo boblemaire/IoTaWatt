@@ -1,7 +1,10 @@
 #include "influxDB_v2_uploader.h"
 #include "splitstr.h"
 
-uint32_t influxDB_v2_uploader::tickBuildLastSent(){
+/*****************************************************************************************
+ *          TickBuildLastSent()
+ * **************************************************************************************/
+uint32_t influxDB_v2_uploader::handle_query_s(){
     trace(T_influx2,20);
 
     // Set range for lookback.
@@ -24,7 +27,7 @@ uint32_t influxDB_v2_uploader::tickBuildLastSent(){
         }
         _lastSent -= _lastSent % _interval;
         log("%s: Start posting %s", _id, localDateString(_lastSent + _interval).c_str());
-        _state = buildPost_s;
+        _state = write_s;
         return 1;
     }
 
@@ -63,17 +66,23 @@ uint32_t influxDB_v2_uploader::tickBuildLastSent(){
 
     String endpoint = "/query?orgID=";
     endpoint += _orgID;
-    HTTPPost(endpoint.c_str(), checkLastSent_s, "application/vnd.flux");
+    HTTPPost(endpoint.c_str(), checkQuery_s, "application/vnd.flux");
     return 1;
 }
 
+/*****************************************************************************************
+ *          setRequestHeaders()
+ * **************************************************************************************/
 void influxDB_v2_uploader::setRequestHeaders(){
     String auth = "Token ";
     auth += _token;
     _request->setReqHeader(F("Authorization"), auth.c_str());
 }
 
-uint32_t influxDB_v2_uploader::tickCheckLastSent(){
+/*****************************************************************************************
+ *          TickCheckLastSent()
+ * **************************************************************************************/
+uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
     trace(T_influx2,30);
 
     // Deal with failure.
@@ -84,7 +93,7 @@ uint32_t influxDB_v2_uploader::tickCheckLastSent(){
         delete[] _statusMessage;
         _statusMessage = charstar("Last sent query failed");
         Serial.println(_request->responseText());
-        delay(60, checkLastSent_s);
+        delay(60, checkQuery_s);
         return 1;
     }
 
@@ -101,7 +110,7 @@ uint32_t influxDB_v2_uploader::tickCheckLastSent(){
     trace(T_influx2,32);
     if(!datapos){
         trace(T_influx2,33);
-        _state = buildLastSent_s;
+        _state = query_s;
         return 1;
     }
 
@@ -111,7 +120,7 @@ uint32_t influxDB_v2_uploader::tickCheckLastSent(){
     splitstr dataline(datapos + 1);
     trace(T_influx2,34);
     if(dataline.length() == 0 || dataline.length() != headline.length()){
-        _state = buildLastSent_s;
+        _state = query_s;
         return 1;
     }
     for (int i = 0; i < headline.length(); i++){
@@ -122,7 +131,7 @@ uint32_t influxDB_v2_uploader::tickCheckLastSent(){
                 if(_lastSent >= MAX(Current_log.firstKey(), _uploadStartDate)){
                     log("%s: Resume posting %s", _id, localDateString(_lastSent + _interval).c_str());
                     _lookbackHours = 0;
-                    _state = buildPost_s;
+                    _state = write_s;
                     return 1;
                 }
             }
@@ -135,7 +144,10 @@ uint32_t influxDB_v2_uploader::tickCheckLastSent(){
     return 1;
 }
 
-uint32_t influxDB_v2_uploader::tickBuildPost(){
+/*****************************************************************************************
+ *          handle_write_s
+ * **************************************************************************************/
+uint32_t influxDB_v2_uploader::handle_write_s(){
     trace(T_influx2,60);
 
     // This is the predominant state of the uploader
@@ -208,7 +220,7 @@ uint32_t influxDB_v2_uploader::tickBuildPost(){
             double value = script->run(oldRecord, newRecord, elapsedHours);
             if(value == value){
                 trace(T_influx2,64);   
-                thisMeasurement = influx2VarStr(_measurement, script);
+                thisMeasurement = varStr(_measurement, script);
                 if(_staticKeySet && thisMeasurement.equals(lastMeasurement)){
                     reqData.printf_P(PSTR(",%s=%.*f"), varStr(_fieldKey, script).c_str(), script->precision(), value);
                 } else {
@@ -248,11 +260,14 @@ uint32_t influxDB_v2_uploader::tickBuildPost(){
     endpoint += _orgID;
     endpoint += "&bucket=";
     endpoint += _bucket;
-    HTTPPost(endpoint.c_str(), checkPost_s, "text/plain");
+    HTTPPost(endpoint.c_str(), checkWrite_s, "text/plain");
     return 1;
 }
 
-uint32_t influxDB_v2_uploader::tickCheckPost(){
+/*****************************************************************************************
+ *          handle_checkWrite_s()
+ * **************************************************************************************/
+uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
     trace(T_influx2,91);
 
     // Check the result of a write transaction.
@@ -263,12 +278,19 @@ uint32_t influxDB_v2_uploader::tickCheckPost(){
         delete[] _statusMessage;
         _statusMessage = nullptr;
         _lastSent = _lastPost; 
-        _state = buildPost_s;
+        _state = write_s;
         trace(T_influx2,93);
         return 1;
     }
 
     // Deal with failure.
+
+    if(_request->responseHTTPcode() == 429){
+        log("influxDB2_v2: Rate exceeded");
+        Serial.println(_request->responseText());
+        delay(5, HTTPpost_s);
+        return 1;
+    }
 
     trace(T_influx2,92);
     char msg[100];
@@ -277,72 +299,20 @@ uint32_t influxDB_v2_uploader::tickCheckPost(){
     _statusMessage = charstar(msg);
     delete _request;
     _request = nullptr; 
-    _state = buildPost_s;
+    _state = write_s;
     return UTCtime() + 2;
 }
 
     //********************************************************************************************************************
     //
-    //               CCC     OOO    N   N   FFFFF   III    GGG
-    //              C   C   O   O   NN  N   F        I    G
-    //              C       O   O   N N N   FFF      I    G  GG
-    //              C   C   O   O   N  NN   F        I    G   G
-    //               CCC     OOO    N   N   F       III    GGG
+    //               CCC     OOO    N   N   FFFFF   III    GGG    CCC   BBBB
+    //              C   C   O   O   NN  N   F        I    G      C   C  B   B
+    //              C       O   O   N N N   FFF      I    G  GG  C      BBBB
+    //              C   C   O   O   N  NN   F        I    G   G  C   C  B   B
+    //               CCC     OOO    N   N   F       III    GGG    CCC   B BBB
     //
     //********************************************************************************************************************
-
-    bool influxDB_v2_uploader::config(const char *jsonConfig)
-    {
-        trace(T_influx2, 100);
-
-        // Parse json configuration
-
-        DynamicJsonBuffer Json;
-        JsonObject &config = Json.parseObject(jsonConfig);
-        if (!config.success())
-        {
-            log("%s: Config parse failed", _id);
-            return false;
-        }
-
-        // If config not changed, return success.
-
-        trace(T_influx2, 100);
-        if (_revision == config["revision"])
-        {
-            return true;
-        }
-        _revision = config["revision"];
-
-        // parse and validate url
-
-        trace(T_influx2, 100);
-        if(!_url){
-            _url = new xurl;
-        }
-        if (! _url->parse(config.get<char *>("url")))
-        {
-            log("%s: invalid URL", _id);
-            return false;
-        }
-         _url->query(nullptr);
-         _useProxyServer = false;
-         if(strcmp_ci(_url->method(),"https://")== 0){
-             _useProxyServer = true;
-         }
-
-         // Gather and check parameters
-
-         trace(T_influx2, 100);
-         _interval = config.get<unsigned int>("postInterval");
-         if (!_interval || (_interval % 5 != 0))
-         {
-             log("%s: Invalid interval", _id);
-             return false;
-        }
-        _bulkSend = config.get<unsigned int>("bulksend");
-        _bulkSend = constrain(_bulkSend, 1, 10);
-
+    bool influxDB_v2_uploader::configCB(JsonObject& config){
         trace(T_influx2, 101);
         delete[] _bucket;
         _bucket = charstar(config.get<char *>("bucket"));
@@ -430,16 +400,9 @@ uint32_t influxDB_v2_uploader::tickCheckPost(){
         return strcmp(varStr(_measurement, a).c_str(), varStr(_measurement, b).c_str());
     });
 
-    trace(T_influx2,105);    
-    if(_state == initialize_s) {
-        trace(T_influx2,105);
-        serviceBlock *sb = NewService(uploader_tick, T_influx2);
-        sb->serviceParm = (void *)this;
-    }
-    trace(T_influx2,106);
-
-    return true; 
+    return true;
 }
+    
 
 String influxDB_v2_uploader::varStr(const char* in, Script* script)
 {

@@ -5,7 +5,7 @@
 
 #define DEFAULT_BUFFER_LIMIT 4000
 
-extern uint32_t uploader_tick(struct serviceBlock *serviceBlock);
+extern uint32_t uploader_dispatch(struct serviceBlock *serviceBlock);
 
 class uploader
 {
@@ -41,8 +41,9 @@ class uploader
             delete _url;
         };
 
-        uint32_t tick(struct serviceBlock *serviceBlock);
-        virtual bool config(const char *JsonText) = 0;
+        uint32_t dispatch(struct serviceBlock *serviceBlock);
+        virtual bool config(const char *JsonText);
+        virtual bool configCB(JsonObject&);
         virtual void getStatusJson(JsonObject&);
         virtual void stop();
         virtual void end();
@@ -55,10 +56,10 @@ class uploader
 
         enum states {
             initialize_s,
-            buildLastSent_s,
-            checkLastSent_s,
-            buildPost_s,
-            checkPost_s,
+            query_s,
+            checkQuery_s,
+            write_s,
+            checkWrite_s,
             HTTPpost_s,
             HTTPwait_s,
             delay_s,
@@ -97,15 +98,15 @@ class uploader
         char *_statusMessage;
         POSTrequest *_POSTrequest;
 
-        virtual uint32_t tickInitialize();
-        virtual uint32_t tickBuildLastSent() = 0;
-        virtual uint32_t tickCheckLastSent() = 0;
-        virtual uint32_t tickBuildPost() = 0;
-        virtual uint32_t tickCheckPost() = 0;
-        virtual uint32_t tickStopped();
-        virtual uint32_t tickHTTPPost();
-        virtual uint32_t tickHTTPWait();
-        virtual uint32_t tickDelay();
+        virtual uint32_t handle_initialize_s();
+        virtual uint32_t handle_query_s() = 0;
+        virtual uint32_t handle_checkQuery_s() = 0;
+        virtual uint32_t handle_write_s() = 0;
+        virtual uint32_t handle_checkWrite_s() = 0;
+        virtual uint32_t handle_stopped_s();
+        virtual uint32_t handle_HTTPpost_s();
+        virtual uint32_t handle_HTTPwait_s();
+        virtual uint32_t handle_delay_s();
 
         virtual void HTTPPost(const char *endpoint, states completionState, const char *contentType);
         virtual void delay(uint32_t seconds, states resumeState);
