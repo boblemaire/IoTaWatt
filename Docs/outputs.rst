@@ -102,6 +102,35 @@ Some other useful outputs would be:
     :align: center
     :alt: misc output
 
+Functions - MAX and MIN
+-----------------------
+
+MAX and MIN are binary operators and are used to yield the greater or lesser of the two operands they compare. They can be accessed using the FUNC button.
+
+They work differently from traditional spreadsheet functions (which provide upper and lower limits). 
+
+In IotaWatt A MAX B reports the Maximum of A and B. Similarly A MIN B reports the Minimum of A and B. For example:
+
+    *   Fred MAX 50 will compare 'Fred' to 50 and will return the value of 'Fred' if it is Greater than 50, or 50 if 'Fred' is less than 50.
+
+    *   Fred MIN 0 reports the lower of the 'Fred' and Zero.
+ 
+MAX and MIN are extremly useful if you have a Solar System and could import electricity at night and export it at peak sunshine.
+
+*Example:*
+
+    *   Connect a CT to the Supplier's Incoming Cable
+    *   Define an input, call it 'MAIN'
+    *   Disable auto-reverse on the input (this will mean that the both Negative and Positive Flows will be reported)
+    *   Check that the CT is reporting positive when electricity is being imported and negative when electricity is being exported (if incorrect either physically re-orientate the CT or select the 'reverse' option on the input).
+    *   Defining an output 'Imported' as MAIN MAX 0 will report the imported electricity (since anything positive is >0)
+    *   Defining the output 'Exported' as MAIN MIN 0 will report the exported electricity (anything negative is <0)
+    
+    If you want your exported electricity to be reported as a positive number then use the ABS function (or multiply by -1)
+
+
+
+
 .. |save| image:: pics/SaveButton.png
     :scale: 50 %
     :alt: **Save**
