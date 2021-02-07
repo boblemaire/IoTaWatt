@@ -79,8 +79,8 @@ void uploader::stop(){
     oldRecord = nullptr;
     delete newRecord;
     newRecord = nullptr;
-    delete _request;
-    _request = nullptr;
+    // delete _request;
+    // _request = nullptr;
     reqData.flush();
     delete _url;
     _url = nullptr;
@@ -102,6 +102,7 @@ uint32_t uploader::handle_stopped_s(){
     delete[] _statusMessage;
     _statusMessage = nullptr;
     trace(T_uploader,8);
+    _lastSent = 0;
     _state = query_s;
     return 1;
 }
@@ -302,28 +303,45 @@ bool uploader::config(const char *jsonConfig)
         log("%s: invalid URL", _id);
         return false;
     }
-        _url->query(nullptr);
-        _useProxyServer = false;
-        if(strcmp_ci(_url->method(),"https://")== 0){
-            _useProxyServer = true;
-        }
+    _url->query(nullptr);
+    _useProxyServer = false;
+    if(strcmp_ci(_url->method(),"https://")== 0){
+        _useProxyServer = true;
+    }
 
-        // Gather and check parameters
+    // Gather and check parameters
 
-        trace(T_uploader, 100);
-        _interval = config.get<unsigned int>("postInterval");
-        if (!_interval || (_interval % 5 != 0))
-        {
-            log("%s: Invalid interval", _id);
-            return false;
+    trace(T_uploader, 100);
+    _interval = config.get<unsigned int>("postInterval");
+    if (!_interval || (_interval % 5 != 0))
+    {
+        log("%s: Invalid interval", _id);
+        return false;
     }
     _bulkSend = config.get<unsigned int>("bulksend");
     _bulkSend = constrain(_bulkSend, 1, 10);
+    _stop = config.get<bool>("stop");
+    _uploadStartDate = config.get<unsigned int>("begdate");
+
+        // Build the measurement scriptset
+
+    trace(T_uploader,101);
+    delete _outputs;
+    JsonVariant var = config["outputs"];
+    if(var.success()){
+        trace(T_uploader,102);
+        _outputs = new ScriptSet(var.as<JsonArray>());
+    }
+    else {
+        log("%s: No outputs, stopping.", _id);
+        return false;
+    }
 
     // Callback to derived class for unique configuration requirements
     // if that goes OK (true) then start the Service.
-    
-    if(configCB(config)){
+
+    if (configCB(config))
+    {
         trace(T_uploader,105);    
         if(_state == initialize_s) {
             trace(T_uploader,105);
@@ -331,7 +349,7 @@ bool uploader::config(const char *jsonConfig)
             sb->serviceParm = (void *)this;
         }
         trace(T_uploader,106);
-        return true; 
+        return true;
     }
 
     // Callback failed, return false;

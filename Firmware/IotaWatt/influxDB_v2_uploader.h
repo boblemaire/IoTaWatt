@@ -14,7 +14,6 @@ class influxDB_v2_uploader : public uploader
     public:
         influxDB_v2_uploader(): 
             _tagSet(0),
-            _outputs(0),
             _lookbackHours(0),
             _orgID(0),
             _bucket(0),
@@ -59,8 +58,6 @@ class influxDB_v2_uploader : public uploader
             }
         } *_tagSet;
         
-        ScriptSet *_outputs;
-
         uint32_t _lookbackHours;
         char *_orgID;
         char *_bucket;

@@ -1,13 +1,4 @@
 #include "emoncms_uploader.h"
-#include "splitstr.h"
-
-/*****************************************************************************************
- *          queryLast() // Use this to initiate the last sent query.
- * **************************************************************************************/
-void emoncms_uploader::queryLast(){
-    _script = _outputs->first();
-    _state = query_s;
-}
 
 /*****************************************************************************************
  *          TickBuildLastSent()
@@ -15,8 +6,11 @@ void emoncms_uploader::queryLast(){
 uint32_t emoncms_uploader::handle_query_s(){
         
     trace(T_influx1,20);
-    
-        // Send the request
+    stop();
+    return 1;
+
+    // Send the request
+
     trace(T_influx1,20);
     HTTPPost("/query", checkQuery_s, "application/x-www-form-urlencoded");
     return 1;
@@ -103,32 +97,7 @@ uint32_t emoncms_uploader::handle_write_s(){
         Script *script = _outputs->first();
         while(script)
         {
-            trace(T_influx1,63);     
-            double value = script->run(oldRecord, newRecord, elapsedHours);
-            if(value == value){
-                trace(T_influx1,64);   
-                thisMeasurement = varStr(_measurement, script);
-                if(_staticKeySet && thisMeasurement.equals(lastMeasurement)){
-                    reqData.printf_P(PSTR(",%s=%.*f"), varStr(_fieldKey, script).c_str(), script->precision(), value);
-                } else {
-                    if(lastMeasurement.length()){
-                        reqData.printf(" %d\n", oldRecord->UNIXtime);
-                    }
-                    reqData.write(thisMeasurement);
-                    if(_tagSet){
-                        trace(T_influx1,64);
-                        influxTag* tag = _tagSet;
-                        while(tag){
-                            reqData.printf_P(PSTR(",%s=%s"), tag->key, varStr(tag->value, script).c_str());
-                            tag = tag->next;
-                        }
-                    }
-                    trace(T_influx1,65);
-                    reqData.printf_P(PSTR(" %s=%.*f"), varStr(_fieldKey, script).c_str(), script->precision(), value);
-                }
-            }
-            lastMeasurement = thisMeasurement;
-            script = script->next();
+            
         }
         _lastPost = oldRecord->UNIXtime;
         reqData.printf(" %d\n", _lastPost);
@@ -144,11 +113,7 @@ uint32_t emoncms_uploader::handle_write_s(){
     // Initiate HTTP post.
 
     String endpoint = "/write?precision=s&db=";
-    endpoint += _database;
-    if(_retention){
-        endpoint += "&rp=";
-        endpoint += _retention;
-    }
+    
     HTTPPost(endpoint.c_str(), checkWrite_s, "text/plain");
     return 1;
 }
@@ -190,126 +155,43 @@ uint32_t emoncms_uploader::handle_checkWrite_s(){
  * **************************************************************************************/
 void emoncms_uploader::setRequestHeaders(){
     trace(T_influx1,95);
-    if(_user && _pwd){
-        xbuf xb;
-        xb.printf("%s:%s", _user, _pwd);
-        base64encode(&xb);
-        String auth = "Basic ";
-        auth += xb.readString(xb.available());
-        _request->setReqHeader("Authorization", auth.c_str()); 
-    }
+    
     _request->setReqHeader("Content-Type","application/x-www-form-urlencoded");
     trace(T_influx1,95);
 }
 
 
-    //********************************************************************************************************************
-    //
-    //               CCC     OOO    N   N   FFFFF   III    GGG    CCC   BBBB
-    //              C   C   O   O   NN  N   F        I    G      C   C  B   B
-    //              C       O   O   N N N   FFF      I    G  GG  C      BBBB
-    //              C   C   O   O   N  NN   F        I    G   G  C   C  B   B
-    //               CCC     OOO    N   N   F       III    GGG    CCC   B BBB
-    //
-    //********************************************************************************************************************
-    bool emoncms_uploader::configCB(JsonObject& config){
-        trace(T_influx1, 101);
-        delete[] _database;
-        _database = charstar(config.get<char*>("database"));
-        delete[] _user;
-        _user = charstar(config.get<const char*>("user"));
-        delete[] _pwd;
-        _pwd = charstar(config.get<char *>("pwd"));
-        delete _retention;
-        _retention = charstar(config.get<const char*>("retp"));
-        
-        trace(T_influx1, 101);
-        delete[] _measurement;
-        _measurement = charstar(config.get<const char *>("measurement"));
-        if (!_measurement)
-        {
-            _measurement = charstar("$name");
-        }
-        trace(T_influx1, 102);
-        delete[] _fieldKey;
-        _fieldKey = charstar(config.get<const char *>("fieldkey"));
-        if (!_fieldKey)
-        {
-            _fieldKey = charstar("value");
-        }
-        trace(T_influx1, 102);
-        _stop = config.get<bool>("stop");
-
-        // Build tagSet
-
-        trace(T_influx1, 103);
-        delete _tagSet;
-        _tagSet = nullptr;
-        JsonArray &tagset = config["tagset"];
-        _staticKeySet = true;
-        if (tagset.success())
-        {
-            trace(T_influx1, 103);
-            for (int i = tagset.size(); i > 0;)
-            {
-                i--;
-                influxTag *tag = new influxTag;
-                tag->next = _tagSet;
-                _tagSet = tag;
-                tag->key = charstar(tagset[i]["key"].as<const char *>());
-                tag->value = charstar(tagset[i]["value"].as<const char *>());
-                if ((strstr(tag->value, "$units") != nullptr) || (strstr(tag->value, "$name") != nullptr))
-                    _staticKeySet = false;
-            }
-        }
+//********************************************************************************************************************
+//
+//               CCC     OOO    N   N   FFFFF   III    GGG    CCC   BBBB
+//              C   C   O   O   NN  N   F        I    G      C   C  B   B
+//              C       O   O   N N N   FFF      I    G  GG  C      BBBB
+//              C   C   O   O   N  NN   F        I    G   G  C   C  B   B
+//               CCC     OOO    N   N   F       III    GGG    CCC   B BBB
+//
+//********************************************************************************************************************
+bool emoncms_uploader::configCB(JsonObject& config){
     
-        // Build the measurement scriptset
-
-    trace(T_influx1,104);
-    delete _outputs;
-    _outputs = nullptr;
-    JsonVariant var = config["outputs"];
-    if(var.success()){
-        trace(T_influx1,105);
-        _outputs = new ScriptSet(var.as<JsonArray>());
+    trace(T_Emoncms,100);
+    hex2bin(_cryptoKey, config["apikey"].as<char*>(), 16);
+    delete[] _node;
+    _node = charstar(config["node"].as<char*>());
+    delete[] _userID;
+    _userID = charstar(config["userid"].as<char*>());
+    _encrypted = (strlen(_userID) == 0) ? false : true;
+    trace(T_Emoncms,101);
+    Script* script = _outputs->first();
+    int index = 0;
+    while(script){
+        if(String(script->name()).toInt() <= index){
+            log("%s: output sequence error, stopping.");
+            return false;
+        }
+        else {
+            index = String(script->name()).toInt();
+        }
+        script = script->next();
     }
-    else {
-        log("%s: No measurements.", _id);
-        return false;
-    }
-
-            // sort the measurements by measurement name
-
-    const char *measurement = _measurement;
-    _outputs->sort([this](Script* a, Script* b)->int {
-        return strcmp(varStr(_measurement, a).c_str(), varStr(_measurement, b).c_str());
-    });
-
-    return true;
-}
-    
-
-String emoncms_uploader::varStr(const char* in, Script* script)
-{
-    // Return String with variable substitutions.
-
-  String out;
-  while(*in){ 
-    if(memcmp(in,"$device",7) == 0){
-      out += deviceName;
-      in += 7;
-    }
-    else if(memcmp(in,"$name",5) == 0){
-      out += script->name();
-      in += 5;
-    }
-    else if(memcmp(in,"$units",6) == 0){
-      out += script->getUnits();
-      in += 6;
-    }
-    else {
-      out += *(in++);
-    }
-  } 
-  return out;
+    trace(T_Emoncms,102);
+    return true; 
 }

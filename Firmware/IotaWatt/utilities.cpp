@@ -94,13 +94,11 @@ void   hex2bin(uint8_t* out, const char* in, size_t len){
  * ************************************************************************************************/
 void base64encode(xbuf* buf){ 
   trace(T_base64,10);  
-  char* base64codes = new char[65];
+  char* base64codes = new char[72];
   if( ! base64codes){
       trace(T_base64,11);
   }
-  trace(T_base64,12);
   strcpy_P(base64codes, base64codes_P);
-  trace(T_base64,13);  
   size_t supply = buf->available();
   uint8_t in[3];
   uint8_t out[4];
@@ -132,7 +130,6 @@ void base64encode(xbuf* buf){
   }
   trace(T_base64,16);
   delete[] base64codes;
-  trace(T_base64,17);
 }
 
 String base64encode(const uint8_t* in, size_t len){
@@ -141,9 +138,7 @@ String base64encode(const uint8_t* in, size_t len){
      trace(T_base64,1);
      return String("");
   }
-  trace(T_base64,1,len);
   xbuf work(128);
-  trace(T_base64,2,len);
   work.write(in, len);
   trace(T_base64,3,len);
   base64encode(&work);

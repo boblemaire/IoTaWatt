@@ -26,6 +26,8 @@ class uploader
                     _id(0),
                     _statusMessage(0),
                     _POSTrequest(0),
+                    _outputs(0),
+                    _script(0),
                     _stop(false),
                     _end(false),
                     _useProxyServer(true)
@@ -97,6 +99,8 @@ class uploader
         char *_id;
         char *_statusMessage;
         POSTrequest *_POSTrequest;
+        ScriptSet *_outputs;
+        Script *_script;
 
         virtual uint32_t handle_initialize_s();
         virtual uint32_t handle_query_s() = 0;

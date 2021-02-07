@@ -70,7 +70,6 @@ void handleRequest(){
   if(serverOn(authAdmin, F("/vcal"),HTTP_GET, handleVcal)) return;
   if(serverOn(authAdmin, F("/command"), HTTP_GET, handleCommand)) return;
   if(serverOn(authUser,  F("/list"), HTTP_GET, printDirectory)) return;
-  if(serverOn(authAdmin, F("/config"), HTTP_GET, handleGetConfig)) return;
   if(serverOn(authAdmin, F("/edit"), HTTP_DELETE, handleDelete)) return;
   if(serverOn(authAdmin, F("/edit"), HTTP_PUT, handleCreate)) return;
   if(serverOn(authUser,  F("/feed/list.json"), HTTP_GET, handleGetFeedList)) return;
@@ -201,9 +200,11 @@ bool loadFromSpiffs(String path, String dataType){
 }
 
 void handleFileUpload(){
-  trace(T_WEB,11);
-  if(server.uri() != "/edit") return;
+  trace(T_WEB, 11);
+  static File uploadFile;
   HTTPUpload& upload = server.upload();
+  trace(T_WEB, 11, upload.status);
+  if(server.uri() != "/edit") return;
   if( ! upload.filename.startsWith("/")){
     upload.filename = String('/') + upload.filename;
   }
@@ -233,15 +234,19 @@ void handleFileUpload(){
     
   } else if(upload.status == UPLOAD_FILE_END){
     if(uploadFile){
-      uploadFile.close();
-      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
       if(upload.filename.equals("/config.txt")){
-        uploadFile = SD.open(upload.filename.c_str(), FILE_READ);
         hashFile(configSHA256, uploadFile);
-        uploadFile.close();
         server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
       }
+      uploadFile.close();
+      getNewConfig = true;
+      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
     }
+  } else if(upload.status == UPLOAD_FILE_ABORTED){
+    if(uploadFile){
+      uploadFile.close();
+    }
+    log("WebServer: Upload aborted: %s", upload.filename.c_str());
   }
 }
 
@@ -583,14 +588,17 @@ void handleStatus(){
       root["influx2"] = status;
     }
 
-    if(server.hasArg(F("emon"))){
-      trace(T_WEB,22);
-      JsonObject& emon = jsonBuffer.createObject();
-      emon.set(F("running"),EmonStarted);
-      emon.set(F("lastpost"),EmonLastPost);  
-      root["emon"] = emon;
+    if(server.hasArg(F("emoncms"))){
+      trace(T_WEB,18);
+      JsonObject& status = jsonBuffer.createObject();
+      if(!Emoncms){
+        status.set(F("state"),"not running");
+      } else {
+        Emoncms->getStatusJson(status);
+      }  
+      root["emoncms"] = status;
     }
-
+    
     if(server.hasArg(F("pvoutput"))){
       trace(T_WEB,23);
       JsonObject& status = jsonBuffer.createObject();
@@ -835,26 +843,6 @@ void sendMsgFile(File &dataFile, int32_t relPos){
     _client.write(dataFile);
 }
 
-void handleGetConfig(){
-  trace(T_WEB,8); 
-  if(server.hasArg(F("update"))){
-    if(server.arg(F("update")) == "restart"){
-      server.send(200, F("text/plain"), "OK");
-      log("Restart command received.");
-      delay(500);
-      ESP.restart();
-    }
-    else if(server.arg(F("update")) == "reload"){
-      validConfig = getConfig("config.txt");
-      if(validConfig){
-        copyFile("/esp_spiffs/config.txt", "config.txt");
-      }
-      server.send(200, txtPlain_P, "OK");
-      return;  
-    }
-  }
-  server.send(400, txtPlain_P, "Bad Request.");
-}
 
 void handleQuery(){
   trace(T_WEB,50);

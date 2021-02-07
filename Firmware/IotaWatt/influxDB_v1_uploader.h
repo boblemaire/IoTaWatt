@@ -14,8 +14,6 @@ class influxDB_v1_uploader : public uploader
     public:
         influxDB_v1_uploader():
             _tagSet(0),
-            _outputs(0),
-            _script(nullptr),
             _user(0),
             _pwd(0),
             _retention(0),
@@ -59,8 +57,6 @@ class influxDB_v1_uploader : public uploader
                 delete   next;
             }
         } *_tagSet;
-        ScriptSet *_outputs;
-        Script *_script;
 
         char *_user;
         char *_pwd;

@@ -181,6 +181,7 @@ SHA256* uploadSHA;
 boolean serverAvailable = true;           // Set false when asynchronous handler active to avoid new requests
 uint32_t wifiConnectTime = 0;             // Time WiFi was connected, 0 if disconnected
 uint8_t configSHA256[32];                 // Hash of config file last time read or written
+bool getNewConfig = false;                // process new configuration file;
 
 uint8_t*          adminH1 = nullptr;      // H1 digest md5("admin":"admin":password) 
 uint8_t*          userH1 = nullptr;       // H1 digest md5("user":"user":password)

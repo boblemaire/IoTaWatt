@@ -39,7 +39,18 @@ void loop()
   trace(T_LOOP,3);
   if(serverAvailable){
     server.handleClient();
-    trace(T_LOOP,4);
+    trace(T_LOOP,3);
+    if(getNewConfig){
+      trace(T_LOOP,4);
+      getNewConfig = false;
+      if(getConfig("config.txt")){
+        trace(T_LOOP,4);
+        copyFile("/esp_spiffs/config.txt", "config.txt");
+      }
+      else {
+
+      }
+    }
     yield();
   }
   

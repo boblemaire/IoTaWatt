@@ -310,7 +310,7 @@
       <div id="tabinflux1" style="display:none;">
         <button class="groupTab" onclick="toggleDisplay('statusInflux1Div')">InfluxDB1</button>
         <div id="statusInflux1Div" class="statusDiv" style="display: none;">
-          <button id="influx1Button" style = "configButton" value = "influxdb1" onclick="serverToggle(this,this.value)"></button>
+          <button id="influx1Button" style = "configButton" value = "influxdb" onclick="serverToggle(this,this.value)"></button>
           <span id="influx1text"></span>
           <span id="influx1msg"></span>
         </div>
@@ -325,9 +325,13 @@
         </div>
       </div>
       
-      <div id="tabEmon" style="display: none;">
-        <button class="groupTab" onclick="toggleDisplay('statusEmonDiv')">Emoncms</button>
-        <p id="statusEmonDiv" class="statusDiv" style="display: none;"></p>
+      <div id="tabEmoncms" style="display:none;">
+        <button class="groupTab" onclick="toggleDisplay('statusEmoncmsDiv')">Emoncms</button>
+        <div id="statusEmoncmsDiv" class="statusDiv" style="display: none;">
+          <button id="EmoncmsButton" style = "configButton" value = "emoncms" onclick="serverToggle(this,this.value)"></button>
+          <span id="Emoncmstext"></span>
+          <span id="Emoncmsmsg"></span>
+        </div>
       </div>
       
        <div id="tabPVout" style="display: none;">
@@ -1706,8 +1710,11 @@ function deviceSave(){
         break;
       }
     }
-  } 
-  uploadConfig(resetDisplay, (config.device.name != originalName) ? "restart" : "reload");
+  }
+  uploadConfig();
+  if(config.device.name != originalName){
+    sendRestart();
+  }
 }
 
 /********************************************************************************************
@@ -1869,6 +1876,22 @@ function serverCancel(){
   currentBodyPop();
   getConfig(resetDisplay);
 }
+
+function serverToggle(button){
+  button.disabled = true;
+  config[button.value].stop = button.innerHTML == "Stop";
+  var stop;
+  stop = config[button.value].stop;
+  if(button.innerHTML == "Stop"){
+    config[button.value].stop = true;
+  }
+  else {
+    config[button.value].stop = undefined;
+  }
+  config[button.value].revision++;
+  uploadConfig();
+}
+
 /***********************************************************************************************
  *                                Configure eMonCMS
  * ********************************************************************************************/
@@ -2354,43 +2377,6 @@ function influxTagCheck(){
   EbyId("influxTagSave").style.display = complete ? "inline" : "none";
 }
 
-function serverToggle(button){
-  var stop;
-  if(button.value == "emoncms") stop = config.emoncms.stop;
-  if(button.value == "influxdb1") stop = config.influxdb.stop;
-  if(button.value == "influxdb2") stop = config.influxdb2.stop;
-  if(button.value == "pvoutput") stop = config.pvoutput.stop;
-  
-  if(button.innerHTML == "Stop"){
-    stop = true;
-    uploadConfig();
-    button.disabled = true;
-  }
-  else {
-    stop = undefined;
-  }
-  
-  if(button.value == "emoncms") {
-    config.emoncms.revision++;
-    config.emoncms.stop = stop;
-  }
-  if(button.value == "influxdb1"){
-    config.influxdb.revision++;
-    config.influxdb.stop = stop;
-  }
-  if(button.value == "influxdb2"){
-    config.influxdb2.revision++;
-    config.influxdb2.stop = stop;
-  }
-  if(button.value == "pvoutput"){
-    config.pvoutput.revision++;
-    config.pvoutput.stop = stop;
-  }
-  
-  uploadConfig();
-  button.disabled = true;
-}
-
 
 /***********************************************************************************************
  *                                Configure PVOutput
@@ -2512,7 +2498,7 @@ function statusBegin(){
   EbyId("tabinflux1").style.display = config.influxdb !== undefined ? "inline" : "none";
   EbyId("tabinflux2").style.display = config.influxdb2 !== undefined ? "inline" : "none";
   EbyId("tabPVout").style.display = config.pvoutput !== undefined ? "inline" : "none";
-  EbyId("tabEmon").style.display = (config.server !== undefined && config.server.type == "emoncms") ? "inline" : "none";
+  EbyId("tabEmoncms").style.display = (config.emoncms !== undefined || config.server !== undefined) ? "inline" : "none";
   currentBodyPush("divStatus");
   getStatus = true;
   statusGet();
@@ -2525,7 +2511,7 @@ function statusGet(){
       statusDisplay(xmlHttp.responseText);
     }
   }
-  xmlHttp.open("GET","/status?state&inputs&outputs&stats&wifi&datalogs&influx1&influx2&emon&pvoutput", true);
+  xmlHttp.open("GET","/status?state&inputs&outputs&stats&wifi&datalogs&influx1&influx2&emoncms&pvoutput", true);
   xmlHttp.send(null);
 }
 
@@ -2608,17 +2594,22 @@ function statusDisplay(statusMessage){
     }
   } 
   
-  var emonDiv = EbyId("statusEmonDiv");
-  emonDiv.innerHTML = "";
-  if(status.emon !== undefined){
-    var button = document.createElement("button");
-    button.style = "configButton";
-    button.innerHTML = status.emon.running ? "Stop" : "Start";
-    button.setAttribute("onclick","emonToggle()");
-    emonDiv.appendChild(button);
-    emonDiv.appendChild(document.createTextNode(status.emon.running ? " Running" : " Stopped"));
-    if(status.emon.lastpost){
-      emonDiv.appendChild(document.createTextNode(", Last update " + formatDateTime(status.emon.lastpost)));
+  var EmoncmsDiv = EbyId("statusEmoncmsDiv");
+  if(status.emoncms !== undefined){
+    var button = EbyId("EmoncmsButton");
+    button.disabled = false;
+    if(status.emoncms.status == "running"){
+      button.innerHTML = "Stop";
+      EbyId("Emoncmstext").innerHTML = "Running"
+    }
+    else {
+      button.innerHTML = "Start";
+      EbyId("Emoncmstext").innerHTML = "Stopped"
+    }
+    EbyId("Emoncmstext").innerHTML += ", Last update " + formatDateTime(status.emoncms.lastpost);
+    EbyId("Emoncmsmsg").innerHTML = "";
+    if(status.emoncms.message){
+      EbyId("Emoncmsmsg").innerHTML = "<br>" + status.emoncms.message;
     }
   } 
   
@@ -2924,18 +2915,9 @@ function readFile(path, responseHandler){
   xmlHttp.send();
 }
 
-function uploadConfig(callback, action="reload"){
+function uploadConfig(){
   if(noConfig) return;
-  writeFile(JSON.stringify(config, null, "\t"), configNewURL, function(){
-    var xmlHttp = new XMLHttpRequest();
-    xmlHttp.onreadystatechange = function() {
-      if (this.readyState == 4 && this.status == 200) {
-        if(callback !== undefined) callback(); 
-      }
-    }
-    xmlHttp.open("GET","/config?update=" + action, true);
-    xmlHttp.send(null);
-  });
+  writeFile(JSON.stringify(config, null, "\t"), configNewURL);
 }
 
 function writeFile(fileString, url, responseHandler){
@@ -2946,7 +2928,9 @@ function writeFile(fileString, url, responseHandler){
         if(this.getResponseHeader("X-configSHA256") !== null){
           configSHA256 = this.getResponseHeader("X-configSHA256");
         }
-        responseHandler();
+        if(responseHandler !== undefined){
+          responseHandler();
+        }
       }
       else if(this.status == 409) {
         alert("config file not current, operation aborted,\nconfig file not updated, restarting app.");

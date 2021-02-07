@@ -49,6 +49,9 @@ void setup()
   }
   hasSD = true;
   log("SD initialized.");
+  Serial.printf("UPLOAD_FILE_START = %d\n", UPLOAD_FILE_START);
+  Serial.printf("UPLOAD_FILE_WRITE = %d\n", UPLOAD_FILE_WRITE);
+  Serial.printf("UPLOAD_FILE_END = %d\n", UPLOAD_FILE_END);
 
   //*************************************** Check RTC   *****************************
 

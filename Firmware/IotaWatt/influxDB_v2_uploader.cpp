@@ -296,98 +296,84 @@ uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
     return UTCtime() + 2;
 }
 
-    //********************************************************************************************************************
-    //
-    //               CCC     OOO    N   N   FFFFF   III    GGG    CCC   BBBB
-    //              C   C   O   O   NN  N   F        I    G      C   C  B   B
-    //              C       O   O   N N N   FFF      I    G  GG  C      BBBB
-    //              C   C   O   O   N  NN   F        I    G   G  C   C  B   B
-    //               CCC     OOO    N   N   F       III    GGG    CCC   B BBB
-    //
-    //********************************************************************************************************************
-    bool influxDB_v2_uploader::configCB(JsonObject& config){
-        trace(T_influx2, 101);
-        delete[] _bucket;
-        _bucket = charstar(config.get<char *>("bucket"));
-        if (strlen(_bucket) == 0)
-        {
-            log("%s: Bucket not specified", _id);
-            return false;
-        }
-
-        trace(T_influx2, 101);
-        delete[] _orgID;
-        _orgID = charstar(config.get<const char *>("orgid"));
-        if (strlen(_orgID) != 16)
-        {
-            log("%s: Invalid organization ID", _id);
-            return false;
-        }
-        trace(T_influx2, 101);
-        delete[] _token;
-        _token = charstar(config.get<const char *>("authtoken"));
-        if (_token && strlen(_token) != 88)
-        {
-            log("%s: Invalid authorization token", _id);
-            return false;
-        }
-        trace(T_influx2, 101);
-        delete[] _measurement;
-        _measurement = charstar(config.get<const char *>("measurement"));
-        if (!_measurement)
-        {
-            _measurement = charstar("$name");
-        }
-        trace(T_influx2, 102);
-        delete[] _fieldKey;
-        ;
-        _fieldKey = charstar(config.get<const char *>("fieldkey"));
-        if (!_fieldKey)
-        {
-            _fieldKey = charstar("value");
-        }
-        trace(T_influx2, 102);
-        _stop = config.get<bool>("stop");
-
-        // Build tagSet
-
-        trace(T_influx2, 103);
-        delete _tagSet;
-        _tagSet = nullptr;
-        JsonArray &tagset = config["tagset"];
-        _staticKeySet = true;
-        if (tagset.success())
-        {
-            trace(T_influx2, 103);
-            for (int i = tagset.size(); i > 0;)
-            {
-                i--;
-                influxTag *tag = new influxTag;
-                tag->next = _tagSet;
-                _tagSet = tag;
-                tag->key = charstar(tagset[i]["key"].as<const char *>());
-                tag->value = charstar(tagset[i]["value"].as<const char *>());
-                if ((strstr(tag->value, "$units") != nullptr) || (strstr(tag->value, "$name") != nullptr))
-                    _staticKeySet = false;
-            }
-        }
-    
-        // Build the measurement scriptset
-
-    trace(T_influx2,104);
-    delete _outputs;
-    _outputs = nullptr;
-    JsonVariant var = config["outputs"];
-    if(var.success()){
-        trace(T_influx2,105);
-        _outputs = new ScriptSet(var.as<JsonArray>());
-    }
-    else {
-        log("%s: No measurements.", _id);
+//********************************************************************************************************************
+//
+//               CCC     OOO    N   N   FFFFF   III    GGG    CCC   BBBB
+//              C   C   O   O   NN  N   F        I    G      C   C  B   B
+//              C       O   O   N N N   FFF      I    G  GG  C      BBBB
+//              C   C   O   O   N  NN   F        I    G   G  C   C  B   B
+//               CCC     OOO    N   N   F       III    GGG    CCC   B BBB
+//
+//********************************************************************************************************************
+bool influxDB_v2_uploader::configCB(JsonObject& config){
+    trace(T_influx2, 101);
+    delete[] _bucket;
+    _bucket = charstar(config.get<char *>("bucket"));
+    if (strlen(_bucket) == 0)
+    {
+        log("%s: Bucket not specified", _id);
         return false;
     }
 
+    trace(T_influx2, 101);
+    delete[] _orgID;
+    _orgID = charstar(config.get<const char *>("orgid"));
+    if (strlen(_orgID) != 16)
+    {
+        log("%s: Invalid organization ID", _id);
+        return false;
+    }
+    trace(T_influx2, 101);
+    delete[] _token;
+    _token = charstar(config.get<const char *>("authtoken"));
+    if (_token && strlen(_token) != 88)
+    {
+        log("%s: Invalid authorization token", _id);
+        return false;
+    }
+    trace(T_influx2, 101);
+    delete[] _measurement;
+    _measurement = charstar(config.get<const char *>("measurement"));
+    if (!_measurement)
+    {
+        _measurement = charstar("$name");
+    }
+    trace(T_influx2, 102);
+    delete[] _fieldKey;
+    ;
+    _fieldKey = charstar(config.get<const char *>("fieldkey"));
+    if (!_fieldKey)
+    {
+        _fieldKey = charstar("value");
+    }
+    trace(T_influx2, 102);
+    _stop = config.get<bool>("stop");
+
+    // Build tagSet
+
+    trace(T_influx2, 103);
+    delete _tagSet;
+    _tagSet = nullptr;
+    JsonArray &tagset = config["tagset"];
+    _staticKeySet = true;
+    if (tagset.success())
+    {
+        trace(T_influx2, 103);
+        for (int i = tagset.size(); i > 0;)
+        {
+            i--;
+            influxTag *tag = new influxTag;
+            tag->next = _tagSet;
+            _tagSet = tag;
+            tag->key = charstar(tagset[i]["key"].as<const char *>());
+            tag->value = charstar(tagset[i]["value"].as<const char *>());
+            if ((strstr(tag->value, "$units") != nullptr) || (strstr(tag->value, "$name") != nullptr))
+                _staticKeySet = false;
+        }
+    }
+
             // sort the measurements by measurement name
+
     const char *measurement = _measurement;
     _outputs->sort([this](Script* a, Script* b)->int {
         return strcmp(varStr(_measurement, a).c_str(), varStr(_measurement, b).c_str());

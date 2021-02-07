@@ -1,4 +1,5 @@
 #include "IotaWatt.h"
+#include "Emoncms_uploader.h"
 #include "influxDB_v1_uploader.h"
 #include "influxDB_v2_uploader.h"
 
@@ -57,7 +58,7 @@ boolean getConfig(const char* configPath){
 
         //************************************ Configure DST rule *********************************
 
-  trace(T_CONFIG,6);
+  trace(T_CONFIG,10);
   delete timezoneRule;
   timezoneRule = nullptr;
   JsonArray& dstruleArray = Config["dstrule"];
@@ -69,7 +70,7 @@ boolean getConfig(const char* configPath){
 
         //************************************ Configure input channels ***************************
 
-  trace(T_CONFIG,7);
+  trace(T_CONFIG,15);
   JsonArray& inputsArray = Config["inputs"];
   if(inputsArray.success()){
     char* inputsStr = JsonDetail(ConfigFile, inputsArray);
@@ -79,6 +80,7 @@ boolean getConfig(const char* configPath){
 
         //************************************ Lookup phase shift in tables ***********************
 
+  trace(T_CONFIG,20);
   configMasterPhaseArray();
 
     // Print the inputs
@@ -112,7 +114,7 @@ boolean getConfig(const char* configPath){
         // ************************************ configure output channels *************************
 
   {      
-    trace(T_CONFIG,8);
+    trace(T_CONFIG,25);
     delete outputs;
     outputs = nullptr;
     JsonArray& outputsArray = Config["outputs"];
@@ -130,7 +132,7 @@ boolean getConfig(const char* configPath){
          // ************************************** configure Emoncms **********************************
 
   {
-    trace(T_CONFIG,9);
+    trace(T_CONFIG,30);
     char* EmonStr = nullptr;
     JsonArray& EmonArray = Config["emoncms"];
     if(EmonArray.success()){
@@ -142,21 +144,28 @@ boolean getConfig(const char* configPath){
         EmonStr = JsonDetail(ConfigFile, serverArray);
       }
     }
+    trace(T_CONFIG,30);
     if(EmonStr){
-      if( ! EmonConfig(EmonStr)){
-        log("EmonService: Invalid configuration.");
+      if(! Emoncms){
+        Emoncms = new emoncms_uploader;
+      }
+      trace(T_CONFIG,30);
+      if( ! Emoncms->config(EmonStr)){
+        log("Emoncms: Invalid configuration.");
+        Emoncms->end();
+        Emoncms = nullptr;
       }
       delete[] EmonStr;
     }   
-    else {
-      EmonStop = true;
+    else if(Emoncms){
+      Emoncms->end();
     }
   }
 
         // ************************************** configure influxDB1 *********************************
 
   {
-    trace(T_CONFIG,10);
+    trace(T_CONFIG,35);
     JsonArray& influxArray = Config[F("influxdb")];
     if(influxArray.success()){
       char* influxStr = JsonDetail(ConfigFile, influxArray);
@@ -165,6 +174,8 @@ boolean getConfig(const char* configPath){
       }
       if( ! influxDB_v1->config(influxStr)){
         log("influxDB_v1: Invalid configuration.");
+        influxDB_v1->end();
+        influxDB_v1 = nullptr;
       }
       delete[] influxStr;
     }   
@@ -176,7 +187,7 @@ boolean getConfig(const char* configPath){
         // ************************************** configure influxDB2 **********************************
 
   {
-    trace(T_CONFIG,10);
+    trace(T_CONFIG,40);
     JsonArray& influx2Array = Config[F("influxdb2")];
     if(influx2Array.success()){
       char* influx2Str = JsonDetail(ConfigFile, influx2Array);
@@ -197,7 +208,7 @@ boolean getConfig(const char* configPath){
       // ************************************** configure PVoutput **********************************
 
   {
-    trace(T_CONFIG,11);
+    trace(T_CONFIG,45);
     JsonArray& PVoutputArray = Config[F("pvoutput")];
     if(PVoutputArray.success()){
       char* PVoutputStr = JsonDetail(ConfigFile, PVoutputArray);
@@ -211,14 +222,13 @@ boolean getConfig(const char* configPath){
     }   
     else if(pvoutput){
       pvoutput->end();
-    } 
-    
+    }    
   }
 
       // ************************************** configure Export log **********************************
 
   {
-    trace(T_CONFIG,12);
+    trace(T_CONFIG,50);
     JsonArray& exportArray = Config[F("exportlog")];
     if(exportArray.success()){
       char* exportStr = JsonDetail(ConfigFile, exportArray);
@@ -226,11 +236,12 @@ boolean getConfig(const char* configPath){
         log("Exportlog: Invalid configuration.");
       }
       delete[] exportStr;
-    }   
+    }
+    trace(T_CONFIG,50);   
   }
 
   ConfigFile.close();
-  trace(T_CONFIG,12);
+  trace(T_CONFIG,70);
   return true;
 
 }                                       // End of getConfig

@@ -64,7 +64,7 @@
 #include "updater.h"
 #include "samplePower.h"
 #include "uploader.h"
-#include "Emonservice.h"
+//#include "Emonservice.h"
 #include "auth.h"
 #include "spiffs.h"
 #include "timeServices.h"
@@ -157,7 +157,7 @@ struct EEprom {
 
 #define T_LOOP 1           // Loop
 #define T_LOG 2            // dataLog
-#define T_Emon 3           // EmonService
+#define T_Emoncms 3        // Emoncms uploader
 #define T_GFD 4            // GetFeedData
 #define T_UPDATE 5         // updater
 #define T_SETUP 6          // Setup
@@ -170,8 +170,6 @@ struct EEprom {
 #define T_uploadGraph 13 
 #define T_history 14
 #define T_base64 15        // base 64 encode
-#define T_EmonConfig 16    // Emon configuration
-#define T_influxConfig 17  // influx configuration 
 #define T_stats 18         // Stat service 
 #define T_datalog 19       // datalog service
 #define T_timeSync 20      // timeSync service 
@@ -273,6 +271,7 @@ extern SHA256*  uploadSHA;
 extern boolean  serverAvailable;          // Set false when asynchronous handler active to avoid new requests
 extern uint32_t wifiConnectTime;          // Time of connection (zero if disconnected)
 extern uint8_t  configSHA256[32];         // Hash of config file
+extern bool     getNewConfig;             // Set to update config after running WebServer
 
 #define HTTPrequestMax 2                  // Maximum number of concurrent HTTP requests  
 extern int16_t  HTTPrequestFree;          // Request semaphore

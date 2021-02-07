@@ -33,6 +33,7 @@ uint32_t influxDB_v1_uploader::handle_query_s(){
     }
     
         // Send the request
+
     trace(T_influx1,20);
     HTTPPost("/query", checkQuery_s, "application/x-www-form-urlencoded");
     return 1;
@@ -73,9 +74,10 @@ uint32_t influxDB_v1_uploader::handle_checkQuery_s(){
         // Json parse the response to get the columns and values arrays
         // and extract time
 
+    String response = _request->responseText();
     trace(T_influx1,35);
     DynamicJsonBuffer Json;
-    JsonObject& results = Json.parseObject(_request->responseText().c_str());
+    JsonObject& results = Json.parseObject(response);
     if(results.success()){
         trace(T_influx1,35);
         JsonArray& columns = results["results"][0]["series"][0]["columns"];
@@ -85,7 +87,7 @@ uint32_t influxDB_v1_uploader::handle_checkQuery_s(){
             for(int i=0; i<columns.size(); i++){
                 trace(T_influx1,35);
                 if(strcmp("time",columns[i].as<char*>()) == 0){
-                    _lastPost = MAX(_lastPost, values[i].as<unsigned long>());
+                    _lastSent = MAX(_lastSent, values[i].as<unsigned long>());
                     break;
                 }
             }
@@ -264,6 +266,7 @@ uint32_t influxDB_v1_uploader::handle_checkWrite_s(){
  * **************************************************************************************/
 void influxDB_v1_uploader::setRequestHeaders(){
     trace(T_influx1,95);
+    _request->setDebug(false);
     if(_user && _pwd){
         xbuf xb;
         xb.printf("%s:%s", _user, _pwd);
@@ -277,79 +280,63 @@ void influxDB_v1_uploader::setRequestHeaders(){
 }
 
 
-    //********************************************************************************************************************
-    //
-    //               CCC     OOO    N   N   FFFFF   III    GGG    CCC   BBBB
-    //              C   C   O   O   NN  N   F        I    G      C   C  B   B
-    //              C       O   O   N N N   FFF      I    G  GG  C      BBBB
-    //              C   C   O   O   N  NN   F        I    G   G  C   C  B   B
-    //               CCC     OOO    N   N   F       III    GGG    CCC   B BBB
-    //
-    //********************************************************************************************************************
-    bool influxDB_v1_uploader::configCB(JsonObject& config){
-        trace(T_influx1, 101);
-        delete[] _database;
-        _database = charstar(config.get<char*>("database"));
-        delete[] _user;
-        _user = charstar(config.get<const char*>("user"));
-        delete[] _pwd;
-        _pwd = charstar(config.get<char *>("pwd"));
-        delete _retention;
-        _retention = charstar(config.get<const char*>("retp"));
-        
-        trace(T_influx1, 101);
-        delete[] _measurement;
-        _measurement = charstar(config.get<const char *>("measurement"));
-        if (!_measurement)
-        {
-            _measurement = charstar("$name");
-        }
-        trace(T_influx1, 102);
-        delete[] _fieldKey;
-        _fieldKey = charstar(config.get<const char *>("fieldkey"));
-        if (!_fieldKey)
-        {
-            _fieldKey = charstar("value");
-        }
-        trace(T_influx1, 102);
-        _stop = config.get<bool>("stop");
-
-        // Build tagSet
-
-        trace(T_influx1, 103);
-        delete _tagSet;
-        _tagSet = nullptr;
-        JsonArray &tagset = config["tagset"];
-        _staticKeySet = true;
-        if (tagset.success())
-        {
-            trace(T_influx1, 103);
-            for (int i = tagset.size(); i > 0;)
-            {
-                i--;
-                influxTag *tag = new influxTag;
-                tag->next = _tagSet;
-                _tagSet = tag;
-                tag->key = charstar(tagset[i]["key"].as<const char *>());
-                tag->value = charstar(tagset[i]["value"].as<const char *>());
-                if ((strstr(tag->value, "$units") != nullptr) || (strstr(tag->value, "$name") != nullptr))
-                    _staticKeySet = false;
-            }
-        }
+//********************************************************************************************************************
+//
+//               CCC     OOO    N   N   FFFFF   III    GGG    CCC   BBBB
+//              C   C   O   O   NN  N   F        I    G      C   C  B   B
+//              C       O   O   N N N   FFF      I    G  GG  C      BBBB
+//              C   C   O   O   N  NN   F        I    G   G  C   C  B   B
+//               CCC     OOO    N   N   F       III    GGG    CCC   B BBB
+//
+//********************************************************************************************************************
+bool influxDB_v1_uploader::configCB(JsonObject& config){
+    trace(T_influx1, 101);
+    delete[] _database;
+    _database = charstar(config.get<char*>("database"));
+    delete[] _user;
+    _user = charstar(config.get<const char*>("user"));
+    delete[] _pwd;
+    _pwd = charstar(config.get<char *>("pwd"));
+    delete _retention;
+    _retention = charstar(config.get<const char*>("retp"));
     
-        // Build the measurement scriptset
-
-    trace(T_influx1,104);
-    delete _outputs;
-    _outputs = nullptr;
-    JsonVariant var = config["outputs"];
-    if(var.success()){
-        trace(T_influx1,105);
-        _outputs = new ScriptSet(var.as<JsonArray>());
+    trace(T_influx1, 101);
+    delete[] _measurement;
+    _measurement = charstar(config.get<const char *>("measurement"));
+    if (!_measurement)
+    {
+        _measurement = charstar("$name");
     }
-    else {
-        log("%s: No measurements.", _id);
-        return false;
+    trace(T_influx1, 102);
+    delete[] _fieldKey;
+    _fieldKey = charstar(config.get<const char *>("fieldkey"));
+    if (!_fieldKey)
+    {
+        _fieldKey = charstar("value");
+    }
+    _stop = config.get<bool>("stop");
+
+    // Build tagSet
+
+    trace(T_influx1, 103);
+    delete _tagSet;
+    _tagSet = nullptr;
+    JsonArray &tagset = config["tagset"];
+    _staticKeySet = true;
+    if (tagset.success())
+    {
+        trace(T_influx1, 103);
+        for (int i = tagset.size(); i > 0;)
+        {
+            i--;
+            influxTag *tag = new influxTag;
+            tag->next = _tagSet;
+            _tagSet = tag;
+            tag->key = charstar(tagset[i]["key"].as<const char *>());
+            tag->value = charstar(tagset[i]["value"].as<const char *>());
+            if ((strstr(tag->value, "$units") != nullptr) || (strstr(tag->value, "$name") != nullptr))
+                _staticKeySet = false;
+        }
     }
 
             // sort the measurements by measurement name
