@@ -138,7 +138,8 @@ boolean getConfig(const char* configPath){
     if(EmonArray.success()){
       EmonStr = JsonDetail(ConfigFile, EmonArray);
     } else // Accept old format ~ 02_03_17
-    {      
+    {
+      trace(T_CONFIG,31);      
       JsonArray& serverArray = Config["server"];
       if(serverArray.success()){
         EmonStr = JsonDetail(ConfigFile, serverArray);
@@ -146,11 +147,14 @@ boolean getConfig(const char* configPath){
     }
     trace(T_CONFIG,30);
     if(EmonStr){
+      trace(T_CONFIG,31);   
       if(! Emoncms){
+        trace(T_CONFIG,32);   
         Emoncms = new emoncms_uploader;
       }
-      trace(T_CONFIG,30);
+      trace(T_CONFIG,31);
       if( ! Emoncms->config(EmonStr)){
+        trace(T_CONFIG,32);   
         log("Emoncms: Invalid configuration.");
         Emoncms->end();
         Emoncms = nullptr;
@@ -158,7 +162,9 @@ boolean getConfig(const char* configPath){
       delete[] EmonStr;
     }   
     else if(Emoncms){
+      trace(T_CONFIG,33);   
       Emoncms->end();
+      Emoncms = nullptr;
     }
   }
 
@@ -181,6 +187,7 @@ boolean getConfig(const char* configPath){
     }   
     else if(influxDB_v1){
       influxDB_v1->end();
+      influxDB_v1 = nullptr;
     }
   }
 
@@ -203,6 +210,7 @@ boolean getConfig(const char* configPath){
     }   
     else if(influxDB_v2){
       influxDB_v2->end();
+      influxDB_v2 = nullptr;
     }
   }
       // ************************************** configure PVoutput **********************************

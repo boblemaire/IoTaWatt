@@ -5,7 +5,7 @@
 
 class splitstr {
     public:
-        splitstr(const char *line, const char sepchar = ',' , const char endchar = '\n');
+        splitstr(const char *line, const char sepchar = ',' , const char endchar = 0);
         ~splitstr();
         int length();
         char *operator[] (int ndx);

@@ -14,7 +14,10 @@ class emoncms_uploader : public uploader
     public:
         emoncms_uploader() :_node(0),
                             _userID(0),
+                            _sha256(0),
+                            _base64Sha(0),
                             _revision(0),
+                            _encrypt(false),
                             _encrypted(false)
         {
             _id = charstar("emoncms");
@@ -31,8 +34,11 @@ class emoncms_uploader : public uploader
     protected:
         char *_node;
         char *_userID;
+        uint8_t *_sha256;
+        char *_base64Sha;
         uint8_t _cryptoKey[16];
         int _revision;
+        bool _encrypt;
         bool _encrypted;
 
         void     queryLast();

@@ -68,6 +68,9 @@ uint32_t influxDB_v1_uploader::handle_checkQuery_s(){
         }
         trace(T_influx1,31);
         _statusMessage = charstar(message);
+        if(_stop){
+            stop();
+        }
         return 1;
     }
 

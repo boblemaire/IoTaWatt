@@ -18,7 +18,7 @@ class uploader
                     _request(0),
                     _interval(0),
                     _bulkSend(1),
-                    _revision(0),
+                    _revision(-1),
                     _uploadStartDate(0),
                     _lastSent(0),
                     _lastPost(0),
@@ -84,7 +84,7 @@ class uploader
 
         int16_t _interval;
         int16_t _bulkSend;
-        uint32_t _revision;
+        int32_t _revision;
         uint32_t _delayResumeTime;
         states _delayResumeState;
         uint32_t _uploadStartDate;

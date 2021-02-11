@@ -101,7 +101,7 @@ uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
 
     String response = _request->responseText();
     trace(T_influx2,30);
-    splitstr headline(response.c_str());
+    splitstr headline(response.c_str(), ',', '\n');
     trace(T_influx2,32);
 
     // If no second line, query again.
@@ -117,7 +117,7 @@ uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
     // Have second line, parse that
 
     trace(T_influx2,34);
-    splitstr dataline(datapos + 1);
+    splitstr dataline(datapos + 1, ',', '\n');
     trace(T_influx2,34);
     if(dataline.length() == 0 || dataline.length() != headline.length()){
         _state = query_s;

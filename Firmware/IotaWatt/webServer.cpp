@@ -603,7 +603,7 @@ void handleStatus(){
       trace(T_WEB,23);
       JsonObject& status = jsonBuffer.createObject();
       if(!pvoutput){
-        status.set(F("state"),"stopped");
+        status.set(F("state"),"not running");
       } else {
         pvoutput->getStatusJson(status);
       }

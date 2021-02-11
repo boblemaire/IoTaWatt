@@ -1,4 +1,5 @@
 #include "IotaWatt.h"
+#include "splitstr.h"
 
 
 String formatHex(uint32_t data);
@@ -17,7 +18,7 @@ void setup()
   delay(250);
   //Serial.println(F("\r\n\n\n** Restart **\r\n\n"));
   //Serial.println(F("Serial Initialized"));
-  
+
   //*************************************** Start SPI *************************************************
 
   pinMode(pin_CS_ADC0, OUTPUT);                // Make sure all the CS pins are HIGH
@@ -49,10 +50,7 @@ void setup()
   }
   hasSD = true;
   log("SD initialized.");
-  Serial.printf("UPLOAD_FILE_START = %d\n", UPLOAD_FILE_START);
-  Serial.printf("UPLOAD_FILE_WRITE = %d\n", UPLOAD_FILE_WRITE);
-  Serial.printf("UPLOAD_FILE_END = %d\n", UPLOAD_FILE_END);
-
+  
   //*************************************** Check RTC   *****************************
 
   Wire.begin(pin_I2C_SDA, pin_I2C_SCL);
