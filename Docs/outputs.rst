@@ -3,7 +3,7 @@ Outputs
 =======
 
 Outputs provide useful values that are computed from 
-input channel values using a calculator like interface. 
+input channel values using a calculator like interface.
 For instance, in a typical US installation, there are two MAIN circuits, 
 the sum of the two is the total power into a panel.  
 Its nice to know at a glance what that total is, 
@@ -43,8 +43,9 @@ It works just like the simple four function calculators we are all used to,
 and using the |input| key, you can select 
 input channel values to be used in the formula that you are creating. 
 The resulting expression is evaluated left to right, 
-with calculations within parenthesis evaluated before being used.
-
+with calculations within parenthesis evaluated before being used. This means that it is essential for more complicated outputs that you use parenthesis to explicitly tell IotaWatt how it should do it's calculation. Working strictly left to right the two calculations below give different results.
+    *   8 - 2 x 3 = 18
+    *   8 - (2 x 3) = 8 - 6 = 2
 
 So lets make an output channel that combines two main inputs called *main_1* 
 and *main_2*. We enter the name total_power in the **Name:** box and hover 
@@ -57,7 +58,7 @@ over the |input| button of the calculator to see a list of the inputs.
 
 Select main_1 from the list and it will appear in the 
 calculator formula display.
-Next click on the |plusKey|, then repeat the input process selecting Main_2.
+Next click on the |plusKey|, then repeat the input process selecting Main_2. Our example is unambiguous and so doesn't need parenthesis.
 
 
 .. image:: pics/totalPowerOutput.png
@@ -75,7 +76,7 @@ Your new output should appear within a second or two.
 
 Now go back to the Channels Status screen and see that the new output channel 
 is listed and indeed has a value that is the sum of the 
-two inputs *main_1* and *main_2*.
+two inputs *main_1* and *main_2*. 
 
 .. image:: pics/outputsStatus.png
     :scale: 60 %
@@ -102,6 +103,9 @@ Some other useful outputs would be:
     :align: center
     :alt: misc output
 
+Note the use of parenthesis in the calculation of 'misc' to ensure that the sum of the measured usage is subtracted from the total consumption.
+
+
 Functions - MAX and MIN
 -----------------------
 
@@ -109,24 +113,19 @@ MAX and MIN are binary operators and are used to yield the greater or lesser of 
 
 They work differently from traditional spreadsheet functions (which provide upper and lower limits). 
 
-In IotaWatt A MAX B reports the Maximum of A and B. Similarly A MIN B reports the Minimum of A and B. For example:
+In IotaWatt A MAX B reports the Maximum of A and B. In mathematical terms MAX(A,B) would be another way of writing it. Similarly A MIN B reports the Minimum of A and B. For example:
 
-    *   Fred MAX 50 will compare 'Fred' to 50 and will return the value of 'Fred' if it is Greater than 50, or 50 if 'Fred' is less than 50.
+    *   8 MAX 3 will compare 8 to 3 and returns 3
+    *   Fred MAX 3 returns the value of 'Fred' if it is Greater than 3
 
     *   Fred MIN 0 reports the lower of the 'Fred' and Zero.
  
-MAX and MIN are extremly useful if you have a Solar System and could import electricity at night and export it at peak sunshine.
+A practical example of when you could use MAX and MIN is if you have a Solar System and are importing electricity at night and potentially exporting it at peak sunshine. Assuming you have a CT on the Supplier's Incoming Cable called 'MAIN', disabling auto-reverse means that both positive and negative flows will be captured by IotaWatt. Assuming that +ve flows are input and -ve flows are exports then:
 
-*Example:*
-
-    *   Connect a CT to the Supplier's Incoming Cable
-    *   Define an input, call it 'MAIN'
-    *   Disable auto-reverse on the input (this will mean that the both Negative and Positive Flows will be reported)
-    *   Check that the CT is reporting positive when electricity is being imported and negative when electricity is being exported (if incorrect either physically re-orientate the CT or select the 'reverse' option on the input).
     *   Defining an output 'Imported' as MAIN MAX 0 will report the imported electricity (since anything positive is >0)
     *   Defining the output 'Exported' as MAIN MIN 0 will report the exported electricity (anything negative is <0)
     
-    If you want your exported electricity to be reported as a positive number then use the ABS function (or multiply by -1)
+    If you want your exported electricity to be reported as a positive number then use the ABS function. 
 
 
 
