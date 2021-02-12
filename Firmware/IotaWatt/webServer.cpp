@@ -655,7 +655,7 @@ void handleStatus(){
     }
     root.printTo(response);
   }
-  server.send(200, txtJson_P, response);
+  server.send(200, appJson_P, response);
 }
 
 void handleVcal(){
