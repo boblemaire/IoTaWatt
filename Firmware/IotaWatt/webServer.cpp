@@ -612,21 +612,45 @@ void handleStatus(){
 
     if(server.hasArg(F("datalogs"))){
       trace(T_WEB,17);
-      JsonObject& datalogs = jsonBuffer.createObject();
+      JsonArray& datalogs = jsonBuffer.createArray();
+
       JsonObject& currlog = jsonBuffer.createObject();
+      currlog.set(F("id"), "Current");
       currlog.set(F("firstkey"),Current_log.firstKey());
       currlog.set(F("lastkey"),Current_log.lastKey());
       currlog.set(F("size"),Current_log.fileSize());
       currlog.set(F("interval"),Current_log.interval());
       //currlog.set("wrap",Current_log._wrap ? true : false);
-      datalogs.set(F("currlog"),currlog);
+      datalogs.add(currlog);
+
       JsonObject& histlog = jsonBuffer.createObject();
+      histlog.set(F("id"), "History");
       histlog.set(F("firstkey"),History_log.firstKey());
       histlog.set(F("lastkey"),History_log.lastKey());
       histlog.set(F("size"),History_log.fileSize());
       histlog.set(F("interval"),History_log.interval());
-      //histlog.set("wrap",History_log._wrap ? true : false);
-      datalogs.set(F("histlog"),histlog);
+      datalogs.add(histlog);
+
+      trace(T_WEB,17);
+      if(integrators){
+        trace(T_WEB,17,1);
+        Script *script = integrators->first();
+        while(script){
+          trace(T_WEB,17,2);
+          integrator *_integrator = (integrator *)script->getParm();
+          IotaLog *_log = _integrator->get_log();
+          if(_log){
+            JsonObject& importlog = jsonBuffer.createObject();
+            importlog.set(F("id"), _integrator->name());
+            importlog.set(F("firstkey"),_log->firstKey());
+            importlog.set(F("lastkey"),_log->lastKey());
+            importlog.set(F("size"),_log->fileSize());
+            importlog.set(F("interval"),_log->interval());
+            datalogs.add(importlog);
+          }
+          script = script->next();
+        }
+      }
       root.set(F("datalogs"),datalogs);
     }
 
