@@ -40,7 +40,8 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         // If iotaLog not open or empty, check back later.
 
       if( ! Current_log.isOpen() || (Current_log.lastKey() - Current_log.firstKey()) < History_log.interval()){
-         return UTCtime() + History_log.interval(); 
+        return UTCtime() + 5;
+         //History_log.interval();
       }
 
       log("historyLog: service started."); 
