@@ -212,6 +212,9 @@ String  JsonSummary(File file, int depth){
             }
         }
         if(level < depth) JsonOut.print(_char);
+        if(level < 0){
+            break;
+        }
     }
     return JsonOut.readString();
 }
