@@ -341,6 +341,7 @@
       
       <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
         <div id="statusLogsDiv" class="statusDiv" style="display: none;"></div>
+        <table id="statusLogsTable"></table>
     </div> <!-- divStatus -->
   
         <!-- ************************************************************************************************************************
@@ -482,6 +483,7 @@ var msgsFileURL = "/iotawatt/iotamsgs.txt?textpos=-10000";
 var currentBody = [];
 var configSHA256;
 var noConfig = true;
+var emoncmsAlias = "server";        // Json object where Emoncms config is found (will be deprecated in future release)
 
 var config;                         // configuration as Js Object
 var serverConfig;
@@ -1806,7 +1808,7 @@ function buildWebServer(){
     option.text = servers[i];
     option.value = servers[i];
     if(servers[i].toLowerCase() == "emoncms"){
-      option.text += (config.server.type.toLowerCase() == "emoncms") ? " (edit)" : " (add)";
+      option.text += (config[emoncmsAlias] !== undefined) ? " (edit)" : " (add)";
     }
     if(servers[i].toLowerCase() == "influxdb_v1"){
       option.text += (config.influxdb !== undefined) ? " (edit)" : " (add)";
@@ -1900,8 +1902,8 @@ function editEmoncms(){
   var serverTable = EbyId("serverTable");
   serverTable.innerHTML = "";
   
-  if(config.server.type.toLowerCase() != "emoncms"){
-    config.server =  {type:"emoncms",
+  if(config[emoncmsAlias] == undefined){
+    config[emoncmsAlias] =  {type:"emoncms",
                       revision:0,
                       node:config.device.name,
                       postInterval:10,
@@ -1915,42 +1917,42 @@ function editEmoncms(){
     EbyId("serverHead").innerHTML = "Add Emoncms Service";
   }
   else {
-    config.server.revision++;
+    config[emoncmsAlias].revision++;
     EbyId("serverHead").innerHTML = "Edit Emoncms Service";
     EbyId("serverDelete").style.display = "inline";
     EbyId("serverDelete").setAttribute("onclick","deleteEmoncms();");
   }
 
-  if(config.server.username !== undefined){
-    config.server.userid = config.server.username;
-    config.server.username = undefined;
+  if(config[emoncmsAlias].username !== undefined){
+    config[emoncmsAlias].userid = config[emoncmsAlias].username;
+    config[emoncmsAlias].username = undefined;
   }
   
-  if(config.server.outputs === undefined){
-    config.server.outputs = [];
+  if(config[emoncmsAlias].outputs === undefined){
+    config[emoncmsAlias].outputs = [];
     for(var i=0; i<config.device.channels; i++){
-      config.server.outputs.push({name:i+1, script:"@"+i});
+      config[emoncmsAlias].outputs.push({name:i+1, script:"@"+i});
     }
   }
   
   var nodeInput = addTableRow(serverTable, "Node:", "serverNode", "input", 8);
-  nodeInput.value = config.server.node;
-  nodeInput.setAttribute("onchange","config.server.node = this.value; checkEmoncms();")
+  nodeInput.value = config[emoncmsAlias].node;
+  nodeInput.setAttribute("onchange","config[emoncmsAlias].node = this.value; checkEmoncms();")
   nodeInput.style = "width: 80px;";
   
   var postInput =   addTableRow(serverTable, "post interval(sec): ", "serverPost", "input", 3);
-  postInput.value = Number(config.server.postInterval);
-  postInput.setAttribute("onchange","config.server.postInterval = Number(this.value); checkEmoncms();");
+  postInput.value = Number(config[emoncmsAlias].postInterval);
+  postInput.setAttribute("onchange","config[emoncmsAlias].postInterval = Number(this.value); checkEmoncms();");
   postInput.setAttribute("style","width: 40px;");
   postInput.type = "number";
   postInput.min = 5;
   postInput.max = 3600;
   postInput.step = 5;
   
-  if(isNaN(config.server.bulksend)) config.server.bulksend = 1;
+  if(isNaN(config[emoncmsAlias].bulksend)) config[emoncmsAlias].bulksend = 1;
   var bulksendInput = addTableRow(serverTable, "bulk send:", "serverBulk", "input", 3);
-  bulksendInput.value = Number(config.server.bulksend);
-  bulksendInput.setAttribute("onchange","config.server.bulksend = Number(this.value); checkEmoncms();");
+  bulksendInput.value = Number(config[emoncmsAlias].bulksend);
+  bulksendInput.setAttribute("onchange","config[emoncmsAlias].bulksend = Number(this.value); checkEmoncms();");
   bulksendInput.style = "width: 40px;";
   bulksendInput.type = "number";
   bulksendInput.min = 1;
@@ -1960,27 +1962,27 @@ function editEmoncms(){
   
   var begdateInput = addTableRow(serverTable, "upload history from:", "serverBegd", "input", 16);
   begdateInput.setAttribute("oninput",
-    "config.server.begdate = new Date(this.value).getTime()/1000 - config.timezone*3600; checkEmoncms();");
-  begdateInput.value =  toInputDate(config.server.begdate + config.timezone*3600);
+    "config[emoncmsAlias].begdate = new Date(this.value).getTime()/1000 - config.timezone*3600; checkEmoncms();");
+  begdateInput.value =  toInputDate(config[emoncmsAlias].begdate + config.timezone*3600);
   begdateInput.type = "date";
   
   var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 32);
-  urlInput.value = config.server.url
-  urlInput.setAttribute("onchange","config.server.url = this.value; checkEmoncms();");
+  urlInput.value = config[emoncmsAlias].url
+  urlInput.setAttribute("onchange","config[emoncmsAlias].url = this.value; checkEmoncms();");
   urlInput.type = "url";
   
   var keyInput = addTableRow(serverTable, "api key:", "serverKey", "input", 32);
-  keyInput.value = config.server.apikey;
-  keyInput.setAttribute("onchange","config.server.apikey = this.value; checkEmoncms();");
+  keyInput.value = config[emoncmsAlias].apikey;
+  keyInput.setAttribute("onchange","config[emoncmsAlias].apikey = this.value; checkEmoncms();");
   keyInput.size = 32;
   keyInput.pattern = "[0-9a-f]{32}";
   keyInput.title = "read/write key - 32 hexadecimal digits";
   
   addTableText(serverTable,"","Specifying userid triggers secure encrypted protocol.")
   var keyInput = addTableRow(serverTable, "Emoncms userid", "serverUser", "input", 10);
-  if(config.server.userid === undefined) config.server.userid = "";
-  keyInput.value = config.server.userid;
-  keyInput.setAttribute("onchange","config.server.userid = this.value; checkEmoncms();");
+  if(config[emoncmsAlias].userid === undefined) config[emoncmsAlias].userid = "";
+  keyInput.value = config[emoncmsAlias].userid;
+  keyInput.setAttribute("onchange","config[emoncmsAlias].userid = this.value; checkEmoncms();");
   keyInput.setAttribute("size","16");
   keyInput.pattern = "[0-9]*";
   keyInput.title = "In upper-left corner of Emoncms My Account";
@@ -1990,7 +1992,7 @@ function editEmoncms(){
   
   scriptEditSave = function(){
     scriptEditSet.sort(function(a, b){return a.name - b.name});
-    config.server.outputs = scriptEditSet;
+    config[emoncmsAlias].outputs = scriptEditSet;
   };
   scriptEditReturn = function(){
     scriptEditTable.innerHTML = "";
@@ -1998,7 +2000,7 @@ function editEmoncms(){
     checkEmoncms();
   };
   scriptEditTable = EbyId("serverOutputs");
-  scriptEditSet = config.server.outputs;
+  scriptEditSet = config[emoncmsAlias].outputs;
   scriptEditUnits = scriptEditUnitsUpload;
   scriptEditNameList = [];
   scriptEditUniqueNames = true;
@@ -2016,12 +2018,12 @@ function checkEmoncms(){
                  validateInput("serverKey") &&
                  validateInput("serverUser") &&
                  validateInput("serverBegd") &&
-                 (config.server.apikey != "");
+                 (config[emoncmsAlias].apikey != "");
   EbyId("serverSave").style.display = complete ? "inline" : "none";
 }
 
 function deleteEmoncms(){
-  config.server = {type: "none"};
+  config[emoncmsAlias] = undefined;
   serverSave();
 }
 
@@ -2039,18 +2041,6 @@ function validateInput(id, required=false, msg=undefined){
     return false;
   }
   return true;
-}
-
-function emonToggle(){
-  if(config.server.stop !== undefined){
-    config.server.stop = ! config.server.stop;
-  }
-  else {
-    config.server.stop = true;
-    
-  }
-  config.server.revision++;
-  uploadConfig();
 }
 
 /***********************************************************************************************
@@ -2498,7 +2488,7 @@ function statusBegin(){
   EbyId("tabinflux1").style.display = config.influxdb !== undefined ? "inline" : "none";
   EbyId("tabinflux2").style.display = config.influxdb2 !== undefined ? "inline" : "none";
   EbyId("tabPVout").style.display = config.pvoutput !== undefined ? "inline" : "none";
-  EbyId("tabEmoncms").style.display = (config.emoncms !== undefined || config.server !== undefined) ? "inline" : "none";
+  EbyId("tabEmoncms").style.display = (config[emoncmsAlias] !== undefined) ? "inline" : "none";
   currentBodyPush("divStatus");
   getStatus = true;
   statusGet();
@@ -2549,15 +2539,30 @@ function statusDisplay(statusMessage){
   }
   
   if(status.datalogs !== undefined){
-    var logs = EbyId("statusLogsDiv");
-    logs.innerHTML = null;
-    logs.appendChild(document.createTextNode("Current Log from: " + formatDateTime(status.datalogs.currlog.firstkey) + " to: " + formatDateTime(status.datalogs.currlog.lastkey)));
-    logs.appendChild(document.createElement("br"));
-    logs.appendChild(document.createTextNode("History Log from: " + formatDateTime(status.datalogs.histlog.firstkey) + " to: " + formatDateTime(status.datalogs.histlog.lastkey)));
+    var logtab = EbyId("statusLogsTable");
+    logtab.innerHTML = null;
+    for(i in status.datalogs){
+      var units = ["", "KB", "MB", "GB"];
+      var size = status.datalogs[i].size;
+      var u = 0;
+      while(size > 1024){
+        size /=1024;
+        u++;
+      }
+      logtab.innerHTML += "<tr><td>" + status.datalogs[i].id + " Log:</td>" +
+                         "<td>" + fixedDateTime(status.datalogs[i].firstkey) + " - " +
+                         fixedDateTime(status.datalogs[i].lastkey) + "</td>" +
+                         "<td>" + size.toFixed(u ? 1 : 0) + units[u] + "</td></tr>";
+      // logs.appendChild(document.createTextNode(status.datalogs[i].id + " Log: " + fixedDateTime(status.datalogs[i].firstkey) 
+      //               + " - " + fixedDateTime(status.datalogs[i].lastkey) + " " + size.toFixed(u ? 1 : 0) + units[u]));
+      // logs.appendChild(document.createElement("br"));
+    }
   }
+    
   
   var influx1Div = EbyId("statusInflux1Div");
-  if(status.influx1 !== undefined){
+  if(status.influx1 !== undefined && status.influx1.state != "not running"){
+    show("tabinflux1");
     var button = EbyId("influx1Button");
     button.disabled = false;
     if(status.influx1.status == "running"){
@@ -2574,9 +2579,13 @@ function statusDisplay(statusMessage){
       EbyId("influx1msg").innerHTML = "<br>" + status.influx1.message;
     }
   } 
+  else {
+    hide("tabinflux1");
+  }
   
   var influx2Div = EbyId("statusInflux2Div");
-  if(status.influx2 !== undefined){
+  if(status.influx2 !== undefined && status.influx2.state != "not running"){
+    show("tabinflux2");
     var button = EbyId("influx2Button");
     button.disabled = false;
     if(status.influx2.status == "running"){
@@ -2592,10 +2601,14 @@ function statusDisplay(statusMessage){
     if(status.influx2.message){
       EbyId("influx2msg").innerHTML = "<br>" + status.influx2.message;
     }
-  } 
+  }
+  else {
+    hide("tabinflux2");
+  }
   
   var EmoncmsDiv = EbyId("statusEmoncmsDiv");
-  if(status.emoncms !== undefined){
+  if(status.emoncms !== undefined && status.emoncms.state != "not running"){
+    show("tabEmoncms");
     var button = EbyId("EmoncmsButton");
     button.disabled = false;
     if(status.emoncms.status == "running"){
@@ -2611,11 +2624,14 @@ function statusDisplay(statusMessage){
     if(status.emoncms.message){
       EbyId("Emoncmsmsg").innerHTML = "<br>" + status.emoncms.message;
     }
-  } 
+  }
+  else {
+    hide("tabEmoncms");
+  }
   
   var PVoutDiv = EbyId("statusPVoutDiv");
   PVoutDiv.innerHTML = "";
-  if(status.pvoutput !== undefined){
+  if(status.pvoutput !== undefined && status.pvoutput.state != "not running"){
     var button = document.createElement("button");
     button.style = "configButton";
     button.innerHTML = status.pvoutput.running ? "Stop" : "Start";
@@ -2719,6 +2735,17 @@ function formatDateTime(unixtime){
   return date.toLocaleDateString() + " " + date.toLocaleTimeString();
 }
 
+function fixedDateTime(unixtime){
+  if(unixtime == 0) return ""; 
+  var date = new Date(unixtime*1000);
+  return twoDigit(date.getMonth()+1) + "/" + twoDigit(date.getDate()) + "/" + date.getFullYear() + " "
+          + twoDigit(date.getHours()%12) + ":" +   twoDigit(date.getMinutes()) + ":" + twoDigit(date.getSeconds()) + (date.getHours() < 12 ? " am" : " pm"); 
+}
+
+function twoDigit(i){
+  return ((i < 10) ? "0" : "") + i.toFixed(0); 
+}
+  
 function checkConfig(){
   readFile(burdenFileURL, function(response){
     config.device.burden = JSON.parse(response);
@@ -2765,9 +2792,8 @@ function checkConfig(){
     config.format == 2;
   }
   
-  if(config.server === undefined || config.server.type === undefined){
-    config.server = {type: "none"};
-  }
+  emoncmsAlias = (config.emoncms == undefined) ? "server" : "emoncms";
+  EbyId("EmoncmsButton").value = emoncmsAlias;
 }
 
 function old2newScript(oldScript){
@@ -2856,6 +2882,14 @@ function toggleDisplay(id){
   if(! editing){
     element.style.display = element.style.display == "none" ? "block" : "none";
   }
+}
+
+function show(elementID){
+  EbyId(elementID).style.display = "inline";
+}
+
+function hide(elementID){
+  EbyId(elementID).style.display = "none";
 }
 
 /**********************************************************************************************
