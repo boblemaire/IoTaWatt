@@ -111,8 +111,8 @@ void returnOK() {
   server.send(200, txtPlain_P, "");
 }
 
-void returnFail(String msg) {
-  server.send(500, txtPlain_P, msg + "\r\n");
+void returnFail(String msg, int HTTPcode) {
+  server.send(HTTPcode, txtPlain_P, msg + "\r\n");
 }
 
 bool loadFromSdCard(String path){
@@ -204,17 +204,23 @@ void handleFileUpload(){
   static File uploadFile;
   HTTPUpload& upload = server.upload();
   trace(T_WEB, 11, upload.status);
-  if(server.uri() != "/edit") return;
-  if( ! upload.filename.startsWith("/")){
-    upload.filename = String('/') + upload.filename;
-  }
-  upload.filename.toLowerCase();
   if(upload.filename.startsWith(F("/esp_spiffs/"))){
     handleSpiffsUpload();
+    return;
   }
+  
   if(upload.status == UPLOAD_FILE_START){
+    if(server.uri() != "/edit") return;
+    upload.filename.toLowerCase();
+    if(upload.filename.startsWith("/")){
+      upload.filename.remove(0, 1);
+    }
     if( ! authenticate(authAdmin)) return;
-      if(upload.filename.equals(F("/config.txt"))){
+    if(upload.filename.equals(F(IOTA_CONFIG_PATH))){
+      returnFail("Protected", 403);
+      return;
+    }
+    if(upload.filename.equals(F(IOTA_CONFIG_NEW_PATH))){
       if(server.hasHeader(F("X-configSHA256"))){
         if(server.header(F("X-configSHA256")) != base64encode(configSHA256, 32)){
           server.send(409, txtPlain_P, F("Config not current"));
@@ -226,15 +232,17 @@ void handleFileUpload(){
     if(uploadFile = SD.open(upload.filename.c_str(), FILE_WRITE)){
       DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
     }
-
-  } else if(upload.status == UPLOAD_FILE_WRITE){
+  } 
+  
+  else if(upload.status == UPLOAD_FILE_WRITE){
     if(uploadFile) {
       uploadFile.write(upload.buf, upload.currentSize);
     }
-    
-  } else if(upload.status == UPLOAD_FILE_END){
+  } 
+  
+  else if(upload.status == UPLOAD_FILE_END){
     if(uploadFile){
-      if(upload.filename.equals("/config.txt")){
+      if(upload.filename.equals(F(IOTA_CONFIG_NEW_PATH))){
         hashFile(configSHA256, uploadFile);
         server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
       }
@@ -254,10 +262,10 @@ void handleSpiffsUpload(){
   trace(T_WEB,11);
   HTTPUpload& upload = server.upload();
   if(upload.status == UPLOAD_FILE_START){
-
     if( ! authenticate(authAdmin)) return;
-      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
-      spiffsWrite(upload.filename.substring(11).c_str(), "", 0);        // Create a null file
+    upload.filename.toLowerCase();
+    DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
+    spiffsWrite(upload.filename.substring(11).c_str(), "", 0);        // Create a null file
 
   } else if(upload.status == UPLOAD_FILE_WRITE){
       spiffsWrite(upload.filename.substring(11).c_str(), upload.buf, upload.currentSize, true);   // append to the file (true)
@@ -304,13 +312,13 @@ void handleDelete(){
     return;
   } 
     if(path == "/" || !SD.exists((char *)path.c_str())) {
-    returnFail("BAD PATH");
+    returnFail("BAD PATH", 400);
     return;
   }
   if(path == F("/config.txt") ||
      path.equals(IOTA_CURRENT_LOG_PATH) ||
      path.equals(IOTA_HISTORY_LOG_PATH)){
-    returnFail("Restricted File");
+    returnFail("Restricted File", 403);
     return;
   }
   deleteRecursive(path);
@@ -330,7 +338,7 @@ void handleCreate(){
   } 
 
   if(path == "/" || SD.exists((char *)path.c_str())) {
-    returnFail("BAD PATH");
+    returnFail("BAD PATH", 400);
     return;
   }
 

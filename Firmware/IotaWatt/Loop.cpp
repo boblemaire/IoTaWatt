@@ -40,20 +40,24 @@ void loop()
   if(serverAvailable){
     server.handleClient();
     trace(T_LOOP,3);
-    if(getNewConfig){
-      trace(T_LOOP,4);
-      getNewConfig = false;
-      if(getConfig("config.txt")){
-        trace(T_LOOP,4);
-        copyFile("/esp_spiffs/config.txt", "config.txt");
-      }
-      else {
-
-      }
-    }
     yield();
   }
+
+  // Config is updated asynchronously in web-server ISRs.
+  // Upon closing an updated config file, getNewConfig is set.
+  // Process that config here.
   
+  if(getNewConfig){
+    trace(T_LOOP,4);
+    getNewConfig = false;
+    if(updateConfig("config+1.txt")){
+      trace(T_LOOP,4);
+      copyFile("/esp_spiffs/config.txt", "config.txt");
+    }
+    else {
+
+    }
+  }
 
 // ---------- If the head of the service queue is dispatchable
 //            call the SERVICE.

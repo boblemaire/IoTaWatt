@@ -14,7 +14,7 @@ void handleRequest();
 bool authenticate(authLevel);
 bool serverOn(authLevel level, const __FlashStringHelper* uri, HTTPMethod method, genericHandler fn);
 void returnOK();
-void returnFail(String msg);
+void returnFail(String msg, int code=500);
 bool loadFromSdCard(String path);
 bool loadFromSpiffs(String path, String dataType);
 void handleFileUpload();

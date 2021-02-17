@@ -100,6 +100,9 @@ extern messageLog Message_log;
 #define IOTA_CURRENT_LOG_PATH "iotawatt/iotalog.log"
 #define IOTA_HISTORY_LOG_PATH "iotawatt/histlog.log"
 #define IOTA_MESSAGE_LOG_PATH "iotawatt/iotamsgs.txt"
+#define IOTA_CONFIG_PATH      "config.txt"
+#define IOTA_CONFIG_NEW_PATH  "config+1.txt"
+#define IOTA_CONFIG_OLD_PATH  "config-1.txt"
 
 extern char* deviceName;
 
@@ -368,7 +371,9 @@ void      setLedState();
 void      dropDead(void);
 void      dropDead(const char*);
 
-boolean   getConfig(const char* configPath);
+bool      setConfig(const char* configPath);
+bool      updateConfig(const char *configPath);
+bool      recoverConfig();
 
 size_t    sendChunk(char* buf, size_t bufPos);
 

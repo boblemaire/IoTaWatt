@@ -13,10 +13,60 @@ void hashFile(uint8_t* sha, File file);
 bool exportLogConfig(const char *configObj);
 bool configIntegrations(const char *);
 
-// Handy diagnostic macro to investigate heap requirements.
-//#define heap(where) Serial.print(#where); Serial.print(' '); Serial.println(ESP.getFreeHeap());
+//************************************************************************************************
+//
+// updateConfig(const char *newConfig)
+//
+// This procedure attempts to preserve the integrity of the config file by testing the new config
+// and regressing if it fails.
+//
+// setConfig is called with the newConfig.
+// if it fails,
+//   setconfig is called with the pre-existing config and return false;
+// if it succeeds,
+//   The pre-existing config is renamed to //config-1.txt
+//   The newConfig is renamed to config.txt
+//   return trus  
 
-boolean getConfig(const char* configPath){
+
+bool updateConfig(const char *newConfig){
+  if(setConfig(newConfig)){
+    if(SD.exists(F(IOTA_CONFIG_OLD_PATH))){
+      SD.remove(F(IOTA_CONFIG_OLD_PATH));
+    }
+    SDFS.rename(F(IOTA_CONFIG_PATH), F(IOTA_CONFIG_OLD_PATH));
+    SDFS.rename(newConfig,F(IOTA_CONFIG_PATH));
+    return true;
+  }
+  setConfig(IOTA_CONFIG_PATH);
+  return false;
+}
+
+//************************************************************************************************
+//
+// recoverConfig(){
+//
+// Attempt to recover from failed setConfig
+//
+bool recoverConfig(){
+  if(SD.exists(F(IOTA_CONFIG_NEW_PATH)) && setConfig(IOTA_CONFIG_NEW_PATH)){
+    return updateConfig(IOTA_CONFIG_NEW_PATH);
+    log("using new config+1.");
+  }
+  if(SD.exists(F(IOTA_CONFIG_OLD_PATH)) && setConfig(IOTA_CONFIG_OLD_PATH)){
+    SD.remove(IOTA_CONFIG_PATH);
+    SDFS.rename(F(IOTA_CONFIG_OLD_PATH), F(IOTA_CONFIG_PATH));
+    log("reverting to config-1.");
+    return true;
+  }
+  return false;
+}
+
+//*************************************************************************************************
+//
+// setConfig will process the argued config file and return true/false=good/bad
+
+boolean setConfig(const char* configPath){
   DynamicJsonBuffer Json;              
         
   //************************************** Load and parse Json Config file ************************
@@ -24,7 +74,7 @@ boolean getConfig(const char* configPath){
   trace(T_CONFIG,0);
   File ConfigFile = SD.open(configPath, FILE_READ);
   if(!ConfigFile) {
-    log("Config file open failed.");
+    log("setConfig: %s open failed.", configPath);
     return false;
   }
   hashFile(configSHA256, ConfigFile);
@@ -39,18 +89,18 @@ boolean getConfig(const char* configPath){
   //************************************** Process misc first level stuff **************************
   
   delete[] updateClass;
-  updateClass = charstar(Config["update"] | "NONE");
+  updateClass = charstar(Config[F("update")] | "NONE");
 
-  localTimeDiff = 60.0 * Config["timezone"].as<float>();
+  localTimeDiff = 60.0 * Config[F("timezone")].as<float>();
     
   if(Config.containsKey("logdays")){ 
-    log("Current log overide days: %d", Current_log.setDays(Config["logdays"].as<int>()));
+    log("Current log overide days: %d", Current_log.setDays(Config[F("logdays")].as<int>()));
   }      
 
         //************************************ Configure device ***************************
 
   trace(T_CONFIG,5);
-  JsonArray& deviceArray = Config["device"];
+  JsonArray& deviceArray = Config[F("device")];
   if(deviceArray.success()){
     char* deviceStr = JsonDetail(ConfigFile, deviceArray);
     configDevice(deviceStr);
@@ -62,7 +112,7 @@ boolean getConfig(const char* configPath){
   trace(T_CONFIG,10);
   delete timezoneRule;
   timezoneRule = nullptr;
-  JsonArray& dstruleArray = Config["dstrule"];
+  JsonArray& dstruleArray = Config[F("dstrule")];
   if(dstruleArray.success()){
     char* dstruleStr = JsonDetail(ConfigFile, dstruleArray);
     configDST(dstruleStr);
@@ -72,7 +122,7 @@ boolean getConfig(const char* configPath){
         //************************************ Configure input channels ***************************
 
   trace(T_CONFIG,15);
-  JsonArray& inputsArray = Config["inputs"];
+  JsonArray& inputsArray = Config[F("inputs")];
   if(inputsArray.success()){
     char* inputsStr = JsonDetail(ConfigFile, inputsArray);
     configInputs(inputsStr);
@@ -118,7 +168,7 @@ boolean getConfig(const char* configPath){
     trace(T_CONFIG,25);
     delete outputs;
     outputs = nullptr;
-    JsonArray& outputsArray = Config["outputs"];
+    JsonArray& outputsArray = Config[F("outputs")];
     char* outputsStr;
     if(outputsArray.success()){
       outputsStr = JsonDetail(ConfigFile, outputsArray);
@@ -135,13 +185,13 @@ boolean getConfig(const char* configPath){
   {
     trace(T_CONFIG,30);
     char* EmonStr = nullptr;
-    JsonArray& EmonArray = Config["emoncms"];
+    JsonArray& EmonArray = Config[F("emoncms")];
     if(EmonArray.success()){
       EmonStr = JsonDetail(ConfigFile, EmonArray);
     } else // Accept old format ~ 02_03_17
     {
       trace(T_CONFIG,31);      
-      JsonArray& serverArray = Config["server"];
+      JsonArray& serverArray = Config[F("server")];
       if(serverArray.success()){
         EmonStr = JsonDetail(ConfigFile, serverArray);
       }
@@ -245,7 +295,7 @@ boolean getConfig(const char* configPath){
 
   {      
     trace(T_CONFIG,50);
-    JsonArray& locArray = Config["integrations"];
+    JsonArray& locArray = Config[F("integrations")];
     if(locArray.success()){
       trace(T_CONFIG,50);
       char *Jsonstring = JsonDetail(ConfigFile, locArray);
@@ -358,7 +408,7 @@ boolean getConfig(const char* configPath){
   trace(T_CONFIG,70);
   return true;
 
-}                                       // End of getConfig
+}                                       // End of processConfig
 
 
 //************************************** configDevice() ********************************************
@@ -461,8 +511,8 @@ bool configDST(const char* JsonStr){
     return false;
   }
   timezoneRule = new tzRule;
-  timezoneRule->useUTC = dstRule["utc"].as<bool>();
-  timezoneRule->adjMinutes = dstRule["adj"].as<int>();
+  timezoneRule->useUTC = dstRule[F("utc")].as<bool>();
+  timezoneRule->adjMinutes = dstRule[F("adj")].as<int>();
   timezoneRule->begPeriod.month = dstRule["begin"]["month"].as<int>();
   timezoneRule->begPeriod.weekday = dstRule["begin"]["weekday"].as<int>();
   timezoneRule->begPeriod.instance = dstRule["begin"]["instance"].as<int>();
