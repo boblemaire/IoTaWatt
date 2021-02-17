@@ -149,8 +149,9 @@ uint32_t nextCrossMs = 0;                 // Time just before next zero crossing
 serviceBlock* serviceQueue;               // Head of active services list in order of dispatch time.       
 IotaInputChannel* *inputChannel = nullptr; // -->s to incidences of input channels (maxInputs entries) 
 uint8_t     maxInputs = 0;                // channel limit based on configured hardware (set in Config)
-int16_t*    masterPhaseArray = nullptr;   // Single array containing all individual phase shift arrays          
-ScriptSet*  outputs;                      // -> scriptSet for output channels
+int16_t    *masterPhaseArray = nullptr;   // Single array containing all individual phase shift arrays          
+ScriptSet  *outputs = nullptr;            // -> ScriptSet for output channels
+ScriptSet  *integrators = nullptr;        // -> ScriptSet that defines integrators.      
 
 uint8_t     deviceMajorVersion = 4;       // Default to 4.8
 uint8_t     deviceMinorVersion = 8;                 
@@ -229,16 +230,15 @@ uint8_t  ledCount;                           // Current index into cycle
 
       // ****************************** Firmware update ****************************
       
+char *updateClass = nullptr;                                   // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
+
 const char* updateURL = "iotawatt.com";
 const char* updatePath = "/firmware/versions.json";
-char*    updateClass = nullptr;                                   // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
 const uint8_t publicKey[32] PROGMEM = {
                         0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
                         0xcc, 0x2c, 0xea, 0x2e, 0x88, 0x9c, 0xe0, 0xea,
                         0x3f, 0x20, 0x5a, 0x78, 0x22, 0x0c, 0xbc, 0x78,
-                        0x2b, 0xe6, 0x28, 0x5a, 0x21, 0x9c, 0xb7, 0xf3
-                        }; 
-
+                        0x2b, 0xe6, 0x28, 0x5a, 0x21, 0x9c, 0xb7, 0xf3}; 
 const char hexcodes_P[] PROGMEM = "0123456789abcdef";
 const char base64codes_P[] PROGMEM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";  
 

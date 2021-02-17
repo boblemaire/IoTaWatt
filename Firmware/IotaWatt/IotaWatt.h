@@ -3,7 +3,7 @@
 
    /***********************************************************************************
     IotaWatt Electric Power Monitor System
-    Copyright (C) <2017>  <Bob Lemaire, IoTaWatt, Inc.>
+    Copyright (C) <2021>  <Bob Lemaire, IoTaWatt, Inc.>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -64,7 +64,7 @@
 #include "updater.h"
 #include "samplePower.h"
 #include "uploader.h"
-//#include "Emonservice.h"
+#include "integrator.h"
 #include "auth.h"
 #include "spiffs.h"
 #include "timeServices.h"
@@ -184,7 +184,8 @@ struct EEprom {
 #define T_influx2 29       // influxDB_v2_uploader 
 #define T_influx2Config 30 // influx2 configuration 
 #define T_uploader 31      // Uploader base class
-#define T_influx1 32       // influxDB_v1_uploader                          
+#define T_influx1 32       // influxDB_v1_uploader
+#define T_integrator 33    // Integrator class                          
 
       // LED codes
 
@@ -258,9 +259,10 @@ extern float   heapMs;
 extern uint32_t heapMsPeriod;
 extern IotaLogRecord statRecord;
 
-      // ****************************** list of output channels **********************
+      // ****************************** list of output channels and integrators ******
 
-extern ScriptSet* outputs;
+extern ScriptSet *outputs;
+extern ScriptSet *integrators;
 
       // ****************************** SDWebServer stuff ****************************
 
@@ -287,7 +289,7 @@ extern uploader *influxDB_v1;
 extern uploader *influxDB_v2;
 extern uploader *Emoncms;
 
-      // Password and authorization data
+// Password and authorization data
 
 extern uint8_t*   adminH1;                // H1 digest md5("admin":"admin":password) 
 extern uint8_t*   userH1;                 // H1 digest md5("user":"user":password) 
