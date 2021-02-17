@@ -32,6 +32,7 @@ uint8_t     unitsPrecision[] = {
 Script::Script(JsonObject& JsonScript)
       :_next(nullptr)
       ,_name(nullptr)
+      ,_parm(nullptr)
       ,_constants(nullptr)
       ,_tokens(nullptr)
       ,_units(Watts)
@@ -62,6 +63,7 @@ Script::Script(JsonObject& JsonScript)
 Script::Script(const char* name, const char* unit, const char* script)
       :_next(nullptr)
       ,_name(nullptr)
+      ,_parm(nullptr)
       ,_constants(nullptr)
       ,_tokens(nullptr)
       ,_units(Watts)
@@ -88,9 +90,13 @@ Script*       Script::next() {return _next;}
 
 const char*   Script::name() {return _name;} 
 
-const char*   Script::getUnits() {return unitstr[_units];};
+const char*   Script::getUnits() {return unitstr[_units];}
 
-int           Script::precision(){return unitsPrecision[_units];};
+void          Script::setParm(void* value) {_parm = value;}
+
+void*         Script::getParm() {return _parm;}
+
+int           Script::precision() {return unitsPrecision[_units];}
 
 size_t        ScriptSet::count() {return _count;}
 

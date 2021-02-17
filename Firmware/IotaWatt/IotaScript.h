@@ -32,7 +32,9 @@ class Script {
     const char*   name();     // name associated with this Script
     const char*   getUnits();    // units associated with this Script
     void    setUnits(const char*);
-    Script* next();     // -> next Script in set
+    void    setParm(void*);      // Set parm value
+    void*   getParm();           // Retrieve parm value
+    Script* next();           // -> next Script in set
 
     double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours); // Run this Script
     double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units); // Run w/overide units
@@ -45,6 +47,7 @@ class Script {
 
     Script*     _next;      // -> next in list
     char*       _name;      // name associated with this Script
+    void*       _parm;      // External parameter
     float*      _constants; // Constant values referenced in Script
     uint8_t*    _tokens;    // Script tokens
     units       _units;     // Units to be computed              
