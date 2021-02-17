@@ -11,6 +11,7 @@ bool configMasterPhaseArray();
 bool configOutputs(const char*);
 void hashFile(uint8_t* sha, File file);
 bool exportLogConfig(const char *configObj);
+bool configIntegrations(const char *);
 
 // Handy diagnostic macro to investigate heap requirements.
 //#define heap(where) Serial.print(#where); Serial.print(' '); Serial.println(ESP.getFreeHeap());
@@ -233,20 +234,125 @@ boolean getConfig(const char* configPath){
     }    
   }
 
-      // ************************************** configure Export log **********************************
+  //********************************************* Configure Integrations ******************************************
 
-  {
+//
+//  Integrations are basically scripts that are preprocessed against the log 
+//  with results stored in a datalog by the same name as the script.
+//  The definitions are maintained as a scriptset.
+//  Upon configuration the scriptset is processed and integrator instances are created to handle.
+//
+
+  {      
     trace(T_CONFIG,50);
-    JsonArray& exportArray = Config[F("exportlog")];
-    if(exportArray.success()){
-      char* exportStr = JsonDetail(ConfigFile, exportArray);
-      if( ! exportLogConfig(exportStr)){
-        log("Exportlog: Invalid configuration.");
+    JsonArray& locArray = Config["integrations"];
+    if(locArray.success()){
+      trace(T_CONFIG,50);
+      char *Jsonstring = JsonDetail(ConfigFile, locArray);
+      if(!configIntegrations(Jsonstring)){
+        log("integrators: invalid configuration:");
+        delete[] Jsonstring;
+        return false;
       }
-      delete[] exportStr;
+      delete[] Jsonstring;
+      return true;
+    } 
+    else {
+      configIntegrations("[]");
     }
-    trace(T_CONFIG,50);   
+      
+
   }
+
+      // ************************************** Code to handle array of configurations****************************
+
+  // {
+  //   trace(T_CONFIG,40);
+  //   JsonArray& locArray = Config[F("integrators")];
+  //   if(locArray.success()){
+
+  //     // Target is an array,
+  //     // summarize it into an array of locators
+
+  //     ConfigFile.seek(locArray[0].as<int>());
+  //     String summary = JsonSummary(ConfigFile, 1);
+  //     JsonArray& subArray = Json.parseArray(summary);
+
+  //     // Now process each entry in the array as an integrator.
+
+  //     int count = subArray.size();
+  //     for (int i = 0; i < count; i++){
+
+  //       // Extract the configuration detail for this integrator
+
+  //       JsonArray &locArray = subArray[i];
+  //       char *configtxt = JsonDetail(ConfigFile, locArray);
+
+  //       // New context to clean up on each iteration
+
+  //       {
+  //         DynamicJsonBuffer Json;
+  //         JsonObject &config = Json.parseObject(configtxt);
+
+  //         // Won't parse, log config error and abort
+
+  //         if (!config.success())
+  //         {
+  //             log("Config: parse failed integrator %d", i);
+  //             delete[] configtxt;
+  //             return false;
+  //         }
+
+  //         // Try to find existing match
+
+  //         int j = 0;
+  //         while (j < 4 && integrators[j] && strcmp(integrators[j]->name(), config.get<const char *>("name")) != 0){
+  //           j++;
+  //         }
+
+  //         // If no match and maximum integrators configured...
+
+  //         if(j >= 4){
+  //           log("config: more than 4 integrators.");
+  //           break;
+  //         }
+
+  //         // If this matches an already specified integrator... 
+
+  //         if (j < i){
+  //           log("config: duplicate integrator %s", config.get<const char *>("name"));
+  //           delete[] configtxt;
+  //           return false;
+  //         }
+
+  //         // New or existing integrator, swap entry into config order.
+
+  //         integrator *swap = integrators[i];
+  //         integrators[i] = integrators[j];
+  //         integrators[j] = swap;
+
+  //         // If not yet defined, create a new instance.
+
+  //         if(integrators[i] == 0){
+  //           integrators[i] = new integrator;
+  //         }
+
+  //         // call the config handler
+
+  //         if(!integrators[i]->config(config)){
+  //           log("config: integrator %s config failed.", config.get<const char *>("name"));
+  //           delete integrators[i];
+  //           integrators[i] = 0;
+  //           delete[] configtxt;
+  //           return false;
+  //         }
+  //       }
+  //       delete[] configtxt;
+  //     }
+  //   }
+  // }
+  
+
 
   ConfigFile.close();
   trace(T_CONFIG,70);
@@ -475,6 +581,73 @@ bool configOutputs(const char* JsonStr){
   // });
   return true;
 } 
+
+//********************************** config integrations ********************************************
+
+bool configIntegrations(const char* JsonStr){
+  trace(T_CONFIG,51);
+  DynamicJsonBuffer Json;
+  JsonArray& intArray = Json.parseArray(JsonStr);
+  if( ! intArray.success()){
+    log("outputs: Json parse failed");
+    return false;
+  }
+  trace(T_CONFIG,51);
+  ScriptSet *newIntegrators = new ScriptSet(intArray);
+
+  // Match prior integrators with new definitions
+  // Set -> integrator in new definition.
+
+  trace(T_CONFIG,52);
+  if(integrators){
+    Script* oldScript = integrators->first();
+    while(oldScript){
+      Script *newScript = newIntegrators->first();
+      trace(T_CONFIG,53);
+      while(newScript){
+        if(strcmp(oldScript->name(), newScript->name()) == 0){
+          newScript->setParm(oldScript->getParm());
+          oldScript->setParm(0);
+          break;
+        }
+        newScript = newScript->next();
+      }
+      if(oldScript->getParm()){
+        trace(T_CONFIG,54);
+        integrator *endit = (integrator*)oldScript->getParm();
+        endit->end();
+      }
+      oldScript = oldScript->next();
+    }
+  }
+
+  delete integrators;
+  integrators = newIntegrators;
+
+  // Initialize integrators
+
+  Script *script = integrators->first();
+  while(script){
+
+    // Configure new integrators
+
+    if(!script->getParm()){
+      integrator *newIntegrator = new integrator;
+      script->setParm((void *)newIntegrator);
+      newIntegrator->config(script);
+    }
+
+    // Existing integrators just update -> Script
+
+    else {
+      integrator *oldIntegrator = (integrator *)script->getParm();
+      oldIntegrator->setScript(script);
+    }
+    script = script->next();
+  }
+
+  return true;
+}
 
 /********************************** configmasterPhaseArray ********************************************
  * 
