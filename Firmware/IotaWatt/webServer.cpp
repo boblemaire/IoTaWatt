@@ -245,9 +245,9 @@ void handleFileUpload(){
       if(upload.filename.equals(F(IOTA_CONFIG_NEW_PATH))){
         hashFile(configSHA256, uploadFile);
         server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
+        getNewConfig = true;
       }
       uploadFile.close();
-      getNewConfig = true;
       DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
     }
   } else if(upload.status == UPLOAD_FILE_ABORTED){

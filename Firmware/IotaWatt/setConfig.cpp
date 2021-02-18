@@ -401,9 +401,8 @@ boolean setConfig(const char* configPath){
   //     }
   //   }
   // }
-  
 
-
+  hashFile(configSHA256, ConfigFile);
   ConfigFile.close();
   trace(T_CONFIG,70);
   return true;
