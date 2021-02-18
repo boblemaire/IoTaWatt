@@ -96,7 +96,6 @@ class  CSVquery {
                     };
 
         column*     _columns;                   // List head
-        uint16_t    _intervals[16];
 
                 // Private functions
 

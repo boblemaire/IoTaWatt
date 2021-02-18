@@ -17,7 +17,6 @@ CSVquery::CSVquery()
     ,_missingZero(false)
     ,_timeOnly(false)
     ,_columns(nullptr)
-    ,_intervals{5,10,15,20,30,60,120,300,600,1200,1800,3600,7200,14400,21600,28800}
     {}
 
 CSVquery::~CSVquery(){
@@ -82,12 +81,13 @@ bool    CSVquery::setup(){
         String group = server.arg(F("group"));
         //group.toLowerCase();
         if(group.equals("auto")){
+            const uint16_t intervals[] = {5, 10, 15, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600, 7200, 14400, 21600, 28800};
             uint32_t rawInterval = (_end - _begin) / (_highRes ? 800 : 400);
             uint32_t interval = 86400;
             for(int i=0; i<16; i++){
-                if(rawInterval <= _intervals[i]){
-                    interval = _intervals[i];
-                    break;
+                if(rawInterval <= intervals[i]){
+                    interval = intervals[i];
+                    break; 
                 }
             }
             _groupMult = interval;
