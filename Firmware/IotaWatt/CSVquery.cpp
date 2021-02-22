@@ -10,6 +10,7 @@ CSVquery::CSVquery()
     ,_query(none)
     ,_header(false)
     ,_highRes(false)
+    ,_integrations(false)
     ,_firstLine(true)
     ,_lastLine(false)
     ,_missingSkip(false)
@@ -76,10 +77,9 @@ bool    CSVquery::setup(){
                 return false;
             }
         }
-        trace(T_CSVquery,10);
 
+        trace(T_CSVquery,10);
         String group = server.arg(F("group"));
-        //group.toLowerCase();
         if(group.equals("auto")){
             const uint16_t intervals[] = {5, 10, 15, 20, 30, 60, 120, 300, 600, 1200, 1800, 3600, 7200, 14400, 21600, 28800};
             uint32_t rawInterval = (_end - _begin) / (_highRes ? 800 : 400);
@@ -109,6 +109,12 @@ bool    CSVquery::setup(){
                 _failReason = F("Invalid group");
                 return false;
             }
+        }
+        if((_begin % 60 == 0) && (_end % 60 == 0) && (_groupUnits != tUnitsSeconds || _groupMult % 60 == 0)){
+            _integrations = true;
+        }
+        else if(_groupUnits == tUnitsSeconds && _begin >= Current_log.firstKey()){
+            _integrations = true;
         }
 
         if(server.hasArg(F("missing"))){
@@ -161,6 +167,7 @@ bool    CSVquery::setup(){
             return false;
         }
         array = array.substring(1,array.length()-1);
+
         String header;
         trace(T_CSVquery,13);
         while(array.length()){
@@ -205,8 +212,8 @@ bool    CSVquery::setup(){
                 col->timeLocal = true;
             }
             
-            trace(T_CSVquery,14);
             if(col->source == ' '){
+                trace(T_CSVquery,14);
                 for(int j=0; j<maxInputs; j++){
                     if(inputChannel[j]->isActive() && name.equals(inputChannel[j]->_name)){
                         col->source = 'I';
@@ -221,8 +228,32 @@ bool    CSVquery::setup(){
                 }
             }
 
-            if(col->source == ' '){
+            if(col->source == ' ' && integrators){
                 trace(T_CSVquery,15);
+                Script *script = integrators->first();
+                while(script){
+                    if(name.equals(script->name())){
+                        if(!_integrations){
+                            _failReason = String(F("Integration not supported for period/group.")) + name;
+                            return false;
+                        }
+                        col->source = 'N';
+                        if(strcmp(script->getUnits(),"Wh") == 0){
+                            col->unit = Wh;
+                        }
+                        else if(strcmp(script->getUnits(),"VARh") == 0){
+                            col->unit = VARh;
+                        }
+                        else col->decimals = script->precision();
+                        col->script = script;
+                        break;
+                    } 
+                    script = script->next(); 
+                }
+            }
+
+            if(col->source == ' '){
+                trace(T_CSVquery,16);
                 Script* script = outputs->first();
                 while(script){
                     if(name.equals(script->name())){
@@ -315,7 +346,7 @@ bool    CSVquery::setup(){
                     return false;
                 }
             }
-            trace(T_CSVquery,16);
+            trace(T_CSVquery,17);
         }
 
             // Convert list from LIFO to FIFO and create Scripts for inputs
@@ -371,7 +402,7 @@ bool    CSVquery::setup(){
         return true;
     }
 
-                    // unrecognized query (not show or select)
+    // unrecognized query (not show or select)
 
     else {
         return false;
@@ -431,6 +462,9 @@ void CSVquery::buildHeader(){
             _buffer.print(inputChannel[col->input]->_name);
         }
         else if(col->source == 'O'){
+            _buffer.print(col->script->name());
+        }
+        else if(col->source == 'N'){
             _buffer.print(col->script->name());
         }
         if(_format == formatJson){
@@ -504,7 +538,13 @@ void CSVquery::buildLine(){
         else {
             trace(T_CSVquery,64);
             double value = 0.0;
-            value = col->script->run(_oldRec, _newRec, elapsedHours, col->unit);
+            if(col->source == 'N'){
+                integrator *integration = (integrator *)col->script->getParm();
+                value = integration->run(_oldRec, _newRec, elapsedHours);
+            }
+            else {
+                value = col->script->run(_oldRec, _newRec, elapsedHours, col->unit);
+            }
             trace(T_CSVquery,65);
             printValue(value, col->decimals);
         }
