@@ -34,15 +34,16 @@ void setup()
   //*************************************** Initialize SPI *******************************************
   
   SPI.begin();
-  SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
   Serial.println("\r\nSPI started.");
    
   //*************************************** Initialize the SD card ************************************
 
-  if(!SD.begin(pin_CS_SDcard)) {
+  SDFSConfig SDconfig(pin_CS_SDcard, SD_SCK_MHZ(25));
+  SDFS.setConfig(SDconfig);
+  if(!SDFS.begin()) {
     log("SD initiatization failed. Retrying.");
     setLedCycle(LED_SD_INIT_FAILURE);
-    while(!SD.begin(pin_CS_SDcard, SPI_FULL_SPEED)){ 
+    while(!SDFS.begin()){ 
       yield();
     }
     endLedCycle();
