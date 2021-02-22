@@ -82,7 +82,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
       } else {
         state = logData;
       }
-      break;
+      return 1;
     } 
 
           // logFill replicates the last history file record until fillTarget.
@@ -137,7 +137,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
         delete logRecord;
         logRecord = nullptr;
       }
-      break;
+      return 2;
     }
   }
   trace(T_history,9);

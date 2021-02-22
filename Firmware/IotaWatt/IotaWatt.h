@@ -208,6 +208,9 @@ struct EEprom {
 
 extern uint32_t lastCrossMs;           // Timestamp at last zero crossing (ms) (set in samplePower)
 extern uint32_t nextCrossMs;           // Time just before next zero crossing (ms) (computed in Loop)
+extern uint32_t firstCrossUs;          // Time cycle at usec resolution for phase calculation
+extern uint32_t lastCrossUs;
+extern uint32_t bingoTime;
 
 enum priorities: byte { priorityLow=2, 
                         priorityLM=3, 
@@ -225,7 +228,7 @@ struct serviceBlock {                  // Scheduler/Dispatcher list item (see co
   void *serviceParm;                   // Service specific parameter   
   priorities priority;                 // All things equal tie breaker
   uint8_t   taskID;
-  serviceBlock(){next=NULL; scheduleTime=0; priority=priorityMed; service=NULL; taskID=0;}
+  serviceBlock(){next=NULL; scheduleTime=1; priority=priorityMed; service=NULL; taskID=0;}
 };
 
 extern serviceBlock* serviceQueue;     // Head of ordered list of services

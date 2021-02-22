@@ -15,7 +15,11 @@ void loop()
 
   // ------- If AC zero crossing approaching, go sample a channel.
   static int lastChannel = 0;
-  if(maxInputs && (uint32_t)(millis() - lastCrossMs) >= (430 / int(frequency))){
+  uint32_t microsNow = micros();
+  if(microsNow <= lastCrossMs){
+    bingoTime = 0;
+  }
+  if(maxInputs && microsNow > bingoTime){
     trace(T_LOOP,1,lastChannel);
     int nextChannel = (lastChannel + 1) % maxInputs;
     while( (! inputChannel[nextChannel]->isActive()) && nextChannel != lastChannel){
@@ -26,6 +30,13 @@ void loop()
     samplePower(nextChannel, 0);
     trace(T_LOOP,2);
     nextCrossMs = lastCrossMs + 490 / int(frequency);
+    if(int(frequency) > 25){
+      bingoTime = lastCrossUs + 500000 / int(frequency) - 1500;
+    }
+    else {
+      bingoTime = lastCrossUs + 3500;
+    }
+    //bingoTime = lastCrossUs + ((lastCrossUs - firstCrossUs) / 2) - 1500;
     if(nextChannel <= lastChannel) sampling = true;
     lastChannel = nextChannel;
   }
@@ -62,18 +73,32 @@ void loop()
 // ---------- If the head of the service queue is dispatchable
 //            call the SERVICE.
 
-  if(serviceQueue != NULL && UTCtime() >= serviceQueue->scheduleTime){
-    serviceBlock* thisBlock = serviceQueue;
-    serviceQueue = thisBlock->next;
+  microsNow = micros();
+  if(microsNow < bingoTime && serviceQueue != NULL && millis() >= serviceQueue->scheduleTime){
+    trace(T_LOOP,6,1);
+    serviceBlock *selPtr = (serviceBlock*)&serviceQueue;
+    serviceBlock *tstPtr = selPtr->next;
+    while(tstPtr->next && tstPtr->next->scheduleTime <= millis()){
+      trace(T_LOOP,6,2);
+      if(tstPtr->next->priority > selPtr->next->priority){
+        selPtr = tstPtr;
+      }
+      tstPtr = tstPtr->next;
+    }
+    trace(T_LOOP,6,3);
+    tstPtr = selPtr;
+    selPtr = selPtr->next;
+    tstPtr->next = tstPtr->next->next;
     ESP.wdtFeed();
-    trace(T_LOOP,5,thisBlock->taskID);
-    thisBlock->scheduleTime = thisBlock->service(thisBlock);
+    trace(T_LOOP,5,selPtr->taskID);
+    trace(T_LOOP,6,4);
+    selPtr->scheduleTime = selPtr->service(selPtr);
     yield();
-    trace(T_LOOP,6);
-    if(thisBlock->scheduleTime > 0){
-      AddService(thisBlock); 
+    trace(T_LOOP,6,6);
+    if(selPtr->scheduleTime > 0){
+      AddService(selPtr); 
     } else {
-      delete thisBlock;    
+      delete selPtr;    
     }
   } 
 }
@@ -126,7 +151,17 @@ serviceBlock* NewService(Service serviceFunction, const uint8_t taskID, void* pa
   }
 
 void AddService(struct serviceBlock* newBlock){
-  if(newBlock->scheduleTime < UTCtime()) newBlock->scheduleTime = UTCtime();
+  uint32_t _millis = millis();
+  if(newBlock->scheduleTime == 1){
+    newBlock->scheduleTime = _millis;
+  }
+  else if(newBlock->scheduleTime <= 1000){
+    newBlock->scheduleTime += _millis;
+  }
+  else {
+    newBlock->scheduleTime = millisAtUTCTime(MAX(newBlock->scheduleTime, UTCtime()));
+  }
+  
   if(serviceQueue == NULL ||
     (newBlock->scheduleTime < serviceQueue->scheduleTime) ||
     (newBlock->scheduleTime == serviceQueue->scheduleTime && newBlock->priority > serviceQueue->priority)){

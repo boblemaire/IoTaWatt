@@ -25,6 +25,7 @@ class integrator {
         void setScript(Script* script);
         void getStatusJson(JsonObject&);
         uint32_t dispatch(struct serviceBlock *serviceBlock);
+        double run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, double elapsedHours);
         char *name();
         IotaLog* get_log();
         void end();

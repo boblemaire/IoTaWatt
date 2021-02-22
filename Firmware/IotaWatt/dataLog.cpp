@@ -118,7 +118,7 @@
 
       // If this seems premature.... get outta here.
 
-      if(UTCtime() < logRecord->UNIXtime) return logRecord->UNIXtime;
+      if(UTCtime() < logRecord->UNIXtime) return 2;
 
       // If log is up to date, update the entry with latest data.
           

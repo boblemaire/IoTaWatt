@@ -143,8 +143,11 @@ traceUnion traceEntry;
        
 uint32_t lastCrossMs = 0;                 // Timestamp at last zero crossing (ms) (set in samplePower)
 uint32_t nextCrossMs = 0;                 // Time just before next zero crossing (ms) (computed in Loop)
+uint32_t firstCrossUs = 0;                // Time cycle at usec resolution for phase calculation
+uint32_t lastCrossUs = 0;
+uint32_t bingoTime = 0;                   // When just enough fuel to get to the next crossing      
 
-      // Various queues and lists of resources.
+// Various queues and lists of resources.
 
 serviceBlock* serviceQueue;               // Head of active services list in order of dispatch time.       
 IotaInputChannel* *inputChannel = nullptr; // -->s to incidences of input channels (maxInputs entries) 
