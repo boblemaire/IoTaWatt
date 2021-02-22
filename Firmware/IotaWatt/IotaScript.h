@@ -5,18 +5,21 @@
 #include <ArduinoJson.h>
 #include "IotaLog.h"
 
+// Following enumeration must match unitstr[] in .cpp.
+
 enum        units {    // Square one
             Watts = 0,
             Volts = 1,
             Amps = 2,
             VA = 3,
-            Hz = 4,
-            Wh = 5,
-            kWh = 6,
-            PF = 7,
-            VAR = 8,
-            VARh = 9,
-            unitsNone = 10
+            VAh = 4,
+            Hz = 5,
+            Wh = 6,
+            kWh = 7,
+            PF = 8,
+            VAR = 9,
+            VARh = 10,
+            unitsNone = 11
             };         // Units to be computed   
 
 class Script {
@@ -51,7 +54,6 @@ class Script {
     float*      _constants; // Constant values referenced in Script
     uint8_t*    _tokens;    // Script tokens
     units       _units;     // Units to be computed              
-    uint8_t     _accum;               // Accumulators to use in fetching operands
     const byte  getInputOp = 32;
     const byte  getConstOp = 64;
     enum        opCodes {
@@ -67,8 +69,8 @@ class Script {
                 opPop   = 9};
     const char* opChars = "=+-*/<>|()";
 
-    double    runRecursive(uint8_t**, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, char type);
-    double    evaluate(double, byte, double);
+    double    runRecursive(uint8_t**, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units Units);
+    double    operate(double, byte, double);
     bool      encodeScript(const char* script);
 
 };
