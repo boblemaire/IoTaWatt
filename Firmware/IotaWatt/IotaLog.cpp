@@ -239,53 +239,95 @@ uint32_t IotaLog::setDays(uint32_t days){
 }
   
 int IotaLog::readSerial(IotaLogRecord* callerRecord, int32_t serial){
-  if(serial < _firstSerial || serial > _lastSerial){
-		return 1;
-  }
-  IotaFile.seek(((serial - _firstSerial) * _recordSize + _wrap) % _fileSize);
+	if(serial < _firstSerial || serial > _lastSerial){
+			return 1;
+	}
+	int pos = ((serial - _firstSerial) * _recordSize + _wrap) % _fileSize;
+	if(_writeCache && pos >= _writeCachePos){
+		memcpy(callerRecord, _writeCacheBuf + (pos - _writeCachePos), _recordSize);
+		return 0;
+	}
+	if(pos != IotaFile.position()){
+		IotaFile.seek(pos);
+	}
 	IotaFile.read((uint8_t*)callerRecord, _recordSize);
 	_cacheKey[_cacheWrap] = callerRecord->UNIXtime;
 	_cacheSerial[_cacheWrap++] = callerRecord->serial;
 	_cacheWrap %= _cacheSize;
 	_readKeyIO++;
-  return 0;
+	return 0;
 };
    
 int IotaLog::write (IotaLogRecord* callerRecord){
 
-  if(!IotaFile){
-		return 2;
-  }
-  if(callerRecord->UNIXtime <= _lastKey) {
-		return 1;
-  }
-  callerRecord->serial = ++_lastSerial;
-  if(_wrap || _fileSize >= _maxFileSize){
-		IotaFile.seek(_wrap);
-		_wrap = (_wrap + _recordSize) % _fileSize;
-  }
-  else {
-		IotaFile.seek(_fileSize);
-		_fileSize += _recordSize;
-		_entries++;
-  }
-  IotaFile.write((char*)callerRecord, _recordSize);
-  IotaFile.flush();
-  _lastKey = callerRecord->UNIXtime;
-  _lastSerial = callerRecord->serial;
-  if(_firstKey == 0){
-		_firstKey = callerRecord->UNIXtime;
-  }
-  else if(_wrap || _fileSize == _maxFileSize){
-		IotaFile.seek(_wrap);
-		IotaFile.read((uint8_t*)callerRecord,8);
-		_firstKey = callerRecord->UNIXtime;
-		_firstSerial = callerRecord->serial;
-		callerRecord->UNIXtime = _lastKey;
-		callerRecord->serial = _lastSerial;
-  }
-  
-  return 0;
+	if(!IotaFile){
+			return 2;
+	}
+	if(callerRecord->UNIXtime <= _lastKey) {
+			return 1;
+	}
+	callerRecord->serial = ++_lastSerial;
+	if(_wrap || _fileSize >= _maxFileSize){
+			IotaFile.seek(_wrap);
+			_wrap = (_wrap + _recordSize) % _fileSize;
+	}
+	else {
+			IotaFile.seek(_fileSize);
+			_fileSize += _recordSize;
+			_entries++;
+	}
+	if(_writeCache){
+		memcpy(_writeCacheBuf + ((_fileSize - _recordSize) % IOTALOG_BLOCK_SIZE), callerRecord, _recordSize);
+		if(_fileSize % IOTALOG_BLOCK_SIZE == 0){
+			IotaFile.seek(_writeCachePos);
+			IotaFile.write(_writeCacheBuf, IOTALOG_BLOCK_SIZE);
+			IotaFile.flush();
+			_writeCachePos += IOTALOG_BLOCK_SIZE;
+		}
+		if(_fileSize >= _maxFileSize){
+			writeCache(false);
+		}
+	}
+	else {
+		IotaFile.write((char*)callerRecord, _recordSize);
+		IotaFile.flush();
+	}
+	_lastKey = callerRecord->UNIXtime;
+	_lastSerial = callerRecord->serial;
+	if(_firstKey == 0){
+			_firstKey = callerRecord->UNIXtime;
+	}
+	else if(_wrap || _fileSize == _maxFileSize){
+			IotaFile.seek(_wrap);
+			IotaFile.read((uint8_t*)callerRecord,8);
+			_firstKey = callerRecord->UNIXtime;
+			_firstSerial = callerRecord->serial;
+			callerRecord->UNIXtime = _lastKey;
+			callerRecord->serial = _lastSerial;
+	}
+	
+	return 0;
+}
+
+void IotaLog::writeCache(bool on){
+	if(on && !_writeCache && !_wrap){ // turn cache on
+		_writeCacheBuf = new uint8_t[IOTALOG_BLOCK_SIZE];
+		_writeCachePos = _fileSize - (_fileSize % IOTALOG_BLOCK_SIZE);
+		if(_writeCachePos < _fileSize){
+			IotaFile.seek(_writeCachePos);
+			IotaFile.read(_writeCacheBuf, IOTALOG_BLOCK_SIZE);
+		}
+		_writeCache = true;
+	}
+	else if(!on and _writeCache){ // turn cache off
+		if(_writeCachePos % IOTALOG_BLOCK_SIZE){
+			IotaFile.seek(_writeCachePos);
+			IotaFile.write(_writeCacheBuf, _writeCachePos % IOTALOG_BLOCK_SIZE);
+		}
+		delete[] _writeCacheBuf;
+		_writeCacheBuf = nullptr;
+		_writeCache = false;
+	}
 }
 
 void IotaLog::dumpFile(){
