@@ -267,17 +267,9 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 			return 1;
 	}
 	callerRecord->serial = ++_lastSerial;
-	if(_wrap || _fileSize >= _maxFileSize){
-			IotaFile.seek(_wrap);
-			_wrap = (_wrap + _recordSize) % _fileSize;
-	}
-	else {
-			IotaFile.seek(_fileSize);
-			_fileSize += _recordSize;
-			_entries++;
-	}
 	if(_writeCache){
-		memcpy(_writeCacheBuf + ((_fileSize - _recordSize) % IOTALOG_BLOCK_SIZE), callerRecord, _recordSize);
+		memcpy(_writeCacheBuf + (_fileSize % IOTALOG_BLOCK_SIZE), callerRecord, _recordSize);
+		_fileSize += _recordSize;
 		if(_fileSize % IOTALOG_BLOCK_SIZE == 0){
 			IotaFile.seek(_writeCachePos);
 			IotaFile.write(_writeCacheBuf, IOTALOG_BLOCK_SIZE);
@@ -289,6 +281,15 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 		}
 	}
 	else {
+		if(_wrap || _fileSize >= _maxFileSize){
+				IotaFile.seek(_wrap);
+				_wrap = (_wrap + _recordSize) % _fileSize;
+		}
+		else {
+				IotaFile.seek(_fileSize);
+				_fileSize += _recordSize;
+				_entries++;
+		}
 		IotaFile.write((char*)callerRecord, _recordSize);
 		IotaFile.flush();
 	}
@@ -320,9 +321,10 @@ void IotaLog::writeCache(bool on){
 		_writeCache = true;
 	}
 	else if(!on and _writeCache){ // turn cache off
-		if(_writeCachePos % IOTALOG_BLOCK_SIZE){
+		if(_fileSize % IOTALOG_BLOCK_SIZE){
 			IotaFile.seek(_writeCachePos);
-			IotaFile.write(_writeCacheBuf, _writeCachePos % IOTALOG_BLOCK_SIZE);
+			IotaFile.write(_writeCacheBuf, _fileSize % IOTALOG_BLOCK_SIZE);
+			IotaFile.flush();
 		}
 		delete[] _writeCacheBuf;
 		_writeCacheBuf = nullptr;
