@@ -162,6 +162,7 @@ bool    Script::encodeScript(const char* script){
           }
         }
         _tokens[i] = 0;
+        return true;
 }
 
 double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, const char* overideUnits){
@@ -332,6 +333,7 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
           if(operand != operand) operand = 0;
 
         } while(token++);
+        return 0.0;
 }
 
 double    Script::operate(double result, uint8_t token, double operand){
