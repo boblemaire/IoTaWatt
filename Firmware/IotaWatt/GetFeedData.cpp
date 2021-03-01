@@ -292,4 +292,5 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
       return 0;                                       // Done for now, return without scheduling.
     }
   }
+  return 0;
 }
