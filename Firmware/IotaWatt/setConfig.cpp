@@ -498,6 +498,7 @@ bool configDevice(const char* JsonStr){
   if(device.containsKey(F("httpsproxy"))){
     HTTPSproxy = charstar(device[F("httpsproxy")].as<const char *>());
   }
+  return true;
 }
 
 //********************************** configure DST *********************************************
@@ -548,6 +549,7 @@ bool configDST(const char* JsonStr){
     yield();
   }              
 ********************************************************************************************************************************/
+  return true;
 } 
 
 

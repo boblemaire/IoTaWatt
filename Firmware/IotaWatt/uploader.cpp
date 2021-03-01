@@ -357,4 +357,4 @@ bool uploader::config(const char *jsonConfig)
     return false;
 }
 
-bool uploader::configCB(JsonObject &){};
+bool uploader::configCB(JsonObject &) { return true; };
