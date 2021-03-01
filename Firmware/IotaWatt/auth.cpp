@@ -3,7 +3,7 @@
 #include "detail/mimetable.h"
 #include "auth.h"
 
-#ifndef AUTH_NO_LITS  
+#ifndef CORE_3_0  
 static const char AUTHORIZATION_HEADER[] PROGMEM = "Authorization";
 static const char qop_auth[] PROGMEM = "qop=auth";
 static const char WWW_Authenticate[] PROGMEM = "WWW-Authenticate";
