@@ -93,7 +93,7 @@ There are three possibilities:
 Voltage Reference
 -----------------
 The voltage between the two mains conductors is nominally 240V.
-That is brokenb down into two 120V potentials between each of the
+That is broken down into two 120V potentials between each of the
 Mains and the neutral, but they unless they are in perfect balance,
 there will always be a difference in voltage between the two phases.
 That said, the difference in most situations is practicxally negligable
