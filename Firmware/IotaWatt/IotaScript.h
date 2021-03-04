@@ -7,20 +7,42 @@
 
 // Following enumeration must match unitstr[] in .cpp.
 
-enum        units {    // Square one
-            Watts = 0,
-            Volts = 1,
-            Amps = 2,
-            VA = 3,
-            VAh = 4,
-            Hz = 5,
-            Wh = 6,
-            kWh = 7,
-            PF = 8,
-            VAR = 9,
-            VARh = 10,
-            unitsNone = 11
-            };         // Units to be computed   
+enum units     // Must match unitstr[] in .cpp
+{           
+  Watts = 0,
+  Volts = 1,
+  Amps = 2,
+  VA = 3,
+  VAh = 4,
+  Hz = 5,
+  Wh = 6,
+  kWh = 7,
+  PF = 8,
+  VAR = 9,
+  VARh = 10,
+  unitsNone = 11
+};         
+    
+enum opCodes // Must match opChars[] in .cpp
+{   
+  opEq  = 0,
+  opAdd   = 1,
+  opSub   = 2,
+  opMult  = 3,
+  opDiv   = 4,
+  opMin   = 5,
+  opMax   = 6,
+  opAbs   = 7,
+  opPush  = 8,
+  opPop   = 9
+};
+
+enum tokenTypes
+{
+  tokenOperator = 0,
+  tokenInput = 0x20,
+  tokenConstant = 0x40,
+};
 
 class Script {
 
@@ -51,23 +73,12 @@ class Script {
     Script*     _next;      // -> next in list
     char*       _name;      // name associated with this Script
     void*       _parm;      // External parameter
-    float*      _constants; // Constant values referenced in Script
+    union {
+      float *_constants;    // Constant values referenced in Script
+      Script **_integrations;
+    };
     uint8_t*    _tokens;    // Script tokens
     units       _units;     // Units to be computed              
-    const byte  getInputOp = 32;
-    const byte  getConstOp = 64;
-    enum        opCodes {
-                opEq  = 0,
-                opAdd   = 1,
-                opSub   = 2,
-                opMult  = 3,
-                opDiv   = 4,
-                opMin   = 5,
-                opMax   = 6,
-                opAbs   = 7,
-                opPush  = 8,
-                opPop   = 9};
-    const char* opChars = "=+-*/<>|()";
 
     double    runRecursive(uint8_t**, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units Units);
     double    operate(double, byte, double);
@@ -78,6 +89,12 @@ class Script {
 class ScriptSet {
 
   public:
+    ScriptSet()
+      :_count(0)
+      ,_listHead(0)
+      {}
+
+
     ScriptSet (JsonArray& JsonScriptSet) {
       _count = JsonScriptSet.size();
       _listHead = nullptr;
@@ -107,6 +124,7 @@ class ScriptSet {
 
     size_t    count();      // Retrieve count of Scripts in the set.
     Script*   first();      // Get -> first Script in set
+    Script*   script(const char *name);
 
   private:
 
