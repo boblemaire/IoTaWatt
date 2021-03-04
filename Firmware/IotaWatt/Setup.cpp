@@ -38,7 +38,7 @@ void setup()
    
   //*************************************** Initialize the SD card ************************************
 
-  SDFSConfig SDconfig(pin_CS_SDcard, SD_SCK_MHZ(25));
+  SDFSConfig SDconfig(pin_CS_SDcard, SD_SCK_MHZ(40));
   SDFS.setConfig(SDconfig);
   if(!SDFS.begin()) {
     log("SD initiatization failed. Retrying.");
