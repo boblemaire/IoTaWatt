@@ -32,14 +32,16 @@
                 title="Specify the VTs and CTs that are used">Inputs</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,configOutputs)"
                 title="Define output values for status display and local graphs">Outputs</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,configBurden)"
-                title="Set new values if stock resistors are modified/removed">Burden Resistors</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,setPasswords)"
-                title="Set/Reset optional access passwords">Passwords</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,buildWebServer)"
-                title="Specify data uploader(s) to external servers">Web Server</button>
+                title="Specify data uploader(s) to external servers">Data Uploaders</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,configIntegrations)"
+                title="Integrations can accumulate solar import and VARh">Integrations</button>    
             <button class="mainMenuButton" onclick="mainMenuButton(this,setProxy)" 
                 title="Specify optional proxy server for HTTPS">HTTPS Proxy Server</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,setPasswords)"
+                title="Set/Reset optional access passwords">Passwords</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,configBurden)"
+                title="Set new values if stock resistors are modified/removed">Burden Resistors</button>
           </span>
         </td>
         <td><button class="mainMenuButton buttonUp" onclick="mainMenuButton(this,statusBegin)"
@@ -157,6 +159,33 @@
       <div class="bodyDiv color_body" id="divOutputs">
         <h3>Outputs</h3>
         <table id="outputTable"></table>
+      </div>
+    </div>
+        
+              <!-- *************** Integrations configuration ******************-->
+
+    <div id="configIntegrations" class="body" style="display: none;">
+      <div class="bodyDiv color_body" id="divIntegrations">
+        <h3>Integrations</h3>
+        <p>
+          Integrations create and maintain supplemental datalogs that can
+          be used to extract data that is not possible to obtain from the 
+          primary datalogs due to the time that would be required to process
+          millions of measurements. New integrations may take hours to
+          process historical data. Once up to date, new measurements going
+          forward will be added to the integration log in real time. The resulting
+          integration log can be queried as quickly as any other metric, 
+          whether looking at a week, month or year.
+        </p><p>
+          One specific application is keeping track of imported and exported power
+          in a solar installation, as many tariffs use those metrics rather than
+          net usage. Another practical use is to accumulate VAR-hours where
+          that is a part of a commercial or industrial billing structure.
+        </p><p>
+          Integrations can be queried in the same way as other metrics, and by
+          extension can be visualized in graph+. See the documentation for details.
+        </p>
+        <table id="integrationsTable"></table>
       </div>
     </div>
     
@@ -473,7 +502,7 @@
 <script>
 // configuration files
 var configFileURL = "/config.txt";
-var configNewURL = "/config.txt";
+var configNewURL = "/config+1.txt";
 var burdenFileURL = "/esp_spiffs/config/device/burden.txt";
 var configTablesURL = "/tables.txt";
 var editURL = "edit.htm";
@@ -515,7 +544,8 @@ var scriptEditNameTitle = "";
 var scriptEditNamePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
 var scriptEditUnits = [];
 var scriptEditUniqueNames = true;
-var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA","VAR"];
+var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA","VAR","VARh"];
+var scriptEditUnitsIntegrations = ["Wh", "VARh"];
 var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh","VAR","VARh"];
 var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:false,begin:{month:3,weekday:1,instance:2,time:120},end:{month:11,weekday:1,instance:1,time:120}}},
                 {id:"Europe",begOffset:0,endOffset:2,dstrule:{adj:60,utc:true,begin:{month:3,weekday:1,instance:-1,time:60},end:{month:10,weekday:1,instance:-1,time:60}}},
@@ -1258,6 +1288,32 @@ function calVTsave(obj){
 }
 
 /*******************************************************************************************
+ *                    Configure Integrations
+ * ****************************************************************************************/
+ function configIntegrations(){
+    currentBodyPush("configIntegrations");
+    
+    scriptEditSave = function(){
+      config.integrations = scriptEditSet
+      uploadConfig();
+    };
+    scriptEditReturn = function(){
+      EbyId("divCalc").style.display = "none";
+      EbyId("divIntegrations").style.display = "table";
+      configOutputs();
+    };
+    scriptEditTable = EbyId("integrationsTable");
+    scriptEditTable.innerHTML = "";
+    scriptEditSet = config.integrations;
+    scriptEditUnits = scriptEditUnitsIntegrations;
+    scriptEditNameList = [];
+    scriptEditUniqueNames = true;
+    scriptEditNameTitle="Name must be alphanumeric and start with a letter";
+    scriptEditNamePattern="^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
+    editScript();
+  }
+
+/*******************************************************************************************
  *                    Configure Outputs
  * ****************************************************************************************/
  function configOutputs(){
@@ -1466,13 +1522,13 @@ function calVTsave(obj){
   }
   
   function parseScript(script){
-    return script.match(/@\d+|#-?\d+\.?\d*|[-+*\/()|<>=]/g);
+    return script.match(/@\d+|#-?\d+\.?\d*|![a-zA-Z\d]+|[-+*\/()|<>=]/g);
   }
 
   function scriptDisplay(tokens){
     calcDisplay = "";
     for(var i=0; i<tokens.length; i++){
-      if(tokens[i].startsWith("#")){
+      if(tokens[i].startsWith("#") || tokens[i].startsWith('!')){
         calcDisplay += tokens[i].substr(1);
       }
       else if(tokens[i].startsWith("@")){
@@ -2550,12 +2606,8 @@ function statusDisplay(statusMessage){
         u++;
       }
       logtab.innerHTML += "<tr><td>" + status.datalogs[i].id + " Log:</td>" +
-                         "<td>" + fixedDateTime(status.datalogs[i].firstkey) + " - " +
-                         fixedDateTime(status.datalogs[i].lastkey) + "</td>" +
-                         "<td>" + size.toFixed(u ? 1 : 0) + units[u] + "</td></tr>";
-      // logs.appendChild(document.createTextNode(status.datalogs[i].id + " Log: " + fixedDateTime(status.datalogs[i].firstkey) 
-      //               + " - " + fixedDateTime(status.datalogs[i].lastkey) + " " + size.toFixed(u ? 1 : 0) + units[u]));
-      // logs.appendChild(document.createElement("br"));
+                         "<td>" + fixedDateTime(status.datalogs[i].firstkey) + " - " + fixedDateTime(status.datalogs[i].lastkey) + "</td>" +
+                         "<td>" + size.toPrecision(4) + " " + units[u] + "</td></tr>";
     }
   }
     
@@ -2739,7 +2791,7 @@ function fixedDateTime(unixtime){
   if(unixtime == 0) return ""; 
   var date = new Date(unixtime*1000);
   return twoDigit(date.getMonth()+1) + "/" + twoDigit(date.getDate()) + "/" + date.getFullYear() + " "
-          + twoDigit(date.getHours()%12) + ":" +   twoDigit(date.getMinutes()) + ":" + twoDigit(date.getSeconds()) + (date.getHours() < 12 ? " am" : " pm"); 
+          + twoDigit(date.getHours()) + ":" +   twoDigit(date.getMinutes()) + ":" + twoDigit(date.getSeconds());
 }
 
 function twoDigit(i){
