@@ -633,21 +633,30 @@ bool arrayCopy(File tableFile, int16_t** entry){
     return true;
 }
 
+void dumpTable(modelTable* table, int count){
+  Serial.println("initial");
+  for (int n = 0; n < count; n++){
+    Serial.printf("%4d %4d %8x %8x %s\n", table[n].p50_pos, table[n].p60_pos, table[n].p50_ptr, table[n].p60_ptr, table[n].model);
+  }
+}
+
+
 bool configMasterPhaseArray(){
 
-// Allocate a table for unique models
+  // Allocate a table for unique models
 
+  trace(T_CONFIG,20,1);
   modelTable table[maxInputs];
   int models = 0;
-  for(int i=0; i<maxInputs; i++){
-    if(inputChannel[i]->isActive()){
+  for (int i = 0; i < maxInputs; i++){
+    if (inputChannel[i]->isActive()){
       int t;
-      for(t=0; t<models; t++){
-        if(inputChannel[i]->_model == table[t].model){
+      for (t = 0; t < models; t++){
+        if (strcmp(inputChannel[i]->_model, table[t].model) == 0){
           break;
         }
       }
-      if(t == models){
+      if (t == models){
         table[t].model = inputChannel[i]->_model;
         table[t].p50_pos = 0;
         table[t].p60_pos = 0;
@@ -658,18 +667,22 @@ bool configMasterPhaseArray(){
     }
   }
 
-      // Lookup models in table file.
-      // Count total masterPhaseArray entries required
+  // Lookup models in table file.
+  // Count total masterPhaseArray entries required
 
+  trace(T_CONFIG, 20, 2);
   File tableFile;
   String tableFileURL = "tables.txt";
   tableFile = SD.open(tableFileURL, FILE_READ);
   if(!tableFile) return false;
 
+  trace(T_CONFIG, 20, 3);
   int totalEntries = 0;
   for(int t=0; t<models; t++){
+    trace(T_CONFIG, 21);
     tableFile.seek(0);
     if(tableFile.find(table[t].model)){
+      trace(T_CONFIG, 22);
       int pos = tableFile.position();
       if(tableFile.findUntil("\"p50\":", 6, "}", 1)){
         table[t].p50_pos = tableFile.position();
@@ -683,15 +696,17 @@ bool configMasterPhaseArray(){
     }
   }
 
-        // allocate master array to contain all of the individual arrays.
-        // Pointers will be set to subarrays in master;
+  // allocate master array to contain all of the individual arrays.
+  // Pointers will be set to subarrays in master;
 
+  trace(T_CONFIG, 20, 4);
   delete[] masterPhaseArray;
   masterPhaseArray = new int16_t[totalEntries];
   int16_t* nextArray = masterPhaseArray;
 
         // Copy arrays into master and save pointers to them.
 
+  trace(T_CONFIG, 20, 5);
   for(int t=0; t<models; t++){
     if(table[t].p50_pos){
       table[t].p50_ptr = nextArray;
@@ -709,15 +724,16 @@ bool configMasterPhaseArray(){
     }
   }
 
-        // Set array pointers in inputs
+  // Set array pointers in inputs
 
+  trace(T_CONFIG, 20, 6);
   for(int i=0; i<maxInputs; i++){
     IotaInputChannel* input = inputChannel[i];
     input->_p50 = nullptr;
     input->_p60 = nullptr;
     if(input->isActive()){
       for(int t=0; t<models; t++){
-        if(input->_model == table[t].model){
+        if(strcmp(input->_model, table[t].model) == 0){
           input->_p50 = table[t].p50_ptr;
           input->_p60 = table[t].p60_ptr;
           break;
@@ -750,6 +766,7 @@ bool configMasterPhaseArray(){
   //   Serial.println();
   // }
 
+  trace(T_CONFIG, 20, 7);
   tableFile.close();
   return true;
 }
