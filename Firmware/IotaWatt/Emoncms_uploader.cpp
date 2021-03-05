@@ -86,6 +86,10 @@ uint32_t emoncms_uploader::handle_write_s(){
 
     while(reqData.available() < _bufferLimit && newRecord->UNIXtime < Current_log.lastKey()){
 
+        if(micros() > bingoTime){
+            return 15;
+        }
+
         // Swap newRecord top oldRecord, read next into newRecord.
 
         trace(T_Emoncms,60);
