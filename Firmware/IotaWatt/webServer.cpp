@@ -640,25 +640,6 @@ void handleStatus(){
       datalogs.add(histlog);
 
       trace(T_WEB,17);
-      if(integrators){
-        trace(T_WEB,17,1);
-        Script *script = integrators->first();
-        while(script){
-          trace(T_WEB,17,2);
-          integrator *_integrator = (integrator *)script->getParm();
-          IotaLog *_log = _integrator->get_log();
-          if(_log){
-            JsonObject& importlog = jsonBuffer.createObject();
-            importlog.set(F("id"), _integrator->name());
-            importlog.set(F("firstkey"),_log->firstKey());
-            importlog.set(F("lastkey"),_log->lastKey());
-            importlog.set(F("size"),_log->fileSize());
-            importlog.set(F("interval"),_log->interval());
-            datalogs.add(importlog);
-          }
-          script = script->next();
-        }
-      }
       root.set(F("datalogs"),datalogs);
     }
 
