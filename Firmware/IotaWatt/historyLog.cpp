@@ -35,8 +35,6 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
     case initialize: {
       trace(T_history,1);
 
-      _serviceBlock->priority = priorityML;
-
         // If iotaLog not open or empty, check back later.
 
       if( ! Current_log.isOpen() || (Current_log.lastKey() - Current_log.firstKey()) < History_log.interval()){
@@ -107,37 +105,40 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
     }
 
     case logData: {
-      trace(T_history,4);   
-      if((History_log.lastKey() + History_log.interval()) > Current_log.lastKey()){
-        return UTCtime() + 5;
+      trace(T_history,4);
+      while((History_log.lastKey() + History_log.interval()) <= Current_log.lastKey()){
+        
+        trace(T_history,5);
+        if( ! logRecord){
+          logRecord = new IotaLogRecord;
+          logRecord->UNIXtime = History_log.lastKey(); 
+        }
+        logRecord->UNIXtime += History_log.interval();
+        if(Current_log.readKey(logRecord)){
+        log("historyLog: primary log file read failure. Service suspended.");
+          delete logRecord;
+          logRecord = nullptr;
+          return 0;
+        }
+        trace(T_history,7); 
+        if(logRecord->UNIXtime % History_log.interval()){
+          Serial.print("log file record not multiple of history interval: ");
+          Serial.println(logRecord->UNIXtime);
+          delete logRecord;
+          logRecord = nullptr;
+          return 0;
+        }
+        trace(T_history,8); 
+        History_log.write(logRecord);
+        if((History_log.lastKey() + History_log.interval()) > Current_log.lastKey()){
+          delete logRecord;
+          logRecord = nullptr;
+        }
+        if(micros() > bingoTime){
+          return 15;
+        }
       }
-      trace(T_history,5);
-      if( ! logRecord){
-        logRecord = new IotaLogRecord;
-        logRecord->UNIXtime = History_log.lastKey(); 
-      }
-      logRecord->UNIXtime += History_log.interval();
-      if(Current_log.readKey(logRecord)){
-      log("historyLog: primary log file read failure. Service suspended.");
-        delete logRecord;
-        logRecord = nullptr;
-        return 0;
-      }
-      trace(T_history,7); 
-      if(logRecord->UNIXtime % History_log.interval()){
-        Serial.print("log file record not multiple of history interval: ");
-        Serial.println(logRecord->UNIXtime);
-        delete logRecord;
-        logRecord = nullptr;
-        return 0;
-      }
-      trace(T_history,8); 
-      History_log.write(logRecord);
-      if((History_log.lastKey() + History_log.interval()) > Current_log.lastKey()){
-        delete logRecord;
-        logRecord = nullptr;
-      }
-      return 2;
+      return History_log.lastKey() + History_log.interval() + 1;
     }
   }
   trace(T_history,9);
