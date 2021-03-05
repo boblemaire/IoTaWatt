@@ -219,7 +219,7 @@ uint32_t uploader::handle_HTTPpost_s(){
     reqData.flush();
     trace(T_uploader,126);
     _state = HTTPwait_s;
-    return 1; 
+    return 10; 
 }
 
 uint32_t uploader::handle_HTTPwait_s(){
@@ -236,7 +236,7 @@ uint32_t uploader::handle_HTTPwait_s(){
         return 1;
     }
     trace(T_uploader,93);
-    return 1;
+    return 10;
 }
 
 void uploader::setRequestHeaders(){};
