@@ -228,30 +228,6 @@ bool    CSVquery::setup(){
                 }
             }
 
-            if(col->source == ' ' && integrators){
-                trace(T_CSVquery,15);
-                Script *script = integrators->first();
-                while(script){
-                    if(name.equals(script->name())){
-                        if(!_integrations){
-                            _failReason = String(F("Integration not supported for period/group.")) + name;
-                            return false;
-                        }
-                        col->source = 'N';
-                        if(strcmp(script->getUnits(),"Wh") == 0){
-                            col->unit = Wh;
-                        }
-                        else if(strcmp(script->getUnits(),"VARh") == 0){
-                            col->unit = VARh;
-                        }
-                        else col->decimals = script->precision();
-                        col->script = script;
-                        break;
-                    } 
-                    script = script->next(); 
-                }
-            }
-
             if(col->source == ' '){
                 trace(T_CSVquery,16);
                 Script* script = outputs->first();

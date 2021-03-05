@@ -153,8 +153,7 @@ serviceBlock* serviceQueue;               // Head of active services list in ord
 IotaInputChannel* *inputChannel = nullptr; // -->s to incidences of input channels (maxInputs entries) 
 uint8_t     maxInputs = 0;                // channel limit based on configured hardware (set in Config)
 int16_t    *masterPhaseArray = nullptr;   // Single array containing all individual phase shift arrays          
-ScriptSet  *outputs = new ScriptSet();     // -> ScriptSet for output channels
-ScriptSet  *integrators = new ScriptSet(); // -> ScriptSet that defines integrators.      
+ScriptSet  *outputs = new ScriptSet();    // -> ScriptSet for output channels
 
 uint8_t     deviceMajorVersion = 4;       // Default to 4.8
 uint8_t     deviceMinorVersion = 8;                 

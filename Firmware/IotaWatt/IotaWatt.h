@@ -272,10 +272,9 @@ extern float   heapMs;
 extern uint32_t heapMsPeriod;
 extern IotaLogRecord statRecord;
 
-      // ****************************** list of output channels and integrators ******
+      // ****************************** list of output channels **********************
 
 extern ScriptSet *outputs;
-extern ScriptSet *integrators;
 
       // ****************************** SDWebServer stuff ****************************
 
