@@ -26,9 +26,9 @@ bool configIntegrations(const char *);
 // if it succeeds,
 //   The pre-existing config is renamed to //config-1.txt
 //   The newConfig is renamed to config.txt
-//   return trus  
-
-
+//   return true
+// 
+//*************************************************************************************************
 bool updateConfig(const char *newConfig){
   if(setConfig(newConfig)){
     if(SD.exists(F(IOTA_CONFIG_OLD_PATH))){
@@ -48,6 +48,7 @@ bool updateConfig(const char *newConfig){
 //
 // Attempt to recover from failed setConfig
 //
+//*************************************************************************************************
 bool recoverConfig(){
   if(SD.exists(F(IOTA_CONFIG_NEW_PATH)) && setConfig(IOTA_CONFIG_NEW_PATH)){
     return updateConfig(IOTA_CONFIG_NEW_PATH);
@@ -64,7 +65,9 @@ bool recoverConfig(){
 
 //*************************************************************************************************
 //
-// setConfig will process the argued config file and return true/false=good/bad
+//    setConfig() will process the argued config file and return true/false=good/bad
+//
+//*************************************************************************************************
 
 boolean setConfig(const char* configPath){
   DynamicJsonBuffer Json;              
@@ -97,7 +100,7 @@ boolean setConfig(const char* configPath){
     log("Current log overide days: %d", Current_log.setDays(Config[F("logdays")].as<int>()));
   }      
 
-        //************************************ Configure device ***************************
+  //************************************ Configure device ***************************
 
   trace(T_CONFIG,5);
   JsonArray& deviceArray = Config[F("device")];
@@ -107,7 +110,7 @@ boolean setConfig(const char* configPath){
     delete[] deviceStr;
   }  
 
-        //************************************ Configure DST rule *********************************
+  //************************************ Configure DST rule *********************************
 
   trace(T_CONFIG,10);
   delete timezoneRule;
@@ -119,7 +122,7 @@ boolean setConfig(const char* configPath){
     delete[] dstruleStr;
   }  
 
-        //************************************ Configure input channels ***************************
+  //************************************ Configure input channels ***************************
 
   trace(T_CONFIG,15);
   JsonArray& inputsArray = Config[F("inputs")];
@@ -129,40 +132,12 @@ boolean setConfig(const char* configPath){
     delete[] inputsStr;
   }
 
-        //************************************ Lookup phase shift in tables ***********************
+  //************************************ Lookup phase shift in tables ***********************
 
   trace(T_CONFIG,20);
   configMasterPhaseArray();
 
-    // Print the inputs
-
-  // for(int i=0; i<MAXINPUTS; i++){
-  //   IotaInputChannel* input = inputChannel[i];
-  //   if(input->_active){
-  //       Serial.printf("Name %s, Model %s\r\nphase %.2f\r\n", input->_name, input->_model, input->_phase );
-  //       if(input->_p60){
-  //         Serial.print("p60");
-  //         int16_t* array = input->_p60;
-  //         while(*(array+1)){
-  //           Serial.printf(" (%.2f, %.2f),",(float)*array/100.0, (float)*(array+1)/100.0);
-  //           array += 2;
-  //         } 
-  //         Serial.printf(" (%.2f)\r\n",(float)*array/100.0);
-  //       }
-  //       if(input->_p50){
-  //         Serial.print("p50");
-  //         int16_t* array = input->_p50;
-  //         while(*(array+1)){
-  //           Serial.printf(" (%.2f, %.2f),",(float)*array/100.0, (float)*(array+1)/100.0);
-  //           array += 2;
-  //         } 
-  //         Serial.printf(" (%.2f)\r\n",(float)*array/100.0);
-  //       }
-  //   }
-  // }
-    
-
-        // ************************************ configure output channels *************************
+  // ************************************ configure output channels *************************
 
   {      
     trace(T_CONFIG,25);
@@ -284,36 +259,6 @@ boolean setConfig(const char* configPath){
     }    
   }
 
-  //********************************************* Configure Integrations ******************************************
-
-//
-//  Integrations are basically scripts that are preprocessed against the log 
-//  with results stored in a datalog by the same name as the script.
-//  The definitions are maintained as a scriptset.
-//  Upon configuration the scriptset is processed and integrator instances are created to handle.
-//
-
-  {      
-    trace(T_CONFIG,50);
-    JsonArray& locArray = Config[F("integrations")];
-    if(locArray.success()){
-      trace(T_CONFIG,50);
-      char *Jsonstring = JsonDetail(ConfigFile, locArray);
-      if(!configIntegrations(Jsonstring)){
-        log("integrators: invalid configuration:");
-        delete[] Jsonstring;
-        return false;
-      }
-      delete[] Jsonstring;
-      return true;
-    } 
-    else {
-      configIntegrations("[]");
-    }
-      
-
-  }
-
       // ************************************** Code to handle array of configurations****************************
 
   // {
@@ -407,8 +352,7 @@ boolean setConfig(const char* configPath){
   trace(T_CONFIG,70);
   return true;
 
-}                                       // End of processConfig
-
+}  // End of setConfig
 
 //************************************** configDevice() ********************************************
 bool configDevice(const char* JsonStr){
@@ -552,7 +496,6 @@ bool configDST(const char* JsonStr){
   return true;
 } 
 
-
 //********************************** configInputs ***********************************************
 bool configInputs(const char* JsonStr){
   DynamicJsonBuffer Json;
@@ -632,73 +575,6 @@ bool configOutputs(const char* JsonStr){
   // });
   return true;
 } 
-
-//********************************** config integrations ********************************************
-
-bool configIntegrations(const char* JsonStr){
-  trace(T_CONFIG,51);
-  DynamicJsonBuffer Json;
-  JsonArray& intArray = Json.parseArray(JsonStr);
-  if( ! intArray.success()){
-    log("outputs: Json parse failed");
-    return false;
-  }
-  trace(T_CONFIG,51);
-  ScriptSet *newIntegrators = new ScriptSet(intArray);
-
-  // Match prior integrators with new definitions
-  // Set -> integrator in new definition.
-
-  trace(T_CONFIG,52);
-  if(integrators){
-    Script* oldScript = integrators->first();
-    while(oldScript){
-      Script *newScript = newIntegrators->first();
-      trace(T_CONFIG,53);
-      while(newScript){
-        if(strcmp(oldScript->name(), newScript->name()) == 0){
-          newScript->setParm(oldScript->getParm());
-          oldScript->setParm(0);
-          break;
-        }
-        newScript = newScript->next();
-      }
-      if(oldScript->getParm()){
-        trace(T_CONFIG,54);
-        integrator *endit = (integrator*)oldScript->getParm();
-        endit->end();
-      }
-      oldScript = oldScript->next();
-    }
-  }
-
-  delete integrators;
-  integrators = newIntegrators;
-
-  // Initialize integrators
-
-  Script *script = integrators->first();
-  while(script){
-
-    // Configure new integrators
-
-    if(!script->getParm()){
-      integrator *newIntegrator = new integrator;
-      script->setParm((void *)newIntegrator);
-      newIntegrator->config(script);
-    }
-
-    // Existing integrators just update -> Script
-
-    else {
-      integrator *oldIntegrator = (integrator *)script->getParm();
-      oldIntegrator->setScript(script);
-    }
-    script = script->next();
-  }
-
-  return true;
-}
 
 /********************************** configmasterPhaseArray ********************************************
  * 
