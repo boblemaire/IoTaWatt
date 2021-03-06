@@ -34,8 +34,6 @@
                 title="Define output values for status display and local graphs">Outputs</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,buildWebServer)"
                 title="Specify data uploader(s) to external servers">Data Uploaders</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,configIntegrations)"
-                title="Integrations can accumulate solar import and VARh">Integrations</button>    
             <button class="mainMenuButton" onclick="mainMenuButton(this,setProxy)" 
                 title="Specify optional proxy server for HTTPS">HTTPS Proxy Server</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,setPasswords)"
@@ -162,33 +160,6 @@
       </div>
     </div>
         
-              <!-- *************** Integrations configuration ******************-->
-
-    <div id="configIntegrations" class="body" style="display: none;">
-      <div class="bodyDiv color_body" id="divIntegrations">
-        <h3>Integrations</h3>
-        <p>
-          Integrations create and maintain supplemental datalogs that can
-          be used to extract data that is not possible to obtain from the 
-          primary datalogs due to the time that would be required to process
-          millions of measurements. New integrations may take hours to
-          process historical data. Once up to date, new measurements going
-          forward will be added to the integration log in real time. The resulting
-          integration log can be queried as quickly as any other metric, 
-          whether looking at a week, month or year.
-        </p><p>
-          One specific application is keeping track of imported and exported power
-          in a solar installation, as many tariffs use those metrics rather than
-          net usage. Another practical use is to accumulate VAR-hours where
-          that is a part of a commercial or industrial billing structure.
-        </p><p>
-          Integrations can be queried in the same way as other metrics, and by
-          extension can be visualized in graph+. See the documentation for details.
-        </p>
-        <table id="integrationsTable"></table>
-      </div>
-    </div>
-    
                   <!-- *************** Burden configuration ******************--> 
     
     <div id="configBurden" class="body color_body" style="display: none">
@@ -1286,32 +1257,6 @@ function calVTsave(obj){
   calRefreshVoltage = false;
   inputEditSave();
 }
-
-/*******************************************************************************************
- *                    Configure Integrations
- * ****************************************************************************************/
- function configIntegrations(){
-    currentBodyPush("configIntegrations");
-    
-    scriptEditSave = function(){
-      config.integrations = scriptEditSet
-      uploadConfig();
-    };
-    scriptEditReturn = function(){
-      EbyId("divCalc").style.display = "none";
-      EbyId("divIntegrations").style.display = "table";
-      configOutputs();
-    };
-    scriptEditTable = EbyId("integrationsTable");
-    scriptEditTable.innerHTML = "";
-    scriptEditSet = config.integrations;
-    scriptEditUnits = scriptEditUnitsIntegrations;
-    scriptEditNameList = [];
-    scriptEditUniqueNames = true;
-    scriptEditNameTitle="Name must be alphanumeric and start with a letter";
-    scriptEditNamePattern="^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
-    editScript();
-  }
 
 /*******************************************************************************************
  *                    Configure Outputs
