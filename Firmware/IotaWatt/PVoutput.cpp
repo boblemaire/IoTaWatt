@@ -61,8 +61,11 @@ void PVoutput::end(){
         // Get the current status as a Json object.
 
 void PVoutput::getStatusJson(JsonObject& status){
-    status.set(F("running"), (_started && _state != stopped));
+    status.set(F("status"), (_started && _state != stopped) ? "running" : "stopped");
     status.set(F("lastpost"),local2UTC(_lastPostTime));
+    if(_statusMessage){
+        status.set(F("message"), _statusMessage);
+    }
 }
 
 //********************************************************************************************************************
@@ -90,7 +93,7 @@ uint32_t PVoutput::tick(struct serviceBlock* serviceBlock){
         case limitWait:             {return tickLimitWait();}
         case stopped:               {return handle_stopped_s();}
     }
-    log("PVoutput: Unrecognize state, stopping");
+    log("%s: Unrecognize state, stopping", _id);
     return 0;
 }
 
@@ -119,7 +122,8 @@ uint32_t PVoutput::handle_initialize_s(){
     if( ! History_log.isOpen()){
         return UTCtime() + 10;
     }
-    log("PVoutput: started");
+    _id = charstar(F("PVoutput"));
+    log("%s: started", _id);
     _started = true;
     _state = getSystemService;
     return 1;
@@ -136,7 +140,7 @@ uint32_t PVoutput::tickCheckSystemService(){
     trace(T_PVoutput,25);
     switch (_HTTPresponse) {
         default:{
-            log("PVoutput: Unrecognized HTTP completion, getSystemService %.40s", response->peek(40).c_str());
+            log("%s: Unrecognized HTTP completion, getSystemService %.40s", response->peek(40).c_str(), _id);
             _state = getSystemService;
             return UTCtime() + 3600;
         }
@@ -146,7 +150,7 @@ uint32_t PVoutput::tickCheckSystemService(){
             if(response->parsel(2,0)){
                 _donator = true;
             }
-            log("PVoutput: System %s, interval %d%s  ", response->parseString(0,0).c_str(), _interval/60, _donator ? ", donator mode" : ", freeload mode");
+            log("%s: System %s, interval %d%s  ", _id, response->parseString(0,0).c_str(), _interval/60, _donator ? ", donator mode" : ", freeload mode");
             delete response;
             response = nullptr;
             _state = getStatus;
@@ -156,7 +160,7 @@ uint32_t PVoutput::tickCheckSystemService(){
         case RATE_LIMIT:
         case HTTP_FAILURE: {
             _state = getSystemService;
-            return 1;
+            return 15;
         }
     }
 }
@@ -171,7 +175,9 @@ uint32_t PVoutput::tickGotStatus(){
     trace(T_PVoutput,75);
     switch (_HTTPresponse) {
         default: {
-            log("PVoutput: Unrecognized HTTP completion, gotStatus %.40s", response->peek(40).c_str());
+            delete[] _statusMessage;
+            _statusMessage = charstar(F("Unrecognized HTTP completion, gotStatus "), response->peek(40).c_str());
+            log("%s: %s", _id, _statusMessage);
             _state = getSystemService;
             return UTCtime() + 3600;
         }
@@ -209,9 +215,9 @@ uint32_t PVoutput::tickGotStatus(){
 
     trace(T_PVoutput,78);
     if(_reload){
-        log("PVoutput: Reload status beginning %s", datef(_lastPostTime + _interval).c_str());
+        log("%s: Reload status beginning %s", _id, datef(_lastPostTime + _interval).c_str());
     } else {
-        log("PVoutput: Start status beginning %s", datef(_lastPostTime + _interval).c_str());
+        log("%s: Start status beginning %s", _id, datef(_lastPostTime + _interval).c_str());
     }
     
     trace(T_PVoutput,79);
@@ -437,7 +443,9 @@ uint32_t PVoutput::tickCheckUploadStatus(){
     trace(T_PVoutput,90);
     switch (_HTTPresponse) {
         default:{
-            log("PVoutput: Unrecognized HTTP completion, upload %.40s", response->peek(40).c_str());
+            delete[] _statusMessage;
+            _statusMessage = charstar(F("Unrecognized HTTP completion, upload "), response->peek(40).c_str());
+            log("%s: %s", _id, _statusMessage);
             _state = getSystemService;
             return UTCtime() + 3600;
         }
@@ -447,16 +455,22 @@ uint32_t PVoutput::tickCheckUploadStatus(){
             trace(T_PVoutput,91);
             _lastPostTime = _lastReqTime;   
             _state = uploadStatus;
-            return 1;
+            return 15;
             }
         case LOAD_IN_PROGRESS:
-        case RATE_LIMIT:
+            delete[] _statusMessage;
+            _statusMessage = charstar(F("Load in progress?"));
+            break;
         case HTTP_FAILURE: { // retry 
-            trace(T_PVoutput,92);           
+            trace(T_PVoutput,92);
+            delete[] _statusMessage;
+            _statusMessage = charstar(F("HTTP completion, upload "), String(request->responseHTTPcode()).c_str());
+            log("%s: %s", _id, _statusMessage);           
+        }
+        case RATE_LIMIT:
             _lastReqTime = _lastPostTime;
             _state = uploadStatus; 
-            return 1;
-        }
+        return 15;
     }
     }
 
@@ -500,7 +514,7 @@ void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, 
 uint32_t PVoutput::handle_HTTPpost_s(){
     trace(T_PVoutput,110);
     if(_rateLimitRemaining <= 0  && UTCtime() < _rateLimitReset){
-        log("PVoutput: Transaction Rate-Limit exceeded.  Waiting until %s", datef(UTC2Local(_rateLimitReset), "hh:mm").c_str());
+        log("%s: Transaction Rate-Limit exceeded.  Waiting until %s", _id, datef(UTC2Local(_rateLimitReset), "hh:mm").c_str());
         _state = limitWait;
         return 1;
     }
@@ -598,13 +612,18 @@ uint32_t PVoutput::handle_HTTPwait_s(){
     if(request->responseHTTPcode() == 200){
         trace(T_PVoutput,122);
         _HTTPresponse = OK;
+        delete[] _statusMessage;
+        _statusMessage = nullptr;
         return 1;
     }
     
     if(request->responseHTTPcode() == 403 && response->contains(F("Exceeded")) && response->contains(F("requests per hour"))){
+        delete[] _statusMessage;
+        _statusMessage = charstar(F("Transaction Rate-Limit exceeded.  Resume at "), datef(UTC2Local(_rateLimitReset), "hh:mm").c_str());
+        log("%s: %s", _id, _statusMessage);
         trace(T_PVoutput,123);
-        log("PVoutput: Transaction Rate-Limit exceeded.  Waiting until %s", datef(UTC2Local(_rateLimitReset), "hh:mm").c_str());
-        _HTTPresponse = RATE_LIMIT;        
+        _HTTPresponse = RATE_LIMIT;
+        _state = limitWait;        
         return 1;
     }
 
@@ -640,13 +659,19 @@ uint32_t PVoutput::handle_HTTPwait_s(){
 }
 
 uint32_t PVoutput::tickLimitWait(){
+    if(_stop || _end){
+        delete[] _statusMessage;
+        _statusMessage = nullptr;
+        _state = uploadStatus;
+        return 1;
+    }
     if(UTCtime() > _rateLimitReset){
         trace(T_PVoutput,131);
         _state = HTTPpost;
         return 1;
     }
     trace(T_PVoutput,130);
-    return UTCtime() + 5;
+    return UTCtime() + 1;
 }
 
 //********************************************************************************************************************
@@ -662,7 +687,7 @@ bool PVoutput::config(const char* configObj){
     DynamicJsonBuffer Json;
     JsonObject& config = Json.parseObject(configObj);
     if( ! config.success()){
-        log("PVoutput: Json parse failed.");
+        log("%s: Json parse failed.", _id);
         return false; 
     }
     trace(T_PVoutput,200);

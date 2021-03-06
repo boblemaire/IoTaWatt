@@ -86,6 +86,7 @@ public:
         ,oldRecord(nullptr)
         ,newRecord(nullptr)
         ,_POSTrequest(nullptr)
+        ,_statusMessage(nullptr)
         ,_rateLimitReset(0)
         ,_baseTime(0)
         {};
@@ -192,6 +193,8 @@ private:
     IotaLogRecord* oldRecord;               // Older of two log records bracketing a reporting interval
     IotaLogRecord* newRecord;               // Newer of two log records bracketing a reporting interval    
     POSTrequest* _POSTrequest;              // Details of active POST request
+    char        *_statusMessage;            // message for status query
+    char        *_id;                       // uploader ID
 
     int32_t     _rateLimitLimit;            // Flow control from PVoutput response headers
     int32_t     _rateLimitRemaining;
