@@ -129,7 +129,9 @@ uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
             if(data){
                 _lastSent = strtol(data, 0, 10);
                 if(_lastSent >= MAX(Current_log.firstKey(), _uploadStartDate)){
-                    log("%s: Resume posting %s", _id, localDateString(_lastSent + _interval).c_str());
+                    if( ! _stop){
+                        log("%s: Resume posting %s", _id, localDateString(_lastSent + _interval).c_str());
+                    }
                     _lookbackHours = 0;
                     _state = write_s;
                     return 1;

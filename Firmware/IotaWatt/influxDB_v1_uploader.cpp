@@ -112,7 +112,9 @@ uint32_t influxDB_v1_uploader::handle_checkQuery_s(){
     _lastSent = MAX(_lastSent, Current_log.firstKey());
     _lastSent -= _lastSent % _interval;
     trace(T_influx1,37);
-    log("%s: Start posting at %s", _id, localDateString(_lastSent + _interval).c_str());
+    if( ! _stop){
+        log("%s: Start posting at %s", _id, localDateString(_lastSent + _interval).c_str());
+    }
     _state = write_s;
     return 1;
 }
