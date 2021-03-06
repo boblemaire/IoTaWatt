@@ -166,7 +166,7 @@ uint32_t uploader::handle_HTTPpost_s(){
 
     _HTTPtoken = HTTPreserve(T_uploader);
     if( ! _HTTPtoken){
-        return 1;
+        return 15;
     }
 
     // Setup request.
