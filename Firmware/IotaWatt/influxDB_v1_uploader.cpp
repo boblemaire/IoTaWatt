@@ -353,6 +353,12 @@ bool influxDB_v1_uploader::configCB(JsonObject& config){
         return strcmp(varStr(_measurement, a).c_str(), varStr(_measurement, b).c_str());
     });
 
+    // If port wasn't specified, set influxDB_v1 default port.
+
+    if( ! _url->port()){
+        _url->port(":8086");
+    }
+
     return true;
 }
     
