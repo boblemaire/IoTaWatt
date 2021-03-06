@@ -2398,7 +2398,7 @@ function editPVoutput(){
   
   var keyInput = addTableRow(serverTable, "API Key:", "apiKey", "input", 40);
   keyInput.value = config.pvoutput.apikey;
-  keyInput.setAttribute("oninput","config.pvoutput.apikey = button.value.value; checkPVOutput();");
+  keyInput.setAttribute("oninput","config.pvoutput.apikey = this.value; checkPVOutput();");
   keyInput.setAttribute("size","40");
   keyInput.pattern = "[0-9a-f]{40}";
   keyInput.title = "read/write key - 40 hexadecimal digits";
