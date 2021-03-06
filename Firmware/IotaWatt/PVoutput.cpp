@@ -507,20 +507,34 @@ uint32_t PVoutput::handle_HTTPpost_s(){
     if( ! WiFi.isConnected()){
         return UTCtime() + 1;
     }
+
     _HTTPtoken = HTTPreserve(T_influx);
     if( ! _HTTPtoken){
-        return 1;
+        return 15;
     }
+
     if( ! request){
         request = new asyncHTTPrequest;
     }
     request->setTimeout(3);
     request->setDebug(false);
-    char URL[128];
-    size_t len = sprintf_P(URL, PSTR("HTTP://pvoutput.org/service/r2/%s"), _POSTrequest->URI);
-    if( ! request->open("POST", URL)){
-        HTTPrelease(_HTTPtoken);
-        return UTCtime() + 10;
+    {
+        String URL;
+        if(HTTPSproxy){
+            URL = HTTPSproxy;
+        }
+        else {
+            URL = "HTTP://pvoutput.org";
+        }
+        URL = URL + "/service/r2/" + _POSTrequest->URI;
+
+        if( ! request->open("POST", URL.c_str())){
+            HTTPrelease(_HTTPtoken);
+            return UTCtime() + 10;
+        }
+    }
+    if(HTTPSproxy){
+        request->setReqHeader(F("X-proxypass"),  "HTTPS://pvoutput.org");
     }
     request->setReqHeader(FPSTR(reqHeaderApikey), _apiKey);
     request->setReqHeader(FPSTR(reqHeaderSystemId), _systemID);
