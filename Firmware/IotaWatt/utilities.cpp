@@ -18,17 +18,27 @@ int strcmp_ci(const char* str1, const char* str2){
 /**************************************************************************************************
  * allocate a char* array, copy the argument data to it, and return the pointer. 
  * ************************************************************************************************/
-char* charstar(const __FlashStringHelper * str){
-  if( ! str) return nullptr;
-  char* ptr = new char[strlen_P((PGM_P)str)+1];
-  strcpy_P(ptr, (PGM_P)str);
+char* charstar(const __FlashStringHelper * str1, const char *str2){
+  if( ! str1) return nullptr;
+  int len1 = strlen_P((PGM_P)str1);
+  int len2 = str2 ? strlen(str2) : 0;
+  char* ptr = new char[len1 + len2 +1];
+  strcpy_P(ptr, (PGM_P)str1);
+  if(str2){
+      strcpy(ptr + len1, str2);
+  }  
   return ptr;
 }
 
-char* charstar(const char* str){
-  if( ! str) return nullptr;
-  char* ptr = new char[strlen(str)+1];
-  strcpy(ptr, str);
+char* charstar(const char* str1, const char *str2){
+  if( ! str1) return nullptr;
+  int len1 = strlen(str1);
+  int len2 = str2 ? strlen(str2) : 0;
+  char* ptr = new char[len1 + len2 +1];
+  strcpy_P(ptr, str1);
+  if(str2){
+      strcpy(ptr + len1, str2);
+  }  
   return ptr;
 }
 
