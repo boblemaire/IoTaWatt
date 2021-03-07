@@ -336,7 +336,11 @@
       
        <div id="tabPVout" style="display: none;">
         <button class="groupTab" onclick="toggleDisplay('statusPVoutDiv')">PVoutput</button>
-        <p id="statusPVoutDiv" class="statusDiv" style="display: none;"></p>
+        <div id="statusPVoutDiv" class="statusDiv" style="display: none;">
+          <button id="PVoutputButton" style = "configButton" value = "pvoutput" onclick="serverToggle(this,this.value)"></button>
+          <span id="PVoutputtext"></span>
+          <span id="PVoutputmsg"></span>
+        </div>
       </div>
       
       <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
@@ -471,6 +475,18 @@
 </div> <!-- outerContainer -->
 
 <script>
+
+var units = [
+  { unit: "Volts",  SI: "V", dp: 1},
+  { unit: "Watts", SI: "W", dp: 1},
+  { unit: "Wh",  SI: "Wh", dp: 1},
+  { unit: "Amps", SI: "A", dp: 2},
+  { unit: "VA", SI: "VA", dp: 1},
+  { unit: "PF", SI: "PF", dp: 2},
+  { unit: "Hz", SI: "Hz", dp: 0},
+  { unit: "VAR", SI: "VAR", dp: 1},
+  { unit: "VARh", SI: "VARh", dp: 1}
+];
 // configuration files
 var configFileURL = "/config.txt";
 var configNewURL = "/config+1.txt";
@@ -2627,18 +2643,28 @@ function statusDisplay(statusMessage){
   }
   
   var PVoutDiv = EbyId("statusPVoutDiv");
-  PVoutDiv.innerHTML = "";
   if(status.pvoutput !== undefined && status.pvoutput.state != "not running"){
-    var button = document.createElement("button");
-    button.style = "configButton";
-    button.innerHTML = status.pvoutput.running ? "Stop" : "Start";
-    button.setAttribute("onclick","PVoutToggle()");
-    PVoutDiv.appendChild(button);
-    PVoutDiv.appendChild(document.createTextNode(status.pvoutput.running ? " Running" : " Stopped"));
-    if(status.pvoutput.lastpost){
-      PVoutDiv.appendChild(document.createTextNode(", Last update " + formatDateTime(status.pvoutput.lastpost)));
+    show("tabPVout");
+    var button = EbyId("PVoutputButton");
+    button.disabled = false;
+    if(status.pvoutput.status == "running"){
+      button.innerHTML = "Stop";
+      EbyId("PVoutputtext").innerHTML = "Running"
     }
-  } 
+    else {
+      button.innerHTML = "Start";
+      EbyId("PVoutputtext").innerHTML = "Stopped"
+    }
+    EbyId("PVoutputtext").innerHTML += ", Last update " + formatDateTime(status.pvoutput.lastpost);
+    EbyId("PVoutputmsg").innerHTML = "";
+    if(status.pvoutput.message){
+      EbyId("PVoutputmsg").innerHTML = "<br>" + status.pvoutput.message;
+    }
+  }
+  else {
+    hide("tabPVoutput");
+  }
+   
   
   statusTable = EbyId("inputStatusTable");
   statusTable.innerHTML = "";
@@ -2670,7 +2696,8 @@ function statusDisplay(statusMessage){
       if(Math.abs(status.inputs[i].Watts) >= 60){
         var pf = Math.abs(status.inputs[i].Pf);
         var pfNode = document.createElement("font");
-        pfNode.innerHTML = ", pf:" + "&nbsp;" + pf.toFixed(2);
+        var PF2 = pf.toFixed(2);
+        pfNode.innerHTML = ", pf" + "&nbsp;" + ((PF2 < 1) ? PF2.substr(1) : PF2);
         column3.appendChild(pfNode);
       }
       
@@ -2705,14 +2732,11 @@ function statusDisplay(statusMessage){
   }
 }
 
-function unitsPrecision(units){
-  if(units == "Watts") return 1;
-  if(units == "Volts") return 1;
-  if(units == "Amps") return 2;
-  if(units == "Hz") return 1;
-  if(units == "PF") return 2;
-  if(units == "VA") return 1;
-  return 1;
+function unitsPrecision(unitArg){
+  for(u in units){
+    if(units[u].unit == unitArg) return units[u].dp;
+  }
+  return 0;
 }
 
 function formatRunTime(time){
