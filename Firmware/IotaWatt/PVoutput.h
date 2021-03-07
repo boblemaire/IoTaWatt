@@ -114,18 +114,18 @@ private:
 
         // Services operate as state machines to maintain context and synchronize.
 
-    enum    states     {initialize, 
-                        getSystemService,
-                        checkSystemService,
-                        getStatus,
-                        gotStatus,
-                        uploadStatus,
-                        checkUploadStatus, 
-                        HTTPpost, 
-                        HTTPwait,
-                        limitWait,
-                        stopped,
-                        invalid
+    enum    states     {initialize = 0, 
+                        getSystemService = 1,
+                        checkSystemService = 2,
+                        getStatus = 3,
+                        gotStatus = 4,
+                        uploadStatus = 5,
+                        checkUploadStatus = 6, 
+                        HTTPpost = 7, 
+                        HTTPwait = 8,
+                        limitWait =9,
+                        stopped = 10,
+                        invalid = 11
                     } _state;
 
     

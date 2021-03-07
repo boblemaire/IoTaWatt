@@ -92,9 +92,10 @@ uint32_t PVoutput::tick(struct serviceBlock* serviceBlock){
         case HTTPwait:              {return handle_HTTPwait_s();}
         case limitWait:             {return tickLimitWait();}
         case stopped:               {return handle_stopped_s();}
+        default:
+            log("%s: Unrecognize state, stopping", _id);
+            return 0;
     }
-    log("%s: Unrecognize state, stopping", _id);
-    return 0;
 }
 
 uint32_t PVoutput::handle_stopped_s(){
@@ -513,11 +514,11 @@ void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, 
 
 uint32_t PVoutput::handle_HTTPpost_s(){
     trace(T_PVoutput,110);
-    if(_rateLimitRemaining <= 0  && UTCtime() < _rateLimitReset){
-        log("%s: Transaction Rate-Limit exceeded.  Waiting until %s", _id, datef(UTC2Local(_rateLimitReset), "hh:mm").c_str());
-        _state = limitWait;
-        return 1;
-    }
+    // if(_rateLimitRemaining <= 0  && UTCtime() < _rateLimitReset){
+    //     log("%s: Transaction Rate-Limit exceeded.  Waiting until %s", _id, datef(UTC2Local(_rateLimitReset), "hh:mm").c_str());
+    //     _state = limitWait;
+    //     return 1;
+    // }
     if( ! WiFi.isConnected()){
         return UTCtime() + 1;
     }
@@ -671,7 +672,7 @@ uint32_t PVoutput::tickLimitWait(){
         return 1;
     }
     trace(T_PVoutput,130);
-    return UTCtime() + 1;
+    return UTCtime() + 60;
 }
 
 //********************************************************************************************************************
