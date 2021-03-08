@@ -209,7 +209,7 @@
                 <!-- ************* WebServer ********************--> 
     
     <div class="body color_body" id="divWebServer" style="display:none">
-      <h3 id=serverHead>Setup Web Server</h3>
+      <h3 id=serverHead>Setup Server Uploaders</h3>
       <form><table id="serverTable"></table></form>
       <div id="divInfluxTagSet" style="display:none">
         <h3>tag set</h3>
@@ -277,7 +277,7 @@
                                                       STATUS DISPLAY
          *********************************************************************************************************************-->
 
-    <div id="divStatus" class="body color_body" style="display:none">
+    <div id="divStatus" class="body color_body" style="display:inline">
       
       <button id="tabIO" class="groupTab" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs Status</button>
         <div id="statusIODiv" class="statusDiv" style="display: block;">
@@ -291,7 +291,7 @@
         </div>
         
       <button id="tabStats" class="groupTab" onclick="toggleDisplay('statusStatsDiv')">IoTaWatt Statistics</button>
-        <div id="statusStatsDiv" class="statusDiv" style="display: block;">
+        <div id="statusStatsDiv" class="statusDiv" style="display: none;">
            <table width="100%">
             <tr><th width="50%"></th><th width="50%"></th></tr>
             <tr valign="top">
@@ -307,39 +307,41 @@
           <table id="tableWifi" width="100%"></table>
         </div>
       
-      <div id="tabinflux1" style="display:none;">
-        <button class="groupTab" onclick="toggleDisplay('statusInflux1Div')">InfluxDB1</button>
-        <div id="statusInflux1Div" class="statusDiv" style="display: none;">
-          <button id="influx1Button" style = "configButton" value = "influxdb" onclick="serverToggle(this,this.value)"></button>
-          <span id="influx1text"></span>
-          <span id="influx1msg"></span>
-        </div>
-      </div>
-      
-      <div id="tabinflux2" style="display:none;">
-        <button class="groupTab" onclick="toggleDisplay('statusInflux2Div')">InfluxDB2</button>
-        <div id="statusInflux2Div" class="statusDiv" style="display: none;">
-          <button id="influx2Button" style = "configButton" value = "influxdb2" onclick="serverToggle(this,this.value)"></button>
-          <span id="influx2text"></span>
-          <span id="influx2msg"></span>
-        </div>
-      </div>
-      
-      <div id="tabEmoncms" style="display:none;">
-        <button class="groupTab" onclick="toggleDisplay('statusEmoncmsDiv')">Emoncms</button>
-        <div id="statusEmoncmsDiv" class="statusDiv" style="display: none;">
-          <button id="EmoncmsButton" style = "configButton" value = "emoncms" onclick="serverToggle(this,this.value)"></button>
-          <span id="Emoncmstext"></span>
-          <span id="Emoncmsmsg"></span>
-        </div>
-      </div>
-      
-       <div id="tabPVout" style="display: none;">
-        <button class="groupTab" onclick="toggleDisplay('statusPVoutDiv')">PVoutput</button>
-        <div id="statusPVoutDiv" class="statusDiv" style="display: none;">
-          <button id="PVoutputButton" style = "configButton" value = "pvoutput" onclick="serverToggle(this,this.value)"></button>
-          <span id="PVoutputtext"></span>
-          <span id="PVoutputmsg"></span>
+      <div id="tabUploaders" style="display:none;">
+        <button class="groupTab" onclick="toggleDisplay('statusUploaders')">Uploaders</button>
+        <div id="statusUploaders" style="display: none;">
+        
+          <div id="statusInflux1Div" class="statusDiv" style="display: none;">
+            <button id="influx1Button" style = "configButton" value = "influxdb" onclick="serverToggle(this)"></button>
+            <span>influxDB1:</span>
+            <span id="influx1text"></span>
+            <span id="influx1msg"></span>
+           
+          </div>
+  
+          <div id="statusInflux2Div" class="statusDiv" style="display: none;">
+            <button id="influx2Button" style = "configButton" value = "influxdb2" onclick="serverToggle(this)"></button>
+            <span>influxDB2:</span>
+            <span id="influx2text"></span>
+            <span id="influx2msg"></span>
+            
+          </div>
+  
+          <div id="statusEmoncmsDiv" class="statusDiv" style="display: none;">
+            <button id="EmoncmsButton" style = "configButton" value = "emoncms" onclick="serverToggle(this)"></button>
+            <span>Emoncms:</span>
+            <span id="Emoncmstext"></span>
+            <span id="Emoncmsmsg"></span>
+          
+          </div>
+  
+          <div id="statusPVoutDiv" class="statusDiv" style="display: none;">
+            <button id="PVoutputButton" style = "configButton" value = "pvoutput" onclick="serverToggle(this)"></button>
+            <span>PVoutput:</span>
+            <span id="PVoutputtext"></span>
+            <span id="PVoutputmsg"></span>
+          
+          </div>
         </div>
       </div>
       
@@ -544,8 +546,6 @@ var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:
  *                       Shorthand functions
 * ************************************************************************************************/
 function EbyId(id) {return document.getElementById(id)};
-function hide(id) {document.getElementById(id).style.display = "none";}
-function show(id) {document.getElementById(id).style.display = "inline";}
 
 /***************************************************************************************************
 *                       setProxy
@@ -1808,16 +1808,17 @@ function burdenSave(){
 
 function buildWebServer(){
   var servers = ["Emoncms", "InfluxDB_v1", "influxDB_v2", "PVoutput"];
-  EbyId("serverHead").innerHTML = "Web Server Setup";
+  EbyId("serverHead").innerHTML = "Setup Server Uploaders";
   EbyId("divInfluxTagSet").style.display = "none";
   EbyId("divServerOutputs").style.display = "none";
   var serverTable = EbyId("serverTable");
   serverTable.innerHTML = "";
   currentBodyPush("divWebServer");
-  var serverSelect = addTableRow(serverTable, "Web Service", "serverType", "select");
+  var serverSelect = addTableRow(serverTable, "Server Type", "serverType", "select");
   serverSelect.setAttribute("onchange","editServer(this)");
+  serverSelect.setAttribute("style","center");
   var option = document.createElement("option");
-  option.text = "select server";
+  option.text = "select server type";
   serverSelect.add(option);
 
   for(i in servers){
@@ -1991,6 +1992,7 @@ function editEmoncms(){
   var keyInput = addTableRow(serverTable, "api key:", "serverKey", "input", 32);
   keyInput.value = config[emoncmsAlias].apikey;
   keyInput.setAttribute("onchange","config[emoncmsAlias].apikey = this.value; checkEmoncms();");
+  keyInput.setAttribute("type","password");
   keyInput.size = 32;
   keyInput.pattern = "[0-9a-f]{32}";
   keyInput.title = "read/write key - 32 hexadecimal digits";
@@ -2164,7 +2166,8 @@ function editInfluxdb(version){
     if(serverConfig.pwd === undefined) serverConfig.pwd = "";
     var pwdInput = addTableRow(serverTable, "password:", "serverPwd", "input", 32);
     pwdInput.value = serverConfig.pwd;
-    pwdInput.setAttribute("oninput","serverConfig.pwd = this.value; checkInfluxdb();"); 
+    pwdInput.setAttribute("oninput","serverConfig.pwd = this.value; checkInfluxdb();");
+    pwdInput.setAttribute("type","password");
     pwdInput.placeholder = "optional";
   }
   else { // version 2
@@ -2183,6 +2186,7 @@ function editInfluxdb(version){
     var tokenInput = addTableRow(serverTable, "Authorization token:", "serverAuthToken", "input", 48);
     tokenInput.value = serverConfig.authtoken;
     tokenInput.setAttribute("oninput","serverConfig.authtoken = this.value; checkInfluxdb();");
+    tokenInput.setAttribute("type","password");
     tokenInput.placeholder = "required";
   }
 
@@ -2416,6 +2420,7 @@ function editPVoutput(){
   keyInput.value = config.pvoutput.apikey;
   keyInput.setAttribute("oninput","config.pvoutput.apikey = this.value; checkPVOutput();");
   keyInput.setAttribute("size","40");
+  keyInput.setAttribute("type","password");
   keyInput.pattern = "[0-9a-f]{40}";
   keyInput.title = "read/write key - 40 hexadecimal digits";
   addTableText(serverTable,"","See <a href=\"https://pvoutput.org/account.jsp\">https://pvoutput.org/account.jsp</a>")
@@ -2502,10 +2507,10 @@ function PVoutToggle(){
  * *******************************************************************************************/
 function statusBegin(){
   EbyId("tabWifi").style.display = "none";
-  EbyId("tabinflux1").style.display = config.influxdb !== undefined ? "inline" : "none";
-  EbyId("tabinflux2").style.display = config.influxdb2 !== undefined ? "inline" : "none";
-  EbyId("tabPVout").style.display = config.pvoutput !== undefined ? "inline" : "none";
-  EbyId("tabEmoncms").style.display = (config[emoncmsAlias] !== undefined) ? "inline" : "none";
+  // EbyId("statusInflux1Div").style.display = config.influxdb !== undefined ? "inline" : "none";
+  // EbyId("statusInflux2Div").style.display = config.influxdb2 !== undefined ? "inline" : "none";
+  // EbyId("statusPVoutDiv").style.display = config.pvoutput !== undefined ? "inline" : "none";
+  // EbyId("statusEmoncmsDiv").style.display = (config[emoncmsAlias] !== undefined) ? "inline" : "none";
   currentBodyPush("divStatus");
   getStatus = true;
   statusGet();
@@ -2572,10 +2577,10 @@ function statusDisplay(statusMessage){
     }
   }
     
-  
   var influx1Div = EbyId("statusInflux1Div");
   if(status.influx1 !== undefined && status.influx1.state != "not running"){
-    show("tabinflux1");
+    show("statusInflux1Div", "block");
+    show("tabUploaders");
     var button = EbyId("influx1Button");
     button.disabled = false;
     if(status.influx1.status == "running"){
@@ -2593,12 +2598,14 @@ function statusDisplay(statusMessage){
     }
   } 
   else {
-    hide("tabinflux1");
+    hide("statusInflux1Div");
   }
   
   var influx2Div = EbyId("statusInflux2Div");
   if(status.influx2 !== undefined && status.influx2.state != "not running"){
-    show("tabinflux2");
+    show("statusInflux2Div", "block");
+    show("tabUploaders");
+    
     var button = EbyId("influx2Button");
     button.disabled = false;
     if(status.influx2.status == "running"){
@@ -2616,12 +2623,13 @@ function statusDisplay(statusMessage){
     }
   }
   else {
-    hide("tabinflux2");
+    hide("statusInflux2Div");
   }
   
   var EmoncmsDiv = EbyId("statusEmoncmsDiv");
   if(status.emoncms !== undefined && status.emoncms.state != "not running"){
-    show("tabEmoncms");
+    show("statusEmoncmsDiv", "block");
+    show("tabUploaders");
     var button = EbyId("EmoncmsButton");
     button.disabled = false;
     if(status.emoncms.status == "running"){
@@ -2639,12 +2647,13 @@ function statusDisplay(statusMessage){
     }
   }
   else {
-    hide("tabEmoncms");
+    hide("statusEmoncmsDiv");
   }
   
   var PVoutDiv = EbyId("statusPVoutDiv");
   if(status.pvoutput !== undefined && status.pvoutput.state != "not running"){
-    show("tabPVout");
+    show("statusPVoutDiv", "block");
+    show("tabUploaders");
     var button = EbyId("PVoutputButton");
     button.disabled = false;
     if(status.pvoutput.status == "running"){
@@ -2662,7 +2671,7 @@ function statusDisplay(statusMessage){
     }
   }
   else {
-    hide("tabPVoutput");
+    hide("statusPVoutDivput");
   }
    
   
@@ -2905,8 +2914,8 @@ function toggleDisplay(id){
   }
 }
 
-function show(elementID){
-  EbyId(elementID).style.display = "inline";
+function show(elementID, method = "inline"){
+  EbyId(elementID).style.display = method;
 }
 
 function hide(elementID){
