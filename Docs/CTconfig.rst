@@ -19,7 +19,7 @@ CTs are connected with 3.5mm stereo jacks (headphone jacks).
 The CTs that are sold at the `IoTaWatt stuff store <http://stuff.iotawatt.com>`_  
 are manufactured with 3.5mm jacks.  
 
-.. figure:: pics/CT.jpg
+.. figure:: pics/CTconfig/CT.jpg
     :scale: 20 %
     :alt: Echun ECS16-100
 
@@ -50,7 +50,7 @@ channel connected, configured, and calibrated if necessary.
 You are using the config app in a browser connected to your WiFi network.  
 Hover over |Setup| and click |inputs| in the dropdown buttons.
 
-.. image:: pics/setupInputs.png
+.. image:: pics/CTconfig/setupInputs.png
     :scale: 60 %
     :align: center
     :alt: Setup Inputs List
@@ -61,7 +61,7 @@ inputs. To add or edit the CT specification for an input channel,
 click the channel's number button. Let's add a CT to channel |Input1|.
 
 
-.. image:: pics/configGenericInput.png
+.. image:: pics/CTconfig/configGenericInput.png
     :scale: 60 %
     :align: center
     :alt: Config Generic CT
@@ -80,13 +80,13 @@ The next drop-down box is the model of the CT.
 Initially it will be `generic`, 
 Click the drop-down list and select the **ECS24200** CT.  
 
-.. image:: pics/selectECS24200.png
+.. image:: pics/CTconfig/selectECS24200.png
     :scale: 60 %
     :align: center
     :alt: Select ECS24200 CT
 
 
-.. image:: pics/configECS24200.png
+.. image:: pics/CTconfig/configECS24200.png
     :scale: 60 %
     :align: center
     :alt: Config ECS24200 CT
@@ -140,7 +140,7 @@ next to each, a brief description will appear. They are explained below:
 Press |save| to finish.
 
 
-.. image:: pics/inputsECS24200.png
+.. image:: pics/CTconfig/inputsECS24200.png
     :scale: 60 %
     :align: center
     :alt: Inputs List w/ECS24200
@@ -217,11 +217,11 @@ section `Three Phase Power <threePhase.html>`_ for more information.
     :scale: 60 %
     :alt: **Setup button**
 
-.. |Inputs| image:: pics/InputsButton.png
+.. |Inputs| image:: pics/CTconfig/InputsButton.png
     :scale: 60 %
     :alt: **Inputs button**
 
-.. |Input1| image:: pics/Input1Button.png
+.. |Input1| image:: pics/CTconfig/Input1Button.png
     :scale: 60 %
     :alt: **Input 1 button**
 

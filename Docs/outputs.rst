@@ -13,7 +13,7 @@ We need a way to add them together to display the total usage.
 Hover over |Setup| and click |Outputs| in the dropdown buttons.
 
 
-.. image:: pics/outputsDisplay.png
+.. image:: pics/outputs/outputsDisplay.png
     :scale: 60 %
     :align: center
     :alt: Outputs Display
@@ -30,7 +30,7 @@ Adding a new Output
 
 So lets click |add|:
 
-.. image:: pics/newOutput.png
+.. image:: pics/outputs/newOutput.png
     :scale: 60 %
     :align: center
     :alt: New Output
@@ -42,15 +42,30 @@ needed.
 It works just like the simple four function calculators we are all used to, 
 and using the |input| key, you can select 
 input channel values to be used in the formula that you are creating. 
-The resulting expression is evaluated left to right, 
-with calculations within parenthesis evaluated before being used.
+The resulting expression is evaluated left to right,
+*there is no operator hierarchy*, but 
+expressions within parenthesis will be evaluated first::
+       1 + 2 x 3 will yield 9
+       1 + ( 2 x 3 ) will yield 7
 
+Two additional functions `min` and `max` can be selected using the function button.
+
+.. image:: pics/outputs/funcList.png
+    :scale: 60 %
+    :align: center
+
+These are binary functions just like + and x that operate on the two operands to their left and right.
+The `min` function will return the lesser of the two operands and `max` the greater.::
+
+        3 max 25 will yield 25
+        -4 min 0 will yield -4
+        -4 max 0 will yield 0
 
 So lets make an output channel that combines two main inputs called *main_1* 
 and *main_2*. We enter the name total_power in the **Name:** box and hover 
 over the |input| button of the calculator to see a list of the inputs.
 
-.. image:: pics/selectInput.png
+.. image:: pics/outputs/selectInput.png
     :scale: 60 %
     :align: center
     :alt: Input Select Dropdown
@@ -60,7 +75,7 @@ calculator formula display.
 Next click on the |plusKey|, then repeat the input process selecting Main_2.
 
 
-.. image:: pics/totalPowerOutput.png
+.. image:: pics/outputs/totalPowerOutput.png
     :scale: 60 %
     :align: center
     :alt: total_power output
@@ -68,7 +83,7 @@ Next click on the |plusKey|, then repeat the input process selecting Main_2.
 Easy as that.  Now press |save| to return to the outputs list.  
 Your new output should appear within a second or two.
 
-.. image:: pics/outputsList.png
+.. image:: pics/outputs/outputsList.png
     :scale: 60 %
     :align: center
     :alt: outputs list
@@ -77,7 +92,7 @@ Now go back to the Channels Status screen and see that the new output channel
 is listed and indeed has a value that is the sum of the 
 two inputs *main_1* and *main_2*.
 
-.. image:: pics/outputsStatus.png
+.. image:: pics/outputs/outputsStatus.png
     :scale: 60 %
     :align: center
     :alt: outputs status
@@ -97,7 +112,7 @@ Some other useful outputs would be:
         the *misc* output in the status display above.
         That output is defined:
 
-.. image:: pics/miscOutput.png
+.. image:: pics/outputs/miscOutput.png
     :scale: 60 %
     :align: center
     :alt: misc output
@@ -110,15 +125,15 @@ Some other useful outputs would be:
     :scale: 60 %
     :alt: **Setup button**
 
-.. |Outputs| image:: pics/outputsButton.png
+.. |Outputs| image:: pics/outputs/outputsButton.png
     :scale: 60 %
     :alt: **Outputs button**
 
-.. |plusKey| image:: pics/plusKey.png
+.. |plusKey| image:: pics/outputs/plusKey.png
     :scale: 50 %
     :alt: **Plus Key**
 
-.. |input| image:: pics/inputKey.png
+.. |input| image:: pics/outputs/inputKey.png
     :scale: 50 %
     :alt: **input Key**
     

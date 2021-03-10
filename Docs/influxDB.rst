@@ -11,7 +11,7 @@ as well as tools for infrastructure monitoring,
 alert management, data visualization, and database management. 
 The popular grafana visualization tools also work well with influxDB.
 
-IoTaWatt fully supports the influxDB HTTP API for sending data 
+IoTaWatt fully supports the influxDB HTTP API for uploading data 
 to influxDB at a specific interval of 5 seconds to one hour. 
 Like other similar IoTaWatt services, continuity of updates is 
 maintained despite outages that may interrupt the communications.
@@ -22,31 +22,58 @@ how to install or use influx or any of the related visualization tools.
 There's a whole universe of enthusiastic users at the influxData forum,
 where you can get help with anything and everything.
 
-Configure IoTaWatt
-------------------
+influxDB versions 1.x and 2.x
+-----------------------------
+
+With the introduction of  nfluxDB 2.0 came significant changes.
+The basic measurement scheme remains the same, but there are significant changes:
+
+- Authentication is changed from the basic userID/password of 1.x to 
+  use of a 48 character base64 token.
+- Where version 1.x organizes into a `database`, version 2
+  introduces the concept of `buckets`.
+- The native query in version 2 uses a new `flux` language as
+  opposed to the `influxQuery` language in version 1.x.
+
+There are various compatibility options available for transition fromversion 1.x
+to version 2, depending on the implementation (cloud or OSS), but IoTaWatt
+now supports both versions natively.
+
+The two are similar enough that they will be covered together here with 
+breakouts where needed to address the differences.
+
+Configure influxDB uploader
+---------------------------
 
 To configure the influxDB upload service in IoTaWatt, 
 Hover over |Setup| and click 
-|webServer| from the dropdown menu.
+|uploadersButton| from the dropdown menu.
 
-.. image:: pics/webServerMenu.png
+.. image:: pics/selectUploaders.png
     :scale: 60 %
     :align: center
     :alt: **Setup Menu**
 
-Choose influxDB.
+Choose the appropriate version of influxDB...
 
-.. image:: pics/selectInfluxDB.png
+.. image:: pics/influxDB/selectInflux.png
     :scale: 60 %
     :align: center
     :alt: **Select influxDB**
 
-Here you specify what you want IoTaWatt to upload.
+Depending on the version that you selected, you will get one of two
+similar setup menus.
 
-.. image:: pics/addInflux.png
-    :scale: 60 %
-    :align: center
-    :alt: **Select influxDB**
+|v1pic| . |v2pic|
+
+.. |v1pic| image:: pics/influxdb/v1Setup.png
+    :scale: 50 %
+    :align: top
+    :alt: **Version 1 Setup**
+
+.. |v2pic| image:: pics/influxdb/v2Setup.png
+    :scale: 50 %
+    :alt: **Version 2 Setup**
 
 **post interval**
     Number of seconds that each data point will represent. 
@@ -75,24 +102,13 @@ Here you specify what you want IoTaWatt to upload.
     IoTaWatt will pick up with the last successful posting when the problem is resolved.
 
 **server URL**
-    URL of the influxDB server. The URL must begin with http:// (*not* https://). 
+    URL of the influxDB server. If the URL begins with HTTPS:// you must have
+    specified a HTTPSproxy_ server.
     The url may contain a domain name or an IP address. 
-    The *:port number* is optional and defaults to the influxDB default of :8086.
+    The *:port number* is optional and defaults to the influxDB port 8086 for version 1.
 
-**database**
-    Name of the influxDB database that you 
-    have created to be the repository for the IoTaWatt data.
-
-**retention policy**
-    Optional name of the influxDB retention policy that you want to associate 
-    with the measurements that are written to influxDB.
-    If not specified influx will use the default policy. 
-    If you specify a retention policy, it must be defined to influxDB before data can be written.
-
-**username/password** 
-    Optional security credentials. If specified, IoTaWatt will 
-    use standard authorization headers with these credentials.
-
+    .. _HTTPSproxy HTTPSproxy.rst
+    
 **upload history from**
     Specify the starting date that IoTaWatt will use to upload history 
     to a new set of measurements. When the influxDBService starts, 
@@ -111,6 +127,39 @@ Here you specify what you want IoTaWatt to upload.
     The specification can be a constant string, or can include variables 
     as explained below under variables. Note that if not specified, 
     the variable $name will be used.
+
+Unique Version 1 Parameters
+---------------------------
+
+**database**
+    Name of the influxDB database that you 
+    have created to be the repository for the IoTaWatt data.
+
+**retention policy**
+    Optional name of the influxDB retention policy that you want to associate 
+    with the measurements that are written to influxDB.
+    If not specified influx will use the default policy. 
+    If you specify a retention policy, it must be defined to influxDB before data can be written.
+
+**username/password** 
+    Optional security credentials. If specified, IoTaWatt will 
+    use standard authorization headers with these credentials.
+
+Unique Version 2 Parameters
+---------------------------
+
+**bucket**
+    The name of the influxDB `bucket` to contain the measurements.
+    Roughly the equivalent of the `database` in v1.
+
+**organization ID**
+    The 16 hex-digit organization identifier obtained from influx.
+    Roughly equivalent to a user ID.
+
+**Authorization token**
+    Authorization token produced by influx.  This is an 88 character base64 string that should be
+    copied and pasted to avoid transcription errors.  The token is the shared secret that
+    authorizes access to the bucket.
 
 tag-set
 -------
@@ -132,7 +181,7 @@ tag-set
     edit an existing tag by clicking on it's associated edit button,
     or add a new one with the add button. add tag-set
 
-.. image:: pics/addTagSet.png
+.. image:: pics/influxDB/addTagSet.png
     :scale: 60 %
     :align: center
     :alt: **Influx tag-set**
@@ -208,7 +257,7 @@ Evaluation proceeds left to right in a string.
 
 So as an example, when generating a measurement configured as:
 
-.. image:: pics/addInfluxSolar.png
+.. image:: pics/influxDB/addInfluxSolar.png
     :scale: 60 %
     :align: center
     :alt: **Influx Solar Output**
@@ -239,6 +288,6 @@ power           $device.01  $name       power,tag1=IotaHome.01 solar=2944.6 1523
     :scale: 60 %
     :alt: **Setup button**
 
-.. |webServer| image:: pics/webServerButton.png
+.. |uploadersButton| image:: pics/uploadersButton.png
     :scale: 60 %
     :alt: **Web Server**

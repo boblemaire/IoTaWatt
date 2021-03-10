@@ -40,7 +40,7 @@ conductor be disconnected and reconnected to install, thus
 exposing the installer to high-voltage and disrupting the
 primary circuit.
 
-.. figure:: pics/solidCoreCT.jpg
+.. figure:: pics/CTbasics/solidCoreCT.jpg
     :scale: 30 %
     :align: center
     :alt: Solid Core CT
@@ -52,7 +52,7 @@ but do so using two hinged halves that mate to form the continuous
 iron loop. This type of CT can be installed by simply snapping
 the two halves over an active primary conductor.
 
-.. figure:: pics/splitCoreCT.jpg
+.. figure:: pics/CTbasics/splitCoreCT.jpg
     :scale: 30 %
     :align: center
     :alt: Split Core CT
@@ -104,7 +104,7 @@ reference for polarity, there is no universal standard.  Typically,
 CTs from the same manufacturer will be consistent with respect to source 
 and load indicators.
 
-And so it is for the Echun CTs that IoTaWatt, Inc makes available. 
+And so it is for the Echun and AccuEnergy CTs that IoTaWatt, Inc makes available. 
 When installing, we use the notion of a *source* and a *load*.
 The source can be conceptualized as *where the power comes from* 
 and the load as *where the power goes*.
@@ -120,19 +120,19 @@ For a solar inverter connection, the *source* would be the inverter side,
 and the *load* would be the circuit-breaker or other point of
 interconnect.
 
-.. figure:: pics/orientationECOL09.jpg
+.. figure:: pics/CTbasics/orientationECOL09.jpg
     :scale: 30 %
     :alt: ECOL09
 
     Here you can plainly see "This side toward source"
 
-.. figure:: pics/orientationECS1050.jpg
+.. figure:: pics/CTbasics/orientationECS1050.jpg
     :scale: 30 %
     :alt: ECS1050
 
     Here the arrow points source(K)->load(L)
 
-.. figure:: pics/orientationECS25200.jpg
+.. figure:: pics/CTbasics/orientationECS25200.jpg
     :scale: 30 %
     :alt: ECS25200
 
@@ -143,7 +143,7 @@ interconnect.
     indicates the source side, and the down
     arrow indicates the load side.
 
-.. figure:: pics/orientationSCT013.jpg
+.. figure:: pics/CTbasics/orientationSCT013.jpg
     :scale: 30 %
     :alt: SCT013
 
@@ -183,11 +183,11 @@ In these systems, while possible to use two voltage references,
 typical IoTaWatt installations use a single reference
 that reflects the phase and voltage of one of the sides, 
 or *legs* as they are commonly called. The result is that 
-CTs on the other leg must be oriented  the opposite way to
-be in phase with the opposite voltage reference.  This can be 
-accomplished by physically installing them reversed, or by 
-installing all of the CTs the same way and checking the 
-*reverse* box when configuring.
+CTs on the other leg should be oriented  the opposite way to
+be in phase with the opposite voltage reference. For simple singlephase 120V
+(or 230V European type) circuits, IoTaWatt will automatically correct
+reversed CTs and report positive power unless "Allow negative values" is
+enabled in setup for that CT.
 
 There is more to installing CTs on 240V circuits in split-phase 
 systems in the next chapter.
@@ -207,8 +207,8 @@ BLACK and WHITE for *pure* 240V circuits.
 When I say *pure* 240V circuits, I mean circuits that are 
 usually a single load, and do not have a third neutral wire 
 to use either leg independently for 120V.  Examples of *pure* 240V 
-circuits would be a resistive water-heater, well-pump, and 
-baseboard electric heater. A common giveaway for these circuits
+circuits would be a resistive water-heater, well-pump and 
+baseboard electric heater. What these circuits will have in common
 is that they don't have a neutral wire, and usually use two 
 conductor with ground BLACK and WHITE leads.
 
@@ -234,20 +234,20 @@ of ways to do this.
 The easiest way is to pass both the RED and BLACK conductors through 
 the CT.  A CT will measure the total current of all of the conductors 
 that pass through the primary.  But there is a twist.  The phase of 
-the current in each is exactly opposite the other, so they they 
-will cancel each other out and rather than get the sum of the two,
-you can get the difference between the two.
+the current in each conductor is exactly opposite the other, so they 
+will cancel each other out. Rather than get the sum of the two,
+you get the difference between the two.
 
 The solution is to pass one conductor through in the opposite direction 
-to the other.  There is a common trick for this.  In most panels,
+to the other.  There is a common trick for this.  In many panels,
 the conductors are brought past the CT in a U shape so that there is
 some excess wire in case the circuit needs to be moved within the panel. 
 You can use this U configuration to easily reverse one of the conductors.
 In this case, the CT needs to handle the combined capacity of the two 
 circuit breakers when added together.  
-An ECS1050 can probably be used up to about a 2x30A breaker.
+A 50A CT can probably be used up to about a 2x30A breaker.
 
-.. figure:: pics/reverse240V.jpg
+.. figure:: pics/CTbasics/reverse240V.jpg
     :scale: 30 %
     :alt: Reversed CT conductors
 

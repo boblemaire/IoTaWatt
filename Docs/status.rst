@@ -11,11 +11,11 @@ The output is organized into expandable tabs containing
 various categories of information. 
 Simply click the |Status| button.
 
-.. |Status| image:: pics/StatusButton.png
+.. |Status| image:: pics/status/StatusButton.png
     :scale: 60 %
     :alt: **Status button**
 
-.. image:: pics/statusDisplay.png
+.. image:: pics/status/statusDisplay.png
     :scale: 60 %
     :align: center
     :alt: Status Display
@@ -28,7 +28,7 @@ The various tabs as of this writing are detailed as follows:
 Inputs/Outputs
 --------------
 
-.. image:: pics/inputsOutputsDisplay.png
+.. image:: pics/status/inputsOutputsDisplay.png
     :scale: 60 %
     :align: center
     :alt: Inputs/Outputs Display
@@ -51,7 +51,7 @@ settles in on small changes within a few seconds.
 Statistics
 ----------
 
-.. image:: pics/statisticsDisplay.png
+.. image:: pics/status/statisticsDisplay.png
     :scale: 60 %
     :align: center
     :alt: Statistics Display
@@ -72,7 +72,7 @@ IoTaWatt with the following information:
 Web Servers
 -----------
 
-.. image:: pics/webServersDisplay.png
+.. image:: pics/status/webServersDisplay.png
     :scale: 60 %
     :align: center
     :alt: Web Servers Display
@@ -94,7 +94,7 @@ sending the data to the respective server.
 Data Logs
 ---------
 
-.. image:: pics/dataLogsDisplay.png
+.. image:: pics/status/dataLogsDisplay.png
     :scale: 60 %
     :align: center
     :alt: Data Logs Display

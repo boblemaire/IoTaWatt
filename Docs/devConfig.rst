@@ -17,7 +17,7 @@ has been renamed, use ``http://<newname>.local``. The configuration app starts w
 
 Hover over |Setup| and click |device| in the dropdown menu.
 
-.. image:: pics/configDevice.png
+.. image:: pics/devConfig/configDevice.png
     :scale: 43 %
     :align: center
     :alt: Config Device image
