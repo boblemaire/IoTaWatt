@@ -27,7 +27,7 @@ Split-phase load centers
 
 A typical split-phase load center has two Main circuit breakers, one for each of the two
 "legs" coming from the service entrance.  There is also a third neutral wire that is
-directly connected to the neutral bus - a long bar with holes and screws to connecte
+directly connected to the neutral bus - a long bar with holes and screws to connect
 conductors.  Another ground bus is provided which is connected to a reliable local
 earth connection like a ground stake.  
 In most entrance panels, but not sub-panels, the neutral and ground busses are "bonded" (connected together).
@@ -87,20 +87,20 @@ There are three possibilities:
     by passing the two conductors through one CT in opposite directions 
     so that the resulting orientation of the CT is correct for the row
     of the breaker that each conductor is connected to. An illustration
-    canm be found in the `CT Basics <CTbasics.html>`_ section.
+    can be found in the `CT Basics <CTbasics.html>`_ section.
 
 -----------------
 Voltage Reference
 -----------------
 The voltage between the two mains conductors is nominally 240V.
 That is broken down into two 120V potentials between each of the
-Mains and the neutral, but they unless they are in perfect balance,
+Mains and the neutral, but unless they are in perfect balance,
 there will always be a difference in voltage between the two phases.
-That said, the difference in most situations is practicxally negligable
+That said, the difference in most situations is practically negligible
 and the sum of the two will always equal the voltage between the two Mains.
 
 This is an important point, because in order to measure real-power,
-what your meter measures and you pay for, it's necessary to also have
+what your meter measures and what you pay for, it's necessary to also have
 a reference voltage on that circuit.
 
 IoTaWatt supports multiple voltage references, but as a practical
@@ -131,15 +131,15 @@ the reversed voltage reference.  So which one?  The answer is that because
 the wall transformer plug is not polarized as well as other uncontrolled
 factors, we don't know yet.  
 
-So what we do is install just install
+So what we do is just install
 the CTs with opposite orientation, `configure them <CTconfig.html>`_, and 
 look at the status display of the IoTaWatt.  If reversed,
 they will show a ↺ symbol. To correct this, you can do one of two things.
 
-- Reverse the wall transformer in it's socket.
+- Reverse the wall transformer in its socket.
 - Click the "reverse" box in the VT configuration menu.
 
-Now the two Mains inputs should show the Watts for each Main and
+Now, the two Mains inputs should show the Watts for each Main and
 no reverse ↺.
 
 -------------------
@@ -162,8 +162,8 @@ in the status display or physically reverse those CTs in the load center.
 To install with correct orientation initially, the easiest method is to install
 one CT on an active circuit and note if the ↺ symbol appears in the status
 display.  If so, reverse that CT.  Now note which way the correctly oriented CT is
-installed and whether it's row is even or odd.
+installed and whether its row is even or odd.
 
 If it's an even row, all of the CTs that you install on even row circuit-breakers
 should be installed with the same orientation and the odd row circuit breakers with
-the opposite orientation.  And visa-versa.
+the opposite orientation.
