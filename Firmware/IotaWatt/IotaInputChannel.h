@@ -89,6 +89,7 @@ class IotaInputChannel {
     void    setVoltage(float volts, float Hz);
     void    setVoltage(float volts);
     void    setHz(float Hz);
+    double  getHz() { return dataBucket.Hz; };
     void    setPower(float watts, float VA);	
     bool    isActive(){return _active;}
     void    active(bool _active_){_active = _active_;}

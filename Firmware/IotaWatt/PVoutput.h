@@ -86,6 +86,7 @@ public:
         ,oldRecord(nullptr)
         ,newRecord(nullptr)
         ,_POSTrequest(nullptr)
+        ,_statusMessage(nullptr)
         ,_rateLimitReset(0)
         ,_baseTime(0)
         {};
@@ -113,34 +114,34 @@ private:
 
         // Services operate as state machines to maintain context and synchronize.
 
-    enum    states     {initialize, 
-                        getSystemService,
-                        checkSystemService,
-                        getStatus,
-                        gotStatus,
-                        uploadStatus,
-                        checkUploadStatus, 
-                        HTTPpost, 
-                        HTTPwait,
-                        limitWait,
-                        stopped,
-                        invalid
+    enum    states     {initialize = 0, 
+                        getSystemService = 1,
+                        checkSystemService = 2,
+                        getStatus = 3,
+                        gotStatus = 4,
+                        uploadStatus = 5,
+                        checkUploadStatus = 6, 
+                        HTTPpost = 7, 
+                        HTTPwait = 8,
+                        limitWait =9,
+                        stopped = 10,
+                        invalid = 11
                     } _state;
 
     
         // State machine handlers corresponding to like named states.
 
-    uint32_t    tickInitialize();
+    uint32_t    handle_initialize_s();
     uint32_t    tickGetSystemService();
     uint32_t    tickCheckSystemService();
     uint32_t    tickGetStatus();
     uint32_t    tickGotStatus();
     uint32_t    tickUploadStatus();
     uint32_t    tickCheckUploadStatus();
-    uint32_t    tickHTTPPost();
-    uint32_t    tickHTTPWait();
+    uint32_t    handle_HTTPpost_s();
+    uint32_t    handle_HTTPwait_s();
     uint32_t    tickLimitWait();
-    uint32_t    tickStopped();
+    uint32_t    handle_stopped_s();
 
         // Possible response from any HTTP request
 
@@ -192,6 +193,8 @@ private:
     IotaLogRecord* oldRecord;               // Older of two log records bracketing a reporting interval
     IotaLogRecord* newRecord;               // Newer of two log records bracketing a reporting interval    
     POSTrequest* _POSTrequest;              // Details of active POST request
+    char        *_statusMessage;            // message for status query
+    char        *_id;                       // uploader ID
 
     int32_t     _rateLimitLimit;            // Flow control from PVoutput response headers
     int32_t     _rateLimitRemaining;

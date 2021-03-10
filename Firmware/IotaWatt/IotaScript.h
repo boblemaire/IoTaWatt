@@ -5,19 +5,44 @@
 #include <ArduinoJson.h>
 #include "IotaLog.h"
 
-enum        units {    // Square one
-            Watts = 0,
-            Volts = 1,
-            Amps = 2,
-            VA = 3,
-            Hz = 4,
-            Wh = 5,
-            kWh = 6,
-            PF = 7,
-            VAR = 8,
-            VARh = 9,
-            unitsNone = 10
-            };         // Units to be computed   
+// Following enumeration must match unitstr[] in .cpp.
+
+enum units     // Must match unitstr[] in .cpp
+{           
+  Watts = 0,
+  Volts = 1,
+  Amps = 2,
+  VA = 3,
+  VAh = 4,
+  Hz = 5,
+  Wh = 6,
+  kWh = 7,
+  PF = 8,
+  VAR = 9,
+  VARh = 10,
+  unitsNone = 11
+};         
+    
+enum opCodes // Must match opChars[] in .cpp
+{   
+  opEq  = 0,
+  opAdd   = 1,
+  opSub   = 2,
+  opMult  = 3,
+  opDiv   = 4,
+  opMin   = 5,
+  opMax   = 6,
+  opAbs   = 7,
+  opPush  = 8,
+  opPop   = 9
+};
+
+enum tokenTypes
+{
+  tokenOperator = 0,
+  tokenInput = 0x20,
+  tokenConstant = 0x40,
+};
 
 class Script {
 
@@ -32,7 +57,9 @@ class Script {
     const char*   name();     // name associated with this Script
     const char*   getUnits();    // units associated with this Script
     void    setUnits(const char*);
-    Script* next();     // -> next Script in set
+    void    setParm(void*);      // Set parm value
+    void*   getParm();           // Retrieve parm value
+    Script* next();           // -> next Script in set
 
     double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours); // Run this Script
     double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units); // Run w/overide units
@@ -45,27 +72,16 @@ class Script {
 
     Script*     _next;      // -> next in list
     char*       _name;      // name associated with this Script
-    float*      _constants; // Constant values referenced in Script
+    void*       _parm;      // External parameter
+    union {
+      float *_constants;    // Constant values referenced in Script
+      Script **_integrations;
+    };
     uint8_t*    _tokens;    // Script tokens
     units       _units;     // Units to be computed              
-    uint8_t     _accum;               // Accumulators to use in fetching operands
-    const byte  getInputOp = 32;
-    const byte  getConstOp = 64;
-    enum        opCodes {
-                opEq  = 0,
-                opAdd   = 1,
-                opSub   = 2,
-                opMult  = 3,
-                opDiv   = 4,
-                opMin   = 5,
-                opMax   = 6,
-                opAbs   = 7,
-                opPush  = 8,
-                opPop   = 9};
-    const char* opChars = "=+-*/<>|()";
 
-    double    runRecursive(uint8_t**, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, char type);
-    double    evaluate(double, byte, double);
+    double    runRecursive(uint8_t**, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units Units);
+    double    operate(double, byte, double);
     bool      encodeScript(const char* script);
 
 };
@@ -73,6 +89,12 @@ class Script {
 class ScriptSet {
 
   public:
+    ScriptSet()
+      :_count(0)
+      ,_listHead(0)
+      {}
+
+
     ScriptSet (JsonArray& JsonScriptSet) {
       _count = JsonScriptSet.size();
       _listHead = nullptr;
@@ -102,6 +124,7 @@ class ScriptSet {
 
     size_t    count();      // Retrieve count of Scripts in the set.
     Script*   first();      // Get -> first Script in set
+    Script*   script(const char *name);
 
   private:
 

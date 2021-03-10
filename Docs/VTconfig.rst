@@ -15,7 +15,7 @@ and it's important to insure that the VT specified
 matches the model that you have installed.
 To do this, select the inputs button in the Setup dropdown menu.
 
-.. image:: pics/VTinputList.png
+.. image:: pics/VTconfig/VTinputList.png
     :scale: 60 %
     :align: center
     :alt: Setup Inputs List
@@ -28,14 +28,14 @@ It's OK to unplug the VT to check the model number printed on it.
 If your VT model doesn't match the model that is configured, you can easily change it.
 Click on the input channel 0 button on the left.
 
-.. image:: pics/VTconfig.png
+.. image:: pics/VTconfig/VTconfig.png
     :scale: 60 %
     :align: center
     :alt: Configure VT Menu
 
 As you can see, the display changes to reveal the details of the input_0 configuration.
 
-.. image:: pics/VTselect.png
+.. image:: pics/VTconfig/VTselect.png
     :scale: 60 %
     :align: center
     :alt: Select VT Image
@@ -63,14 +63,14 @@ TDC DA-10-09 model ambiguity
 There are two different voltage transformers available with the model designation TDC DA-10-09.
 These models are quite different and need to be properly configured.
 
-.. figure:: pics/TDC-DA-09-10.jpg
+.. figure:: pics/VTconfig/TDC-DA-09-10.jpg
     :scale: 10 %
     :align: left
     :alt: TDC DA-10-09
 
     use model: TDC DA-10-09
 
-.. figure:: pics/TDC-DA-09-10-E6.jpg
+.. figure:: pics/VTconfig/TDC-DA-09-10-E6.jpg
     :scale: 10 %
     :align: center
     :alt: TDC DA-10-09-E6
@@ -94,7 +94,7 @@ I've found their voltage readings are usually accurate.
 
 click |calibrate|
 
-.. image:: pics/VTcalibrate.png
+.. image:: pics/VTconfig/VTcalibrate.png
     :scale: 60 %
     :align: center
     :alt: Calibrate VT Menu
@@ -111,7 +111,7 @@ As instructed on the page, click save to record the calibration factor.
 The new calibration factor will take effect immediately.
 Click the Status menu button to display the voltage:
 
-.. image:: pics/VTstatus.png
+.. image:: pics/VTconfig/VTstatus.png
     :scale: 60 %
     :align: center
     :alt: VT Status
@@ -132,6 +132,6 @@ step `Configuring Power Channel CTs <CTconfig.html>`_
     :scale: 50 %
     :alt: **Save**
 
-.. |calibrate| image:: pics/CalibrateButton.png
+.. |calibrate| image:: pics/VTconfig/CalibrateButton.png
     :scale: 50 %
     :alt: **Calibrate**

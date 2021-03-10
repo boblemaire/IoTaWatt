@@ -1,4 +1,7 @@
 #include "IotaWatt.h"
+#include "Emoncms_uploader.h"
+#include "influxDB_v1_uploader.h"
+#include "influxDB_v2_uploader.h"
 
 bool configDevice(const char*);
 bool configDST(const char* JsonStr);
@@ -8,11 +11,65 @@ bool configMasterPhaseArray();
 bool configOutputs(const char*);
 void hashFile(uint8_t* sha, File file);
 bool exportLogConfig(const char *configObj);
+bool configIntegrations(const char *);
 
-// Handy diagnostic macro to investigate heap requirements.
-//#define heap(where) Serial.print(#where); Serial.print(' '); Serial.println(ESP.getFreeHeap());
+//************************************************************************************************
+//
+// updateConfig(const char *newConfig)
+//
+// This procedure attempts to preserve the integrity of the config file by testing the new config
+// and regressing if it fails.
+//
+// setConfig is called with the newConfig.
+// if it fails,
+//   setconfig is called with the pre-existing config and return false;
+// if it succeeds,
+//   The pre-existing config is renamed to //config-1.txt
+//   The newConfig is renamed to config.txt
+//   return true
+// 
+//*************************************************************************************************
+bool updateConfig(const char *newConfig){
+  if(setConfig(newConfig)){
+    if(SD.exists(F(IOTA_CONFIG_OLD_PATH))){
+      SD.remove(F(IOTA_CONFIG_OLD_PATH));
+    }
+    SDFS.rename(F(IOTA_CONFIG_PATH), F(IOTA_CONFIG_OLD_PATH));
+    SDFS.rename(newConfig,F(IOTA_CONFIG_PATH));
+    return true;
+  }
+  setConfig(IOTA_CONFIG_PATH);
+  return false;
+}
 
-boolean getConfig(const char* configPath){
+//************************************************************************************************
+//
+// recoverConfig(){
+//
+// Attempt to recover from failed setConfig
+//
+//*************************************************************************************************
+bool recoverConfig(){
+  if(SD.exists(F(IOTA_CONFIG_NEW_PATH)) && setConfig(IOTA_CONFIG_NEW_PATH)){
+    return updateConfig(IOTA_CONFIG_NEW_PATH);
+    log("using new config+1.");
+  }
+  if(SD.exists(F(IOTA_CONFIG_OLD_PATH)) && setConfig(IOTA_CONFIG_OLD_PATH)){
+    SD.remove(IOTA_CONFIG_PATH);
+    SDFS.rename(F(IOTA_CONFIG_OLD_PATH), F(IOTA_CONFIG_PATH));
+    log("reverting to config-1.");
+    return true;
+  }
+  return false;
+}
+
+//*************************************************************************************************
+//
+//    setConfig() will process the argued config file and return true/false=good/bad
+//
+//*************************************************************************************************
+
+boolean setConfig(const char* configPath){
   DynamicJsonBuffer Json;              
         
   //************************************** Load and parse Json Config file ************************
@@ -20,7 +77,7 @@ boolean getConfig(const char* configPath){
   trace(T_CONFIG,0);
   File ConfigFile = SD.open(configPath, FILE_READ);
   if(!ConfigFile) {
-    log("Config file open failed.");
+    log("setConfig: %s open failed.", configPath);
     return false;
   }
   hashFile(configSHA256, ConfigFile);
@@ -35,85 +92,58 @@ boolean getConfig(const char* configPath){
   //************************************** Process misc first level stuff **************************
   
   delete[] updateClass;
-  updateClass = charstar(Config["update"] | "NONE");
+  updateClass = charstar(Config[F("update")] | "NONE");
 
-  localTimeDiff = 60.0 * Config["timezone"].as<float>();
+  localTimeDiff = 60.0 * Config[F("timezone")].as<float>();
     
   if(Config.containsKey("logdays")){ 
-    log("Current log overide days: %d", Current_log.setDays(Config["logdays"].as<int>()));
+    log("Current log overide days: %d", Current_log.setDays(Config[F("logdays")].as<int>()));
   }      
 
-        //************************************ Configure device ***************************
+  //************************************ Configure device ***************************
 
   trace(T_CONFIG,5);
-  JsonArray& deviceArray = Config["device"];
+  JsonArray& deviceArray = Config[F("device")];
   if(deviceArray.success()){
     char* deviceStr = JsonDetail(ConfigFile, deviceArray);
     configDevice(deviceStr);
     delete[] deviceStr;
   }  
 
-        //************************************ Configure DST rule *********************************
+  //************************************ Configure DST rule *********************************
 
-  trace(T_CONFIG,6);
+  trace(T_CONFIG,10);
   delete timezoneRule;
   timezoneRule = nullptr;
-  JsonArray& dstruleArray = Config["dstrule"];
+  JsonArray& dstruleArray = Config[F("dstrule")];
   if(dstruleArray.success()){
     char* dstruleStr = JsonDetail(ConfigFile, dstruleArray);
     configDST(dstruleStr);
     delete[] dstruleStr;
   }  
 
-        //************************************ Configure input channels ***************************
+  //************************************ Configure input channels ***************************
 
-  trace(T_CONFIG,7);
-  JsonArray& inputsArray = Config["inputs"];
+  trace(T_CONFIG,15);
+  JsonArray& inputsArray = Config[F("inputs")];
   if(inputsArray.success()){
     char* inputsStr = JsonDetail(ConfigFile, inputsArray);
     configInputs(inputsStr);
     delete[] inputsStr;
   }
 
-        //************************************ Lookup phase shift in tables ***********************
+  //************************************ Lookup phase shift in tables ***********************
 
+  trace(T_CONFIG,20);
   configMasterPhaseArray();
 
-    // Print the inputs
-
-  // for(int i=0; i<MAXINPUTS; i++){
-  //   IotaInputChannel* input = inputChannel[i];
-  //   if(input->_active){
-  //       Serial.printf("Name %s, Model %s\r\nphase %.2f\r\n", input->_name, input->_model, input->_phase );
-  //       if(input->_p60){
-  //         Serial.print("p60");
-  //         int16_t* array = input->_p60;
-  //         while(*(array+1)){
-  //           Serial.printf(" (%.2f, %.2f),",(float)*array/100.0, (float)*(array+1)/100.0);
-  //           array += 2;
-  //         } 
-  //         Serial.printf(" (%.2f)\r\n",(float)*array/100.0);
-  //       }
-  //       if(input->_p50){
-  //         Serial.print("p50");
-  //         int16_t* array = input->_p50;
-  //         while(*(array+1)){
-  //           Serial.printf(" (%.2f, %.2f),",(float)*array/100.0, (float)*(array+1)/100.0);
-  //           array += 2;
-  //         } 
-  //         Serial.printf(" (%.2f)\r\n",(float)*array/100.0);
-  //       }
-  //   }
-  // }
-    
-
-        // ************************************ configure output channels *************************
+  // ************************************ configure output channels *************************
 
   {      
-    trace(T_CONFIG,8);
+    trace(T_CONFIG,25);
     delete outputs;
     outputs = nullptr;
-    JsonArray& outputsArray = Config["outputs"];
+    JsonArray& outputsArray = Config[F("outputs")];
     char* outputsStr;
     if(outputsArray.success()){
       outputsStr = JsonDetail(ConfigFile, outputsArray);
@@ -128,49 +158,91 @@ boolean getConfig(const char* configPath){
          // ************************************** configure Emoncms **********************************
 
   {
-    trace(T_CONFIG,9);
+    trace(T_CONFIG,30);
     char* EmonStr = nullptr;
-    JsonArray& EmonArray = Config["emoncms"];
+    JsonArray& EmonArray = Config[F("emoncms")];
     if(EmonArray.success()){
       EmonStr = JsonDetail(ConfigFile, EmonArray);
     } else // Accept old format ~ 02_03_17
-    {      
-      JsonArray& serverArray = Config["server"];
+    {
+      trace(T_CONFIG,31);      
+      JsonArray& serverArray = Config[F("server")];
       if(serverArray.success()){
         EmonStr = JsonDetail(ConfigFile, serverArray);
       }
     }
+    trace(T_CONFIG,30);
     if(EmonStr){
-      if( ! EmonConfig(EmonStr)){
-        log("EmonService: Invalid configuration.");
+      trace(T_CONFIG,31);   
+      if(! Emoncms){
+        trace(T_CONFIG,32);   
+        Emoncms = new emoncms_uploader;
+      }
+      trace(T_CONFIG,31);
+      if( ! Emoncms->config(EmonStr)){
+        trace(T_CONFIG,32);   
+        log("Emoncms: Invalid configuration.");
+        Emoncms->end();
+        Emoncms = nullptr;
       }
       delete[] EmonStr;
     }   
-    else {
-      EmonStop = true;
+    else if(Emoncms){
+      trace(T_CONFIG,33);   
+      Emoncms->end();
+      Emoncms = nullptr;
     }
   }
 
-        // ************************************** configure influxDB **********************************
+        // ************************************** configure influxDB1 *********************************
 
   {
-    trace(T_CONFIG,10);
+    trace(T_CONFIG,35);
     JsonArray& influxArray = Config[F("influxdb")];
     if(influxArray.success()){
       char* influxStr = JsonDetail(ConfigFile, influxArray);
-      if( ! influxConfig(influxStr)){
-        log("influxService: Invalid configuration.");
+      if(! influxDB_v1){
+        influxDB_v1 = new influxDB_v1_uploader;
+      }
+      if( ! influxDB_v1->config(influxStr)){
+        log("influxDB_v1: Invalid configuration.");
+        influxDB_v1->end();
+        influxDB_v1 = nullptr;
       }
       delete[] influxStr;
     }   
-    else {
-      influxStop = true;
+    else if(influxDB_v1){
+      influxDB_v1->end();
+      influxDB_v1 = nullptr;
+    }
+  }
+
+        // ************************************** configure influxDB2 **********************************
+
+  {
+    trace(T_CONFIG,40);
+    JsonArray& influx2Array = Config[F("influxdb2")];
+    if(influx2Array.success()){
+      char* influx2Str = JsonDetail(ConfigFile, influx2Array);
+      if(! influxDB_v2){
+        influxDB_v2 = new influxDB_v2_uploader;
+      }
+      if( ! influxDB_v2->config(influx2Str)){
+        log("influxDB_v2: Invalid configuration.");
+        influxDB_v2->end();
+        influxDB_v2 = nullptr;
+      }
+      delete[] influx2Str;
+    }   
+    else if(influxDB_v2){
+      influxDB_v2->end();
+      influxDB_v2 = nullptr;
     }
   }
       // ************************************** configure PVoutput **********************************
 
   {
-    trace(T_CONFIG,11);
+    trace(T_CONFIG,45);
     JsonArray& PVoutputArray = Config[F("pvoutput")];
     if(PVoutputArray.success()){
       char* PVoutputStr = JsonDetail(ConfigFile, PVoutputArray);
@@ -184,30 +256,103 @@ boolean getConfig(const char* configPath){
     }   
     else if(pvoutput){
       pvoutput->end();
-    } 
-    
+    }    
   }
 
-      // ************************************** configure Export log **********************************
+      // ************************************** Code to handle array of configurations****************************
 
-  {
-    trace(T_CONFIG,12);
-    JsonArray& exportArray = Config[F("exportlog")];
-    if(exportArray.success()){
-      char* exportStr = JsonDetail(ConfigFile, exportArray);
-      if( ! exportLogConfig(exportStr)){
-        log("Exportlog: Invalid configuration.");
-      }
-      delete[] exportStr;
-    }   
-  }
+  // {
+  //   trace(T_CONFIG,40);
+  //   JsonArray& locArray = Config[F("integrators")];
+  //   if(locArray.success()){
 
+  //     // Target is an array,
+  //     // summarize it into an array of locators
+
+  //     ConfigFile.seek(locArray[0].as<int>());
+  //     String summary = JsonSummary(ConfigFile, 1);
+  //     JsonArray& subArray = Json.parseArray(summary);
+
+  //     // Now process each entry in the array as an integrator.
+
+  //     int count = subArray.size();
+  //     for (int i = 0; i < count; i++){
+
+  //       // Extract the configuration detail for this integrator
+
+  //       JsonArray &locArray = subArray[i];
+  //       char *configtxt = JsonDetail(ConfigFile, locArray);
+
+  //       // New context to clean up on each iteration
+
+  //       {
+  //         DynamicJsonBuffer Json;
+  //         JsonObject &config = Json.parseObject(configtxt);
+
+  //         // Won't parse, log config error and abort
+
+  //         if (!config.success())
+  //         {
+  //             log("Config: parse failed integrator %d", i);
+  //             delete[] configtxt;
+  //             return false;
+  //         }
+
+  //         // Try to find existing match
+
+  //         int j = 0;
+  //         while (j < 4 && integrators[j] && strcmp(integrators[j]->name(), config.get<const char *>("name")) != 0){
+  //           j++;
+  //         }
+
+  //         // If no match and maximum integrators configured...
+
+  //         if(j >= 4){
+  //           log("config: more than 4 integrators.");
+  //           break;
+  //         }
+
+  //         // If this matches an already specified integrator... 
+
+  //         if (j < i){
+  //           log("config: duplicate integrator %s", config.get<const char *>("name"));
+  //           delete[] configtxt;
+  //           return false;
+  //         }
+
+  //         // New or existing integrator, swap entry into config order.
+
+  //         integrator *swap = integrators[i];
+  //         integrators[i] = integrators[j];
+  //         integrators[j] = swap;
+
+  //         // If not yet defined, create a new instance.
+
+  //         if(integrators[i] == 0){
+  //           integrators[i] = new integrator;
+  //         }
+
+  //         // call the config handler
+
+  //         if(!integrators[i]->config(config)){
+  //           log("config: integrator %s config failed.", config.get<const char *>("name"));
+  //           delete integrators[i];
+  //           integrators[i] = 0;
+  //           delete[] configtxt;
+  //           return false;
+  //         }
+  //       }
+  //       delete[] configtxt;
+  //     }
+  //   }
+  // }
+
+  hashFile(configSHA256, ConfigFile);
   ConfigFile.close();
-  trace(T_CONFIG,12);
+  trace(T_CONFIG,70);
   return true;
 
-}                                       // End of getConfig
-
+}  // End of setConfig
 
 //************************************** configDevice() ********************************************
 bool configDevice(const char* JsonStr){
@@ -291,6 +436,13 @@ bool configDevice(const char* JsonStr){
       inputChannel[i]->_burden = device[F("burden")][i].as<float>();
     }
   }
+
+  delete[] HTTPSproxy;
+  HTTPSproxy = nullptr;
+  if(device.containsKey(F("httpsproxy"))){
+    HTTPSproxy = charstar(device[F("httpsproxy")].as<const char *>());
+  }
+  return true;
 }
 
 //********************************** configure DST *********************************************
@@ -303,8 +455,8 @@ bool configDST(const char* JsonStr){
     return false;
   }
   timezoneRule = new tzRule;
-  timezoneRule->useUTC = dstRule["utc"].as<bool>();
-  timezoneRule->adjMinutes = dstRule["adj"].as<int>();
+  timezoneRule->useUTC = dstRule[F("utc")].as<bool>();
+  timezoneRule->adjMinutes = dstRule[F("adj")].as<int>();
   timezoneRule->begPeriod.month = dstRule["begin"]["month"].as<int>();
   timezoneRule->begPeriod.weekday = dstRule["begin"]["weekday"].as<int>();
   timezoneRule->begPeriod.instance = dstRule["begin"]["instance"].as<int>();
@@ -341,8 +493,8 @@ bool configDST(const char* JsonStr){
     yield();
   }              
 ********************************************************************************************************************************/
+  return true;
 } 
-
 
 //********************************** configInputs ***********************************************
 bool configInputs(const char* JsonStr){
@@ -481,21 +633,30 @@ bool arrayCopy(File tableFile, int16_t** entry){
     return true;
 }
 
+void dumpTable(modelTable* table, int count){
+  Serial.println("initial");
+  for (int n = 0; n < count; n++){
+    Serial.printf("%4d %4d %8x %8x %s\n", table[n].p50_pos, table[n].p60_pos, table[n].p50_ptr, table[n].p60_ptr, table[n].model);
+  }
+}
+
+
 bool configMasterPhaseArray(){
 
-// Allocate a table for unique models
+  // Allocate a table for unique models
 
+  trace(T_CONFIG,20,1);
   modelTable table[maxInputs];
   int models = 0;
-  for(int i=0; i<maxInputs; i++){
-    if(inputChannel[i]->isActive()){
+  for (int i = 0; i < maxInputs; i++){
+    if (inputChannel[i]->isActive()){
       int t;
-      for(t=0; t<models; t++){
-        if(inputChannel[i]->_model == table[t].model){
+      for (t = 0; t < models; t++){
+        if (strcmp(inputChannel[i]->_model, table[t].model) == 0){
           break;
         }
       }
-      if(t == models){
+      if (t == models){
         table[t].model = inputChannel[i]->_model;
         table[t].p50_pos = 0;
         table[t].p60_pos = 0;
@@ -506,18 +667,22 @@ bool configMasterPhaseArray(){
     }
   }
 
-      // Lookup models in table file.
-      // Count total masterPhaseArray entries required
+  // Lookup models in table file.
+  // Count total masterPhaseArray entries required
 
+  trace(T_CONFIG, 20, 2);
   File tableFile;
   String tableFileURL = "tables.txt";
   tableFile = SD.open(tableFileURL, FILE_READ);
   if(!tableFile) return false;
 
+  trace(T_CONFIG, 20, 3);
   int totalEntries = 0;
   for(int t=0; t<models; t++){
+    trace(T_CONFIG, 21);
     tableFile.seek(0);
     if(tableFile.find(table[t].model)){
+      trace(T_CONFIG, 22);
       int pos = tableFile.position();
       if(tableFile.findUntil("\"p50\":", 6, "}", 1)){
         table[t].p50_pos = tableFile.position();
@@ -531,15 +696,17 @@ bool configMasterPhaseArray(){
     }
   }
 
-        // allocate master array to contain all of the individual arrays.
-        // Pointers will be set to subarrays in master;
+  // allocate master array to contain all of the individual arrays.
+  // Pointers will be set to subarrays in master;
 
+  trace(T_CONFIG, 20, 4);
   delete[] masterPhaseArray;
   masterPhaseArray = new int16_t[totalEntries];
   int16_t* nextArray = masterPhaseArray;
 
         // Copy arrays into master and save pointers to them.
 
+  trace(T_CONFIG, 20, 5);
   for(int t=0; t<models; t++){
     if(table[t].p50_pos){
       table[t].p50_ptr = nextArray;
@@ -557,15 +724,16 @@ bool configMasterPhaseArray(){
     }
   }
 
-        // Set array pointers in inputs
+  // Set array pointers in inputs
 
+  trace(T_CONFIG, 20, 6);
   for(int i=0; i<maxInputs; i++){
     IotaInputChannel* input = inputChannel[i];
     input->_p50 = nullptr;
     input->_p60 = nullptr;
     if(input->isActive()){
       for(int t=0; t<models; t++){
-        if(input->_model == table[t].model){
+        if(strcmp(input->_model, table[t].model) == 0){
           input->_p50 = table[t].p50_ptr;
           input->_p60 = table[t].p60_ptr;
           break;
@@ -598,6 +766,7 @@ bool configMasterPhaseArray(){
   //   Serial.println();
   // }
 
+  trace(T_CONFIG, 20, 7);
   tableFile.close();
   return true;
 }

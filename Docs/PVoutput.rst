@@ -14,7 +14,7 @@ up to six additional data items with the ability to generate
 real-time alerts based on simple rules. IoTaWatt supports 
 uploading in both the basic free mode and the extended donator mode.
 
-.. image:: pics/PVoutputDisplay.png
+.. image:: pics/PVoutput/PVoutputDisplay.png
     :scale: 60 %
     :align: center
     :alt: Sample PVoutput Display
@@ -50,7 +50,7 @@ which is one of the few things you will need to specify in the IoTaWatt setup.
 Add Your System
 ---------------
 
-Now click on the Add System link under Registered Systems at the 
+Click on the Add System link under Registered Systems at the 
 bottom of the page. You really don't need to enter much here to get 
 started. The System Name should be something meaningful to you, 
 but if you want to allow your PV data to be public, 
@@ -69,9 +69,18 @@ Configure IoTaWatt
 
 It's time to configure IoTaWatt to upload to the new account. 
 From within the IoTaWatt configuration app, 
-click Setup/Web Server and then select PVoutput from the dropdown menu.
+click |setup| and then |uploaders| from the dropdown menu.
 
-.. image:: pics/PVoutputAdd.png
+Select PVoutput.
+
+.. image:: pics/PVoutput/selectPVoutput.png
+    :scale: 60 %
+    :align: center
+    :alt: PVoutput Add Service
+
+Complete PVoutput setup.
+
+.. image:: pics/PVoutput/PVoutputAdd.png
     :scale: 60 %
     :align: center
     :alt: PVoutput Add Service
@@ -83,7 +92,7 @@ Do not check the *Reload History* box.
 All that's left is to specify the data to upload. 
 Under **Status Outputs**, click |add|.
 
-.. image:: pics/PVoutputAddStatus.png
+.. image:: pics/PVoutput/PVoutputAddStatus.png
     :scale: 60 %
     :align: center
     :alt: PVoutput Add Status
@@ -156,3 +165,11 @@ history checkbox manually, or the data will reload after every restart.
 .. |save| image:: pics/SaveButton.png
     :scale: 50 %
     :alt: **Save**
+
+.. |Setup| image:: pics/SetupButton.png
+    :scale: 60 %
+    :alt: **Setup button**
+
+.. |uploaders| image:: pics/uploadersButton.png
+    :scale: 60 %
+    :alt: **Web Server**

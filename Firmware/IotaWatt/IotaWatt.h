@@ -3,7 +3,7 @@
 
    /***********************************************************************************
     IotaWatt Electric Power Monitor System
-    Copyright (C) <2017>  <Bob Lemaire, IoTaWatt, Inc.>
+    Copyright (C) <2021>  <Bob Lemaire, IoTaWatt, Inc.>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,13 +25,18 @@
 #define PRINTL(txt,val) Serial.print(txt); Serial.println(val);
 #define MIN(a,b) ((a<b)?a:b)
 #define MAX(a,b) ((a>b)?a:b)
+#define RANGE(x,min,max) (x<=min?min:(x>=max?max:x))
 
 #include <Arduino.h>
 #include <time.h>
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <WiFiManager.h>
-#include "ESP8266mDNS_Legacy.h"
+#ifdef CORE_3_0
+      #include "ESP8266mDNS.h"
+#else
+      #include "ESP8266mDNS_Legacy.h"
+#endif
 #include <ESP8266LLMNR.h>
 #include <DNSServer.h> 
 #include <WiFiClient.h>
@@ -62,13 +67,14 @@
 #include "webServer.h"
 #include "updater.h"
 #include "samplePower.h"
-#include "influxDB.h"
-#include "Emonservice.h"
+#include "uploader.h"
+#include "integrator.h"
 #include "auth.h"
 #include "spiffs.h"
 #include "timeServices.h"
 #include "PVoutput.h"
 #include "CSVquery.h"
+#include "xbuf.h"
 #include "xurl.h"
 
       // Declare global instances of classes
@@ -77,7 +83,9 @@ extern WiFiClient WifiClient;
 extern WiFiManager wifiManager;
 extern ESP8266WebServer server;
 extern DNSServer DNS_server;
-using MDNSResponder = Legacy_MDNSResponder::MDNSResponder;
+#ifndef CORE_3_0
+   using MDNSResponder = Legacy_MDNSResponder::MDNSResponder;   
+#endif
 extern MDNSResponder MDNS;
 extern IotaLog Current_log;
 extern IotaLog History_log;
@@ -98,6 +106,9 @@ extern messageLog Message_log;
 #define IOTA_CURRENT_LOG_PATH "iotawatt/iotalog.log"
 #define IOTA_HISTORY_LOG_PATH "iotawatt/histlog.log"
 #define IOTA_MESSAGE_LOG_PATH "iotawatt/iotamsgs.txt"
+#define IOTA_CONFIG_PATH      "config.txt"
+#define IOTA_CONFIG_NEW_PATH  "config+1.txt"
+#define IOTA_CONFIG_OLD_PATH  "config-1.txt"
 
 extern char* deviceName;
 
@@ -155,7 +166,7 @@ struct EEprom {
 
 #define T_LOOP 1           // Loop
 #define T_LOG 2            // dataLog
-#define T_Emon 3           // EmonService
+#define T_Emoncms 3        // Emoncms uploader
 #define T_GFD 4            // GetFeedData
 #define T_UPDATE 5         // updater
 #define T_SETUP 6          // Setup
@@ -168,8 +179,6 @@ struct EEprom {
 #define T_uploadGraph 13 
 #define T_history 14
 #define T_base64 15        // base 64 encode
-#define T_EmonConfig 16    // Emon configuration
-#define T_influxConfig 17  // influx configuration 
 #define T_stats 18         // Stat service 
 #define T_datalog 19       // datalog service
 #define T_timeSync 20      // timeSync service 
@@ -180,7 +189,13 @@ struct EEprom {
 #define T_CSVquery 25      // CSVquery
 #define T_xurl 26          // xurl 
 #define T_utility 27       // Miscelaneous utilities 
-#define T_EXPORTLOG 28     // Export log                      
+#define T_EXPORTLOG 28     // Export log
+#define T_influx2 29       // influxDB_v2_uploader 
+#define T_influx2Config 30 // influx2 configuration 
+#define T_uploader 31      // Uploader base class
+#define T_influx1 32       // influxDB_v1_uploader
+#define T_integrator 33    // Integrator class  
+#define T_Script 34                        
 
       // LED codes
 
@@ -200,6 +215,9 @@ struct EEprom {
 
 extern uint32_t lastCrossMs;           // Timestamp at last zero crossing (ms) (set in samplePower)
 extern uint32_t nextCrossMs;           // Time just before next zero crossing (ms) (computed in Loop)
+extern uint32_t firstCrossUs;          // Time cycle at usec resolution for phase calculation
+extern uint32_t lastCrossUs;
+extern uint32_t bingoTime;
 
 enum priorities: byte { priorityLow=2, 
                         priorityLM=3, 
@@ -209,14 +227,15 @@ enum priorities: byte { priorityLow=2,
                         priorityHM=7,
                         priorityHigh=8
                       };
-
+typedef std::function<uint32_t(struct serviceBlock*)> Service;
 struct serviceBlock {                  // Scheduler/Dispatcher list item (see comments in Loop)
   serviceBlock* next;                  // Next serviceBlock in list
-  uint32_t callTime;                   // Time in millis to dispatch
-  uint32_t (*service)(serviceBlock*);  // the SERVICE
+  uint32_t scheduleTime;               // Time in millis to dispatch
+  Service service;                     // the Service function
+  void *serviceParm;                   // Service specific parameter   
   priorities priority;                 // All things equal tie breaker
   uint8_t   taskID;
-  serviceBlock(){next=NULL; callTime=0; priority=priorityMed; service=NULL; taskID=0;}
+  serviceBlock(){next=NULL; scheduleTime=1; priority=priorityMed; service=NULL; taskID=0;}
 };
 
 extern serviceBlock* serviceQueue;     // Head of ordered list of services
@@ -255,7 +274,7 @@ extern IotaLogRecord statRecord;
 
       // ****************************** list of output channels **********************
 
-extern ScriptSet* outputs;
+extern ScriptSet *outputs;
 
       // ****************************** SDWebServer stuff ****************************
 
@@ -266,12 +285,23 @@ extern SHA256*  uploadSHA;
 extern boolean  serverAvailable;          // Set false when asynchronous handler active to avoid new requests
 extern uint32_t wifiConnectTime;          // Time of connection (zero if disconnected)
 extern uint8_t  configSHA256[32];         // Hash of config file
+extern bool     getNewConfig;             // Set to update config after running WebServer
 
 #define HTTPrequestMax 2                  // Maximum number of concurrent HTTP requests  
 extern int16_t  HTTPrequestFree;          // Request semaphore
 extern uint32_t HTTPrequestStart[HTTPrequestMax]; // request start time tokens
 extern uint16_t HTTPrequestId[HTTPrequestMax];    // Module ID of requestor
-extern uint32_t HTTPlock;                 // start time token of locking request      
+extern uint32_t HTTPlock;                 // start time token of locking request  
+
+      // ************************** HTTPS proxy host ******************************************
+
+extern char *HTTPSproxy;                  // Host for nginx (or other) reverse HTTPS proxy server
+
+extern uploader *influxDB_v1;
+extern uploader *influxDB_v2;
+extern uploader *Emoncms;
+
+// Password and authorization data
 
 extern uint8_t*   adminH1;                // H1 digest md5("admin":"admin":password) 
 extern uint8_t*   userH1;                 // H1 digest md5("user":"user":password) 
@@ -288,6 +318,7 @@ extern uint32_t timeRefMs;                     // Internal MS clock correspondin
 extern uint32_t timeSynchInterval;             // Interval (sec) to roll NTP forward and try to refresh
 extern uint32_t EmonCMSInterval;               // Interval (sec) to invoke EmonCMS
 extern uint32_t influxDBInterval;              // Interval (sec) to invoke inflexDB
+extern uint32_t influxDB2Interval;             // Interval (sec) to invoke inflexDB2
 extern uint32_t statServiceInterval;           // Interval (sec) to invoke statService
 extern uint32_t updaterServiceInterval;        // Interval (sec) to check for software updates
 
@@ -326,7 +357,7 @@ void      loop();
 void      trace(const uint8_t module, const uint8_t id, const uint8_t det=0); 
 void      logTrace(void);
 
-void      NewService(uint32_t (*serviceFunction)(struct serviceBlock*), const uint8_t taskID=0);
+serviceBlock* NewService(Service, const uint8_t taskID=0, void* parm=0);
 void      AddService(struct serviceBlock*);
 uint32_t  dataLog(struct serviceBlock*);
 uint32_t  historyLog(struct serviceBlock*);
@@ -349,7 +380,9 @@ void      setLedState();
 void      dropDead(void);
 void      dropDead(const char*);
 
-boolean   getConfig(const char* configPath);
+bool      setConfig(const char* configPath);
+bool      updateConfig(const char *configPath);
+bool      recoverConfig();
 
 size_t    sendChunk(char* buf, size_t bufPos);
 

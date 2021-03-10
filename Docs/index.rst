@@ -14,7 +14,7 @@ IoTaWatt documentation
     CT Configuration <CTconfig>
     Status Display <status>
     Outputs <outputs.rst>
-    Web Servers <webServer>
+    Uploaders <uploaders>
     Configure PVoutput <PVoutput>
     Configure Emoncms <Emoncms>
     Configure influxDB <influxDB>
@@ -26,6 +26,7 @@ IoTaWatt documentation
     Original Graph <originalGraph>
     File Manager and Editor <fileManager>
     Query API <query.rst>
+    HTTPS Proxy Server <HTTPSproxy.rst>
     Message Log <messageLog>
     Troubleshooting <troubleshooting>
     Accessing iotawatt.local <dotlocal>

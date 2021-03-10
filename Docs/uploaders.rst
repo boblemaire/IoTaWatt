@@ -1,21 +1,19 @@
-===========
-Web Servers
-===========
+========================
+Uploading to Servers
+========================
 
 Sending Data to a Web Service
 -----------------------------
 
 As a standalone unit, IoTaWatt is a very capable data logger
-with an integrated web server/API interface that can provide
-real-time as well as historical data, using the provided
-graph interface, or otherwise to any web connected client.
-That said, there are limitations in that queries can take
-several seconds and the web server currently works with
-locally connected clients on the same WiFi network and
-requires port forwarding and dynamic DNS to access from
-outside. There is also a chance that the local datalogs
-could be lost along with all of the accumulated history
-and there is no local backup capability yet.
+with an integrated web server/API interface. It can provide
+real-time as well as historical data, using the provided 
+status-display and the powerful Graph+ application.
+
+That said, there are limitations. While the web server 
+typically serves clients on the local network, remote
+access requires port forwarding and dynamic DNS to access from
+outside. 
 
 There are cloud based services available that will store
 uploaded data logger information and present that data to
@@ -34,10 +32,10 @@ IoTaWatt can support multiple upload services simultaneously,
 so it's not necessary to sacrifice uploading to an influxDB
 database in order to participate in the PVoutput project.
 
-To initiate configuration of any web server, hover over
-|Setup| and select |webServer|.
+To initiate configuration of any web server uploader, hover over
+|Setup| and select |DataUploaders|.
 
-.. image:: pics/webServerMenu.png
+.. image:: pics/uploaders/uploaderMenu.png
     :scale: 60 %
     :align: center
     :alt: **Setup Menu**
@@ -123,6 +121,6 @@ pay-as-you-go cloud service at emoncms.org.
     :scale: 60 %
     :alt: **Setup button**
 
-.. |webServer| image:: pics/webServerButton.png
+.. |DataUploaders| image:: pics/uploaders/uploadersButton.png
     :scale: 60 %
     :alt: **Web Server**

@@ -15,7 +15,11 @@ void loop()
 
   // ------- If AC zero crossing approaching, go sample a channel.
   static int lastChannel = 0;
-  if(maxInputs && (uint32_t)(millis() - lastCrossMs) >= (430 / int(frequency))){
+  uint32_t microsNow = micros();
+  if(microsNow <= lastCrossMs){
+    bingoTime = 0;
+  }
+  if(maxInputs && microsNow > bingoTime){
     trace(T_LOOP,1,lastChannel);
     int nextChannel = (lastChannel + 1) % maxInputs;
     while( (! inputChannel[nextChannel]->isActive()) && nextChannel != lastChannel){
@@ -26,6 +30,13 @@ void loop()
     samplePower(nextChannel, 0);
     trace(T_LOOP,2);
     nextCrossMs = lastCrossMs + 490 / int(frequency);
+    if(int(frequency) > 25){
+      bingoTime = lastCrossUs + 500000 / int(frequency) - 1500;
+    }
+    else {
+      bingoTime = lastCrossUs + 3500;
+    }
+    //bingoTime = lastCrossUs + ((lastCrossUs - firstCrossUs) / 2) - 1500;
     if(nextChannel <= lastChannel) sampling = true;
     lastChannel = nextChannel;
   }
@@ -39,26 +50,55 @@ void loop()
   trace(T_LOOP,3);
   if(serverAvailable){
     server.handleClient();
-    trace(T_LOOP,4);
+    trace(T_LOOP,3);
     yield();
   }
+
+  // Config is updated asynchronously in web-server ISRs.
+  // Upon closing an updated config file, getNewConfig is set.
+  // Process that config here.
   
+  if(getNewConfig){
+    trace(T_LOOP,4);
+    getNewConfig = false;
+    if(updateConfig("config+1.txt")){
+      trace(T_LOOP,4);
+      copyFile("/esp_spiffs/config.txt", "config.txt");
+    }
+    else {
+
+    }
+  }
 
 // ---------- If the head of the service queue is dispatchable
 //            call the SERVICE.
 
-  if(serviceQueue != NULL && UTCtime() >= serviceQueue->callTime){
-    serviceBlock* thisBlock = serviceQueue;
-    serviceQueue = thisBlock->next;
+  microsNow = micros();
+  if(microsNow < bingoTime && serviceQueue != NULL && millis() >= serviceQueue->scheduleTime){
+    trace(T_LOOP,6,1);
+    serviceBlock *selPtr = (serviceBlock*)&serviceQueue;
+    serviceBlock *tstPtr = selPtr->next;
+    while(tstPtr->next && tstPtr->next->scheduleTime <= millis()){
+      trace(T_LOOP,6,2);
+      if(tstPtr->next->priority > selPtr->next->priority){
+        selPtr = tstPtr;
+      }
+      tstPtr = tstPtr->next;
+    }
+    trace(T_LOOP,6,3);
+    tstPtr = selPtr;
+    selPtr = selPtr->next;
+    tstPtr->next = tstPtr->next->next;
     ESP.wdtFeed();
-    trace(T_LOOP,5,thisBlock->taskID);
-    thisBlock->callTime = thisBlock->service(thisBlock);
+    trace(T_LOOP,5,selPtr->taskID);
+    trace(T_LOOP,6,4);
+    selPtr->scheduleTime = selPtr->service(selPtr);
     yield();
-    trace(T_LOOP,6);
-    if(thisBlock->callTime > 0){
-      AddService(thisBlock); 
+    trace(T_LOOP,6,6);
+    if(selPtr->scheduleTime > 0){
+      AddService(selPtr); 
     } else {
-      delete thisBlock;    
+      delete selPtr;    
     }
   } 
 }
@@ -101,26 +141,38 @@ void loop()
  * polls for activity.
  ********************************************************************************************************/
 
-void NewService(uint32_t (*serviceFunction)(struct serviceBlock*), const uint8_t taskID){
+serviceBlock* NewService(Service serviceFunction, const uint8_t taskID, void* parm){
     serviceBlock* newBlock = new serviceBlock;
     newBlock->service = serviceFunction;
     newBlock->taskID = taskID;
+    newBlock->serviceParm = parm;
     AddService (newBlock);
+    return newBlock;
   }
 
 void AddService(struct serviceBlock* newBlock){
-  if(newBlock->callTime < UTCtime()) newBlock->callTime = UTCtime();
+  uint32_t _millis = millis();
+  if(newBlock->scheduleTime == 1){
+    newBlock->scheduleTime = _millis;
+  }
+  else if(newBlock->scheduleTime <= 1000){
+    newBlock->scheduleTime += _millis;
+  }
+  else {
+    newBlock->scheduleTime = millisAtUTCTime(MAX(newBlock->scheduleTime, UTCtime()));
+  }
+  
   if(serviceQueue == NULL ||
-    (newBlock->callTime < serviceQueue->callTime) ||
-    (newBlock->callTime == serviceQueue->callTime && newBlock->priority > serviceQueue->priority)){
+    (newBlock->scheduleTime < serviceQueue->scheduleTime) ||
+    (newBlock->scheduleTime == serviceQueue->scheduleTime && newBlock->priority > serviceQueue->priority)){
     newBlock->next = serviceQueue;
     serviceQueue = newBlock;
   }
   else {
     serviceBlock* link = serviceQueue;
     while(link->next != NULL){
-      if((newBlock->callTime < link->next->callTime) ||
-        (newBlock->callTime == link->next->callTime && newBlock->priority > link->next->priority)){
+      if((newBlock->scheduleTime < link->next->scheduleTime) ||
+        (newBlock->scheduleTime == link->next->scheduleTime && newBlock->priority > link->next->priority)){
         break;
       }        
       link = link->next;

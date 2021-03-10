@@ -1,4 +1,5 @@
 #include "IotaWatt.h"
+#include "splitstr.h"
 
 
 String formatHex(uint32_t data);
@@ -17,7 +18,7 @@ void setup()
   delay(250);
   //Serial.println(F("\r\n\n\n** Restart **\r\n\n"));
   //Serial.println(F("Serial Initialized"));
-  
+
   //*************************************** Start SPI *************************************************
 
   pinMode(pin_CS_ADC0, OUTPUT);                // Make sure all the CS pins are HIGH
@@ -33,15 +34,16 @@ void setup()
   //*************************************** Initialize SPI *******************************************
   
   SPI.begin();
-  SPI.beginTransaction(SPISettings(2000000,MSBFIRST,SPI_MODE0));
   Serial.println("\r\nSPI started.");
    
   //*************************************** Initialize the SD card ************************************
 
-  if(!SD.begin(pin_CS_SDcard)) {
+  SDFSConfig SDconfig(pin_CS_SDcard, SD_SCK_MHZ(25));
+  SDFS.setConfig(SDconfig);
+  if(!SDFS.begin()) {
     log("SD initiatization failed. Retrying.");
     setLedCycle(LED_SD_INIT_FAILURE);
-    while(!SD.begin(pin_CS_SDcard, SPI_FULL_SPEED)){ 
+    while(!SDFS.begin()){ 
       yield();
     }
     endLedCycle();
@@ -49,7 +51,7 @@ void setup()
   }
   hasSD = true;
   log("SD initialized.");
-
+  
   //*************************************** Check RTC   *****************************
 
   Wire.begin(pin_I2C_SDA, pin_I2C_SCL);
@@ -174,7 +176,12 @@ if(spiffsBegin()){
 //************************************* Process Config file *****************************************
   deviceName = charstar(F(DEVICE_NAME));
   updateClass = charstar(F("NONE"));
-  validConfig = getConfig("config.txt");
+  validConfig = setConfig("config.txt");
+  if(! validConfig){
+    log("config file invalid, attempting recovery.");
+    validConfig = recoverConfig();
+    log("configuration recovery %ssuccessful.", validConfig ? "" : "un");
+  }
   log("Local time zone: %+d:%02d", (int)localTimeDiff/60, (int)localTimeDiff%60);
   if(timezoneRule){
     log("Using Daylight Saving Time (BST) when in effect.");

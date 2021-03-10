@@ -70,7 +70,6 @@ void handleRequest(){
   if(serverOn(authAdmin, F("/vcal"),HTTP_GET, handleVcal)) return;
   if(serverOn(authAdmin, F("/command"), HTTP_GET, handleCommand)) return;
   if(serverOn(authUser,  F("/list"), HTTP_GET, printDirectory)) return;
-  if(serverOn(authAdmin, F("/config"), HTTP_GET, handleGetConfig)) return;
   if(serverOn(authAdmin, F("/edit"), HTTP_DELETE, handleDelete)) return;
   if(serverOn(authAdmin, F("/edit"), HTTP_PUT, handleCreate)) return;
   if(serverOn(authUser,  F("/feed/list.json"), HTTP_GET, handleGetFeedList)) return;
@@ -112,8 +111,8 @@ void returnOK() {
   server.send(200, txtPlain_P, "");
 }
 
-void returnFail(String msg) {
-  server.send(500, txtPlain_P, msg + "\r\n");
+void returnFail(String msg, int HTTPcode) {
+  server.send(HTTPcode, txtPlain_P, msg + "\r\n");
 }
 
 bool loadFromSdCard(String path){
@@ -201,19 +200,27 @@ bool loadFromSpiffs(String path, String dataType){
 }
 
 void handleFileUpload(){
-  trace(T_WEB,11);
-  if(server.uri() != "/edit") return;
+  trace(T_WEB, 11);
+  static File uploadFile;
   HTTPUpload& upload = server.upload();
-  if( ! upload.filename.startsWith("/")){
-    upload.filename = String('/') + upload.filename;
-  }
-  upload.filename.toLowerCase();
+  trace(T_WEB, 11, upload.status);
   if(upload.filename.startsWith(F("/esp_spiffs/"))){
     handleSpiffsUpload();
+    return;
   }
+  
   if(upload.status == UPLOAD_FILE_START){
+    if(server.uri() != "/edit") return;
+    upload.filename.toLowerCase();
+    if(upload.filename.startsWith("/")){
+      upload.filename.remove(0, 1);
+    }
     if( ! authenticate(authAdmin)) return;
-      if(upload.filename.equals(F("/config.txt"))){
+    if(upload.filename.equals(F(IOTA_CONFIG_PATH))){
+      returnFail("Protected", 403);
+      return;
+    }
+    if(upload.filename.equals(F(IOTA_CONFIG_NEW_PATH))){
       if(server.hasHeader(F("X-configSHA256"))){
         if(server.header(F("X-configSHA256")) != base64encode(configSHA256, 32)){
           server.send(409, txtPlain_P, F("Config not current"));
@@ -225,23 +232,29 @@ void handleFileUpload(){
     if(uploadFile = SD.open(upload.filename.c_str(), FILE_WRITE)){
       DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
     }
-
-  } else if(upload.status == UPLOAD_FILE_WRITE){
+  } 
+  
+  else if(upload.status == UPLOAD_FILE_WRITE){
     if(uploadFile) {
       uploadFile.write(upload.buf, upload.currentSize);
     }
-    
-  } else if(upload.status == UPLOAD_FILE_END){
+  } 
+  
+  else if(upload.status == UPLOAD_FILE_END){
     if(uploadFile){
+      if(upload.filename.equals(F(IOTA_CONFIG_NEW_PATH))){
+        hashFile(configSHA256, uploadFile);
+        server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
+        getNewConfig = true;
+      }
       uploadFile.close();
       DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
-      if(upload.filename.equals("/config.txt")){
-        uploadFile = SD.open(upload.filename.c_str(), FILE_READ);
-        hashFile(configSHA256, uploadFile);
-        uploadFile.close();
-        server.sendHeader("X-configSHA256", base64encode(configSHA256, 32));
-      }
     }
+  } else if(upload.status == UPLOAD_FILE_ABORTED){
+    if(uploadFile){
+      uploadFile.close();
+    }
+    log("WebServer: Upload aborted: %s", upload.filename.c_str());
   }
 }
 
@@ -249,10 +262,10 @@ void handleSpiffsUpload(){
   trace(T_WEB,11);
   HTTPUpload& upload = server.upload();
   if(upload.status == UPLOAD_FILE_START){
-
     if( ! authenticate(authAdmin)) return;
-      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
-      spiffsWrite(upload.filename.substring(11).c_str(), "", 0);        // Create a null file
+    upload.filename.toLowerCase();
+    DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
+    spiffsWrite(upload.filename.substring(11).c_str(), "", 0);        // Create a null file
 
   } else if(upload.status == UPLOAD_FILE_WRITE){
       spiffsWrite(upload.filename.substring(11).c_str(), upload.buf, upload.currentSize, true);   // append to the file (true)
@@ -299,13 +312,13 @@ void handleDelete(){
     return;
   } 
     if(path == "/" || !SD.exists((char *)path.c_str())) {
-    returnFail("BAD PATH");
+    returnFail("BAD PATH", 400);
     return;
   }
   if(path == F("/config.txt") ||
      path.equals(IOTA_CURRENT_LOG_PATH) ||
      path.equals(IOTA_HISTORY_LOG_PATH)){
-    returnFail("Restricted File");
+    returnFail("Restricted File", 403);
     return;
   }
   deleteRecursive(path);
@@ -325,7 +338,7 @@ void handleCreate(){
   } 
 
   if(path == "/" || SD.exists((char *)path.c_str())) {
-    returnFail("BAD PATH");
+    returnFail("BAD PATH", 400);
     return;
   }
 
@@ -561,27 +574,44 @@ void handleStatus(){
   }
 
 
-    if(server.hasArg(F("influx"))){
+    if(server.hasArg(F("influx1"))){
       trace(T_WEB,17);
-      JsonObject& influx = jsonBuffer.createObject();
-      influx.set(F("running"),influxStarted);
-      influx.set(F("lastpost"),influxLastPost);  
-      root["influx"] = influx;
+      JsonObject& status = jsonBuffer.createObject();
+      if(!influxDB_v1){
+        status.set(F("state"),"not running");
+      } else {
+        influxDB_v1->getStatusJson(status);
+      }  
+      root["influx1"] = status;
     }
 
-    if(server.hasArg(F("emon"))){
-      trace(T_WEB,22);
-      JsonObject& emon = jsonBuffer.createObject();
-      emon.set(F("running"),EmonStarted);
-      emon.set(F("lastpost"),EmonLastPost);  
-      root["emon"] = emon;
+    if(server.hasArg(F("influx2"))){
+      trace(T_WEB,17);
+      JsonObject& status = jsonBuffer.createObject();
+      if(!influxDB_v2){
+        status.set(F("state"),"not running");
+      } else {
+        influxDB_v2->getStatusJson(status);
+      }  
+      root["influx2"] = status;
     }
 
+    if(server.hasArg(F("emoncms"))){
+      trace(T_WEB,18);
+      JsonObject& status = jsonBuffer.createObject();
+      if(!Emoncms){
+        status.set(F("state"),"not running");
+      } else {
+        Emoncms->getStatusJson(status);
+      }  
+      root["emoncms"] = status;
+    }
+    
     if(server.hasArg(F("pvoutput"))){
       trace(T_WEB,23);
       JsonObject& status = jsonBuffer.createObject();
       if(!pvoutput){
-        status.set(F("state"),"stopped");
+        status.set(F("state"),"not running");
       } else {
         pvoutput->getStatusJson(status);
       }
@@ -590,21 +620,26 @@ void handleStatus(){
 
     if(server.hasArg(F("datalogs"))){
       trace(T_WEB,17);
-      JsonObject& datalogs = jsonBuffer.createObject();
+      JsonArray& datalogs = jsonBuffer.createArray();
+
       JsonObject& currlog = jsonBuffer.createObject();
+      currlog.set(F("id"), "Current");
       currlog.set(F("firstkey"),Current_log.firstKey());
       currlog.set(F("lastkey"),Current_log.lastKey());
       currlog.set(F("size"),Current_log.fileSize());
       currlog.set(F("interval"),Current_log.interval());
       //currlog.set("wrap",Current_log._wrap ? true : false);
-      datalogs.set(F("currlog"),currlog);
+      datalogs.add(currlog);
+
       JsonObject& histlog = jsonBuffer.createObject();
+      histlog.set(F("id"), "History");
       histlog.set(F("firstkey"),History_log.firstKey());
       histlog.set(F("lastkey"),History_log.lastKey());
       histlog.set(F("size"),History_log.fileSize());
       histlog.set(F("interval"),History_log.interval());
-      //histlog.set("wrap",History_log._wrap ? true : false);
-      datalogs.set(F("histlog"),histlog);
+      datalogs.add(histlog);
+
+      trace(T_WEB,17);
       root.set(F("datalogs"),datalogs);
     }
 
@@ -633,7 +668,7 @@ void handleStatus(){
     }
     root.printTo(response);
   }
-  server.send(200, txtJson_P, response);
+  server.send(200, appJson_P, response);
 }
 
 void handleVcal(){
@@ -821,26 +856,6 @@ void sendMsgFile(File &dataFile, int32_t relPos){
     _client.write(dataFile);
 }
 
-void handleGetConfig(){
-  trace(T_WEB,8); 
-  if(server.hasArg(F("update"))){
-    if(server.arg(F("update")) == "restart"){
-      server.send(200, F("text/plain"), "OK");
-      log("Restart command received.");
-      delay(500);
-      ESP.restart();
-    }
-    else if(server.arg(F("update")) == "reload"){
-      validConfig = getConfig("config.txt");
-      if(validConfig){
-        copyFile("/esp_spiffs/config.txt", "config.txt");
-      }
-      server.send(200, txtPlain_P, "OK");
-      return;  
-    }
-  }
-  server.send(400, txtPlain_P, "Bad Request.");
-}
 
 void handleQuery(){
   trace(T_WEB,50);

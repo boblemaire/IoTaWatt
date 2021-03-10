@@ -27,21 +27,23 @@ Configure IoTaWatt
 
 After establishing an account, run the IoTaWatt 
 configuration application, hover over |Setup| and click 
-|webServer| from the dropdown menu.
+|uploaders| from the dropdown menu.
 
-.. image:: pics/webServerMenu.png
+.. image:: pics/selectUploaders.png
     :scale: 60 %
-    :alt: **Setup Menu**
+    :align: center
+    :alt: **Select Uploaders**
 
 Choose Emoncms.
 
-.. image:: pics/selectEmoncms.png
+.. image:: pics/emoncms/selectEmoncms.png
     :scale: 60 %
     :alt: **Select Emoncms**
 
-Here you will specify how IoTaWatt is to upload its data to Emoncms.
+Here you will specify the URL to use for emoncms, your credentials and
+what data to upload.
 
-.. image:: pics/configEmoncms.png
+.. image:: pics/emoncms/configEmoncms.png
     :scale: 60 %
     :alt: **Configure Emoncms**
 
@@ -93,14 +95,17 @@ Here you will specify how IoTaWatt is to upload its data to Emoncms.
     and will not significantly affect normal operation.
 
 **server URL** 
-    URL of the Emoncms server. If using the Emoncms.org server, 
-    the default to the Emoncms.org site, but the software is open, 
+    URL of the Emoncms server. This field defaults to the Emoncms.org
+    server. The software is open, 
     so you may maintain your own server (software on GitHub) 
-    or you may buy one of the OpenEnergyMonitor.org products 
+    or you may get one of the OpenEnergyMonitor.org products 
     that run a version of the software on a raspberry-pi. 
     When using a local instance of Emoncms, 
     you can use the IP format with optional port number. 
-    An example might be 192.168.0.112:80/emoncms.
+    An example might be http://192.168.0.112:80/emoncms.
+
+    If you have setup a HTTPSproxy server, you can use the HTTPS://
+    method here for secure uploads.  There is also a 
 
 **api key**
     A 32 character hexadecimal key to authorize posting to an account. 
@@ -162,6 +167,6 @@ the list will be reordered.
     :scale: 60 %
     :alt: **Setup button**
 
-.. |webServer| image:: pics/webServerButton.png
+.. |uploaders| image:: pics/uploadersButton.png
     :scale: 60 %
     :alt: **Web Server**

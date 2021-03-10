@@ -1,11 +1,14 @@
 #include "IotaWatt.h"
 #include "IotaScript.h"
 
+// Following literals must match enumeration in .h
+
 const char*      unitstr[] = {
                     "Watts",
                     "Volts", 
                     "Amps", 
-                    "VA", 
+                    "VA",
+                    "VAh", 
                     "Hz", 
                     "Wh", 
                     "kWh", 
@@ -27,11 +30,17 @@ uint8_t     unitsPrecision[] = {
                     /*VAR*/   2,
                     /*VARh*/  4,
                     /*None*/  0 
-                    };                   
+                    };
+
+const char  opChars[] = "=+-*/<>|()";
+#define  TOKEN_TYPE_MASK 0B11100000
+#define SCRIPT_CHAR_INPUT '@'
+#define SCRIPT_CHAR_CONSTANT '#'
 
 Script::Script(JsonObject& JsonScript)
       :_next(nullptr)
       ,_name(nullptr)
+      ,_parm(nullptr)
       ,_constants(nullptr)
       ,_tokens(nullptr)
       ,_units(Watts)
@@ -62,6 +71,7 @@ Script::Script(JsonObject& JsonScript)
 Script::Script(const char* name, const char* unit, const char* script)
       :_next(nullptr)
       ,_name(nullptr)
+      ,_parm(nullptr)
       ,_constants(nullptr)
       ,_tokens(nullptr)
       ,_units(Watts)
@@ -88,9 +98,13 @@ Script*       Script::next() {return _next;}
 
 const char*   Script::name() {return _name;} 
 
-const char*   Script::getUnits() {return unitstr[_units];};
+const char*   Script::getUnits() {return unitstr[_units];}
 
-int           Script::precision(){return unitsPrecision[_units];};
+void          Script::setParm(void* value) {_parm = value;}
+
+void*         Script::getParm() {return _parm;}
+
+int           Script::precision() {return unitsPrecision[_units];}
 
 size_t        ScriptSet::count() {return _count;}
 
@@ -104,14 +118,16 @@ void    Script::print() {
         string += _units;
         string += ' ';
         while(*token){
-          if(*token < getInputOp){
-            string += String(opChars[*token]);
+          uint8_t tokenType = *token && TOKEN_TYPE_MASK;
+          uint8_t tokenDetail = *token && ~TOKEN_TYPE_MASK;
+          if(tokenType == tokenOperator){
+            string += String(opChars[tokenDetail]);
           }
-          else if(*token & getInputOp){
-            string += "@" + String(*token - getInputOp);
+          else if(tokenType == tokenInput) {
+            string += "@" + String(tokenDetail);
           }
-          else if(*token & getConstOp){
-            string += String(_constants[*token - getConstOp],4);
+          else if(tokenType == tokenConstant){
+            string += String(_constants[tokenDetail],4);
             while(string.endsWith("0")) string.remove(string.length()-1);
             if(string.endsWith(".")) string += '0';
           }
@@ -124,35 +140,59 @@ void    Script::print() {
 }
 
 bool    Script::encodeScript(const char* script){
-        int tokenCount = 0;
-        int constCount = 0;
-        int consts = constCount;
-        for(int i=0; i<strlen(script); i++){
-          if(script[i] == '#')constCount++;
-          if((!isDigit(script[i])) && (script[i] != '.')) tokenCount++;
-        }
-        _tokens = new uint8_t[tokenCount + 1];
-        _constants = new float[constCount];
-        int j = 0;
-        int i = 0;     
-        while(script[j]){
-          if(script[j] == '@'){
-            char* endptr;
-            int n = strtol(&script[j+1], &endptr, 10);
-            j = endptr - script;
-            _tokens[i++] = getInputOp + n;
-          } 
-          else if (script[j] == '#'){
-            _tokens[i++] = getConstOp + --constCount;
-            char* endptr;
-            _constants[constCount] = strtof(&script[j+1], &endptr);
-            j = endptr - script;
-          }
-          else {
-            _tokens[i++] = strchr(opChars, script[j++]) - opChars;
-          }
-        }
-        _tokens[i] = 0;
+  char parseChars[16] = {SCRIPT_CHAR_CONSTANT, SCRIPT_CHAR_INPUT};
+  strcpy(&parseChars[2], opChars);
+  int tokenCount = 0;
+  int constantCount = 0;
+
+  // Count the tokens, constants and integrations.
+
+  const char *scan = script;
+  do {
+    scan = strpbrk(scan, parseChars);
+    if(scan){
+      tokenCount++;
+      if(*scan == SCRIPT_CHAR_CONSTANT){
+        constantCount++;
+      }
+      scan++;
+    }
+  } while (scan);
+  
+  // Alllocate storage and encode.
+  
+  _tokens = new uint8_t[tokenCount + 1];
+  _constants = new float[constantCount];
+  int j = 0;
+  int i = 0;     
+  while(script[j]){
+
+    // Input operand
+
+    if(script[j] == SCRIPT_CHAR_INPUT){
+      char* endptr;
+      int n = strtol(&script[j+1], &endptr, 10);
+      j = endptr - script;
+      _tokens[i++] = tokenInput + n;
+    } 
+
+    // Constant operand
+
+    else if (script[j] == SCRIPT_CHAR_CONSTANT){
+      _tokens[i++] = tokenConstant + --constantCount;
+      char* endptr;
+      _constants[constantCount] = strtof(&script[j+1], &endptr);
+      j = endptr - script;
+    }
+
+    // Operator
+
+    else {
+      _tokens[i++] = tokenOperator + strchr(opChars, script[j++]) - opChars;
+    }
+  }
+  _tokens[i] = 0;
+  return true;
 }
 
 double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, const char* overideUnits){
@@ -164,59 +204,57 @@ double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsed
         return 0;
 }
 
-double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units overideUnits){
-        units defaultUnits = _units;
-        _units = overideUnits;
-        double result = run(oldRec, newRec, elapsedHours);
-        _units = defaultUnits;
+double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours){
+        double result = run(oldRec, newRec, elapsedHours, _units);
         return result;
 }
 
-double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours){
+double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units Units){
         uint8_t* tokens = _tokens;
-        double result, var, watts;
-        switch(_units) {
-
+        double result, va;
+        union {
+          double watts; 
+          double wh;
+         };
+        union {
+          double var;
+          double varh;
+        };
+        switch(Units) {
           case Watts:
           case Volts:
-            result = runRecursive(&tokens, oldRec, newRec, elapsedHours, '1'); 
-            break;
-
-          case Wh:
-            result = runRecursive(&tokens, oldRec, newRec, 1.0, '1'); 
-            break;
-
-          case kWh:
-            result = runRecursive(&tokens, oldRec, newRec, 1000.0, '1'); 
-            break;
-            
           case Amps:
-            result = runRecursive(&tokens, oldRec, newRec, elapsedHours, 'A'); 
+          case Hz:
+          case Wh:
+          case VAR:
+          case VARh:
+            result = runRecursive(&tokens, oldRec, newRec, elapsedHours, Units); 
             break;
 
           case VA:
-            var = runRecursive(&tokens, oldRec, newRec, elapsedHours, 'R');
-            watts = runRecursive(&tokens, oldRec, newRec, elapsedHours, '1');
-            result = sqrt(watts*watts + var*var); 
+            var = runRecursive(&tokens, oldRec, newRec, elapsedHours, VAR); 
+            watts = runRecursive(&tokens, oldRec, newRec, elapsedHours, Watts);
+            result = sqrt(var * var + watts * watts);
+            break;
+          
+          case VAh:
+            varh = runRecursive(&tokens, oldRec, newRec, elapsedHours, VARh); 
+            wh = runRecursive(&tokens, oldRec, newRec, elapsedHours, Wh);
+            result = sqrt(varh * varh + wh * wh);
             break;
 
-          case Hz:
-            result = runRecursive(&tokens, oldRec, newRec, elapsedHours, 'H'); 
+          case kWh:
+            result = runRecursive(&tokens, oldRec, newRec, elapsedHours, Wh) / 1000.0; 
             break;
 
           case PF:
-            watts = runRecursive(&tokens, oldRec, newRec, elapsedHours, '1');
-            var = runRecursive(&tokens, oldRec, newRec, elapsedHours, 'R');
-            result = watts / sqrt(watts*watts + var*var); 
+            watts = runRecursive(&tokens, oldRec, newRec, elapsedHours, Watts);
+            var = runRecursive(&tokens, oldRec, newRec, elapsedHours, VAR);
+            result = watts / sqrt(var * var + watts * watts);
             break;
 
-          case VAR:
-            result = runRecursive(&tokens, oldRec, newRec, elapsedHours, 'R');
-            break;
-
-          case VARh:
-            result = runRecursive(&tokens, oldRec, newRec, 1.0, 'R');
-            break;
+          default:
+            result = 0.0;
         }
         
         if(result != result) return 0.0;
@@ -224,83 +262,127 @@ double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsed
                 
 }
 
-double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, char type){
+double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units Units){
         double result = 0.0;
         double operand = 0.0;
         uint8_t pendingOp = opAdd;
+        int vchannel;
         uint8_t* token = *tokens;
         do {
-          //Serial.printf("token %d, result %f, operand %f, pendingop %d\r\n", *token, result, operand, pendingOp);
-          if(*token >= opAdd && *token <= opMax){
-            result = evaluate(result, pendingOp, operand);
-            pendingOp = *token;
-            operand = 0;
-            if(*token == opDiv || *token == opMult) operand = 1;
-          }
-          else if(*token == opAbs){
-            if(operand < 0) operand = 0 - operand;
-          }       
-          else if(*token == opPush){
-            token++;
-            operand = runRecursive(&token, oldRec, newRec, elapsedHours, type);
-          }
-          else if(*token == opPop){ 
-            *tokens = token;
-            return evaluate(result, pendingOp, operand);
-          }
-          else if(*token == opEq){
-            return evaluate(result, pendingOp, operand);
-          }
-          if(*token & getConstOp){
-            operand = _constants[*token % 32];
-          }
+          uint8_t tokenType = *token & TOKEN_TYPE_MASK;
+          uint8_t tokenDetail = *token & ~TOKEN_TYPE_MASK;
+          switch (tokenType)
+          {
+            case tokenOperator:
+            
+              switch (tokenDetail)
+              {
+                case opAdd:
+                case opSub:
+                case opMult:
+                case opDiv:
+                case opMin:
+                case opMax:
+                  result = operate(result, pendingOp, operand);
+                  pendingOp = *token;
+                  operand = 0;
+                  if(tokenDetail == opDiv || tokenDetail == opMult) operand = 1;
+                  break;
 
-              // Fetch input operand.
-              // accum1 is Wh, Vh
-              // accum2 is VAh, Hzh
-              // Type 1 retieves accum1
-              // Type 2 retrieves accum2
-              // Type R computes var as sqrt(VA^2 - W^2)
-              // Type A computes Amps as VA / V
-              // Type H retrieves Hz for associated voltage channel
+                case opAbs:
+                  if(operand < 0) operand = 0 - operand;
+                  break;
 
-          if(*token & getInputOp){
-            if(type == '1'){
-              operand = (newRec->accum1[*token % 32] - (oldRec ? oldRec->accum1[*token % 32] : 0.0)) / elapsedHours;
-            }
-            else if(type == '2'){
-              operand = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0)) / elapsedHours;
-            }
-            else if(type == 'R'){
-              double _VA = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0)) / elapsedHours;
-              double W = (newRec->accum1[*token % 32] - (oldRec ? oldRec->accum1[*token % 32] : 0.0)) / elapsedHours;
-              operand = sqrt(_VA*_VA - W*W);
-            }
-            else if(type == 'A'){
-              if(*token % 32 >= maxInputs) return 0.0;
-              double _VA = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0)) / elapsedHours;
-              int vchannel = inputChannel[*token % 32]->_vchannel;
-              operand = ((newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0.0)) / elapsedHours);
-              if(operand != 0.0){
-                operand = _VA / operand;
-              }
-              if(inputChannel[*token % 32]->_double){
-                operand /= 2.0;
-              }
-            }
-            else if(type == 'H'){
-              if(*token % 32 >= maxInputs) return 0.0;
-              int vchannel = inputChannel[*token % 32]->_vchannel;
-              operand = (newRec->accum2[vchannel] - (oldRec ? oldRec->accum2[vchannel] : 0.0)) / elapsedHours;
-            }
-            else operand = 0.0;
-            if(operand != operand) operand = 0;
-          }
+                case opPush:
+                  token++;
+                  operand = runRecursive(&token, oldRec, newRec, elapsedHours, Units);
+                  break;
+
+                case opPop:
+                  *tokens = token;
+                  return operate(result, pendingOp, operand);
+
+                case opEq:
+                    return operate(result, pendingOp, operand);
+              } // switch (tokenDetail)
+              break;
+
+            case tokenConstant:
+              operand = _constants[tokenDetail];
+              break;
+
+            case tokenInput:
+              union {
+                double va;
+                double vah;
+              };
+              union {
+                double watts;
+                double wh;
+              };
+              switch(Units)
+              {
+
+                case Watts:
+                  operand = (newRec->accum1[*token % 32] - (oldRec ? oldRec->accum1[*token % 32] : 0.0)) / elapsedHours;
+                  break;
+
+                case Volts:
+                  vchannel = inputChannel[*token % 32]->_vchannel;
+                  operand = (newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0.0)) / elapsedHours;
+                  break;
+                  
+                case Amps:
+                  va = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0)) / elapsedHours;
+                  vchannel = inputChannel[*token % 32]->_vchannel;
+                  operand = ((newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0.0)) / elapsedHours);
+                  if(operand != 0.0){
+                    operand = va / (operand * inputChannel[*token % 32]->_vmult);
+                  }
+                  break;
+
+                case VA:
+                  operand = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0)) / elapsedHours;
+                  break;
+
+                case VAh:
+                  operand = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0));
+                  break;
+
+                case Hz:
+                  vchannel = inputChannel[*token % 32]->_vchannel;
+                  operand = (newRec->accum2[vchannel] - (oldRec ? oldRec->accum2[vchannel] : 0.0)) / elapsedHours;
+                  break;
+
+                case Wh:
+                  operand = (newRec->accum1[*token % 32] - (oldRec ? oldRec->accum1[*token % 32] : 0.0));
+                  break;
+
+                case VAR:
+                  va = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0)) / elapsedHours;
+                  watts = (newRec->accum1[*token % 32] - (oldRec ? oldRec->accum1[*token % 32] : 0.0)) / elapsedHours;
+                  operand = sqrt(va*va - watts*watts);
+                  break;
+
+                case VARh:
+                  vah = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0));
+                  wh = (newRec->accum1[*token % 32] - (oldRec ? oldRec->accum1[*token % 32] : 0.0));
+                  operand = sqrt(vah*vah - wh*wh);
+                  break;
+
+                default:
+                  operand = 0.0;
+                  break;
+              } // switch (units)
+          } // switch (tokenType)
+          
+          if(operand != operand) operand = 0;
 
         } while(token++);
+        return 0.0;
 }
 
-double    Script::evaluate(double result, uint8_t token, double operand){
+double    Script::operate(double result, uint8_t token, double operand){
         switch (token) {
           case opAdd:  return result + operand;
           case opSub:  return result - operand;
@@ -310,6 +392,19 @@ double    Script::evaluate(double result, uint8_t token, double operand){
           case opMax:  return result > operand ? result : operand;
           default:     return 0;        
         }
+}
+
+Script* ScriptSet::script(const char *name){
+  Serial.printf("\nnamep: %s", name);
+  Script *script = _listHead;
+   Serial.printf("\nnames: %s", script->_name);
+  while (script) {
+    if(strcmp(script->name(), name) == 0){
+      return script;
+    }
+    script = script->next();
+  }
+  return nullptr;
 }
 
           // Sort the Scripts in the set

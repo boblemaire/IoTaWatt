@@ -32,12 +32,14 @@
                 title="Specify the VTs and CTs that are used">Inputs</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,configOutputs)"
                 title="Define output values for status display and local graphs">Outputs</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,configBurden)"
-                title="Set new values if stock resistors are modified/removed">Burden Resistors</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,buildWebServer)"
+                title="Specify data uploader(s) to external servers">Data Uploaders</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,setProxy)" 
+                title="Specify optional proxy server for HTTPS">HTTPS Proxy Server</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,setPasswords)"
                 title="Set/Reset optional access passwords">Passwords</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,buildWebServer)"
-                title="Specify data export to external servers">Web Server</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,configBurden)"
+                title="Set new values if stock resistors are modified/removed">Burden Resistors</button>
           </span>
         </td>
         <td><button class="mainMenuButton buttonUp" onclick="mainMenuButton(this,statusBegin)"
@@ -157,7 +159,7 @@
         <table id="outputTable"></table>
       </div>
     </div>
-    
+        
                   <!-- *************** Burden configuration ******************--> 
     
     <div id="configBurden" class="body color_body" style="display: none">
@@ -203,10 +205,11 @@
         <button class="actionSave" id="pwdCheck" onclick="pwdValidate()">Validate Current Password</button>
       </p>
     </div>  
+    
                 <!-- ************* WebServer ********************--> 
     
     <div class="body color_body" id="divWebServer" style="display:none">
-      <h3 id=serverHead>Setup Web Server</h3>
+      <h3 id=serverHead>Setup Server Uploaders</h3>
       <form><table id="serverTable"></table></form>
       <div id="divInfluxTagSet" style="display:none">
         <h3>tag set</h3>
@@ -222,6 +225,8 @@
         <button class="actionSave" id="serverSave" onclick="serverSave()">save</button>
       </p>
     </div>
+    
+                  <!-- ************* Influx tags ********************--> 
     
     <div class="body color_body" id="divInfluxTag" style="display:none">
       <h3>Edit influx tag</h3>
@@ -248,12 +253,31 @@
         <button class="actionSave" id="influxTagSave">save</button>
       </p>
     </div>
+    
+                    <!-- ************* HTTPS Proxy Server ********************--> 
+    
+    <div id="setProxy" class="body color_body" style="display:none">
+      <h3>Specify HTTPS Proxy Server</h3>
+      <p>
+        Secure (HTTPS) internet connections are possible using a proxy server on the local LAN.
+        Information about setting up an NGINX proxy server and using this feature are included
+        in the <a href="https://docs.iotawatt.com" target="_blank">IoTaWatt online documentation</a>.<br><br>
+        When you specify the URL of your proxy server here, uploaders and other services will
+        use the proxy when https is specified.<br><br>
+      </p>
+        Proxy URL <input id="proxyURL" oninput="validateProxy()" size="48">
+      <p>
+        <button class="actionDelete" id="proxyDelete" onclick="proxyDelete()">delete</button>
+        <button class="actionCancel" id="proxyCancel" onclick="proxyCancel()">cancel</button>
+        <button class="actionSave"   id="proxySave"   onclick="proxySave()">save</button>
+      </p>
+    </div>
               
         <!-- ************************************************************************************************************************
                                                       STATUS DISPLAY
          *********************************************************************************************************************-->
 
-    <div id="divStatus" class="body color_body" style="display:none">
+    <div id="divStatus" class="body color_body" style="display:inline">
       
       <button id="tabIO" class="groupTab" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs Status</button>
         <div id="statusIODiv" class="statusDiv" style="display: block;">
@@ -267,7 +291,7 @@
         </div>
         
       <button id="tabStats" class="groupTab" onclick="toggleDisplay('statusStatsDiv')">IoTaWatt Statistics</button>
-        <div id="statusStatsDiv" class="statusDiv" style="display: block;">
+        <div id="statusStatsDiv" class="statusDiv" style="display: none;">
            <table width="100%">
             <tr><th width="50%"></th><th width="50%"></th></tr>
             <tr valign="top">
@@ -283,23 +307,47 @@
           <table id="tableWifi" width="100%"></table>
         </div>
       
-      <div id="tabinflux" style="display:none;">
-        <button class="groupTab" onclick="toggleDisplay('statusInfluxDiv')">InfluxDB</button>
-        <p id="statusInfluxDiv" class="statusDiv" style="display: none;"></p>
-      </div>
-      
-      <div id="tabEmon" style="display: none;">
-        <button class="groupTab" onclick="toggleDisplay('statusEmonDiv')">Emoncms</button>
-        <p id="statusEmonDiv" class="statusDiv" style="display: none;"></p>
-      </div>
-      
-       <div id="tabPVout" style="display: none;">
-        <button class="groupTab" onclick="toggleDisplay('statusPVoutDiv')">PVoutput</button>
-        <p id="statusPVoutDiv" class="statusDiv" style="display: none;"></p>
+      <div id="tabUploaders" style="display:none;">
+        <button class="groupTab" onclick="toggleDisplay('statusUploaders')">Uploaders</button>
+        <div id="statusUploaders" style="display: none;">
+        
+          <div id="statusInflux1Div" class="statusDiv" style="display: none;">
+            <button id="influx1Button" style = "configButton" value = "influxdb" onclick="serverToggle(this)"></button>
+            <span>influxDB1:</span>
+            <span id="influx1text"></span>
+            <span id="influx1msg"></span>
+           
+          </div>
+  
+          <div id="statusInflux2Div" class="statusDiv" style="display: none;">
+            <button id="influx2Button" style = "configButton" value = "influxdb2" onclick="serverToggle(this)"></button>
+            <span>influxDB2:</span>
+            <span id="influx2text"></span>
+            <span id="influx2msg"></span>
+            
+          </div>
+  
+          <div id="statusEmoncmsDiv" class="statusDiv" style="display: none;">
+            <button id="EmoncmsButton" style = "configButton" value = "emoncms" onclick="serverToggle(this)"></button>
+            <span>Emoncms:</span>
+            <span id="Emoncmstext"></span>
+            <span id="Emoncmsmsg"></span>
+          
+          </div>
+  
+          <div id="statusPVoutDiv" class="statusDiv" style="display: none;">
+            <button id="PVoutputButton" style = "configButton" value = "pvoutput" onclick="serverToggle(this)"></button>
+            <span>PVoutput:</span>
+            <span id="PVoutputtext"></span>
+            <span id="PVoutputmsg"></span>
+          
+          </div>
+        </div>
       </div>
       
       <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
         <div id="statusLogsDiv" class="statusDiv" style="display: none;"></div>
+        <table id="statusLogsTable"></table>
     </div> <!-- divStatus -->
   
         <!-- ************************************************************************************************************************
@@ -424,14 +472,26 @@
     </div>
   </div> <!-- mainBody --> 
   <div id="copyright">
-    <p style="text-align:center; padding:0px; margin:0px"><small>&#xA9 2020 IoTaWatt, Inc.</small></p>
+    <p style="text-align:center; padding:0px; margin:0px"><small>&#xA9 2021 IoTaWatt, Inc.</small></p>
   </div>
 </div> <!-- outerContainer -->
 
 <script>
+
+var units = [
+  { unit: "Volts",  SI: "V", dp: 1},
+  { unit: "Watts", SI: "W", dp: 1},
+  { unit: "Wh",  SI: "Wh", dp: 1},
+  { unit: "Amps", SI: "A", dp: 2},
+  { unit: "VA", SI: "VA", dp: 1},
+  { unit: "PF", SI: "PF", dp: 2},
+  { unit: "Hz", SI: "Hz", dp: 0},
+  { unit: "VAR", SI: "VAR", dp: 1},
+  { unit: "VARh", SI: "VARh", dp: 1}
+];
 // configuration files
 var configFileURL = "/config.txt";
-var configNewURL = "/config.txt";
+var configNewURL = "/config+1.txt";
 var burdenFileURL = "/esp_spiffs/config/device/burden.txt";
 var configTablesURL = "/tables.txt";
 var editURL = "edit.htm";
@@ -441,8 +501,10 @@ var msgsFileURL = "/iotawatt/iotamsgs.txt?textpos=-10000";
 var currentBody = [];
 var configSHA256;
 var noConfig = true;
+var emoncmsAlias = "server";        // Json object where Emoncms config is found (will be deprecated in future release)
 
 var config;                         // configuration as Js Object
+var serverConfig;
 var tables;                         // tables as Js Object
 var editing = false;
 var editingScript = false;
@@ -471,7 +533,8 @@ var scriptEditNameTitle = "";
 var scriptEditNamePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
 var scriptEditUnits = [];
 var scriptEditUniqueNames = true;
-var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA","VAR"];
+var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA","VAR","VARh"];
+var scriptEditUnitsIntegrations = ["Wh", "VARh"];
 var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh","VAR","VARh"];
 var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:false,begin:{month:3,weekday:1,instance:2,time:120},end:{month:11,weekday:1,instance:1,time:120}}},
                 {id:"Europe",begOffset:0,endOffset:2,dstrule:{adj:60,utc:true,begin:{month:3,weekday:1,instance:-1,time:60},end:{month:10,weekday:1,instance:-1,time:60}}},
@@ -483,11 +546,55 @@ var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:
  *                       Shorthand functions
 * ************************************************************************************************/
 function EbyId(id) {return document.getElementById(id)};
-function hide(id) {document.getElementById(id).style.display = "none";}
-function show(id) {document.getElementById(id).style.display = "inline";}
 
 /***************************************************************************************************
- *                       setPasswords
+*                       setProxy
+* ************************************************************************************************/
+var pattern_proxyURL = new RegExp('^(http:\\/\\/)?'+ // protocol
+    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+    '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*$','i');  // port and path X
+
+function setProxy(){
+  editing = true;
+  EbyId("proxyURL").value = (config.device.httpsproxy === undefined) ? "" : config.device.httpsproxy;
+  validateProxy();
+  currentBodyPush("setProxy");
+}
+
+function validateProxy(){
+  if(pattern_proxyURL.test(EbyId("proxyURL").value)){
+    show("proxySave");
+  }
+  else{
+    hide("proxySave");
+  }
+}
+
+function proxyDelete(){
+  EbyId("proxyURL").value = "";
+  proxySave();
+}
+
+function proxyCancel(){
+  editing = false;
+  currentBodyPop();
+  resetDisplay();
+}
+
+function proxySave(){
+  config.device.httpsproxy = EbyId("proxyURL").value;
+  if(config.device.httpsproxy == ""){
+    config.device.httpsproxy = undefined;
+  }
+  uploadConfig();
+  editing = false;
+  currentBodyPop();
+  resetDisplay();
+}
+
+/***************************************************************************************************
+*                       setPasswords
 * ************************************************************************************************/
 var authReq = {};
 function setPasswords() {
@@ -518,7 +625,7 @@ function setPasswords() {
   hide("pwdCheck");
   //EbyId("pwdSave").style.display = "none";
 }
-  
+ 
 function pwdValidate(){
   var xmlHttp = new XMLHttpRequest();
   xmlHttp.onreadystatechange = function() {
@@ -1376,13 +1483,13 @@ function calVTsave(obj){
   }
   
   function parseScript(script){
-    return script.match(/@\d+|#-?\d+\.?\d*|[-+*\/()|<>=]/g);
+    return script.match(/@\d+|#-?\d+\.?\d*|![a-zA-Z\d]+|[-+*\/()|<>=]/g);
   }
 
   function scriptDisplay(tokens){
     calcDisplay = "";
     for(var i=0; i<tokens.length; i++){
-      if(tokens[i].startsWith("#")){
+      if(tokens[i].startsWith("#") || tokens[i].startsWith('!')){
         calcDisplay += tokens[i].substr(1);
       }
       else if(tokens[i].startsWith("@")){
@@ -1622,8 +1729,11 @@ function deviceSave(){
         break;
       }
     }
-  } 
-  uploadConfig(resetDisplay, (config.device.name != originalName) ? "restart" : "reload");
+  }
+  uploadConfig();
+  if(config.device.name != originalName){
+    sendRestart();
+  }
 }
 
 /********************************************************************************************
@@ -1697,17 +1807,18 @@ function burdenSave(){
  * ******************************************************************************************/
 
 function buildWebServer(){
-  var servers = ["Emoncms", "InfluxDB", "PVoutput"];
-  EbyId("serverHead").innerHTML = "Web Server Setup";
+  var servers = ["Emoncms", "InfluxDB_v1", "influxDB_v2", "PVoutput"];
+  EbyId("serverHead").innerHTML = "Setup Server Uploaders";
   EbyId("divInfluxTagSet").style.display = "none";
   EbyId("divServerOutputs").style.display = "none";
   var serverTable = EbyId("serverTable");
   serverTable.innerHTML = "";
   currentBodyPush("divWebServer");
-  var serverSelect = addTableRow(serverTable, "Web Service", "serverType", "select");
+  var serverSelect = addTableRow(serverTable, "Server Type", "serverType", "select");
   serverSelect.setAttribute("onchange","editServer(this)");
+  serverSelect.setAttribute("style","center");
   var option = document.createElement("option");
-  option.text = "select server";
+  option.text = "select server type";
   serverSelect.add(option);
 
   for(i in servers){
@@ -1715,10 +1826,13 @@ function buildWebServer(){
     option.text = servers[i];
     option.value = servers[i];
     if(servers[i].toLowerCase() == "emoncms"){
-      option.text += (config.server.type.toLowerCase() == "emoncms") ? " (edit)" : " (add)";
+      option.text += (config[emoncmsAlias] !== undefined) ? " (edit)" : " (add)";
     }
-    if(servers[i].toLowerCase() == "influxdb"){
+    if(servers[i].toLowerCase() == "influxdb_v1"){
       option.text += (config.influxdb !== undefined) ? " (edit)" : " (add)";
+    }
+    if(servers[i].toLowerCase() == "influxdb_v2"){
+      option.text += (config.influxdb2 !== undefined) ? " (edit)" : " (add)";
     }
     if(servers[i].toLowerCase() == "pvoutput"){
       option.text += (config.pvoutput !== undefined) ? " (edit)" : " (add)";
@@ -1731,21 +1845,50 @@ function buildWebServer(){
 
 function editServer(obj){
   if(obj.value.toLowerCase() == "emoncms"){
+    serverConfig = undefined;
     editEmoncms();
   }
-  else if(obj.value.toLowerCase() == "influxdb"){
-    editInfluxdb();
+  else if(obj.value.toLowerCase() == "influxdb_v1"){
+    serverConfig = config.influxdb;
+    editInfluxdb(1);
+  }
+  else if(obj.value.toLowerCase() == "influxdb_v2"){
+    serverConfig = config.influxdb2;
+    editInfluxdb(2);
   }
   else if(obj.value.toLowerCase() == "pvoutput"){
+    serverConfig = undefined;
     editPVoutput();
   }
 }
 
 function serverSave(){
   editing = false;
+  if(serverConfig !== undefined){
+    if(serverConfig.type == "influxdb"){
+      serverConfig.version = undefined;
+      config.influxdb = serverConfig;
+    }
+    else if(serverConfig.type == "influxdb2"){
+      serverConfig.version = undefined;
+      config.influxdb2 = serverConfig;
+    }
+  }
   uploadConfig();
   currentBodyPop();
   resetDisplay();
+}
+
+function serverDelete(){
+  if(serverConfig !== undefined){
+    if(serverConfig.type == "influxdb"){
+      config.influxdb = undefined;
+    }
+    else if(serverConfig.type == "influxdb2"){
+      config.influxdb2 = undefined;
+    }
+  }
+  serverSave();
 }
 
 function serverCancel(){
@@ -1753,6 +1896,22 @@ function serverCancel(){
   currentBodyPop();
   getConfig(resetDisplay);
 }
+
+function serverToggle(button){
+  button.disabled = true;
+  config[button.value].stop = button.innerHTML == "Stop";
+  var stop;
+  stop = config[button.value].stop;
+  if(button.innerHTML == "Stop"){
+    config[button.value].stop = true;
+  }
+  else {
+    config[button.value].stop = undefined;
+  }
+  config[button.value].revision++;
+  uploadConfig();
+}
+
 /***********************************************************************************************
  *                                Configure eMonCMS
  * ********************************************************************************************/
@@ -1761,8 +1920,8 @@ function editEmoncms(){
   var serverTable = EbyId("serverTable");
   serverTable.innerHTML = "";
   
-  if(config.server.type.toLowerCase() != "emoncms"){
-    config.server =  {type:"emoncms",
+  if(config[emoncmsAlias] == undefined){
+    config[emoncmsAlias] =  {type:"emoncms",
                       revision:0,
                       node:config.device.name,
                       postInterval:10,
@@ -1776,42 +1935,42 @@ function editEmoncms(){
     EbyId("serverHead").innerHTML = "Add Emoncms Service";
   }
   else {
-    config.server.revision++;
+    config[emoncmsAlias].revision++;
     EbyId("serverHead").innerHTML = "Edit Emoncms Service";
     EbyId("serverDelete").style.display = "inline";
     EbyId("serverDelete").setAttribute("onclick","deleteEmoncms();");
   }
 
-  if(config.server.username !== undefined){
-    config.server.userid = config.server.username;
-    config.server.username = undefined;
+  if(config[emoncmsAlias].username !== undefined){
+    config[emoncmsAlias].userid = config[emoncmsAlias].username;
+    config[emoncmsAlias].username = undefined;
   }
   
-  if(config.server.outputs === undefined){
-    config.server.outputs = [];
+  if(config[emoncmsAlias].outputs === undefined){
+    config[emoncmsAlias].outputs = [];
     for(var i=0; i<config.device.channels; i++){
-      config.server.outputs.push({name:i+1, script:"@"+i});
+      config[emoncmsAlias].outputs.push({name:i+1, script:"@"+i});
     }
   }
   
   var nodeInput = addTableRow(serverTable, "Node:", "serverNode", "input", 8);
-  nodeInput.value = config.server.node;
-  nodeInput.setAttribute("onchange","config.server.node = this.value; checkEmoncms();")
+  nodeInput.value = config[emoncmsAlias].node;
+  nodeInput.setAttribute("onchange","config[emoncmsAlias].node = this.value; checkEmoncms();")
   nodeInput.style = "width: 80px;";
   
   var postInput =   addTableRow(serverTable, "post interval(sec): ", "serverPost", "input", 3);
-  postInput.value = Number(config.server.postInterval);
-  postInput.setAttribute("onchange","config.server.postInterval = Number(this.value); checkEmoncms();");
+  postInput.value = Number(config[emoncmsAlias].postInterval);
+  postInput.setAttribute("onchange","config[emoncmsAlias].postInterval = Number(this.value); checkEmoncms();");
   postInput.setAttribute("style","width: 40px;");
   postInput.type = "number";
   postInput.min = 5;
   postInput.max = 3600;
   postInput.step = 5;
   
-  if(isNaN(config.server.bulksend)) config.server.bulksend = 1;
+  if(isNaN(config[emoncmsAlias].bulksend)) config[emoncmsAlias].bulksend = 1;
   var bulksendInput = addTableRow(serverTable, "bulk send:", "serverBulk", "input", 3);
-  bulksendInput.value = Number(config.server.bulksend);
-  bulksendInput.setAttribute("onchange","config.server.bulksend = Number(this.value); checkEmoncms();");
+  bulksendInput.value = Number(config[emoncmsAlias].bulksend);
+  bulksendInput.setAttribute("onchange","config[emoncmsAlias].bulksend = Number(this.value); checkEmoncms();");
   bulksendInput.style = "width: 40px;";
   bulksendInput.type = "number";
   bulksendInput.min = 1;
@@ -1821,27 +1980,28 @@ function editEmoncms(){
   
   var begdateInput = addTableRow(serverTable, "upload history from:", "serverBegd", "input", 16);
   begdateInput.setAttribute("oninput",
-    "config.server.begdate = new Date(this.value).getTime()/1000 - config.timezone*3600; checkEmoncms();");
-  begdateInput.value =  toInputDate(config.server.begdate + config.timezone*3600);
+    "config[emoncmsAlias].begdate = new Date(this.value).getTime()/1000 - config.timezone*3600; checkEmoncms();");
+  begdateInput.value =  toInputDate(config[emoncmsAlias].begdate + config.timezone*3600);
   begdateInput.type = "date";
   
   var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 32);
-  urlInput.value = config.server.url
-  urlInput.setAttribute("onchange","config.server.url = this.value; checkEmoncms();");
+  urlInput.value = config[emoncmsAlias].url
+  urlInput.setAttribute("onchange","config[emoncmsAlias].url = this.value; checkEmoncms();");
   urlInput.type = "url";
   
   var keyInput = addTableRow(serverTable, "api key:", "serverKey", "input", 32);
-  keyInput.value = config.server.apikey;
-  keyInput.setAttribute("onchange","config.server.apikey = this.value; checkEmoncms();");
+  keyInput.value = config[emoncmsAlias].apikey;
+  keyInput.setAttribute("onchange","config[emoncmsAlias].apikey = this.value; checkEmoncms();");
+  keyInput.setAttribute("type","password");
   keyInput.size = 32;
   keyInput.pattern = "[0-9a-f]{32}";
   keyInput.title = "read/write key - 32 hexadecimal digits";
   
   addTableText(serverTable,"","Specifying userid triggers secure encrypted protocol.")
   var keyInput = addTableRow(serverTable, "Emoncms userid", "serverUser", "input", 10);
-  if(config.server.userid === undefined) config.server.userid = "";
-  keyInput.value = config.server.userid;
-  keyInput.setAttribute("onchange","config.server.userid = this.value; checkEmoncms();");
+  if(config[emoncmsAlias].userid === undefined) config[emoncmsAlias].userid = "";
+  keyInput.value = config[emoncmsAlias].userid;
+  keyInput.setAttribute("onchange","config[emoncmsAlias].userid = this.value; checkEmoncms();");
   keyInput.setAttribute("size","16");
   keyInput.pattern = "[0-9]*";
   keyInput.title = "In upper-left corner of Emoncms My Account";
@@ -1851,7 +2011,7 @@ function editEmoncms(){
   
   scriptEditSave = function(){
     scriptEditSet.sort(function(a, b){return a.name - b.name});
-    config.server.outputs = scriptEditSet;
+    config[emoncmsAlias].outputs = scriptEditSet;
   };
   scriptEditReturn = function(){
     scriptEditTable.innerHTML = "";
@@ -1859,7 +2019,7 @@ function editEmoncms(){
     checkEmoncms();
   };
   scriptEditTable = EbyId("serverOutputs");
-  scriptEditSet = config.server.outputs;
+  scriptEditSet = config[emoncmsAlias].outputs;
   scriptEditUnits = scriptEditUnitsUpload;
   scriptEditNameList = [];
   scriptEditUniqueNames = true;
@@ -1877,12 +2037,12 @@ function checkEmoncms(){
                  validateInput("serverKey") &&
                  validateInput("serverUser") &&
                  validateInput("serverBegd") &&
-                 (config.server.apikey != "");
+                 (config[emoncmsAlias].apikey != "");
   EbyId("serverSave").style.display = complete ? "inline" : "none";
 }
 
 function deleteEmoncms(){
-  config.server = {type: "none"};
+  config[emoncmsAlias] = undefined;
   serverSave();
 }
 
@@ -1902,123 +2062,151 @@ function validateInput(id, required=false, msg=undefined){
   return true;
 }
 
-function emonToggle(){
-  if(config.server.stop !== undefined){
-    config.server.stop = ! config.server.stop;
-  }
-  else {
-    config.server.stop = true;
-    
-  }
-  config.server.revision++;
-  uploadConfig();
-}
-
 /***********************************************************************************************
  *                                Configure influxDB
  * ********************************************************************************************/
-function editInfluxdb(){
+function editInfluxdb(version){
   editing = true;
   
   var serverTable = EbyId("serverTable");
   serverTable.innerHTML = "";
-  
-  if(config.influxdb === undefined){
-    config.influxdb = {type:"influxdb",
-                      revision: 0,
-                      postInterval:10,
-                      bulksend:6,
-                      url:"",
-                      "database": "iotawatt",
-                      "measurement":"",
-                      "tagset": [],
-                      "outputs":[]
-                      };
-    EbyId("serverDelete").style.display = "none";
-    EbyId("serverHead").innerHTML = "Add influxDB Service";
+
+  if(version == 1){
+    if(serverConfig !== undefined){
+      serverConfig.revision++;
+      EbyId("serverHead").innerHTML = "Edit influxDB_v1 Uploader";
+      EbyId("serverDelete").style.display = "inline";
+      EbyId("serverDelete").setAttribute("onclick","deleteInfluxdb();");
+    }
+    else {
+      EbyId("serverHead").innerHTML = "Add influxDB_v1 Uploader";
+      serverConfig = {type:"influxdb",
+                    revision: 0,
+                    postInterval:10,
+                    bulksend:1,
+                    url:"",
+                    "database": "iotawatt",
+                    "measurement":"",
+                    "tagset": [],
+                    "outputs":[]
+                    };
+      EbyId("serverDelete").style.display = "none";
+    }
+    serverConfig.version = 1;
   }
-  else {
-    config.influxdb.revision++;
-    EbyId("serverHead").innerHTML = "Edit influxDB Service";
-    EbyId("serverDelete").style.display = "inline";
-    EbyId("serverDelete").setAttribute("onclick","deleteInfluxdb();");
+  else { // version 2
+    if(serverConfig !== undefined){
+      serverConfig.revision++;
+      EbyId("serverHead").innerHTML = "Edit influxDB_v2 Uploader";
+      EbyId("serverDelete").style.display = "inline";
+      EbyId("serverDelete").setAttribute("onclick","deleteInfluxdb();");
+    }
+    else {
+      EbyId("serverHead").innerHTML = "Add influxDB_v2 Uploader";
+      serverConfig = {type:"influxdb2",
+                    revision: 0,
+                    postInterval:10,
+                    bulksend:6,
+                    url:"",
+                    "database": "iotawatt",
+                    "measurement":"",
+                    "tagset": [],
+                    "outputs":[]
+                    };
+      EbyId("serverDelete").style.display = "none";
+    }
+    serverConfig.version = 2;
   }
   
   var postInput =   addTableRow(serverTable, "post interval(sec): ", "serverPost", "input", 3);
-  postInput.value = Number(config.influxdb.postInterval);
-  postInput.setAttribute("onchange","config.influxdb.postInterval = Number(this.value); checkInfluxdb();");
+  postInput.value = Number(serverConfig.postInterval);
+  postInput.setAttribute("onchange","serverConfig.postInterval = Number(this.value); checkInfluxdb();");
   postInput.setAttribute("style","width: 40px;");
   postInput.type = "number";
-  postInput.setAttribute("min","0");
+  postInput.setAttribute("min","5");
   postInput.setAttribute("max","3600");
   postInput.setAttribute("step","5");
   
-  if(isNaN(config.influxdb.bulksend)) config.influxdb.bulksend = 1;
+  if(isNaN(serverConfig.bulksend)) serverConfig.bulksend = 1;
   var bulksendInput = addTableRow(serverTable, "bulk send:", "serverBulk", "input", 3);
-  bulksendInput.value = Number(config.influxdb.bulksend);
-  bulksendInput.setAttribute("onchange","config.influxdb.bulksend = Number(this.value); checkInfluxdb();");
+  bulksendInput.value = Number(serverConfig.bulksend);
+  bulksendInput.setAttribute("onchange","serverConfig.bulksend = Number(this.value); checkInfluxdb();");
   bulksendInput.setAttribute("style","width: 40px;");
   bulksendInput.setAttribute("type","number");
   bulksendInput.setAttribute("min","1");
   bulksendInput.setAttribute("max","10");
   bulksendInput.setAttribute("step","1");
   
-  var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 32);
-  urlInput.value = config.influxdb.url
-  urlInput.setAttribute("oninput","config.influxdb.url = this.value; checkInfluxdb();");
+  var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 60);
+  urlInput.value = serverConfig.url
+  urlInput.setAttribute("oninput","serverConfig.url = this.value; checkInfluxdb();");
   urlInput.type = "url";
   
-  var dbInput = addTableRow(serverTable, "database:", "serverDb", "input", 16);
-  dbInput.value = config.influxdb.database;
-  dbInput.setAttribute("oninput","config.influxdb.database = this.value; checkInfluxdb();");
-  dbInput.pattern = "^[A-Za-z0-9_]*$";
+  if(version == 1){
+    var dbInput = addTableRow(serverTable, "database:", "serverDb", "input", 16);
+    dbInput.value = serverConfig.database;
+    dbInput.setAttribute("oninput","serverConfig.database = this.value; checkInfluxdb();");
+    dbInput.placeholder = "required";
+    
+    var RetpInput = addTableRow(serverTable, "retention policy", "serverRetp", "input", 16);
+    RetpInput.setAttribute("oninput","serverConfig.retp = this.value; checkInfluxdb();");
+    if(serverConfig.retp !== undefined){
+      RetpInput.value = serverConfig.retp;
+    } else {
+      RetpInput.value = "";
+    }
+    RetpInput.placeholder = "optional";
+    
+    if(serverConfig.user === undefined) serverConfig.user = "";
+    var userInput = addTableRow(serverTable, "username:", "serverUser", "input", 16);
+    userInput.value = serverConfig.user;
+    userInput.setAttribute("oninput","serverConfig.user = this.value; checkInfluxdb();");
+    userInput.placeholder = "optional";
   
-  var RetpInput = addTableRow(serverTable, "retention policy", "serverRetp", "input", 16);
-  RetpInput.setAttribute("oninput","config.influxdb.retp = this.value; checkInfluxdb();");
-  RetpInput.pattern = "^[A-Za-z0-9_]*$";
-  if(config.influxdb.retp !== undefined){
-    RetpInput.value = config.influxdb.retp;
-  } else {
-    RetpInput.value = "";
+    if(serverConfig.pwd === undefined) serverConfig.pwd = "";
+    var pwdInput = addTableRow(serverTable, "password:", "serverPwd", "input", 32);
+    pwdInput.value = serverConfig.pwd;
+    pwdInput.setAttribute("oninput","serverConfig.pwd = this.value; checkInfluxdb();");
+    pwdInput.setAttribute("type","password");
+    pwdInput.placeholder = "optional";
   }
-  RetpInput.placeholder = "optional";
-  
-  if(config.influxdb.user === undefined) config.influxdb.user = "";
-  var userInput = addTableRow(serverTable, "username:", "serverUser", "input", 16);
-  userInput.value = config.influxdb.user;
-  userInput.setAttribute("oninput","config.influxdb.user = this.value; checkInfluxdb();");
-  userInput.pattern = "^[A-Za-z0-9@_]*$";
-  userInput.placeholder = "optional";
+  else { // version 2
+    var dbInput = addTableRow(serverTable, "Bucket:", "serverBucket", "input", 16);
+    dbInput.value = serverConfig.bucket;
+    dbInput.setAttribute("oninput","serverConfig.bucket = this.value; checkInfluxdb();");
+    dbInput.placeholder = "required";
 
-  if(config.influxdb.pwd === undefined) config.influxdb.pwd = "";
-  var pwdInput = addTableRow(serverTable, "password:", "serverPwd", "input", 32);
-  pwdInput.value = config.influxdb.pwd;
-  pwdInput.setAttribute("oninput","config.influxdb.pwd = this.value; checkInfluxdb();"); 
-  pwdInput.pattern = "^[A-Za-z0-9_!%@#]{0,32}";
-  pwdInput.type = "password";
-  pwdInput.placeholder = "optional";
-  
+    if(serverConfig.orgid === undefined) serverConfig.orgid = "";
+    var userInput = addTableRow(serverTable, "Organization ID:", "serverOrgID", "input", 16);
+    userInput.value = serverConfig.orgid;
+    userInput.setAttribute("oninput","serverConfig.orgid = this.value; checkInfluxdb();");
+    userInput.placeholder = "required";
+    
+    if(serverConfig.authtoken === undefined) serverConfig.authtoken = "";
+    var tokenInput = addTableRow(serverTable, "Authorization token:", "serverAuthToken", "input", 48);
+    tokenInput.value = serverConfig.authtoken;
+    tokenInput.setAttribute("oninput","serverConfig.authtoken = this.value; checkInfluxdb();");
+    tokenInput.setAttribute("type","password");
+    tokenInput.placeholder = "required";
+  }
+
   var begdateInput = addTableRow(serverTable, "upload history from:", "serverBegd", "input", 16);
   begdateInput.setAttribute("oninput",
-    "config.influxdb.begdate = new Date(this.value).getTime()/1000 - config.timezone*3600; checkInfluxdb();");
-  begdateInput.value =  toInputDate(config.influxdb.begdate + config.timezone*3600);
+    "serverConfig.begdate = new Date(this.value).getTime()/1000 - config.timezone*3600; checkInfluxdb();");
+  begdateInput.value =  toInputDate(serverConfig.begdate + config.timezone*3600);
   begdateInput.type = "date";
   
-  if(config.influxdb.measurement === undefined) config.influxdb.measurement = "";
+  if(serverConfig.measurement === undefined) serverConfig.measurement = "";
   var measInput = addTableRow(serverTable, "measurement", "serverMeas", "input", 16);
-  measInput.setAttribute("oninput","config.influxdb.measurement = this.value; checkInfluxdb();");
-  measInput.value = config.influxdb.measurement;
-  measInput.pattern = "^[^'\"\\s]*$";
+  measInput.setAttribute("oninput","serverConfig.measurement = this.value; checkInfluxdb();");
+  measInput.value = serverConfig.measurement;
   measInput.placeholder = "default is $name";
-  measInput.title = "enter a string or $name, $units, if not specified $name will be used.";
-  
-  if(config.influxdb.fieldkey === undefined) config.influxdb.fieldkey = "";
+
+  if(serverConfig.fieldkey === undefined) serverConfig.fieldkey = "";
   var fkeyInput = addTableRow(serverTable, "field-key", "serverFkey", "input", 16);
-  fkeyInput.setAttribute("oninput","config.influxdb.fieldkey = this.value; checkInfluxdb();");
-  fkeyInput.value = config.influxdb.fieldkey;
-  fkeyInput.pattern = "^[^'\"\\s]*$";
+  fkeyInput.setAttribute("oninput","serverConfig.fieldkey = this.value; checkInfluxdb();");
+  fkeyInput.value = serverConfig.fieldkey;
   fkeyInput.placeholder = "default is 'value'";
-  fkeyInput.title = "enter a string or $name, $units. if not specified, 'value' will be used.";
   
   EbyId("divInfluxTagSet").style.display = "inline";
   buildTagSet();
@@ -2027,7 +2215,7 @@ function editInfluxdb(){
   EbyId("serverOutputsHeader").innerHTML = "measurements";
 
   scriptEditSave = function(){
-    config.influxdb.outputs = scriptEditSet;
+    serverConfig.outputs = scriptEditSet;
   };
   scriptEditReturn = function(){
     scriptEditTable.innerHTML = "";
@@ -2035,11 +2223,11 @@ function editInfluxdb(){
     checkInfluxdb();
   };
   scriptEditTable = EbyId("serverOutputs");
-  scriptEditSet = config.influxdb.outputs;
+  scriptEditSet = serverConfig.outputs;
   scriptEditUnits = scriptEditUnitsUpload;
   scriptEditNameList = [];
   scriptEditUniqueNames = false;
-  scriptEditNameTitle="Name must be valid influxDB field name";
+  scriptEditNameTitle="Name must be valid influx2Button field name";
   scriptEditNamePattern="^[0-9a-zA-Z_$-/\.\+]+$";
   editScript();
   checkInfluxdb();
@@ -2052,36 +2240,68 @@ function toInputDate(unixtime){
   return date.getUTCFullYear() + '-' + (month < 10 ? '0' : '') + month.toString() + '-' + (day < 10 ? '0' : '') + day.toString();
 }
 
+function validateRegex(id, pattern, message){
+  var obj = EbyId(id);
+  var match = pattern.test(obj.value);
+  while(obj.nextSibling !== null) obj.parentNode.removeChild(obj.nextSibling);
+  if(!match){
+    obj.parentNode.appendChild(document.createElement("BR"));
+    obj.parentNode.appendChild(document.createTextNode(message));
+    return false;
+  }
+return true;
+}
+
+var pattern_URL = new RegExp('^(https?:\\/\\/)?'+ // protocol
+    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+    '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*$','i');  // port and path X
+var pattern_bucket = new RegExp('^[^_\\d]{1}[A-Z\\d_.\\-]{0,16}$', 'i');
+var pattern_org = new RegExp('^[A-Z\\d]{16}$','i');
+var pattern_token = new RegExp('^[A-Z\\d_\\-]{86}[=]{2}$','i');
+var pattern_db = new RegExp('^[A-Z\\d_\\-]+$', 'i');
+var pattern_retp = new RegExp('^[A-Z\\d_]*$', 'i');
+var pattern_user = new RegExp('^[A-Z\\d@_]*$', 'i');
+var pattern_pwd = new RegExp('^[A-Z\\d_!@#$%^&*_+?-]{0,32}$', 'i');
+var pattern_meas = new RegExp('^[A-Z\\d_$-]*$', 'i');
+var pattern_fkey = new RegExp('^[A-Z\\d_$-]*$', 'i');
+    
 function checkInfluxdb(){
   var complete = true;
-  if(config.influxdb.retp == "") config.influxdb.retp = undefined;
-  if(config.influxdb.user == "") config.influxdb.user = undefined;
-  if(config.influxdb.pwd == "") config.influxdb.pwd = undefined;
-  if(config.influxdb.measurement == "") config.influxdb.measurement = undefined;
-  if(config.influxdb.fieldkey == "") config.influxdb.fieldkey = undefined;
+  complete &= validateRegex("serverURL", pattern_URL, "Please enter a valid URL.");
   if( ! validateInput("serverPost")) complete = false;
   if( ! validateInput("serverBulk")) complete = false;
-  if( ! validateInput("serverURL", true, "not a valid url")) complete = false;
-  if( ! validateInput("serverDb", true, "alphanumeric")) complete = false;
-  if( ! validateInput("serverRetp", false, "invalid string")) complete = false;
-  if( ! validateInput("serverUser", config.influxdb.pwd !== undefined, "invalid string")) complete = false;
-  if( ! validateInput("serverPwd", config.influxdb.user !== undefined, "invalid string")) complete = false;
-  if( ! validateInput("serverMeas",false, "invalid string")) complete = false;
-  if( ! validateInput("serverFkey", false, "invalid string")) complete = false;
+  if(serverConfig.version == 1){
+    complete &= validateRegex("serverDb", pattern_db, "Alphanumeric database name required");
+    complete &= validateRegex("serverRetp", pattern_retp, "Must be Alphanumeric");
+    complete &= validateRegex("serverUser", pattern_user, "Must be Alphanumeric");
+    complete &= validateRegex("serverPwd", pattern_pwd, "Letters, numbers and !@#$%^&*_+?-");
+    if(serverConfig.retp == "") serverConfig.retp = undefined;
+    if(serverConfig.user == "") serverConfig.user = undefined;
+    if(serverConfig.pwd == "") serverConfig.pwd = undefined;
+  }
+  else {
+    complete &= validateRegex("serverBucket", pattern_bucket, "Alphanumeric._- bucket name required.");
+    complete &= validateRegex("serverOrgID", pattern_org, "16 character orgID required.");
+    complete &= validateRegex("serverAuthToken", pattern_token, "88 character authorization token required.");
+  }
+  complete &= validateRegex("serverMeas", pattern_meas, "enter a string or $name, $units, if not specified $name will be used.");
+  complete &= validateRegex("serverFkey", pattern_fkey, "enter a string or $name, $units. if not specified, 'value' will be used.");
+  if(serverConfig.measurement == "") serverConfig.measurement = undefined;
+  if(serverConfig.fieldkey == "") serverConfig.fieldkey = undefined;
   if( ! validateInput("serverBegd", false)) complete = false;
-  if(config.influxdb.outputs.length == 0) complete = false;
+  if(serverConfig.outputs.length == 0) complete = false;
   EbyId("serverSave").style.display = complete ? "inline" : "none";
 }
 
 function deleteInfluxdb(){
-  config.influxdb = undefined;
-  serverSave();
+  serverDelete();
 }
 
 function buildTagSet(){
   table = EbyId("influxTagSet");
   table.innerHTML = "";
-  for(i in config.influxdb.tagset){
+  for(i in serverConfig.tagset){
     var newRow = document.createElement("tr");
     table.appendChild(newRow);
     newRow.setAttribute("class","outputsRow");
@@ -2098,8 +2318,8 @@ function buildTagSet(){
     editButton.appendChild(document.createTextNode("edit"));
     editButton.setAttribute("onclick","influxTagEdit(" + i + ");");
     selColumn.appendChild(editButton);
-    keyColumn.innerHTML = config.influxdb.tagset[i].key;
-    valueColumn.innerHTML = config.influxdb.tagset[i].value;
+    keyColumn.innerHTML = serverConfig.tagset[i].key;
+    valueColumn.innerHTML = serverConfig.tagset[i].value;
     if(i == 0){
       noteColumn.innerHTML = "(uniquely identifies this device)";
     }
@@ -2112,7 +2332,7 @@ function buildTagSet(){
   var editButton = document.createElement("button");
   editButton.setAttribute("class","outputEditButton");
   editButton.appendChild(document.createTextNode("add"));
-  editButton.setAttribute("onclick","influxTagAdd(" + config.influxdb.tagset.length + ")");
+  editButton.setAttribute("onclick","influxTagAdd(" + serverConfig.tagset.length + ")");
   selColumn.appendChild(editButton);
 }
 
@@ -2121,9 +2341,9 @@ function influxTagEdit(index){
   EbyId("influxTagDelete").setAttribute("onclick","influxTagDelete(" + index + ");");
   EbyId("influxTagDelete").style.display = "inline";
   EbyId("influxTagSave").style.display = "inline";
-  EbyId("influxTagKey").value = config.influxdb.tagset[index].key;
+  EbyId("influxTagKey").value = serverConfig.tagset[index].key;
   EbyId("influxTagKey").pattern = "^[^'\"\\s]*$";
-  EbyId("influxTagValue").value = config.influxdb.tagset[index].value;
+  EbyId("influxTagValue").value = serverConfig.tagset[index].value;
   EbyId("influxTagValue").pattern = "^[^'\"\\s]*$";
   currentBodyPush("divInfluxTag");
 }
@@ -2144,18 +2364,18 @@ function influxTagCancel(){
 }
 
 function influxTagDelete(index){
-  config.influxdb.tagset.splice(index,1);
+  serverConfig.tagset.splice(index,1);
   buildTagSet();
   currentBodyPop();
 }
 
 function influxTagSave(index){
-  if(index == config.influxdb.tagset.length){
-    config.influxdb.tagset.push({key:EbyId("influxTagKey").value, value:EbyId("influxTagValue").value});
+  if(index == serverConfig.tagset.length){
+    serverConfig.tagset.push({key:EbyId("influxTagKey").value, value:EbyId("influxTagValue").value});
   }
   else {
-    config.influxdb.tagset[index].key = EbyId("influxTagKey").value;
-    config.influxdb.tagset[index].value = EbyId("influxTagValue").value;
+    serverConfig.tagset[index].key = EbyId("influxTagKey").value;
+    serverConfig.tagset[index].value = EbyId("influxTagValue").value;
   }
   buildTagSet();
   currentBodyPop();
@@ -2168,17 +2388,6 @@ function influxTagCheck(){
   EbyId("influxTagSave").style.display = complete ? "inline" : "none";
 }
 
-function influxToggle(){
-  if(config.influxdb.stop !== undefined){
-    config.influxdb.stop = ! config.influxdb.stop;
-  }
-  else {
-    config.influxdb.stop = true;
-    
-  }
-  config.influxdb.revision++;
-  uploadConfig();
-}
 
 /***********************************************************************************************
  *                                Configure PVOutput
@@ -2211,6 +2420,7 @@ function editPVoutput(){
   keyInput.value = config.pvoutput.apikey;
   keyInput.setAttribute("oninput","config.pvoutput.apikey = this.value; checkPVOutput();");
   keyInput.setAttribute("size","40");
+  keyInput.setAttribute("type","password");
   keyInput.pattern = "[0-9a-f]{40}";
   keyInput.title = "read/write key - 40 hexadecimal digits";
   addTableText(serverTable,"","See <a href=\"https://pvoutput.org/account.jsp\">https://pvoutput.org/account.jsp</a>")
@@ -2287,7 +2497,6 @@ function PVoutToggle(){
   }
   else {
     config.pvoutput.stop = undefined;
-    
   }
   config.pvoutput.revision++;
   uploadConfig();
@@ -2298,9 +2507,10 @@ function PVoutToggle(){
  * *******************************************************************************************/
 function statusBegin(){
   EbyId("tabWifi").style.display = "none";
-  EbyId("tabinflux").style.display = config.influxdb !== undefined ? "inline" : "none";
-  EbyId("tabPVout").style.display = config.pvoutput !== undefined ? "inline" : "none";
-  EbyId("tabEmon").style.display = (config.server !== undefined && config.server.type == "emoncms") ? "inline" : "none";
+  // EbyId("statusInflux1Div").style.display = config.influxdb !== undefined ? "inline" : "none";
+  // EbyId("statusInflux2Div").style.display = config.influxdb2 !== undefined ? "inline" : "none";
+  // EbyId("statusPVoutDiv").style.display = config.pvoutput !== undefined ? "inline" : "none";
+  // EbyId("statusEmoncmsDiv").style.display = (config[emoncmsAlias] !== undefined) ? "inline" : "none";
   currentBodyPush("divStatus");
   getStatus = true;
   statusGet();
@@ -2313,7 +2523,7 @@ function statusGet(){
       statusDisplay(xmlHttp.responseText);
     }
   }
-  xmlHttp.open("GET","/status?state&inputs&outputs&stats&wifi&datalogs&influx&emon&pvoutput", true);
+  xmlHttp.open("GET","/status?state&inputs&outputs&stats&wifi&datalogs&influx1&influx2&emoncms&pvoutput", true);
   xmlHttp.send(null);
 }
 
@@ -2351,54 +2561,119 @@ function statusDisplay(statusMessage){
   }
   
   if(status.datalogs !== undefined){
-    var logs = EbyId("statusLogsDiv");
-    logs.innerHTML = null;
-    logs.appendChild(document.createTextNode("Current Log from: " + formatDateTime(status.datalogs.currlog.firstkey) + " to: " + formatDateTime(status.datalogs.currlog.lastkey)));
-    logs.appendChild(document.createElement("br"));
-    logs.appendChild(document.createTextNode("History Log from: " + formatDateTime(status.datalogs.histlog.firstkey) + " to: " + formatDateTime(status.datalogs.histlog.lastkey)));
+    var logtab = EbyId("statusLogsTable");
+    logtab.innerHTML = null;
+    for(i in status.datalogs){
+      var units = ["", "KB", "MB", "GB"];
+      var size = status.datalogs[i].size;
+      var u = 0;
+      while(size > 1024){
+        size /=1024;
+        u++;
+      }
+      logtab.innerHTML += "<tr><td>" + status.datalogs[i].id + " Log:</td>" +
+                         "<td>" + fixedDateTime(status.datalogs[i].firstkey) + " - " + fixedDateTime(status.datalogs[i].lastkey) + "</td>" +
+                         "<td>" + size.toPrecision(4) + " " + units[u] + "</td></tr>";
+    }
+  }
+    
+  var influx1Div = EbyId("statusInflux1Div");
+  if(status.influx1 !== undefined && status.influx1.state != "not running"){
+    show("statusInflux1Div", "block");
+    show("tabUploaders");
+    var button = EbyId("influx1Button");
+    button.disabled = false;
+    if(status.influx1.status == "running"){
+      button.innerHTML = "Stop";
+      EbyId("influx1text").innerHTML = "Running"
+    }
+    else {
+      button.innerHTML = "Start";
+      EbyId("influx1text").innerHTML = "Stopped"
+    }
+    EbyId("influx1text").innerHTML += ", Last update " + formatDateTime(status.influx1.lastpost);
+    EbyId("influx1msg").innerHTML = "";
+    if(status.influx1.message){
+      EbyId("influx1msg").innerHTML = "<br>" + status.influx1.message;
+    }
+  } 
+  else {
+    hide("statusInflux1Div");
   }
   
-  var influxDiv = EbyId("statusInfluxDiv");
-  influxDiv.innerHTML = "";
-  if(status.influx !== undefined){
-    var button = document.createElement("button");
-    button.style = "configButton";
-    button.innerHTML = status.influx.running ? "Stop" : "Start";
-    button.setAttribute("onclick","influxToggle()");
-    influxDiv.appendChild(button);
-    influxDiv.appendChild(document.createTextNode(status.influx.running ? " Running" : " Stopped"));
-    if(status.influx.lastpost){
-      influxDiv.appendChild(document.createTextNode(", Last update " + formatDateTime(status.influx.lastpost)));
+  var influx2Div = EbyId("statusInflux2Div");
+  if(status.influx2 !== undefined && status.influx2.state != "not running"){
+    show("statusInflux2Div", "block");
+    show("tabUploaders");
+    
+    var button = EbyId("influx2Button");
+    button.disabled = false;
+    if(status.influx2.status == "running"){
+      button.innerHTML = "Stop";
+      EbyId("influx2text").innerHTML = "Running"
     }
-  } 
+    else {
+      button.innerHTML = "Start";
+      EbyId("influx2text").innerHTML = "Stopped"
+    }
+    EbyId("influx2text").innerHTML += ", Last update " + formatDateTime(status.influx2.lastpost);
+    EbyId("influx2msg").innerHTML = "";
+    if(status.influx2.message){
+      EbyId("influx2msg").innerHTML = "<br>" + status.influx2.message;
+    }
+  }
+  else {
+    hide("statusInflux2Div");
+  }
   
-  var emonDiv = EbyId("statusEmonDiv");
-  emonDiv.innerHTML = "";
-  if(status.emon !== undefined){
-    var button = document.createElement("button");
-    button.style = "configButton";
-    button.innerHTML = status.emon.running ? "Stop" : "Start";
-    button.setAttribute("onclick","emonToggle()");
-    emonDiv.appendChild(button);
-    emonDiv.appendChild(document.createTextNode(status.emon.running ? " Running" : " Stopped"));
-    if(status.emon.lastpost){
-      emonDiv.appendChild(document.createTextNode(", Last update " + formatDateTime(status.emon.lastpost)));
+  var EmoncmsDiv = EbyId("statusEmoncmsDiv");
+  if(status.emoncms !== undefined && status.emoncms.state != "not running"){
+    show("statusEmoncmsDiv", "block");
+    show("tabUploaders");
+    var button = EbyId("EmoncmsButton");
+    button.disabled = false;
+    if(status.emoncms.status == "running"){
+      button.innerHTML = "Stop";
+      EbyId("Emoncmstext").innerHTML = "Running"
     }
-  } 
+    else {
+      button.innerHTML = "Start";
+      EbyId("Emoncmstext").innerHTML = "Stopped"
+    }
+    EbyId("Emoncmstext").innerHTML += ", Last update " + formatDateTime(status.emoncms.lastpost);
+    EbyId("Emoncmsmsg").innerHTML = "";
+    if(status.emoncms.message){
+      EbyId("Emoncmsmsg").innerHTML = "<br>" + status.emoncms.message;
+    }
+  }
+  else {
+    hide("statusEmoncmsDiv");
+  }
   
   var PVoutDiv = EbyId("statusPVoutDiv");
-  PVoutDiv.innerHTML = "";
-  if(status.pvoutput !== undefined){
-    var button = document.createElement("button");
-    button.style = "configButton";
-    button.innerHTML = status.pvoutput.running ? "Stop" : "Start";
-    button.setAttribute("onclick","PVoutToggle()");
-    PVoutDiv.appendChild(button);
-    PVoutDiv.appendChild(document.createTextNode(status.pvoutput.running ? " Running" : " Stopped"));
-    if(status.pvoutput.lastpost){
-      PVoutDiv.appendChild(document.createTextNode(", Last update " + formatDateTime(status.pvoutput.lastpost)));
+  if(status.pvoutput !== undefined && status.pvoutput.state != "not running"){
+    show("statusPVoutDiv", "block");
+    show("tabUploaders");
+    var button = EbyId("PVoutputButton");
+    button.disabled = false;
+    if(status.pvoutput.status == "running"){
+      button.innerHTML = "Stop";
+      EbyId("PVoutputtext").innerHTML = "Running"
     }
-  } 
+    else {
+      button.innerHTML = "Start";
+      EbyId("PVoutputtext").innerHTML = "Stopped"
+    }
+    EbyId("PVoutputtext").innerHTML += ", Last update " + formatDateTime(status.pvoutput.lastpost);
+    EbyId("PVoutputmsg").innerHTML = "";
+    if(status.pvoutput.message){
+      EbyId("PVoutputmsg").innerHTML = "<br>" + status.pvoutput.message;
+    }
+  }
+  else {
+    hide("statusPVoutDivput");
+  }
+   
   
   statusTable = EbyId("inputStatusTable");
   statusTable.innerHTML = "";
@@ -2430,7 +2705,8 @@ function statusDisplay(statusMessage){
       if(Math.abs(status.inputs[i].Watts) >= 60){
         var pf = Math.abs(status.inputs[i].Pf);
         var pfNode = document.createElement("font");
-        pfNode.innerHTML = ", pf:" + "&nbsp;" + pf.toFixed(2);
+        var PF2 = pf.toFixed(2);
+        pfNode.innerHTML = ", pf" + "&nbsp;" + ((PF2 < 1) ? PF2.substr(1) : PF2);
         column3.appendChild(pfNode);
       }
       
@@ -2465,14 +2741,11 @@ function statusDisplay(statusMessage){
   }
 }
 
-function unitsPrecision(units){
-  if(units == "Watts") return 1;
-  if(units == "Volts") return 1;
-  if(units == "Amps") return 2;
-  if(units == "Hz") return 1;
-  if(units == "PF") return 2;
-  if(units == "VA") return 1;
-  return 1;
+function unitsPrecision(unitArg){
+  for(u in units){
+    if(units[u].unit == unitArg) return units[u].dp;
+  }
+  return 0;
 }
 
 function formatRunTime(time){
@@ -2492,6 +2765,17 @@ function formatDateTime(unixtime){
   return date.toLocaleDateString() + " " + date.toLocaleTimeString();
 }
 
+function fixedDateTime(unixtime){
+  if(unixtime == 0) return ""; 
+  var date = new Date(unixtime*1000);
+  return twoDigit(date.getMonth()+1) + "/" + twoDigit(date.getDate()) + "/" + date.getFullYear() + " "
+          + twoDigit(date.getHours()) + ":" +   twoDigit(date.getMinutes()) + ":" + twoDigit(date.getSeconds());
+}
+
+function twoDigit(i){
+  return ((i < 10) ? "0" : "") + i.toFixed(0); 
+}
+  
 function checkConfig(){
   readFile(burdenFileURL, function(response){
     config.device.burden = JSON.parse(response);
@@ -2538,9 +2822,8 @@ function checkConfig(){
     config.format == 2;
   }
   
-  if(config.server === undefined || config.server.type === undefined){
-    config.server = {type: "none"};
-  }
+  emoncmsAlias = (config.emoncms == undefined) ? "server" : "emoncms";
+  EbyId("EmoncmsButton").value = emoncmsAlias;
 }
 
 function old2newScript(oldScript){
@@ -2631,6 +2914,14 @@ function toggleDisplay(id){
   }
 }
 
+function show(elementID, method = "inline"){
+  EbyId(elementID).style.display = method;
+}
+
+function hide(elementID){
+  EbyId(elementID).style.display = "none";
+}
+
 /**********************************************************************************************
  *              File I/O and management
  * *******************************************************************************************/
@@ -2688,18 +2979,9 @@ function readFile(path, responseHandler){
   xmlHttp.send();
 }
 
-function uploadConfig(callback, action="reload"){
+function uploadConfig(){
   if(noConfig) return;
-  writeFile(JSON.stringify(config, null, "\t"), configNewURL, function(){
-    var xmlHttp = new XMLHttpRequest();
-    xmlHttp.onreadystatechange = function() {
-      if (this.readyState == 4 && this.status == 200) {
-        if(callback !== undefined) callback(); 
-      }
-    }
-    xmlHttp.open("GET","/config?update=" + action, true);
-    xmlHttp.send(null);
-  });
+  writeFile(JSON.stringify(config, null, "\t"), configNewURL);
 }
 
 function writeFile(fileString, url, responseHandler){
@@ -2710,7 +2992,9 @@ function writeFile(fileString, url, responseHandler){
         if(this.getResponseHeader("X-configSHA256") !== null){
           configSHA256 = this.getResponseHeader("X-configSHA256");
         }
-        responseHandler();
+        if(responseHandler !== undefined){
+          responseHandler();
+        }
       }
       else if(this.status == 409) {
         alert("config file not current, operation aborted,\nconfig file not updated, restarting app.");

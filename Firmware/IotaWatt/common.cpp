@@ -119,9 +119,9 @@ IotaLog History_log(256,60,3652);               // history data log  (10 years)
 IotaLog *Export_log = nullptr;                  // Optional export log    
 RTC_PCF8523 rtc;                                // Instance of RTC_PCF8523
 Ticker Led_timer;
-messageLog Message_log;                         // Message log handler    
+messageLog Message_log;                         // Message log handler
 
-      // Define filename Strings of system files.          
+// Define filename Strings of system files.          
 
 char* deviceName;             
                        
@@ -143,14 +143,17 @@ traceUnion traceEntry;
        
 uint32_t lastCrossMs = 0;                 // Timestamp at last zero crossing (ms) (set in samplePower)
 uint32_t nextCrossMs = 0;                 // Time just before next zero crossing (ms) (computed in Loop)
+uint32_t firstCrossUs = 0;                // Time cycle at usec resolution for phase calculation
+uint32_t lastCrossUs = 0;
+uint32_t bingoTime = 0;                   // When just enough fuel to get to the next crossing      
 
-      // Various queues and lists of resources.
+// Various queues and lists of resources.
 
 serviceBlock* serviceQueue;               // Head of active services list in order of dispatch time.       
 IotaInputChannel* *inputChannel = nullptr; // -->s to incidences of input channels (maxInputs entries) 
 uint8_t     maxInputs = 0;                // channel limit based on configured hardware (set in Config)
-int16_t*    masterPhaseArray = nullptr;   // Single array containing all individual phase shift arrays          
-ScriptSet*  outputs;                      // -> scriptSet for output channels
+int16_t    *masterPhaseArray = nullptr;   // Single array containing all individual phase shift arrays          
+ScriptSet  *outputs = new ScriptSet();    // -> ScriptSet for output channels
 
 uint8_t     deviceMajorVersion = 4;       // Default to 4.8
 uint8_t     deviceMinorVersion = 8;                 
@@ -181,6 +184,7 @@ SHA256* uploadSHA;
 boolean serverAvailable = true;           // Set false when asynchronous handler active to avoid new requests
 uint32_t wifiConnectTime = 0;             // Time WiFi was connected, 0 if disconnected
 uint8_t configSHA256[32];                 // Hash of config file last time read or written
+bool getNewConfig = false;                // process new configuration file;
 
 uint8_t*          adminH1 = nullptr;      // H1 digest md5("admin":"admin":password) 
 uint8_t*          userH1 = nullptr;       // H1 digest md5("user":"user":password)
@@ -193,9 +197,16 @@ uint16_t          authTimeout = 600;      // Timeout interval of authSession in 
 int16_t  HTTPrequestFree = HTTPrequestMax;  // Request semaphore
 uint32_t HTTPrequestStart[HTTPrequestMax];  // Reservation time(ms)
 uint16_t HTTPrequestId[HTTPrequestMax];     // Module ID of reserver    
-uint32_t HTTPlock = 0;                      // Time(ms) HTTP was locked (no new requests)   
+uint32_t HTTPlock = 0;                      // Time(ms) HTTP was locked (no new requests)  
 
-      // ****************************** Timing and time data **********************************
+      // ************************** HTTPS proxy host ******************************************
+
+char *HTTPSproxy = nullptr;
+uploader *influxDB_v1 = nullptr;
+uploader *influxDB_v2 = nullptr;
+uploader *Emoncms = nullptr;
+
+// ****************************** Timing and time data **********************************
 
 int32_t  localTimeDiff = 0;                  // Hours from UTC 
 tzRule*  timezoneRule = nullptr;             // Rule for DST 
@@ -205,6 +216,7 @@ uint32_t timeRefMs = 0;                      // Internal MS clock corresponding 
 uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forward and try to refresh
 uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS
 uint32_t influxDBInterval = 10;              // Interval (sec) to invoke inflexDB 
+uint32_t influxDB2Interval = 10;             // Interval (sec) to invoke inflexDB2 
 uint32_t statServiceInterval = 1;            // Interval (sec) to invoke statService
 uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for software updates 
 
@@ -220,16 +232,15 @@ uint8_t  ledCount;                           // Current index into cycle
 
       // ****************************** Firmware update ****************************
       
+char *updateClass = nullptr;                                   // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
+
 const char* updateURL = "iotawatt.com";
 const char* updatePath = "/firmware/versions.json";
-char*    updateClass = nullptr;                                   // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
 const uint8_t publicKey[32] PROGMEM = {
                         0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
                         0xcc, 0x2c, 0xea, 0x2e, 0x88, 0x9c, 0xe0, 0xea,
                         0x3f, 0x20, 0x5a, 0x78, 0x22, 0x0c, 0xbc, 0x78,
-                        0x2b, 0xe6, 0x28, 0x5a, 0x21, 0x9c, 0xb7, 0xf3
-                        }; 
-
+                        0x2b, 0xe6, 0x28, 0x5a, 0x21, 0x9c, 0xb7, 0xf3}; 
 const char hexcodes_P[] PROGMEM = "0123456789abcdef";
 const char base64codes_P[] PROGMEM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";  
 

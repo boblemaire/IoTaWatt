@@ -18,17 +18,27 @@ int strcmp_ci(const char* str1, const char* str2){
 /**************************************************************************************************
  * allocate a char* array, copy the argument data to it, and return the pointer. 
  * ************************************************************************************************/
-char* charstar(const __FlashStringHelper * str){
-  if( ! str) return nullptr;
-  char* ptr = new char[strlen_P((PGM_P)str)+1];
-  strcpy_P(ptr, (PGM_P)str);
+char* charstar(const __FlashStringHelper * str1, const char *str2){
+  if( ! str1) return nullptr;
+  int len1 = strlen_P((PGM_P)str1);
+  int len2 = str2 ? strlen(str2) : 0;
+  char* ptr = new char[len1 + len2 +1];
+  strcpy_P(ptr, (PGM_P)str1);
+  if(str2){
+      strcpy(ptr + len1, str2);
+  }  
   return ptr;
 }
 
-char* charstar(const char* str){
-  if( ! str) return nullptr;
-  char* ptr = new char[strlen(str)+1];
-  strcpy(ptr, str);
+char* charstar(const char* str1, const char *str2){
+  if( ! str1) return nullptr;
+  int len1 = strlen(str1);
+  int len2 = str2 ? strlen(str2) : 0;
+  char* ptr = new char[len1 + len2 +1];
+  strcpy_P(ptr, str1);
+  if(str2){
+      strcpy(ptr + len1, str2);
+  }  
   return ptr;
 }
 
@@ -94,13 +104,11 @@ void   hex2bin(uint8_t* out, const char* in, size_t len){
  * ************************************************************************************************/
 void base64encode(xbuf* buf){ 
   trace(T_base64,10);  
-  char* base64codes = new char[65];
+  char* base64codes = new char[72];
   if( ! base64codes){
       trace(T_base64,11);
   }
-  trace(T_base64,12);
   strcpy_P(base64codes, base64codes_P);
-  trace(T_base64,13);  
   size_t supply = buf->available();
   uint8_t in[3];
   uint8_t out[4];
@@ -132,7 +140,6 @@ void base64encode(xbuf* buf){
   }
   trace(T_base64,16);
   delete[] base64codes;
-  trace(T_base64,17);
 }
 
 String base64encode(const uint8_t* in, size_t len){
@@ -141,9 +148,7 @@ String base64encode(const uint8_t* in, size_t len){
      trace(T_base64,1);
      return String("");
   }
-  trace(T_base64,1,len);
   xbuf work(128);
-  trace(T_base64,2,len);
   work.write(in, len);
   trace(T_base64,3,len);
   base64encode(&work);
@@ -217,6 +222,9 @@ String  JsonSummary(File file, int depth){
             }
         }
         if(level < depth) JsonOut.print(_char);
+        if(level < 0){
+            break;
+        }
     }
     return JsonOut.readString();
 }
