@@ -93,7 +93,7 @@ uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
         delete[] _statusMessage;
         _statusMessage = charstar("Last sent query failed");
         Serial.println(_request->responseText());
-        delay(60, checkQuery_s);
+        delay(60, query_s);
         return 1;
     }
 
