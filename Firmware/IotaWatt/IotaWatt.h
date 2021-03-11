@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.   
 ***********************************************************************************/
-#define IOTAWATT_VERSION "02_05_12"
+#define IOTAWATT_VERSION "02_06_00"
 #define DEVICE_NAME "IotaWatt"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
@@ -287,7 +287,7 @@ extern uint32_t wifiConnectTime;          // Time of connection (zero if disconn
 extern uint8_t  configSHA256[32];         // Hash of config file
 extern bool     getNewConfig;             // Set to update config after running WebServer
 
-#define HTTPrequestMax 2                  // Maximum number of concurrent HTTP requests  
+#define HTTPrequestMax 1                  // Maximum number of concurrent HTTP requests  
 extern int16_t  HTTPrequestFree;          // Request semaphore
 extern uint32_t HTTPrequestStart[HTTPrequestMax]; // request start time tokens
 extern uint16_t HTTPrequestId[HTTPrequestMax];    // Module ID of requestor
