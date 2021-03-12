@@ -25,11 +25,11 @@ where you can get help with anything and everything.
 influxDB versions 1.x and 2.x
 -----------------------------
 
-With the introduction of  nfluxDB 2.0 came significant changes.
-The basic measurement scheme remains the same, but there are significant changes:
+With the introduction of  nfluxDB 2.0
+the basic measurement scheme remains the same, but there are significant changes:
 
 - Authentication is changed from the basic userID/password of 1.x to 
-  use of a 48 character base64 token.
+  use of an 88 character base64 token.
 - Where version 1.x organizes into a `database`, version 2
   introduces the concept of `buckets`.
 - The native query in version 2 uses a new `flux` language as
@@ -64,15 +64,12 @@ Choose the appropriate version of influxDB...
 Depending on the version that you selected, you will get one of two
 similar setup menus.
 
-|v1pic| . |v2pic|
-
-.. |v1pic| image:: pics/influxdb/v1Setup.png
-    :scale: 50 %
-    :align: top
+.. image:: pics/influxdb/v1Setup.png
+    :scale: 48 %
     :alt: **Version 1 Setup**
 
-.. |v2pic| image:: pics/influxdb/v2Setup.png
-    :scale: 50 %
+.. image:: pics/influxdb/v2Setup.png
+    :scale: 48 %
     :alt: **Version 2 Setup**
 
 **post interval**

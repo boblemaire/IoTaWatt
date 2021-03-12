@@ -3,14 +3,14 @@ HTTPS Proxy Server
 ==================
 
 Like many IoT devices, IoTaWatt does not have the resources to communicate
-over the internet using TLS. While the local LAN can be relatively secure,
+over the internet using secure TLS. While the local LAN can be relatively secure,
 data uploaded to internet based servers is transmitted in plaintext and
 vulnerable.  One exception is the Emoncms web service where a protocol
 to authenticate and encrypt communications is available.
 
 Some external services, such as influxCloud, require TLS (HTTPS) be used
 in all communications.  IoTaWatt can use a simple proxy server on the local
-LAN to forward internet communications using HTTPS.
+LAN to overcome this limitation and forward internet communications using HTTPS.
 
 NGINX (engine-x) is an open-source web-server that can be hosted on a variety
 of inexpensive processors.  The ubiquitous RaspberryPi being a simple and 

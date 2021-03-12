@@ -45,6 +45,7 @@ input channel values to be used in the formula that you are creating.
 The resulting expression is evaluated left to right,
 *there is no operator hierarchy*, but 
 expressions within parenthesis will be evaluated first::
+
        1 + 2 x 3 will yield 9
        1 + ( 2 x 3 ) will yield 7
 
@@ -54,7 +55,7 @@ Two additional functions `min` and `max` can be selected using the function butt
     :scale: 60 %
     :align: center
 
-These are binary functions just like + and x that operate on the two operands to their left and right.
+These are binary functions just like + and x that operate on the operands to their left and right.
 The `min` function will return the lesser of the two operands and `max` the greater.::
 
         3 max 25 will yield 25
