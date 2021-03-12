@@ -69,8 +69,8 @@ Resetting WiFi to Defaults
 --------------------------
 
 If you wish to change the WiFi SSID that the IoTaWatt is connected to
- (you might have done some testing and want to deploy 'live' somewhere where the SSID is different)
-  BEFORE moving the device you should reset the WiFi.
+(you might have done some testing and want to deploy 'live' somewhere where the SSID is different)
+BEFORE moving the device you should reset the WiFi.
 
 Using the configuration app go to ``Tools->WiFi``
 

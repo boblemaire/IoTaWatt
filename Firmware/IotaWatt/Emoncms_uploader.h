@@ -3,10 +3,6 @@
 
 #include "IotaWatt.h"
 
-#ifndef EMONCMS_BUFFER_LIMIT 
-#define EMONCMS_BUFFER_LIMIT 4000
-#endif
-
 extern uint32_t emoncms_dispatch(struct serviceBlock *serviceBlock);
 
 class emoncms_uploader : public uploader 

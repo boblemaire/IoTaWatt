@@ -186,7 +186,7 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
 
     // Build post transaction from datalog records.
 
-    while(reqData.available() < _bufferLimit && newRecord->UNIXtime < Current_log.lastKey()){
+    while(reqData.available() < uploaderBufferLimit && newRecord->UNIXtime < Current_log.lastKey()){
         
         if(micros() > bingoTime){
             return 10;

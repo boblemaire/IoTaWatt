@@ -337,6 +337,20 @@ bool uploader::config(const char *jsonConfig)
         return false;
     }
 
+    // Attempt to apportion buffer size to control overloading in the event of
+    // recovery of many uploaders.
+
+    int uploaders = 0;
+    if(influxDB_v1)
+        uploaders++;
+    if(influxDB_v2)
+        uploaders++;
+    if(Emoncms)
+        uploaders++;
+    if(uploaders){
+        uploaderBufferLimit = MIN(uploaderBufferTotal / uploaders, 4000);
+    }
+
     // Callback to derived class for unique configuration requirements
     // if that goes OK (true) then start the Service.
 

@@ -3,10 +3,6 @@
 
 #include "IotaWatt.h"
 
-#ifndef INFLUXDB_V2_BUFFER_LIMIT
-#define INFLUXDB_V2_BUFFER_LIMIT 4000
-#endif
-
 extern uint32_t influxDB_v2_dispatch(struct serviceBlock *serviceBlock);
 
 class influxDB_v2_uploader : public uploader 
