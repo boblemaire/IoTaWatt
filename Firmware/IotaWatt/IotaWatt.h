@@ -300,6 +300,8 @@ extern char *HTTPSproxy;                  // Host for nginx (or other) reverse H
 extern uploader *influxDB_v1;
 extern uploader *influxDB_v2;
 extern uploader *Emoncms;
+extern int32_t uploaderBufferLimit;       // Dynamic limit to try to control overload during recovery
+extern int32_t uploaderBufferTotal;       // Total aggregate target of uploader buffers       
 
 // Password and authorization data
 
@@ -316,9 +318,6 @@ extern uint32_t programStartTime;;             // Time program started (UnixTime
 extern uint32_t timeRefNTP;                    // Last time from NTP server (NTPtime)
 extern uint32_t timeRefMs;                     // Internal MS clock corresponding to timeRefNTP
 extern uint32_t timeSynchInterval;             // Interval (sec) to roll NTP forward and try to refresh
-extern uint32_t EmonCMSInterval;               // Interval (sec) to invoke EmonCMS
-extern uint32_t influxDBInterval;              // Interval (sec) to invoke inflexDB
-extern uint32_t influxDB2Interval;             // Interval (sec) to invoke inflexDB2
 extern uint32_t statServiceInterval;           // Interval (sec) to invoke statService
 extern uint32_t updaterServiceInterval;        // Interval (sec) to check for software updates
 

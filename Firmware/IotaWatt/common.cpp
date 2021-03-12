@@ -207,6 +207,9 @@ uploader *influxDB_v1 = nullptr;
 uploader *influxDB_v2 = nullptr;
 uploader *Emoncms = nullptr;
 
+int32_t uploaderBufferLimit = 3000;          // Dynamic limit to try to control overload during recovery
+int32_t uploaderBufferTotal = 6000;          // Total aggregate target of uploader buffers       
+
 // ****************************** Timing and time data **********************************
 
 int32_t  localTimeDiff = 0;                  // Hours from UTC 
@@ -215,9 +218,6 @@ uint32_t programStartTime = 0;               // Time program started (UnixTime)
 uint32_t timeRefNTP = SECONDS_PER_SEVENTY_YEARS;  // Last time from NTP server (NTPtime)
 uint32_t timeRefMs = 0;                      // Internal MS clock corresponding to timeRefNTP
 uint32_t timeSynchInterval = 3600;           // Interval (sec) to roll NTP forward and try to refresh
-uint32_t EmonCMSInterval = 10;               // Interval (sec) to invoke EmonCMS
-uint32_t influxDBInterval = 10;              // Interval (sec) to invoke inflexDB 
-uint32_t influxDB2Interval = 10;             // Interval (sec) to invoke inflexDB2 
 uint32_t statServiceInterval = 1;            // Interval (sec) to invoke statService
 uint32_t updaterServiceInterval = 60*60;     // Interval (sec) to check for software updates 
 
