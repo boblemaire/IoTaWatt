@@ -22,7 +22,6 @@ class uploader
                     _uploadStartDate(0),
                     _lastSent(0),
                     _lastPost(0),
-                    _bufferLimit(DEFAULT_BUFFER_LIMIT),
                     _id(0),
                     _statusMessage(0),
                     _POSTrequest(0),
@@ -94,7 +93,6 @@ class uploader
 
         uint32_t _lastSent;
         uint32_t _lastPost;
-        uint32_t _bufferLimit;
         uint32_t _HTTPtoken;
         char *_id;
         char *_statusMessage;
