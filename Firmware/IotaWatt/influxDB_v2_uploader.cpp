@@ -332,7 +332,7 @@ bool influxDB_v2_uploader::configCB(JsonObject& config){
     trace(T_influx2, 101);
     delete[] _token;
     _token = charstar(config.get<const char *>("authtoken"));
-    if (_token && strlen(_token) != 88)
+    if (strlen(_token) != 88)
     {
         log("%s: Invalid authorization token", _id);
         return false;
