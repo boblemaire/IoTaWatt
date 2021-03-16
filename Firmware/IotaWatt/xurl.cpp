@@ -14,6 +14,10 @@ bool    xurl::parse(const char* _url_){
     delete[] _query;
     _query = nullptr;
 
+    if( ! _url_){
+        return false;
+    }
+
     const char *pos = _url_;
 
     // parse method
