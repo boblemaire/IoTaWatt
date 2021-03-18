@@ -44,8 +44,8 @@ uint32_t influxDB_v2_uploader::handle_query_s(){
             String tagValue = tag->value;
             if( ! (strstr(tag->value,"$name") || strstr(tag->value,"$units"))){
                 reqData.printf_P(PSTR("r[\"%s\"] == \"%s\" and "), tag->key, tag->value);
-                tag = tag->next;
             }
+            tag = tag->next;
         }
     }
     String prefix = "(";
@@ -324,7 +324,7 @@ bool influxDB_v2_uploader::configCB(JsonObject& config){
     trace(T_influx2, 101);
     delete[] _orgID;
     _orgID = charstar(config.get<const char *>("orgid"));
-    if (strlen(_orgID) != 16)
+    if (!_orgID || strlen(_orgID) != 16)
     {
         log("%s: Invalid organization ID", _id);
         return false;
@@ -332,7 +332,7 @@ bool influxDB_v2_uploader::configCB(JsonObject& config){
     trace(T_influx2, 101);
     delete[] _token;
     _token = charstar(config.get<const char *>("authtoken"));
-    if (_token && strlen(_token) != 88)
+    if (!_token || strlen(_token) != 88)
     {
         log("%s: Invalid authorization token", _id);
         return false;

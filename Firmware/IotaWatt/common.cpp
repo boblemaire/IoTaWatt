@@ -107,6 +107,7 @@
  *   09/21/20 02_05_11 Add Graph+ imbed
  *   12/02/20 02_05_12 Maintenance. Fix query chunking, Tables updates, contributed app changes.
  *   03/10/21 02_06_00 Add HTTPSproxy, influx2, ms Scheduler, recode Script, uploader base class, more..
+ *   03/18/21 02_06_01 "server" restart issue, vars in influx tags, init influx bucket
  * 
  *****************************************************************************************************/
 
