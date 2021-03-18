@@ -286,11 +286,18 @@ bool uploader::config(const char *jsonConfig)
     // If config not changed, return success.
 
     trace(T_uploader, 100);
-    if (_revision == config["revision"])
+    if (_revision == config["revision"]) 
     {
         return true;
     }
     _revision = config["revision"];
+
+    // in case this is an old "server" configuration,
+    // insure its "emoncms", otherwise ignore it.
+
+    if(strcmp(_id, "emoncms") == 0 && config["type"].as<String>() != "emoncms"){
+        return false;
+    }
 
     // parse and validate url
 
@@ -306,7 +313,13 @@ bool uploader::config(const char *jsonConfig)
     _url->query(nullptr);
     _useProxyServer = false;
     if(strcmp_ci(_url->method(),"https://")== 0){
-        _useProxyServer = true;
+        if(HTTPSproxy){
+            _useProxyServer = true;
+        }
+        else {
+            log("%s: HTTPS specified but no HTTPSproxy server configured, stopping.", _id);
+            return false;
+        }
     }
 
     // Gather and check parameters
