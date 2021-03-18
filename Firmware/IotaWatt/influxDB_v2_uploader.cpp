@@ -44,8 +44,8 @@ uint32_t influxDB_v2_uploader::handle_query_s(){
             String tagValue = tag->value;
             if( ! (strstr(tag->value,"$name") || strstr(tag->value,"$units"))){
                 reqData.printf_P(PSTR("r[\"%s\"] == \"%s\" and "), tag->key, tag->value);
-                tag = tag->next;
             }
+            tag = tag->next;
         }
     }
     String prefix = "(";
