@@ -92,6 +92,7 @@ uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
         delete[] _statusMessage;
         _statusMessage = charstar(F("Last sent query failed. HTTPcode %d"), String(_request->responseHTTPcode()).c_str());
         Serial.println(_request->responseText());
+        _lookbackHours = 0;
         delay(60, query_s);
         return 1;
     }
