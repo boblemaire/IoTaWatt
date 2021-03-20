@@ -163,14 +163,24 @@ boolean setConfig(const char* configPath){
     JsonArray& EmonArray = Config[F("emoncms")];
     if(EmonArray.success()){
       EmonStr = JsonDetail(ConfigFile, EmonArray);
-    } else // Accept old format ~ 02_03_17
+    }
+    
+    // Handle legacy "server" specification for emoncms.
+    // Must ignore if type != "emoncms"
+    
+    else 
     {
       trace(T_CONFIG,31);      
       JsonArray& serverArray = Config[F("server")];
       if(serverArray.success()){
         EmonStr = JsonDetail(ConfigFile, serverArray);
+        if( ! strstr(EmonStr, "emoncms")){
+          delete[] EmonStr;
+          EmonStr = nullptr;
+        }
       }
     }
+
     trace(T_CONFIG,30);
     if(EmonStr){
       trace(T_CONFIG,31);   
@@ -180,6 +190,7 @@ boolean setConfig(const char* configPath){
       }
       trace(T_CONFIG,31);
       if( ! Emoncms->config(EmonStr)){
+        logTrace();
         trace(T_CONFIG,32);   
         log("Emoncms: Invalid configuration.");
         Emoncms->end();
