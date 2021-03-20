@@ -89,9 +89,8 @@ uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
 
     if(_request->responseHTTPcode() != 200){
         trace(T_influx2,31);
-        log("HTTPcode %d\n", _request->responseHTTPcode());
         delete[] _statusMessage;
-        _statusMessage = charstar("Last sent query failed");
+        _statusMessage = charstar(F("Last sent query failed. HTTPcode %d"), String(_request->responseHTTPcode()).c_str());
         Serial.println(_request->responseText());
         delay(60, query_s);
         return 1;
