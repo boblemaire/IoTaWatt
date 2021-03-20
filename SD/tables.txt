@@ -1,21 +1,22 @@
 {
 "VT":[
-  {"model":"generic120V","type":"U","cal":11.50,"phase":2.0},
-  {"model":"generic240V","type":"U","cal":20.00,"phase":2.0},  
-  {"model":"DCSS AC910(Aus)","mfg":"Radio Parts","cal":20.72,"p50":[2.17]},
-  {"model":"Powertech MP-3027(Aus)","mfg":"jaycar","cal":23.18,"p50":[0.92]},
-  {"model":"Ideal 77DB-06-09(UK)","cal":20.01,"p50":[1.05]},
-  {"model":"Ideal 77DE-06-09(EU)","cal":19.12,"p50":[1.48],"p60":[0.77]},
-  {"model":"Ideal 77DA-10-09-MI(USA)","cal":11.06,"p60":[0.10]},
-  {"model":"TDC DA-10-09","cal":11.20,"p60":[1.14]},
-  {"model":"TDC DA-10-09-E6","cal":10.79,"p60":[0.07]},
-  {"model":"TDC DE-10-09(EU)","cal":18.66,"p50":[0.16]},
-  {"model":"Jameco/100061","cal":11.68,"p60":[3.00]}, 
-  {"model":"Jameco/102234","cal":11.43,"p60":[1.80]}, 
-  {"model":"Jameco/2227444","cal":11.51,"p60":[0.58]},
-  {"model":"Jameco/2270815","cal":10.72,"p60":[0.16]},
-  {"model":"CUI 41A-9-1000","cal":10.10,"p60":[0.43]},
-  {"model":"AX-27750-H","cal":20.56,"p60":[0.18]}	
+	{"model":"TDC DA-10-09-E6","cal":10.79,"phase":0.07,"p60":[0.07]},
+	{"model":"Jameco/2270815","cal":10.72,"phase":0.16,"p60":[0.16]},
+  	{"model":"JW-95001-NA","mfg":"Global Village","cal":11.17,"phase":0.74,"p60":[0.74]},
+  	{"model":"DCSS AC910(Aus)","mfg":"Radio Parts","cal":20.72,"p50":[2.17]},
+  	{"model":"Powertech MP-3027(Aus)","mfg":"jaycar","cal":23.18,"p50":[0.92]},
+  	{"model":"Ideal 77DB-06-09(UK)","cal":20.01,"p50":[1.05]},
+  	{"model":"Ideal 77DE-06-09(EU)","cal":19.12,"p50":[1.48],"p60":[0.77]},
+  	{"model":"Ideal 77DA-10-09-MI(USA)","cal":11.06,"p60":[0.10]},
+  	{"model":"TDC DE-10-09(EU)","cal":18.66,"p50":[0.16]},
+  	{"model":"Jameco/100061","cal":11.68,"p60":[3.00]}, 
+  	{"model":"Jameco/102234","cal":11.43,"p60":[1.80]}, 
+  	{"model":"Jameco/2227444","cal":11.51,"p60":[0.58]},
+ 	{"model":"CUI 41A-9-1000","cal":10.10,"p60":[0.43]},
+  	{"model":"AX-27750-H","cal":20.56,"p60":[0.18]},
+	{"model":"TDC DA-10-09","cal":11.20,"p60":[1.14]},
+  	{"model":"generic120V","type":"U","cal":11.50,"phase":2.0},
+  	{"model":"generic240V","type":"U","cal":20.00,"phase":2.0} 
   ],
 
 "CT":[
@@ -48,5 +49,5 @@
 	{"model":"ZDKCT10M","mfg":"unk nown","type":"C","turns":2007,"phase":1.5},
 	{"model":"PZCT-02","mfg":"unknown","type":"C","turns":1000,"phase":2.5},
 	{"model":"SCT0750-000","mfg":"Magnalab","type":"C","turns":7550,"phase":2.55}
-	]
+  ]
 }
