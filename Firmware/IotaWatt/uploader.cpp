@@ -292,13 +292,6 @@ bool uploader::config(const char *jsonConfig)
     }
     _revision = config["revision"];
 
-    // in case this is an old "server" configuration,
-    // insure its "emoncms", otherwise ignore it.
-
-    if(strcmp(_id, "emoncms") == 0 && config["type"].as<String>() != "emoncms"){
-        return false;
-    }
-
     // parse and validate url
 
     trace(T_uploader, 100);
