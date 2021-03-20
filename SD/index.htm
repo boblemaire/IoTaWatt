@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- version 02_03_02 -->
+<!-- version 0.6.0 -->
 <html lang="en-US">
 <head>
 <meta charset="utf-8">
@@ -501,7 +501,7 @@ var msgsFileURL = "/iotawatt/iotamsgs.txt?textpos=-10000";
 var currentBody = [];
 var configSHA256;
 var noConfig = true;
-var emoncmsAlias = "server";        // Json object where Emoncms config is found (will be deprecated in future release)
+var emoncmsAlias = "emoncms";       // Json object where Emoncms config is found (will be deprecated in future release)
 
 var config;                         // configuration as Js Object
 var serverConfig;
@@ -2778,28 +2778,34 @@ function twoDigit(i){
 }
   
 function checkConfig(){
+  var rewrite = false;
   readFile(burdenFileURL, function(response){
     config.device.burden = JSON.parse(response);
     }); 
   if(config.device.channels === undefined){
     config.device.channels = 15;
+    rewrite = true;
   }
   if(config.inputs === undefined){
     config.inputs = [{channel:0, type:"VT", model:"generic", cal:10, phase:2}];
+    rewrite = true;
   }
   for(var i=0; i<config.inputs.length; i++){
     if(config.inputs[i] === undefined ||
     (config.inputs[i] !== null && config.inputs[i].channel > i)){
       config.inputs.splice(i,0,null);
+      rewrite = true;
     }
   }
   for(var i=config.inputs.length; i<config.device.channels; i++){
     config.inputs.push(null);
+    rewrite = true;
   }
   config.inputs.splice(config.device.channels,config.inputs.length-config.device.channels);
   
   if(config.device.burden === undefined){
     config.device.burden = [0];
+    rewrite = true;
   } 
   for(var i=config.device.burden.length; i<config.device.channels; i++){
     config.device.burden.push(24);
@@ -2821,11 +2827,21 @@ function checkConfig(){
       config.outputs[i].script = old2newScript(config.outputs[i].script);
     }
     config.format == 2;
+    rewrite = true;
   }
   
-  emoncmsAlias = (config.emoncms == undefined) ? "server" : "emoncms";
-  EbyId("EmoncmsButton").value = emoncmsAlias;
-}
+  if(config.server != undefined){
+    if(config.server.type == "emoncms"){
+      config.emoncms = config.server;
+    }
+    config.server = undefined;
+    rewrite = true;
+  }
+  
+  if(rewrite){
+    uploadConfig();
+  }
+ }
 
 function old2newScript(oldScript){
   var newScript = "";
