@@ -3,6 +3,7 @@
 	{"model":"TDC DA-10-09-E6","cal":10.79,"phase":0.07,"p60":[0.07]},
 	{"model":"Jameco/2270815","cal":10.72,"phase":0.16,"p60":[0.16]},
   	{"model":"JW-95001-NA","mfg":"Global Village","cal":11.17,"phase":0.74,"p60":[0.74]},
+	{"model":"M 9233","mfg":"PowerTran","cal":21.62,"phase":1.81,"p50":[1.81]},
   	{"model":"DCSS AC910(Aus)","mfg":"Radio Parts","cal":20.72,"p50":[2.17]},
   	{"model":"Powertech MP-3027(Aus)","mfg":"jaycar","cal":23.18,"p50":[0.92]},
   	{"model":"Ideal 77DB-06-09(UK)","cal":20.01,"p50":[1.05]},
@@ -46,6 +47,8 @@
 	{"model":"WC-1","mfg":"Wattcore","type":"C","turns":1000,"phase":1.6},
 	{"model":"HWCT-004","mfg":"unknown","type":"C","turns":1000,"phase":0.1,"p60":[0.4,10,0.3],"p50":[0.6,10,0.5]},
 	{"model":"DL-CT08CL2","mfg":"unknown","type":"C","turns":1000,"phase":0.1,"p60":[0.2,5,0.1],"p50":[0.2,5,0.1,15,0.05]},
+	{"model":"AZ500","mfg":"Talema","type":"C","turns":509,"phase":1.5,"p60":[3.0,1,2.5,2,2.0,5,1.5,12,1.0],"p50":[3.5,2,3.0,3,2.5,5,2.0,10,1.5,20,1.25]},
+	{"model":"AZ1000","mfg":"Talema","type":"C","turns":1005,"phase":0.75,"p60":[1.5,1,1.25,3,1.0,9,0.75,22,0.5],"p50":[1.75,2,1.5,3,1.25,7,1.0,17,0.75,33,0.6]},
 	{"model":"ZDKCT10M","mfg":"unk nown","type":"C","turns":2007,"phase":1.5},
 	{"model":"PZCT-02","mfg":"unknown","type":"C","turns":1000,"phase":2.5},
 	{"model":"SCT0750-000","mfg":"Magnalab","type":"C","turns":7550,"phase":2.55}
