@@ -13,9 +13,13 @@ static bool       authDebug = false;
 
 bool auth(authLevel level){
 
-  if(authDebug) Serial.printf_P(PSTR("\nAuth: authenticate %s\n"), level==authAdmin ? "admin" : "user");
+  if(authDebug) Serial.printf_P(PSTR("\nAuth: authenticate %s, authcount %d\n"), level==authAdmin ? "admin" : "user", authCount());
 
         // If no passwords or authorization not required, return true
+
+  if(localAccess && (gatewayIP != server.client().remoteIP())){
+    return true;
+  }
 
   if(!adminH1 || level == authNone){
     return true;
@@ -77,7 +81,7 @@ bool auth(authLevel level){
       return false;
   }
   if(authDebug){
-    Serial.printf_P(PSTR("Auth: active session nonce=%s, nc=%d, lastUsed=%d\n"), bin2hex(session->nonce,16).c_str(), session->nc, session->lastUsed);
+    Serial.printf_P(PSTR("Auth: active session nonce=%s, nc=%d, lastUsed=%d\n"), bin2hex(session->nonce,16).c_str(), session->nc[3], session->lastUsed);
   }
 
         // Get H1 for specified password
@@ -170,14 +174,14 @@ String extractParam(String& authReq, const String& param, const char delimit){
 authSession* newAuthSession(){
   authSession* session = (authSession*) &authSessions;
   while(session->next){
-      if(session->next->IP == server.client().remoteIP() && 
-          session->next->nc > 0 ){
-          authSession* oldSession = session->next;
-          session->next = oldSession->next;
-          delete oldSession;
-      } else {
+      // if(session->next->IP == server.client().remoteIP() && 
+      //     session->next->nc[3] == 0 ){
+      //     authSession* oldSession = session->next;
+      //     session->next = oldSession->next;
+      //     delete oldSession;
+      // } else {
           session = session->next;
-      }
+      // }
   }
   session->next = new authSession;
   session = session->next;
@@ -188,6 +192,11 @@ authSession* newAuthSession(){
 }
 
         // Get existing authorization session if it exists.
+        // Note: Several browsers, while sending unique nc with each auth header,
+        // do not always send in increasing order.  Observed issue with Firefox and
+        // Chrome. Seems to be caused by requests arriving in different order than
+        // created. By keeping last 4 nc, we allow an auth whose nonce is greater
+        // than the oldest of the last 4 and not equal to any of the last 4.
 
 authSession* getAuthSession(const char* nonce, const char* nc){
     if(!authSessions || strlen(nonce) != 32 || strlen(nc) == 0) return nullptr;
@@ -198,9 +207,15 @@ authSession* getAuthSession(const char* nonce, const char* nc){
     _nc = strtol(nc, nullptr, 16);
     authSession* session = authSessions;
     while(session){
-        if(memcmp(session->nonce, _nonce, 16) == 0  && session->nc < _nc){
-            session->nc = _nc;
-            return session;
+        if(memcmp(session->nonce, _nonce, 16) == 0 && _nc > session->nc[0]){
+          if(_nc == session->nc[1] || _nc == session->nc[2] || _nc == session->nc[3]){
+            return nullptr;
+          }
+          session->nc[0] = session->nc[1];
+          session->nc[1] = session->nc[2];
+          session->nc[2] = session->nc[3];
+          session->nc[3] = _nc;
+          return session;
         }
         session = session->next;
     }
@@ -256,6 +271,9 @@ bool  authSavePwds(){
   if(userH1){
     pwdsFile.write(bin2hex(userH1,16).c_str());
   }
+  if(localAccess){
+    pwdsFile.write(1);
+  }
   pwdsFile.close();
   return true; 
 }
@@ -267,6 +285,7 @@ void authLoadPwds(){
   adminH1 = nullptr;
   delete[] userH1;
   userH1 = nullptr;
+  localAccess = false;
   File pwdsFile = SD.open(pwdsFilePath.c_str(), FILE_READ);
   if( ! pwdsFile){
     return;
@@ -276,10 +295,22 @@ void authLoadPwds(){
     adminH1 = new uint8_t[16];
     hex2bin(adminH1, buf, 16);
   }
+  if(pwdsFile.available() == 1){
+    uint8_t local = pwdsFile.read();
+    if(local == 1){
+      localAccess = true;
+    }
+  }
   if(pwdsFile.available() >= 32){
     pwdsFile.read((uint8_t*)buf, 32);
     userH1 = new uint8_t[16];
     hex2bin(userH1, buf, 16);
+  }
+  if(pwdsFile.available() == 1){
+    uint8_t local = pwdsFile.read();
+    if(local == 1){
+      localAccess = true;
+    }
   }
   pwdsFile.close();
 }

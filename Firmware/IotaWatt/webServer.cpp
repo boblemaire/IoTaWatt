@@ -147,15 +147,16 @@ bool loadFromSdCard(String path){
     dataFile = SD.open(path.c_str());
   }
 
-          // If reading user directory,
+          // If reading user directory or root files,
           // authenticate as user
           // otherwise require admin.
 
   authLevel level = authAdmin;
-  if(path.startsWith(F("/user/")) ||
+  if(! path.startsWith(F("/config")) &&
+     (path.startsWith(F("/user/")) ||
      path.startsWith(F("/graphs/")) ||
-     path.startsWith(F("/graph.")) ||
-     path.startsWith(F("/graph2."))){
+     path.substring(1).indexOf('/') == -1) 
+     ){
     level = authUser;
   }
   if( ! authenticate(level)) return true;
@@ -468,6 +469,9 @@ void handlePasswords(){
         hex2bin(userH1, newUserH1.c_str(), 16);
       } 
     }
+    if(request.containsKey(F("localAccess"))){
+      localAccess = request["localAccess"].as<bool>();
+    }
     if(authSavePwds()){
       server.send(200, txtPlain_P, F("Passwords reset."));
       log("New passwords saved.");
@@ -663,7 +667,8 @@ void handleStatus(){
       trace(T_WEB,18);
       JsonObject& passwords = jsonBuffer.createObject();
       passwords.set(F("admin"),adminH1 != nullptr);
-      passwords.set(F("user"),userH1 != nullptr);  
+      passwords.set(F("user"),userH1 != nullptr);
+      passwords.set(F("localAccess"), localAccess);
       root[F("passwords")] = passwords;
     }
     root.printTo(response);

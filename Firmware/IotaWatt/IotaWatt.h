@@ -303,14 +303,21 @@ extern uploader *Emoncms;
 extern int32_t uploaderBufferLimit;       // Dynamic limit to try to control overload during recovery
 extern int32_t uploaderBufferTotal;       // Total aggregate target of uploader buffers       
 
-// Password and authorization data
+      // ******************* WiFi connection  *************************************
+
+extern IPAddress subnetMask;
+extern IPAddress gatewayIP;
+extern IPAddress localIP;
+
+// ******************* Password and authorization data *************************************
 
 extern uint8_t*   adminH1;                // H1 digest md5("admin":"admin":password) 
-extern uint8_t*   userH1;                 // H1 digest md5("user":"user":password) 
+extern uint8_t*   userH1;                 // H1 digest md5("user":"user":password)
 extern authSession* authSessions;         // authSessions list head; 
-extern uint16_t   authTimeout;            // Timeout interval of authSession in seconds;   
+extern uint16_t   authTimeout;            // Timeout interval of authSession in seconds
+extern bool       localAccess;            // true if password not required for local access
 
-      // ****************************** Timing and time data *************************
+// ****************************** Timing and time data *************************
 #define  SECONDS_PER_SEVENTY_YEARS 2208988800UL
 extern int32_t  localTimeDiff;                 // Local time Difference in minutes
 extern tzRule*  timezoneRule;                  // Rule for DST 

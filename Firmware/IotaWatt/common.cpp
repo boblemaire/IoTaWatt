@@ -189,10 +189,17 @@ uint32_t wifiConnectTime = 0;             // Time WiFi was connected, 0 if disco
 uint8_t configSHA256[32];                 // Hash of config file last time read or written
 bool getNewConfig = false;                // process new configuration file;
 
+      // ******************* WiFi connection  *************************************
+
+IPAddress subnetMask;
+IPAddress gatewayIP;
+IPAddress localIP;
+
 uint8_t*          adminH1 = nullptr;      // H1 digest md5("admin":"admin":password) 
 uint8_t*          userH1 = nullptr;       // H1 digest md5("user":"user":password)
 authSession*      authSessions = nullptr; // authSessions list head;
-uint16_t          authTimeout = 600;      // Timeout interval of authSession in seconds;   
+uint16_t          authTimeout = 600;      // Timeout interval of authSession in seconds;
+bool              localAccess = false;    // True if password not required for local access  
  
 
       // ************************** HTTP concurrent request semaphore *************************

@@ -4,13 +4,14 @@ struct authSession {
     authSession*    next;
     IPAddress       IP;
     uint32_t        lastUsed;
-    uint32_t        nc;
+    uint32_t        nc[4];
     uint8_t         nonce[16];
     authSession()
-    :next(nullptr)
-    ,nc(0)
-    ,lastUsed(0)
-    {}
+        :next(nullptr)
+        ,nc{0,0,0,0}
+        ,lastUsed(0)
+        {}
+    ~authSession(){}
 };
 
 enum authLevel {authAdmin, authUser, authNone};
@@ -23,5 +24,6 @@ authSession* getAuthSession(const char* nonce, const char* nc);
 void  purgeAuthSessions();
 void  getNonce(uint8_t* nonce);
 String calcH1(const char* username, const char* realm, const char* password);
-bool    authSavePwds();
-void    authLoadPwds();
+bool authSavePwds();
+void authLoadPwds();
+int authCount();
