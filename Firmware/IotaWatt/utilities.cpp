@@ -416,3 +416,34 @@ bool copyFile(const char* dest, const char* source){
     }
     return true;
 }
+
+int32_t parseSemanticVersion(const char * ver){
+    if(! ver){
+        return -1;
+    }
+    char * ptr;
+    long result = strtol(ver, &ptr, 10) << 16;
+    if(*ptr == '.' || *ptr == '_'){
+        long node = strtol(++ptr, &ptr, 10);
+        result += node << 8;
+        if(*ptr == '.' || *ptr == '_'){
+            long node = strtol(++ptr, &ptr, 10);
+            result += node;
+        }
+    }
+    Serial.printf("parse %s, %.8x\n", ver, result);
+    return result;
+}
+
+String   displaySemanticVersion(int32_t ver){
+    if(ver < 0){
+        return "invalid";
+    }
+    uint8_t *node = (uint8_t *)&ver;  // little endian
+    String result(node[2]);             
+    result += '.';
+    result += node[1];
+    result += '.';
+    result += node[0];
+    return result;
+}
