@@ -47,7 +47,7 @@
       </tr>
       <tr>
         <td class="dropdown">
-          <button class="mainMenuButton buttonUp dropbtn"
+          <button id="toolsButton" class="mainMenuButton buttonUp dropbtn"
               title="Select from the following tools">Tools</button>
           <span class="dropContent">
             <button class="mainMenuButton" onclick="mainMenuButton(this,loadEdit)"
@@ -66,7 +66,7 @@
         </td>
         <td>
           <span class="dropdown">
-            <button class="mainMenuButton buttonUp dropbtn"
+            <button id="dataButton" class="mainMenuButton buttonUp dropbtn"
               title="Graphically visualize and compare accumulated data">Data</button>
             <span class="dropContent">
               <button class="mainMenuButton" onclick="mainMenuButton(this,loadGraph2)"
@@ -182,21 +182,24 @@
       <h3>Configure Optional IoTaWatt Passwords</h3>
       <p>
         The initial configuration places no restrictions on who can modify or otherwise access the device.
-      If the device is in a home and connected to a well protected WiFi LAN, that may be adequate to protect
+      If the device is in a home and connected to a secure WiFi LAN, that may be adequate to protect
       the integrity of the device and privacy of the data collected.  If the LAN does not provide suitable protection,
-      or there is a need to provide port-forward passthough to the internet, access control is recommended.
+      or there is a need to provide port-forward passthough from the internet, access control is recommended.
       </p><p>
-        IoTaWatt supports two levels of authorization using digest password authorization. This isn't the most secure method
-        of authorization, nor is it the least.  Given the limitations of an IoT device, you may find it is a reasonable balance
-        between exposure and data value.
+        IoTaWatt uses the cryptographic Digest authorization method that employs an encrypted password. Data is transfered in plaintext,
+        but IoTaWatt will not accept unauthorized requests to view or change data when passwords are enabled.
+        Given the limitations of an IoT device, you may find it is a reasonable balance between exposure and data value.
       </p><p>
-        To enable authorization, specify an Admin password.  Once there is an admin password, all configuration and access,
-        except for User level acess described below, will require the password to initiate the session.  Be sure to
+        To enable authorization, specify an admin password.  Subsequently, all configuration and access,
+        except for user level access described below, will require the password to initiate the session.  Be sure to
         carefully note the password that you set, as IoTaWatt does not store the actual value and it cannot be recovered. There is a
-        procedure to remove the Admin password, but it involves physically removing the SDcard.
+        procedure to remove the password, but it involves physically removing the SDcard.
       </p><p>
-        The optional User level password is effectively a <i>read only</i> password for use by apps that visualize data. 
-      The User password does not allow access to the configuration or SD file system, except for a special /user/ directory
+        The optional user password is effectively a <i>read only</i> password for use by apps that visualize data. 
+        The user password does not allow access to the configuration or SD file system, except for a special /user/ directory
+      </p><p>
+        When "unrestricted local access" is checked, passwords will not be required for requests originating on the local LAN.  They 
+        will be required only for requests that come from the internet gateway.
       </p>
       <table id="pwdTable"></table>
       <p>
@@ -541,7 +544,6 @@ var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:
                 {id:"Australia",begOffset:9.5,endOffset:10.0,dstrule:{adj:60,utc:false,begin:{month:10,weekday:1,instance:1,time:120},end:{month:4,weekday:1,instance:1,time:180}}},
                 {id:"NewZealand",begOffset:12,endOffset:12,dstrule:{adj:60,utc:false,begin:{month:9,weekday:1,instance:-1,time:120},end:{month:4,weekday:1,instance:1,time:180}}}
               ];
-
 /***************************************************************************************************
  *                       Shorthand functions
 * ************************************************************************************************/
@@ -654,6 +656,9 @@ function pwdValid(){
   newPwd.pattern = "^[A-Za-z0-9_!%@#]{0,16}";
   newPwd.title = "1-16 characters, blank to reset";
   newPwd.setAttribute("oninput","pwdCheck();");
+  localAccess = addTableRow(pwdTable, "Unrestrictred LAN access", "localAccess", "input");
+  localAccess.setAttribute("type","checkbox");
+  localAccess.title = "No passwords needed from LAN.";
   pwdCheck();
 }
 
@@ -685,10 +690,9 @@ function pwdSave(){
     }
   }
   xmlHttp.open("POST","/auth");
-  var newAdmin = EbyId("newAdminPwd");
-  authReq.newadmin = newAdmin.value;
-  var newUser = EbyId("newUserPwd");
-  authReq.newuser = newUser.value;
+  authReq.newadmin = EbyId("newAdminPwd").value;
+  authReq.newuser = EbyId("newUserPwd").value;
+  authReq.localAccess = EbyId("localAccess").checked;
   xmlHttp.send(btoa(JSON.stringify(authReq)));
 }
 
@@ -3033,9 +3037,9 @@ function writeFile(fileString, url, responseHandler){
 
 
 function setup(){
-  getTables();
-  getConfig();
-  resetDisplay();
+    getTables();
+    getConfig();
+    resetDisplay();
 }
 
 </script>
