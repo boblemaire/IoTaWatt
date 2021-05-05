@@ -31,7 +31,7 @@ void loop()
     trace(T_LOOP,2);
     nextCrossMs = lastCrossMs + 490 / int(frequency);
     if(int(frequency) > 25){
-      bingoTime = lastCrossUs + 500000 / int(frequency) - 1500;
+      bingoTime = lastCrossUs + 500000 / int(frequency) - 2000;
     }
     else {
       bingoTime = lastCrossUs + 3500;
