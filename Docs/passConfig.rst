@@ -1,38 +1,12 @@
 Passwords Configuration
 =======================
-
-Successful startup will be indicated by a dull green glow on the LED.
-If the LED is off, or blinking a sequence,
-see the `troubleshooting <troubleshooting.html>`_ section.
-
-After successful startup, you can connect to the device with your 
-web browser to access the configuration app. 
-Use the url: ``http://iotawatt.local`` or, if your device
-has been renamed, use ``http://<newname>.local``. The configuration app starts with a row of buttons:
-
-.. image:: pics/mainMenu.png
-    :scale: 75 %
-    :align: center
-    :alt: Main Menu image
-
-Hover over |Setup| and click |Passwords| in the dropdown menu.
-
-.. image:: pics/passConfig/configPasswords.png
-    :scale: 23 %
-    :align: center
-    :alt: Config Device image
-
-Open Access by Default
-----------------------
 The initial configuration has no access restrictions for reading or modifying device data or configurations.
 If the device is exposed to the internet, then it can be read and modified from the internet without additional protections.
-If untrusted actors can join your local network (WiFi, LAN) then they can read and modify without additional protections. 
+If untrusted actors can join your local network (WiFi, LAN) then they can read and modify without additional protections.
 
-
-Two Authorization Levels
-------------------------
-IoTaWatt supports two levels of authorization using digest password authorization. 
-This isn't the most secure method of authorization, nor is it the least. 
+If your LAN isn't secure, or you intend to provide access from the internet via port-forwarding, you should 
+require authorization.  IoTaWatt supports two levels of authorization using the relatively secure 
+digest password authorization protocol. This isn't the most secure method of authorization, nor is it the least. 
 Given the limitations of an IoT device, you may find it is a reasonable balance between exposure and data value.
 
 Administrative Authorization
