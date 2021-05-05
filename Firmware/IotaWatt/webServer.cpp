@@ -118,7 +118,7 @@ void returnFail(String msg, int HTTPcode) {
 bool loadFromSdCard(String path){
   trace(T_WEB,13);
   if( ! path.startsWith("/")) path = '/' + path;
-  String dataType = txtPlain_P;
+  String dataType = FPSTR(txtPlain_P);
   if(path.endsWith("/")) path += F("index.htm");
   if(path.equals(F("/edit")) || path.equals(F("/graph")) || path.equals(F("/graph2"))){
     path += F(".htm");

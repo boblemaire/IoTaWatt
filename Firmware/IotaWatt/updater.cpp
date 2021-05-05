@@ -2,13 +2,16 @@
 
 bool   unpackUpdate(String updateVersion);
 
+static const char updateURL_P[] PROGMEM = IOTA_UPDATE_HOST;
+static const char updatePath_P[] = IOTA_VERSIONS_PATH;
+
 /*************************************************************************************************
  * 
  *          updater - Service to check and update firmware
  * 
  *************************************************************************************************/
 uint32_t updater(struct serviceBlock* _serviceBlock) {
-  enum states {initialize, checkAutoUpdate, getVersion, waitVersion, createFile, download, waitDownload, install};
+  enum states {initialize, checkAutoUpdate, getVersion, waitVersion, createFile, download, waitDownload, install, getTable, waitTable};
   static states state = initialize;
   static asyncHTTPrequest* request = nullptr;
   static String updateVersion;
@@ -18,6 +21,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
   static int checkResponse = 0;
   static char* _updateClass = nullptr;
   static uint32_t lastVersionCheck = 0;
+  static long latestTableVersion = -1;
   static uint32_t HTTPtoken = 0;
 
   trace(T_UPDATE,0); 
@@ -34,6 +38,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       } 
       log("Updater: service started. Auto-update class is %s", updateClass);
       _updateClass = charstar(updateClass);
+      tableVersion = getTablesVersion();
       state = checkAutoUpdate;
       return 1;
     }
@@ -75,7 +80,8 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         request = new asyncHTTPrequest;
       }
       request->setDebug(false);
-      String URL = String(updateURL) + updatePath;
+      String URL(FPSTR(updateURL_P));
+      URL += FPSTR(updatePath_P);
       if( ! request->open("GET", URL.c_str())){
         HTTPrelease(HTTPtoken);
         return UTCtime() + 60;
@@ -128,7 +134,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       }
       parseError = false;
 
-            // Check for "classes" object
+      // Check for "classes" object
 
       JsonObject& classes = response[F("classes")];
       if( ! classes.success()){
@@ -161,6 +167,18 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         log("Updater: Unrecognized auto-update class %s.", updateClass);
         upToDate = true;
       }
+
+            // Check tables file version
+
+      if(response.containsKey(F("tables"))){
+        latestTableVersion = parseSemanticVersion(response[F("tables")].as<char *>());
+        if (latestTableVersion > tableVersion){
+          log("Updater: update tables from %s to %s", displaySemanticVersion(tableVersion).c_str(), displaySemanticVersion(latestTableVersion).c_str());
+        }
+        state = getTable;
+        return 1;
+      }
+
       state = checkAutoUpdate;
       lastVersionCheck = UTCtime();
       return 1;
@@ -193,7 +211,7 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       if( ! request){
         request = new asyncHTTPrequest;
       }
-      String URL = String(updateURL) + "/firmware/bin/" + updateVersion + ".bin";
+      String URL = String(FPSTR(updateURL_P)) + String(F(IOTA_VERSIONS_DIR)) + updateVersion + ".bin";
       request->setDebug(false);
       trace(T_UPDATE,6);   
       if( ! request->open("GET", URL.c_str())){
@@ -259,6 +277,70 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         }
       }
       state = checkAutoUpdate;
+    }
+
+    case getTable: {
+      trace(T_UPDATE,10); 
+      if( ! WiFi.isConnected()){
+        return UTCtime() + 1;
+      }
+      HTTPtoken = HTTPreserve(T_UPDATE);
+      if( ! HTTPtoken){
+        return 250;
+      }
+      if( ! request){
+        request = new asyncHTTPrequest;
+      }
+      String URL(FPSTR(IOTA_UPDATE_HOST));
+      URL += F(IOTA_TABLE_DIR);
+      URL += displaySemanticVersion(latestTableVersion);
+      URL += ".txt";
+      request->setDebug(false);
+      if( ! request->open("GET", URL.c_str())){
+        HTTPrelease(HTTPtoken);
+        return UTCtime() + 60;
+      }
+      request->setTimeout(10);
+      if( ! request->send()){
+        request->abort();
+        HTTPrelease(HTTPtoken);;
+        return UTCtime() + 60;
+      }
+      state = waitTable;
+      return 1;
+    }
+
+    case waitTable: {
+      trace(T_UPDATE,20); 
+      if(request->readyState() != 4){
+        return 250;
+      }
+      HTTPrelease(HTTPtoken);
+      int responseCode = request->responseHTTPcode();
+
+          // Handle response
+
+      if(responseCode == 200){
+        if(SD.exists(F(IOTA_NEW_TABLE_PATH))) SD.remove(F(IOTA_NEW_TABLE_PATH));
+        File tableFile = SD.open(F(IOTA_NEW_TABLE_PATH), FILE_WRITE);
+        if(!tableFile){
+          return false;
+        }
+        uint8_t buf[512];
+        while(request->available()){
+          int len = request->responseRead(buf, 512);
+          tableFile.write(buf, len);
+        }
+        tableFile.close();
+        SD.remove(F(IOTA_TABLE_PATH));
+        SDFS.rename(F(IOTA_NEW_TABLE_PATH), F(IOTA_TABLE_PATH));
+        tableVersion = getTablesVersion();
+      }
+      delete request;
+      request = nullptr;
+      lastVersionCheck = UTCtime();
+      state = checkAutoUpdate;
+      return 100;
     }
   }
   return UTCtime() + 1;
@@ -503,6 +585,28 @@ void printHex(uint8_t* data, size_t len){
     }
     Serial.println();
   }
+}
+
+long getTablesVersion(){
+  File tableFile;
+  tableFile = SD.open(F(IOTA_TABLE_PATH), FILE_READ);
+  if(!tableFile){
+    return -1;
+  }
+  DynamicJsonBuffer Json;
+  String tableSummary = JsonSummary(tableFile, 1);
+  JsonObject& table = Json.parseObject(tableSummary);
+  tableFile.close();
+
+  if (!table.success()) {
+    log("Table file parse failed.");
+    return -1;
+  }
+  JsonObject &version = table[F("version")];
+  if(table.containsKey(F("version"))){
+    return parseSemanticVersion(table[F("version")].as<char*>());
+  }
+  return -1;
 }
 
 

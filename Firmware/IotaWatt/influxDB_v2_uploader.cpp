@@ -64,7 +64,7 @@ uint32_t influxDB_v2_uploader::handle_query_s(){
 
     // Initiate the HTTP request.
 
-    String endpoint = "/query?orgID=";
+    String endpoint = "/api/v2/query?orgID=";
     endpoint += _orgID;
     HTTPPost(endpoint.c_str(), checkQuery_s, "application/vnd.flux");
     return 1;
@@ -251,10 +251,28 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
         _lastPost = oldRecord->UNIXtime;
         reqData.printf(" %d\n", _lastPost);
     }
+    
+    // Add optional heap measurement
+
+    if(_heap && heapMsPeriod != 0){
+        reqData.printf_P(PSTR("heap"));
+        if(_tagSet){
+            trace(T_influx1,66);
+            Script *script = _outputs->first();
+            influxTag* tag = _tagSet;
+            while(tag){
+                reqData.printf_P(PSTR(",%s=%s"), tag->key, varStr(tag->value, script).c_str());
+                tag = tag->next;
+            }
+        }
+        reqData.printf_P(PSTR(" value=%d %d\n"), (uint32_t)heapMs / heapMsPeriod, UTCtime());
+        heapMs = 0.0;
+        heapMsPeriod = 0;
+    }       
 
     // Initiate HTTP post.
 
-    String endpoint = "/write?precision=s&orgID=";
+    String endpoint = "/api/v2/write?precision=s&orgID=";
     endpoint += _orgID;
     endpoint += "&bucket=";
     endpoint += _bucket;
@@ -312,8 +330,9 @@ uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
 //********************************************************************************************************************
 bool influxDB_v2_uploader::configCB(JsonObject& config){
     trace(T_influx2, 101);
+    _heap = config.get<bool>(F("heap"));
     delete[] _bucket;
-    _bucket = charstar(config.get<char *>("bucket"));
+    _bucket = charstar(config.get<char *>(F("bucket")));
     if (strlen(_bucket) == 0)
     {
         log("%s: Bucket not specified", _id);
@@ -322,7 +341,7 @@ bool influxDB_v2_uploader::configCB(JsonObject& config){
 
     trace(T_influx2, 101);
     delete[] _orgID;
-    _orgID = charstar(config.get<const char *>("orgid"));
+    _orgID = charstar(config.get<const char *>(F("orgid")));
     if (!_orgID || strlen(_orgID) != 16)
     {
         log("%s: Invalid organization ID", _id);
@@ -330,7 +349,7 @@ bool influxDB_v2_uploader::configCB(JsonObject& config){
     }
     trace(T_influx2, 101);
     delete[] _token;
-    _token = charstar(config.get<const char *>("authtoken"));
+    _token = charstar(config.get<const char *>(F("authtoken")));
     if (!_token || strlen(_token) != 88)
     {
         log("%s: Invalid authorization token", _id);
@@ -338,28 +357,28 @@ bool influxDB_v2_uploader::configCB(JsonObject& config){
     }
     trace(T_influx2, 101);
     delete[] _measurement;
-    _measurement = charstar(config.get<const char *>("measurement"));
+    _measurement = charstar(config.get<const char *>(F("measurement")));
     if (!_measurement)
     {
-        _measurement = charstar("$name");
+        _measurement = charstar(F("$name"));
     }
     trace(T_influx2, 102);
     delete[] _fieldKey;
     ;
-    _fieldKey = charstar(config.get<const char *>("fieldkey"));
+    _fieldKey = charstar(config.get<const char *>(F("fieldkey")));
     if (!_fieldKey)
     {
-        _fieldKey = charstar("value");
+        _fieldKey = charstar(F("value"));
     }
     trace(T_influx2, 102);
-    _stop = config.get<bool>("stop");
+    _stop = config.get<bool>(F("stop"));
 
     // Build tagSet
 
     trace(T_influx2, 103);
     delete _tagSet;
     _tagSet = nullptr;
-    JsonArray &tagset = config["tagset"];
+    JsonArray &tagset = config[F("tagset")];
     _staticKeySet = true;
     if (tagset.success())
     {
@@ -370,11 +389,20 @@ bool influxDB_v2_uploader::configCB(JsonObject& config){
             influxTag *tag = new influxTag;
             tag->next = _tagSet;
             _tagSet = tag;
-            tag->key = charstar(tagset[i]["key"].as<const char *>());
-            tag->value = charstar(tagset[i]["value"].as<const char *>());
+            tag->key = charstar(tagset[i][F("key")].as<const char *>());
+            tag->value = charstar(tagset[i][F("value")].as<const char *>());
             if ((strstr(tag->value, "$units") != nullptr) || (strstr(tag->value, "$name") != nullptr))
                 _staticKeySet = false;
         }
+    }
+
+            
+            // if url contains /api/v2 path, remove it.
+
+    String path = _url->path();
+    if(path.endsWith("/api/v2")){
+        path.remove(path.length() - 7);
+        _url->path(path.c_str());
     }
 
             // sort the measurements by measurement name

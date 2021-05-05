@@ -431,7 +431,6 @@ int32_t parseSemanticVersion(const char * ver){
             result += node;
         }
     }
-    Serial.printf("parse %s, %.8x\n", ver, result);
     return result;
 }
 

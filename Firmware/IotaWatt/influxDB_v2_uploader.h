@@ -16,7 +16,8 @@ class influxDB_v2_uploader : public uploader
             _token(0),
             _measurement(0),
             _fieldKey(0),
-            _staticKeySet(false)
+            _staticKeySet(false),
+            _heap(false)
         {
             _id = charstar("influxDB_v2");
         };
@@ -61,6 +62,7 @@ class influxDB_v2_uploader : public uploader
         char *_measurement;
         char *_fieldKey;
         bool _staticKeySet;
+        bool _heap;
 
         uint32_t handle_query_s();
         uint32_t handle_checkQuery_s();

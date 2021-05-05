@@ -1,9 +1,10 @@
 {
+"version":"0.0.1",
 "VT":[
 	{"model":"TDC DA-10-09-E6","cal":10.79,"phase":0.07,"p60":[0.07]},
 	{"model":"Jameco/2270815","cal":10.72,"phase":0.16,"p60":[0.16]},
   	{"model":"JW-95001-NA","mfg":"Global Village","cal":11.17,"phase":0.74,"p60":[0.74]},
-	{"model":"M9233","mfg":"PowerTran","cal":21.62,"phase":1.81,"p50":[1.81]},
+	{"model":"M 9233","mfg":"PowerTran","cal":21.62,"phase":1.81,"p50":[1.81]},
   	{"model":"DCSS AC910(Aus)","mfg":"Radio Parts","cal":20.72,"p50":[2.17]},
   	{"model":"Powertech MP-3027(Aus)","mfg":"jaycar","cal":23.18,"p50":[0.92]},
   	{"model":"Ideal 77DB-06-09(UK)","cal":20.01,"p50":[1.05]},

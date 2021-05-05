@@ -226,6 +226,24 @@ uint32_t influxDB_v1_uploader::handle_write_s(){
         reqData.printf(" %d\n", _lastPost);
     }
 
+    // Add optional heap measurement
+
+    if(_heap && heapMsPeriod != 0){
+        reqData.printf_P(PSTR("heap"));
+        if(_tagSet){
+            trace(T_influx1,66);
+            Script *script = _outputs->first();
+            influxTag* tag = _tagSet;
+            while(tag){
+                reqData.printf_P(PSTR(",%s=%s"), tag->key, varStr(tag->value, script).c_str());
+                tag = tag->next;
+            }
+        }
+        reqData.printf_P(PSTR(" value=%d %d\n"), (uint32_t)heapMs / heapMsPeriod, UTCtime());
+        heapMs = 0.0;
+        heapMsPeriod = 0;
+    }       
+
     // Initiate HTTP post.
 
     String endpoint = "/write?precision=s&db=";
@@ -301,36 +319,37 @@ void influxDB_v1_uploader::setRequestHeaders(){
 bool influxDB_v1_uploader::configCB(JsonObject& config){
     trace(T_influx1, 101);
     delete[] _database;
-    _database = charstar(config.get<char*>("database"));
+    _database = charstar(config.get<char*>(F("database")));
     delete[] _user;
-    _user = charstar(config.get<const char*>("user"));
+    _user = charstar(config.get<const char*>(F("user")));
     delete[] _pwd;
-    _pwd = charstar(config.get<char *>("pwd"));
+    _pwd = charstar(config.get<char *>(F("pwd")));
     delete _retention;
-    _retention = charstar(config.get<const char*>("retp"));
-    
+    _retention = charstar(config.get<const char*>(F("retp")));
+    _heap = config.get<bool>(F("heap"));
+
     trace(T_influx1, 101);
     delete[] _measurement;
-    _measurement = charstar(config.get<const char *>("measurement"));
+    _measurement = charstar(config.get<const char *>(F("measurement")));
     if (!_measurement)
     {
-        _measurement = charstar("$name");
+        _measurement = charstar(F("$name"));
     }
     trace(T_influx1, 102);
     delete[] _fieldKey;
-    _fieldKey = charstar(config.get<const char *>("fieldkey"));
+    _fieldKey = charstar(config.get<const char *>(F("fieldkey")));
     if (!_fieldKey)
     {
-        _fieldKey = charstar("value");
+        _fieldKey = charstar(F("value"));
     }
-    _stop = config.get<bool>("stop");
+    _stop = config.get<bool>(F("stop"));
 
     // Build tagSet
 
     trace(T_influx1, 103);
     delete _tagSet;
     _tagSet = nullptr;
-    JsonArray &tagset = config["tagset"];
+    JsonArray &tagset = config[F("tagset")];
     _staticKeySet = true;
     if (tagset.success())
     {
@@ -341,14 +360,14 @@ bool influxDB_v1_uploader::configCB(JsonObject& config){
             influxTag *tag = new influxTag;
             tag->next = _tagSet;
             _tagSet = tag;
-            tag->key = charstar(tagset[i]["key"].as<const char *>());
-            tag->value = charstar(tagset[i]["value"].as<const char *>());
+            tag->key = charstar(tagset[i][F("key")].as<const char *>());
+            tag->value = charstar(tagset[i][F("value")].as<const char *>());
             if ((strstr(tag->value, "$units") != nullptr) || (strstr(tag->value, "$name") != nullptr))
                 _staticKeySet = false;
         }
     }
-
-            // sort the measurements by measurement name
+    
+    // sort the measurements by measurement name
 
     const char *measurement = _measurement;
     _outputs->sort([this](Script* a, Script* b)->int {
