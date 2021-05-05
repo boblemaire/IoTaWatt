@@ -109,6 +109,7 @@
  *   03/10/21 02_06_00 Add HTTPSproxy, influx2, ms Scheduler, recode Script, uploader base class, more..
  *   03/18/21 02_06_01 "server" restart issue, vars in influx tags, init influx bucket
  *   03/19/21 02_06_02 More config cleanup and conversion
+ *   05/04/21 02_06_03 Auth workaround for browser issue, allow local access, auto download new tables.txt files
  * 
  *****************************************************************************************************/
 
@@ -242,10 +243,9 @@ uint8_t  ledCount;                           // Current index into cycle
 
       // ****************************** Firmware update ****************************
       
-char *updateClass = nullptr;                                   // NONE, MAJOR, MINOR, BETA, ALPHA, TEST    
+char *updateClass = nullptr;                                   // NONE, MAJOR, MINOR, BETA, ALPHA, TEST
+long tableVersion = -1;
 
-const char* updateURL = "iotawatt.com";
-const char* updatePath = "/firmware/versions.json";
 const uint8_t publicKey[32] PROGMEM = {
                         0x7b, 0x36, 0x2a, 0xc7, 0x74, 0x72, 0xdc, 0x54,
                         0xcc, 0x2c, 0xea, 0x2e, 0x88, 0x9c, 0xe0, 0xea,

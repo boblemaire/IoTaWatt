@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.   
 ***********************************************************************************/
-#define IOTAWATT_VERSION "02_06_02"
+#define IOTAWATT_VERSION "02_06_03"
 #define DEVICE_NAME "IotaWatt"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
@@ -109,6 +109,13 @@ extern messageLog Message_log;
 #define IOTA_CONFIG_PATH      "config.txt"
 #define IOTA_CONFIG_NEW_PATH  "config+1.txt"
 #define IOTA_CONFIG_OLD_PATH  "config-1.txt"
+#define IOTA_TABLE_PATH       "tables.txt"
+#define IOTA_NEW_TABLE_PATH   "table+1.txt"
+
+#define IOTA_UPDATE_HOST      "iotawatt.com"
+#define IOTA_VERSIONS_PATH    "/firmware/versions.json"
+#define IOTA_VERSIONS_DIR     "/firmware/bin/"     
+#define IOTA_TABLE_DIR        "/download/tables/"
 
 extern char* deviceName;
 
@@ -339,14 +346,14 @@ extern char     ledColor[12];                   // Pattern to display led, each 
 extern uint8_t  ledCount;                       // Current index into cycle
 
       // ****************************** Firmware update ****************************
-extern const char*    updateURL;
-extern const char*    updatePath;
+
 extern char*          updateClass;            // NONE, MAJOR, MINOR, BETA, ALPHA, TEST
 extern const uint8_t  publicKey[32];
 extern const char     hexcodes_P[];
-extern const char     base64codes_P[];  
+extern const char     base64codes_P[];
+extern long           tableVersion;
 
-      // ************************ ADC sample pairs ************************************
+// ************************ ADC sample pairs ************************************
 
 #define MAX_SAMPLES 1000
 
