@@ -57,7 +57,7 @@ With this option, you can have the best of both worlds: Unrestricted access in y
 and authorization protection from unwanted access via the internet when port forwarding is enabled. 
 
 Save
-~~~~
+~~~~ 
 Click |save|. Your changes will be saved. 
 
 The new password specifications will take effect immediately.
