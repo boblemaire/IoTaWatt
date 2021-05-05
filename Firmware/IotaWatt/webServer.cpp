@@ -140,6 +140,11 @@ bool loadFromSdCard(String path){
     return loadFromSpiffs(path.substring(11), dataType);
   }
 
+  if(path == F(IOTA_AUTH_PATH)){
+    returnFail("Protected", 403);
+    return false;
+  }
+
   File dataFile = SD.open(path.c_str());
   if(dataFile.isDirectory()){
     path += F("/index.htm");
@@ -213,14 +218,16 @@ void handleFileUpload(){
   if(upload.status == UPLOAD_FILE_START){
     if(server.uri() != "/edit") return;
     upload.filename.toLowerCase();
-    if(upload.filename.startsWith("/")){
-      upload.filename.remove(0, 1);
+    if(!upload.filename.startsWith("/")){
+      upload.filename = "/" + upload.filename;
     }
-    if( ! authenticate(authAdmin)) return;
-    if(upload.filename.equals(F(IOTA_CONFIG_PATH))){
+    Serial.println(upload.filename);
+    if(upload.filename.equals(F(IOTA_CONFIG_PATH)) ||
+       upload.filename.startsWith(F(IOTA_SYSTEM_DIR))){
       returnFail("Protected", 403);
       return;
     }
+    if( ! authenticate(authAdmin)) return;
     if(upload.filename.equals(F(IOTA_CONFIG_NEW_PATH))){
       if(server.hasHeader(F("X-configSHA256"))){
         if(server.header(F("X-configSHA256")) != base64encode(configSHA256, 32)){
@@ -316,9 +323,12 @@ void handleDelete(){
     returnFail("BAD PATH", 400);
     return;
   }
-  if(path == F("/config.txt") ||
-     path.equals(IOTA_CURRENT_LOG_PATH) ||
-     path.equals(IOTA_HISTORY_LOG_PATH)){
+
+  if(path == F(IOTA_CONFIG_PATH) || 
+     path == (F(IOTA_CURRENT_LOG_PATH)) ||
+     path == (F(IOTA_HISTORY_LOG_PATH)) ||
+     path == (F(IOTA_AUTH_PATH)))
+  {
     returnFail("Restricted File", 403);
     return;
   }
