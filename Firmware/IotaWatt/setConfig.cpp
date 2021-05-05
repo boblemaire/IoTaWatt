@@ -683,7 +683,7 @@ bool configMasterPhaseArray(){
 
   trace(T_CONFIG, 20, 2);
   File tableFile;
-  String tableFileURL = "tables.txt";
+  String tableFileURL = IOTA_TABLE_PATH;
   tableFile = SD.open(tableFileURL, FILE_READ);
   if(!tableFile) return false;
 
