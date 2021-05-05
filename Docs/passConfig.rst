@@ -2,7 +2,7 @@ Passwords Configuration
 =======================
 The initial configuration has no access restrictions for reading or modifying device data or configurations.
 If the device is exposed to the internet, then it can be read and modified from the internet without additional protections.
-If untrusted actors can join your local network (WiFi, LAN) then they can read and modify without additional protections.
+If untrusted actors can join your local network (WiFi LAN) then they can read and modify without additional protections.
 
 If your LAN isn't secure, or you intend to provide access from the internet via port-forwarding, you should 
 require authorization.  IoTaWatt supports two levels of authorization using the relatively secure 
@@ -13,14 +13,14 @@ Administrative Authorization
 ----------------------------
 To enable authorization, specify an *admin* password. 
 Once enabled, all configuration and access, except for User level access described below, will require the password. 
-The username will be **admin**
+The username is **admin**
 Be sure to carefully note the password that you set, as IoTaWatt does not store the actual value and it cannot be recovered. 
 There is a procedure to remove the Admin password, but it involves physically removing the SDcard.
 
 User Authorization
 ------------------
 The optional *user* password is effectively a read only password for use by apps that visualize data. 
-The username will be **user**. Sessions authorized as user 
+The username is **user**. Sessions authorized as user 
 do not allow access to the configuration or SD file system, except for a special /user/ directory
 
 Unrestricted LAN access
