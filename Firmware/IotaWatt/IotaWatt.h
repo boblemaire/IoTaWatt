@@ -102,15 +102,17 @@ extern messageLog Message_log;
 
       // Declare filename Strings of system files.
 
-#define IOTA_EXPORT_LOG_PATH  "iotawatt/export.log"
-#define IOTA_CURRENT_LOG_PATH "iotawatt/iotalog.log"
-#define IOTA_HISTORY_LOG_PATH "iotawatt/histlog.log"
-#define IOTA_MESSAGE_LOG_PATH "iotawatt/iotamsgs.txt"
-#define IOTA_CONFIG_PATH      "config.txt"
-#define IOTA_CONFIG_NEW_PATH  "config+1.txt"
-#define IOTA_CONFIG_OLD_PATH  "config-1.txt"
-#define IOTA_TABLE_PATH       "tables.txt"
-#define IOTA_NEW_TABLE_PATH   "table+1.txt"
+#define IOTA_SYSTEM_DIR       "/iotawatt/"      
+#define IOTA_EXPORT_LOG_PATH  "/iotawatt/export.log"
+#define IOTA_CURRENT_LOG_PATH "/iotawatt/iotalog.log"
+#define IOTA_HISTORY_LOG_PATH "/iotawatt/histlog.log"
+#define IOTA_MESSAGE_LOG_PATH "/iotawatt/iotamsgs.txt"
+#define IOTA_AUTH_PATH        "/iotawatt/auth.txt"
+#define IOTA_CONFIG_PATH      "/config.txt"
+#define IOTA_CONFIG_NEW_PATH  "/config+1.txt"
+#define IOTA_CONFIG_OLD_PATH  "/config-1.txt"
+#define IOTA_TABLE_PATH       "/tables.txt"
+#define IOTA_NEW_TABLE_PATH   "/table+1.txt"
 
 #define IOTA_UPDATE_HOST      "iotawatt.com"
 #define IOTA_VERSIONS_PATH    "/firmware/versions.json"
