@@ -2,14 +2,6 @@
 #include "splitstr.h"
 
 /*****************************************************************************************
- *          queryLast() // Use this to initiate the last sent query.
- * **************************************************************************************/
-void influxDB_v1_uploader::queryLast(){
-    _script = _outputs->first();
-    _state = query_s;
-}
-
-/*****************************************************************************************
  *          handle_query_s()
  * **************************************************************************************/
 uint32_t influxDB_v1_uploader::handle_query_s(){
@@ -59,19 +51,16 @@ uint32_t influxDB_v1_uploader::handle_checkQuery_s(){
         if(HTTPcode < 0){
             trace(T_influx1,32);
             sprintf_P(message, PSTR("Query failed, code %d"), HTTPcode);
-            queryLast();
         }
         else {
             trace(T_influx1,33);
             sprintf_P(message, PSTR("Query failed, code %d, response: %.50"), HTTPcode, _request->responseText().c_str());
-            stop();
         }
         trace(T_influx1,31);
         _statusMessage = charstar(message);
-        if(_stop){
-            stop();
-        }
-        return 1;
+        _script = nullptr;
+        delay(5, query_s);
+        return 15;
     }
 
         // Json parse the response to get the columns and values arrays

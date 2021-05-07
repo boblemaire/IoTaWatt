@@ -19,6 +19,8 @@ uint32_t emoncms_uploader::handle_checkQuery_s(){
     trace(T_Emoncms,30);
     if(_request->responseHTTPcode() != 200){
         log("%s: Query failed %d", _id, _request->responseHTTPcode());
+        delay(5, query_s);
+        return 15;
     }
     String response = _request->responseText();
     if (response.startsWith("\"Node does not exist\"")){
