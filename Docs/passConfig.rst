@@ -30,11 +30,18 @@ This is defined as requests that come from an IP that is not the gateway IP.
 With this option, you can have the best of both worlds: Unrestricted access in your home or on your VLAN, 
 and authorization protection from unwanted access via the internet when port forwarding is enabled. 
 
-Save
-~~~~ 
-Click |save|. Your changes will be saved. 
+Setting and changing passwords
+------------------------------
+Hover over |Setup| and select |Passwords|. Specify a new **admin** password and optionally a **user** password.
+Check the "Unrestricted LAN access" if so desired. Click |save|. 
+Your changes will be saved. 
 
 The new password specifications will take effect immediately.
+
+.. image:: pics/passConfig/configPasswords.png
+    :scale: 60 %
+    :align: center
+    :alt: Passwords setup display
 
 .. |Setup| image:: pics/SetupButton.png
     :scale: 60 %
