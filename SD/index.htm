@@ -951,6 +951,9 @@ function refreshInputEdit(){
     for(i in tables.VT){
       option = document.createElement("option");
       option.text = tables.VT[i].model;
+      if(tables.VT[i].mfg !== undefined){
+        option.title = tables.VT[i].mfg;
+      }
       inputModel.add(option);
       if(inputEditObject.model == option.text){
         option.selected = true;
