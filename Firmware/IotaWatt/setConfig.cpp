@@ -561,6 +561,10 @@ bool configInputs(const char* JsonStr){
       else {
         inputChannel[i]->_vmult = 1.0;
       }
+      if(inputChannel[i]->_double){
+        inputChannel[i]->_vmult *= 2.0;
+      }
+      
     }
     else {
       inputChannel[i]->reset();
