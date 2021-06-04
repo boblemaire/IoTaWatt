@@ -29,9 +29,9 @@
 			"channel": 0,
 			"name": "Input_0",
 			"type": "VT",
-			"model": "Jameco/2270815",
-			"cal": 10.72,
-			"phase": 0.16
+			"model": "JW-95001-NA",
+			"cal": 11.17,
+			"phase": 0.74
 		},
 		null,
 		null,
