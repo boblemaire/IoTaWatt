@@ -30,7 +30,7 @@
 			"name": "Input_0",
 			"type": "VT",
 			"model": "JW-95001-NA",
-			"cal": 11.17,
+			"cal": 11.14,
 			"phase": 0.74
 		},
 		null,
