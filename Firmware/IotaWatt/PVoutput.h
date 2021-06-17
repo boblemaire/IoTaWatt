@@ -88,6 +88,8 @@ public:
         ,_POSTrequest(nullptr)
         ,_statusMessage(nullptr)
         ,_rateLimitReset(0)
+        ,_errorCode(0)
+        ,_errorCount(0)
         ,_baseTime(0)
         {};
 
@@ -200,6 +202,8 @@ private:
     int32_t     _rateLimitRemaining;
     uint32_t    _rateLimitReset;            // UTC time when rate limit will be reset
 
+    int         _errorCode;                 // last HTTP error code
+    int         _errorCount;                // Count of repeated HTTP errors
     int         _reqEntries;                // Output or status entries in reqData
     double      _baseConsumption;           // Energy consumption at start of current reporting day
     double      _baseGeneration;            // Energy generation at start of current reporting day
