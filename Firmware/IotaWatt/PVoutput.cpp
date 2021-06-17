@@ -456,30 +456,39 @@ uint32_t PVoutput::tickCheckUploadStatus(){
             _state = getSystemService;
             return UTCtime() + 3600;
         }
+
         case DATE_TOO_OLD:
         case DATE_IN_FUTURE:
-        case OK: {
+        case OK: 
             trace(T_PVoutput,91);
             _lastPostTime = _lastReqTime;   
             _state = uploadStatus;
-            return 15;
-            }
-        case LOAD_IN_PROGRESS:
+            return 1;
+        
+        case LOAD_IN_PROGRESS: 
             delete[] _statusMessage;
             _statusMessage = charstar(F("Load in progress?"));
-            break;
-        case HTTP_FAILURE: { // retry 
+            _state = uploadStatus;
+            return UTCtime() + 15; 
+        
+        case HTTP_FAILURE:   
             trace(T_PVoutput,92);
-            delete[] _statusMessage;
-            _statusMessage = charstar(F("HTTP completion, upload "), String(request->responseHTTPcode()).c_str());
-            log("%s: %s", _id, _statusMessage);           
-        }
-        case RATE_LIMIT:
-            _lastReqTime = _lastPostTime;
-            _state = uploadStatus; 
-        return 15;
+            if(request->responseHTTPcode() == _errorCode){
+                if(++_errorCount == 10){
+                    log("%s: %s", _id, _statusMessage);
+                }
+            }
+            else {
+                _errorCode = request->responseHTTPcode();
+                delete[] _statusMessage;
+                _statusMessage = charstar(F("HTTP completion, upload "), String(_errorCode).c_str());
+                _errorCount = 0;
+            }
+            _state = uploadStatus;
+            return UTCtime() + 15;
+
     }
-    }
+}
 
 //********************************************************************************************************************
 //
@@ -605,6 +614,10 @@ uint32_t PVoutput::handle_HTTPwait_s(){
         _HTTPresponse = HTTP_FAILURE;
         return UTCtime() + 3;
     }
+    _errorCode = 0;
+    _errorCount = 0;
+    delete[] _statusMessage;
+    _statusMessage = nullptr;
     trace(T_PVoutput,122);
 
             // Capture response.
@@ -619,13 +632,10 @@ uint32_t PVoutput::handle_HTTPwait_s(){
     if(request->responseHTTPcode() == 200){
         trace(T_PVoutput,122);
         _HTTPresponse = OK;
-        delete[] _statusMessage;
-        _statusMessage = nullptr;
         return 1;
     }
     
     if(request->responseHTTPcode() == 403 && response->contains(F("Exceeded")) && response->contains(F("requests per hour"))){
-        delete[] _statusMessage;
         _statusMessage = charstar(F("Transaction Rate-Limit exceeded.  Resume at "), datef(UTC2Local(_rateLimitReset), "hh:mm").c_str());
         log("%s: %s", _id, _statusMessage);
         trace(T_PVoutput,123);
