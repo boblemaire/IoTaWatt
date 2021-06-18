@@ -110,6 +110,7 @@
  *   03/18/21 02_06_01 "server" restart issue, vars in influx tags, init influx bucket
  *   03/19/21 02_06_02 More config cleanup and conversion
  *   05/04/21 02_06_03 Auth workaround for browser issue, allow local access, auto download new tables.txt files
+ *   06/17/21 02_06_04 Fix query amps when doubled, suppress recovered pvouput http errors
  * 
  *****************************************************************************************************/
 
