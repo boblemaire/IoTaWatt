@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- version 0.6.0 -->
+<!-- version 0.6.1 -->
 <html lang="en-US">
 <head>
 <meta charset="utf-8">
@@ -656,7 +656,7 @@ function pwdValid(){
   newPwd.pattern = "^[A-Za-z0-9_!%@#]{0,16}";
   newPwd.title = "1-16 characters, blank to reset";
   newPwd.setAttribute("oninput","pwdCheck();");
-  localAccess = addTableRow(pwdTable, "Unrestrictred LAN access", "localAccess", "input");
+  localAccess = addTableRow(pwdTable, "Unrestricted LAN access", "localAccess", "input");
   localAccess.setAttribute("type","checkbox");
   localAccess.title = "No passwords needed from LAN.";
   pwdCheck();
