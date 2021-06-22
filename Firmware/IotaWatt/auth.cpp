@@ -17,7 +17,10 @@ bool auth(authLevel level){
 
         // If no passwords or authorization not required, return true
 
-  if(localAccess && (gatewayIP != server.client().remoteIP())){
+  uint32_t remoteIP = server.client().remoteIP();
+  uint32_t localSubnet = subnetMask & localIP;
+  uint32_t remoteSubnet = subnetMask & remoteIP;
+  if(localAccess && (localSubnet == remoteSubnet)){
     return true;
   }
 

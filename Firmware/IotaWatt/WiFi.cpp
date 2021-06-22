@@ -24,7 +24,7 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
       localIP = WiFi.localIP();
       gatewayIP = WiFi.gatewayIP();
       subnetMask = WiFi.subnetMask();
-      log("WiFi connected. SSID=%s, IP=%s, channel=%d, RSSI %ddb", WiFi.SSID().c_str(), localIP.toString().c_str(), WiFi.channel(), WiFi.RSSI());
+      log("WiFi connected. SSID=%s, IP=%s, channel=%d, RSSI %ddb", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.channel(), WiFi.RSSI());
     }
     if( ! mDNSstarted){
       if (MDNS.begin(deviceName)) {
