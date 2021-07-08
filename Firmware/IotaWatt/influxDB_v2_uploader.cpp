@@ -269,7 +269,12 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
         reqData.printf_P(PSTR(" value=%d %d\n"), (uint32_t)heapMs / heapMsPeriod, UTCtime());
         heapMs = 0.0;
         heapMsPeriod = 0;
-    }       
+    }  
+
+    delete oldRecord;
+    oldRecord = nullptr;
+    delete newRecord;
+    newRecord = nullptr;     
 
     // Initiate HTTP post.
 

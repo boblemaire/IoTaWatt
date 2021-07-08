@@ -233,6 +233,11 @@ uint32_t influxDB_v1_uploader::handle_write_s(){
         heapMsPeriod = 0;
     }       
 
+    delete oldRecord;
+    oldRecord = nullptr;
+    delete newRecord;
+    newRecord = nullptr; 
+
     // Initiate HTTP post.
 
     String endpoint = "/write?precision=s&db=";
@@ -272,7 +277,7 @@ uint32_t influxDB_v1_uploader::handle_checkWrite_s(){
     delete[] _statusMessage;
     _statusMessage = charstar(msg);
     delete _request;
-    _request = nullptr; 
+    _request = nullptr;
     _state = write_s;
     return UTCtime() + 10;
 }
