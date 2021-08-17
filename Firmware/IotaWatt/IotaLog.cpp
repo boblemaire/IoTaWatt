@@ -291,7 +291,9 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 				_entries++;
 		}
 		IotaFile.write((char*)callerRecord, _recordSize);
-		IotaFile.flush();
+		if(! _wrap){
+			IotaFile.flush();
+		}
 	}
 	_lastKey = callerRecord->UNIXtime;
 	_lastSerial = callerRecord->serial;
@@ -306,7 +308,6 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 			callerRecord->UNIXtime = _lastKey;
 			callerRecord->serial = _lastSerial;
 	}
-	
 	return 0;
 }
 
