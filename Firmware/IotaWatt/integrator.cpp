@@ -100,10 +100,6 @@ uint32_t integrator::handle_initialize_s(){
         log("%s: Integrating from History Log", _id);
     }
 
-    if((Current_log.lastKey() - _intRec.UNIXtime) > 5760){
-        _log->writeCache(true);
-    }
-
     _state = integrate_s;
     return 1;
 }
@@ -177,7 +173,6 @@ uint32_t integrator::handle_integrate_s(){
     _oldRec = nullptr;
     delete _newRec;
     _newRec = nullptr;
-    _log->writeCache(false);
     return UTCtime() + 1;
 }
 

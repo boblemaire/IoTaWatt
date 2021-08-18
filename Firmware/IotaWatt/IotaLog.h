@@ -9,6 +9,7 @@
 #include "SD.h"
 
 #define IOTALOG_BLOCK_SIZE 512
+#define IOTALOG_PREFORMAT_RECORDS 24
 
 /*******************************************************************************************************
 ********************************************************************************************************
@@ -48,6 +49,7 @@ class IotaLog
 		,_interval(interval)
 		,_recordSize(recordSize)
     ,_fileSize(0)
+    ,_physicalSize(0)
 		,_lastReadKey(0)
 		,_lastReadSerial(0)
 		,_readKeyIO(0)
@@ -59,9 +61,6 @@ class IotaLog
     ,_entries(0)
     ,_cacheSize(10)
     ,_cacheWrap(0)
-    ,_writeCacheBuf(0)
-    ,_writeCachePos(-IOTALOG_BLOCK_SIZE)
-    ,_writeCache(false)
     {
     _cacheKey = new uint32_t[_cacheSize];
     _cacheSerial = new int32_t[_cacheSize];
@@ -80,7 +79,6 @@ class IotaLog
     int readKey (IotaLogRecord* /* pointer to caller's buffer */);
     int readSerial(IotaLogRecord* callerRecord, int32_t serial); 
     int readNext(IotaLogRecord* /* pointer to caller's buffer */);
-    void writeCache(bool on);
     int end();
     
     boolean  isOpen();
@@ -102,7 +100,8 @@ class IotaLog
     char*    _path;                         // file pathname
     uint16_t _interval;	                    // Posting interval to log. Currently tested only using 5.
     uint16_t _recordSize;      	  		      // Size of a log record
-    uint32_t _fileSize;                     // Size of file in bytes
+    uint32_t _fileSize;                     // Logical file size in bytes
+    uint32_t _physicalSize;                 // Physical file size in bytes
     uint32_t _entries;                      // Number of entries (fileSize / recsize(256))
     uint32_t _maxFileSize;				        	// Maximum filesize in bytes
     uint32_t _firstKey;                     // Key of first logical record
@@ -119,10 +118,6 @@ class IotaLog
     uint32_t _lastReadKey;           	    // Key of last record read with readKey
     int32_t  _lastReadSerial;         	    // Serial of last...
     uint32_t _readKeyIO;              	    // Running count of I/Os for keyed reads
-
-    uint8_t *_writeCacheBuf;
-    uint32_t _writeCachePos;
-    bool     _writeCache;
 
     uint32_t  findWrap(uint32_t highPos, uint32_t highKey, uint32_t lowPos, uint32_t lowKey);
     void      searchKey(IotaLogRecord* callerRecord, const uint32_t key,
