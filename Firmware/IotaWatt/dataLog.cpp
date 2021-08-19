@@ -192,7 +192,7 @@ void dataLogWDT(){
  * appropriate log:
  * 
  * Current_log:
- * relatively recent data spanning the past 12-15 months.
+ * relatively recent data spanning the past 12 months.
  * small interval (5 seconds).
  * potentially slower access because it can have holes neccessitating searching.
  * 
@@ -202,41 +202,35 @@ void dataLogWDT(){
  * Look ma - no holes!  direct access w/o searching.
  * 
  * This function will decide the most appropriate log to retrieve the requested 
- * record from based on these principles.
- * 
- * If the key is a multiple of the history log interval, and is contained in
- * the history log, use the history log.
- * 
- * If the key is not a multiple of the history log interval and contained in
- * the Current_log, use the Current_log.
- * 
- * If the key is not a multiple of the history log, but not contained in the 
- * Current_log, use the history log.
- * 
- * if the key is between the end of the history log and the start of the Current_log,
- * return the last record in the history log with requested key.
- * 
+ * record.
+ *  
  * ***************************************************************************/
 
 uint32_t logReadKey(IotaLogRecord* callerRecord) {
   uint32_t key = callerRecord->UNIXtime;
+
+      // If history not open, 
+      // use current
+
   if( ! History_log.isOpen()){
     return Current_log.readKey(callerRecord);
   }
-  if(key % History_log.interval()){               // not multiple of History_log interval
-    if(key >= Current_log.firstKey() || key < History_log.firstKey()){   // in iotaLog
-      return Current_log.readKey(callerRecord);
-    }
-    return History_log.readKey(callerRecord);     // in History_log
+
+      // If before current log, 
+      // use history
+
+  if(key < Current_log.firstKey()){
+    return History_log.readKey(callerRecord);
   }
-  else {                                      // multiple of History_log interval
-    if(key >= History_log.firstKey() && key <= History_log.lastKey()){   // in History_log
-      return History_log.readKey(callerRecord);
-    }
-    return Current_log.readKey(callerRecord);     // in IotaLog
+
+      // If not multiple of history interval,
+      // use current
+
+  if(key % History_log.interval()){
+    return Current_log.readKey(callerRecord);
   }
-  callerRecord->UNIXtime = History_log.lastKey(); // between the two logs (rare)
-  History_log.readKey(callerRecord);
-  callerRecord->UNIXtime = key;
-  return 0;
+
+      // Use history
+
+  return History_log.readKey(callerRecord);
 }
