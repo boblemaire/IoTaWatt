@@ -25,7 +25,7 @@ where you can get help with anything and everything.
 influxDB versions 1.x and 2.x
 -----------------------------
 
-With the introduction of  nfluxDB 2.0
+With the introduction of  InfluxDB 2.0
 the basic measurement scheme remains the same, but there are significant changes:
 
 - Authentication is changed from the basic userID/password of 1.x to 
