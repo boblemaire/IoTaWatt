@@ -34,32 +34,33 @@ uint32_t influxDB_v2_uploader::handle_query_s(){
     // Build a flux query to find last record in set of measurements.
     
     reqData.flush();
-    reqData.printf_P(PSTR("from(bucket: \"%s\")\n  |> range(start: %d, stop: %d)\n  |> "), _bucket, rangeBegin, rangeStop);
-    reqData.print(F("filter(fn: (r) => "));
-    trace(T_influx2,20);
-    if(_tagSet){
-        trace(T_influx2,21);    
-        influxTag* tag = _tagSet;
-        while(tag){
-            String tagValue = tag->value;
-            if( ! (strstr(tag->value,"$name") || strstr(tag->value,"$units"))){
-                reqData.printf_P(PSTR("r[\"%s\"] == \"%s\" and "), tag->key, tag->value);
-            }
-            tag = tag->next;
-        }
-    }
-    String prefix = "(";
+    reqData.printf_P(PSTR("from(bucket: \"%s\")\n"), _bucket);
+    reqData.printf_P(PSTR("  |> range(start: %d, stop: %d)\n"), rangeBegin, rangeStop);
+    reqData.printf_P(PSTR("  |> filter(fn: (r) =>"));
+    
+        // add each measurement
+
+    String connectOr("");
     Script *script = _outputs->first();
     trace(T_influx2,20);
     while(script)
     {
         trace(T_influx2,21);
-        reqData.printf_P(PSTR("%sr[\"_measurement\"] == \"%s\""), prefix.c_str(), varStr(_measurement, script).c_str());
-        prefix = " or ";
+        reqData.printf_P(PSTR("%s\n    (r[\"_measurement\"] == \"%s\""), connectOr.c_str(), varStr(_measurement, script).c_str());
+        if(_tagSet){
+            trace(T_influx2, 22);
+            influxTag* tag = _tagSet;
+            while(tag){
+                reqData.printf_P(PSTR(" and r[\"%s\"] == \"%s\""), tag->key, varStr(tag->value, script).c_str());
+                tag = tag->next;
+            }
+            reqData.printf_P(PSTR(" and r[\"_field\"] == \"%s\")"), varStr(_fieldKey, script).c_str());
+        }
+        connectOr = " or";
         script = script->next();
     }
     trace(T_influx2,20);
-    reqData.print(F("))\n  |> last()\n  |> map(fn: (r) => ({_measurement: r._measurement, _time: (uint(v:r._time)) / uint(v:1000000000)}))\n"));
+    reqData.print(F(")\n  |> last()\n  |> map(fn: (r) => ({_measurement: r._measurement, _time: (uint(v:r._time)) / uint(v:1000000000)}))\n"));
     reqData.print(F("  |> sort (columns: [\"_time\"], desc: true)\n"));
 
     // Initiate the HTTP request.
@@ -90,7 +91,7 @@ uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
     if(_request->responseHTTPcode() != 200){
         trace(T_influx2,31);
         delete[] _statusMessage;
-        _statusMessage = charstar(F("Last sent query failed. HTTPcode %d"), String(_request->responseHTTPcode()).c_str());
+        _statusMessage = charstar(F("Last sent query failed. HTTPcode "), String(_request->responseHTTPcode()).c_str());
         Serial.println(_request->responseText());
         _lookbackHours = 0;
         delay(60, query_s);
@@ -140,9 +141,9 @@ uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
         }
     }
     delete _statusMessage;
-    _statusMessage = charstar("Last sent query invalid response stopping");
-    _stop = true;
-    stop();
+    _statusMessage = charstar("Last sent query invalid, delay and retry.");
+    _lookbackHours = 0;
+    delay(600, query_s);
     return 1;
 }
 
