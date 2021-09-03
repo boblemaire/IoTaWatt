@@ -151,10 +151,12 @@ Unique Version 2 Parameters
 
 **organization ID**
     The 16 hex-digit organization identifier obtained from influx.
-    Roughly equivalent to a user ID.
+    Roughly equivalent to a user ID. Obtained from observing the URL
+    when browsing InfluxDB GUI ( http://server-name:port/orgs/<16 hex-digits>/... )
 
 **Authorization token**
-    Authorization token produced by influx.  This is an 88 character base64 string that should be
+    Authorization token produced by influx. (Data->Tokens->Generate Token-> Read/Write Token for IotaWatt bucket)
+    This is an 88 character base64 string that should be
     copied and pasted to avoid transcription errors.  The token is the shared secret that
     authorizes access to the bucket.
 
