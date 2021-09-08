@@ -188,16 +188,35 @@ double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units
     if(elapsedHours == 0){
         return 0;
     }
-    intRecord oldInt = {UNIXtime : oldRecord->UNIXtime};
-    intRecord newInt = {UNIXtime : newRecord->UNIXtime};
     trace(T_integrator, 1);
-    int rtc = _log->readKey((IotaLogRecord*)&oldInt);
-    trace(T_integrator, 2, rtc);
-    rtc = _log->readKey((IotaLogRecord*)&newInt);
-    trace(T_integrator, 3, rtc);
-    double value = newInt.sumPositive - oldInt.sumPositive;
+
+        // See if we already have either record (very likely).
+        // If so, move to correct position.
+
+    if(oldRecord->UNIXtime == newInt->UNIXtime || newRecord->UNIXtime == oldInt->UNIXtime){
+        trace(T_integrator, 1);
+        intRecord *swap = oldInt;
+        oldInt = newInt;
+        newInt = swap;
+    }
+
+        // Now read if necessary.
+
+    if(oldRecord->UNIXtime != oldInt->UNIXtime){
+        oldInt->UNIXtime = oldRecord->UNIXtime;
+        int rtc = _log->readKey((IotaLogRecord*)oldInt);
+        trace(T_integrator, 2, rtc);
+    }
+
+    if(newRecord->UNIXtime != newInt->UNIXtime){
+        newInt->UNIXtime = newRecord->UNIXtime;
+        int rtc = _log->readKey((IotaLogRecord*)newInt);
+        trace(T_integrator, 2, rtc);
+    }
+
+    double value = newInt->sumPositive - oldInt->sumPositive;
     if(Units == Watts){
-        trace(T_integrator, 4, rtc);
+        trace(T_integrator, 4);
         return value / elapsedHours;
     }
     return value;

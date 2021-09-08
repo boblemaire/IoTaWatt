@@ -505,7 +505,7 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
         break;
       }
 
-      // Request requires the inbtegration log.
+      // Request requires the integration log.
       // If out of the bounds of the log,
       // Use the Net
 

@@ -47,7 +47,12 @@ class integrator {
             uint32_t UNIXtime;          // Time period represented by this record
             int32_t serial;             // record number in file
             double sumPositive;         // Sum of positive intervals (import)
+            intRecord() : UNIXtime(0), serial(0), sumPositive(0){}; 
         } _intRec;
+
+        intRecord _cache1, _cache2;
+        intRecord *oldInt = &_cache1;
+        intRecord *newInt = &_cache2;
 
         enum states {
             initialize_s,
