@@ -120,8 +120,8 @@
 WiFiClient WifiClient;
 DNSServer DNS_server;
 MDNSResponder MDNS;    
-IotaLog Current_log(256,5,365);                 // current data log  (1 year) 
-IotaLog History_log(256,60,3652);               // history data log  (10 years)
+IotaLog Current_log(256,5,365,32);              // current data log  (1 year) 
+IotaLog History_log(256,60,3652,48);            // history data log  (10 years)
 IotaLog *Export_log = nullptr;                  // Optional export log    
 RTC_PCF8523 rtc;                                // Instance of RTC_PCF8523
 Ticker Led_timer;
@@ -160,6 +160,7 @@ IotaInputChannel* *inputChannel = nullptr; // -->s to incidences of input channe
 uint8_t     maxInputs = 0;                // channel limit based on configured hardware (set in Config)
 int16_t    *masterPhaseArray = nullptr;   // Single array containing all individual phase shift arrays          
 ScriptSet  *outputs = new ScriptSet();    // -> ScriptSet for output channels
+ScriptSet  *integrations = new ScriptSet(); // -> Scriptset for integrations
 
 uint8_t     deviceMajorVersion = 4;       // Default to 4.8
 uint8_t     deviceMinorVersion = 8;                 
@@ -180,7 +181,7 @@ float    heapMs = 0;                      // heap size * milliseconds for weight
 uint32_t heapMsPeriod = 0;                // total ms measured above.
 IotaLogRecord statRecord;                 // Maintained by statService with real-time values
 
-      // ****************************** SDWebServer stuff ****************************
+// ****************************** SDWebServer stuff ****************************
 
 #define DBG_OUTPUT_PORT Serial
 ESP8266WebServer server(80);

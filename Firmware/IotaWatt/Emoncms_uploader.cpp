@@ -152,7 +152,7 @@ uint32_t emoncms_uploader::handle_write_s(){
             int index=1;
             while(script){
                 while(index++ < String(script->name()).toInt()) reqData.write(",null");
-                double value1 = script->run(oldRecord, newRecord, elapsedHours);
+                double value1 = script->run(oldRecord, newRecord);
                 if(value1 == value1){
                     if(script->precision()){
                         char valstr[20];

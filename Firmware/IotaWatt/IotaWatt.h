@@ -113,7 +113,7 @@ extern messageLog Message_log;
 #define IOTA_CONFIG_OLD_PATH  "/config-1.txt"
 #define IOTA_TABLE_PATH       "/tables.txt"
 #define IOTA_NEW_TABLE_PATH   "/table+1.txt"
-
+#define IOTA_INTEGRATIONS_DIR "/iotawatt/integrations/"
 #define IOTA_UPDATE_HOST      "iotawatt.com"
 #define IOTA_VERSIONS_PATH    "/firmware/versions.json"
 #define IOTA_VERSIONS_DIR     "/firmware/bin/"     
@@ -281,11 +281,12 @@ extern float   heapMs;
 extern uint32_t heapMsPeriod;
 extern IotaLogRecord statRecord;
 
-      // ****************************** list of output channels **********************
+      // ************* lists of output channels, integrations and integrators **************
 
 extern ScriptSet *outputs;
+extern ScriptSet *integrations;
 
-      // ****************************** SDWebServer stuff ****************************
+// ****************************** SDWebServer stuff ****************************
 
 #define DBG_OUTPUT_PORT Serial
 extern bool     hasSD;
@@ -405,5 +406,7 @@ uint32_t  HTTPreserve(uint16_t id, bool lock = false);
 void      HTTPrelease(uint32_t HTTPtoken);
 
 void      getSamples();
+double    simSolarPower(uint32_t);
+double    simSolarEnergy(uint32_t, uint32_t);
 
 #endif

@@ -287,8 +287,8 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 		IotaLogRecord formatRecord;
 		IotaFile.write((char*)callerRecord, _recordSize);
 		_physicalSize += _recordSize;
-		int count = 0;
-		while(++count < IOTALOG_PREFORMAT_RECORDS && _physicalSize < _maxFileSize){
+		int count = _preformat;
+		while(count-- && _physicalSize < _maxFileSize){
 			IotaFile.write((char*)&formatRecord, _recordSize);
 			_physicalSize += _recordSize;
 		}

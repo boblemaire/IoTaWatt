@@ -137,7 +137,22 @@ boolean setConfig(const char* configPath){
   trace(T_CONFIG,20);
   configMasterPhaseArray();
 
-  // ************************************ configure output channels *************************
+  // ************************************ configure integrations *************************
+
+  {      
+    trace(T_CONFIG,25);
+    JsonArray& integrationsArray = Config[F("integrations")];
+    char* integrationsStr;
+    if(integrationsArray.success()){
+      integrationsStr = JsonDetail(ConfigFile, integrationsArray);
+    } else {
+      integrationsStr = charstar("[]");
+    }
+    configIntegrations(integrationsStr);
+    delete[] integrationsStr;
+  }
+
+  // ************************************ configure outputs *******************************
 
   {      
     trace(T_CONFIG,25);
@@ -572,6 +587,67 @@ bool configInputs(const char* JsonStr){
   }
   return true;
 }
+
+//********************************** configIntegrations ***********************************************
+
+bool configIntegrations(const char* JsonStr){
+
+      // Create new ScriptSet from Json config
+
+  DynamicJsonBuffer Json;
+  JsonArray& integrationsArray = Json.parseArray(JsonStr);
+  if( ! integrationsArray.success()){
+    log("integrations: Json parse failed");
+    return false;
+  }
+  ScriptSet* newIntegrations = new ScriptSet(integrationsArray);
+
+      // Move integrators for enduring integrations
+
+  Script *newScript = newIntegrations->first();
+  while(newScript){
+    Script *oldScript = integrations->first();
+    while(oldScript){
+      if(strcmp(newScript->name(), oldScript->name()) == 0){
+        newScript->setParm(oldScript->getParm());
+        oldScript->setParm(nullptr);
+        break;
+      }
+      oldScript = oldScript->next();
+    }
+    newScript = newScript->next();
+  }
+
+      // Remove integrators from abandoned integrations
+
+  Script *oldScript = integrations->first();
+  while(oldScript){
+    if(oldScript->getParm()){
+      ((integrator*)oldScript->getParm())->end();
+      oldScript->setParm(nullptr);
+    }
+    oldScript = oldScript->next();
+  }
+
+        // Create integrators for new integratioons and call config for all.
+
+  newScript = newIntegrations->first();
+  while(newScript){
+    integrator *newIntegrator = (integrator *)newScript->getParm();
+    if(! newIntegrator){
+      newIntegrator = new integrator();
+      newScript->setParm((void*)newIntegrator);
+    }
+    if(! newIntegrator->config(newScript)){
+      log("integrator: config failed %s", newScript->name());
+    }
+    newScript = newScript->next();
+  }
+
+  delete integrations;
+  integrations = newIntegrations;
+  return true;
+} 
 
 //********************************** configOutputs ***********************************************
 

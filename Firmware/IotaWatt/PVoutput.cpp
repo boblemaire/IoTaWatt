@@ -285,10 +285,10 @@ uint32_t PVoutput::tickUploadStatus(){
         Script* script = _outputs->first();
         while(script){
             if(strcmp(script->name(),"generation") == 0){
-                _baseGeneration = script->run(nullptr, oldRecord, 1.0, Wh);
+                _baseGeneration = script->run(nullptr, oldRecord, Wh);
             }
             else if(strcmp(script->name(),"consumption") == 0){
-                _baseConsumption = script->run(nullptr, oldRecord, 1.0, Wh);
+                _baseConsumption = script->run(nullptr, oldRecord, Wh);
             }
             script = script->next();
         }
@@ -388,15 +388,15 @@ uint32_t PVoutput::tickUploadStatus(){
     trace(T_PVoutput,88);
     while(script){
         if(strcmp(script->name(),"generation") == 0){
-            energyGeneration = script->run(nullptr, newRecord, 1.0, Wh) - _baseGeneration;
-            powerGeneration = script->run(oldRecord, newRecord, elapsedHours, Watts);
+            energyGeneration = script->run(nullptr, newRecord, Wh) - _baseGeneration;
+            powerGeneration = script->run(oldRecord, newRecord, Watts);
         }
         else if(strcmp(script->name(),"consumption") == 0){
-            energyConsumption = script->run(nullptr, newRecord, 1.0, Wh) - _baseConsumption;
-            powerConsumption = script->run(oldRecord, newRecord, elapsedHours, Watts);  
+            energyConsumption = script->run(nullptr, newRecord, Wh) - _baseConsumption;
+            powerConsumption = script->run(oldRecord, newRecord, Watts);  
         }
         else if(strcmp(script->name(),"voltage") == 0){
-            voltage = script->run(oldRecord, newRecord, elapsedHours, Volts);    
+            voltage = script->run(oldRecord, newRecord, Volts);    
         }
         else if(strstr(script->name(),"extended_") == script->name()){
             long ndx = strtol(script->name()+9,nullptr,10) - 1;
@@ -405,7 +405,7 @@ uint32_t PVoutput::tickUploadStatus(){
                     lastExtended = ndx;
                 }
                 haveExtended[ndx] = true;
-                extended[ndx] = script->run(oldRecord, newRecord, elapsedHours);
+                extended[ndx] = script->run(oldRecord, newRecord);
                 extendedPrecision[ndx] = script->precision();
             }
         }

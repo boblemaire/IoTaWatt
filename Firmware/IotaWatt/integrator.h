@@ -1,14 +1,16 @@
 #ifndef INTEGRATOR_H
 #define INTEGRATOR_H
 
-#include "iotawatt.h"
+#include "iotaScript.h"
+class Script;
 
 class integrator {
+
     public:
         integrator() :  _name(0),
                         _id(0),
                         _script(0),
-                        _interval(60),
+                        _interval(5),
                         _log(0),
                         _oldRec(0),
                         _newRec(0),
@@ -19,13 +21,13 @@ class integrator {
             delete[] _name;
             delete _oldRec;
             delete _newRec;
-            };
+        };
 
         bool config(Script* script);
         void setScript(Script* script);
         void getStatusJson(JsonObject&);
         uint32_t dispatch(struct serviceBlock *serviceBlock);
-        double run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, double elapsedHours);
+        double run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units Units);
         char *name();
         IotaLog* get_log();
         void end();
@@ -44,7 +46,7 @@ class integrator {
         struct intRecord {
             uint32_t UNIXtime;          // Time period represented by this record
             int32_t serial;             // record number in file
-            double sumIntegral;         // Cummulative integration    
+            double sumPositive;         // Sum of positive intervals (import)
         } _intRec;
 
         enum states {
