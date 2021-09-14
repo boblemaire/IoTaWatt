@@ -2396,12 +2396,74 @@ function old2newScript(oldScript){
  *                       Main menu navigation.
  * *****************************************************************************************/
 function mainMenuButton(obj, handler){
-  if( ! (editing || editingScript)){
-    currentBodyPop();
-    resetDisplay();
+  // only require canceling form if we've made changes to it
+  if (
+   !(
+      (editing || editingScript) &&
+      didFormChange() &&
+      !confirm('You have unsaved changes. Are you sure you want to leave without saving?')
+    )
+  )
+    pageChange(handler);
+}
+
+function pageChange(handler)
+{
+  currentBodyPop();
+  resetDisplay();
+  if (handler)
     handler();
-  }
-} 
+}
+
+function didFormChange() {
+  var hasChanges = false;
+
+  document.querySelectorAll("input:not(button):not([type=hidden])").forEach(
+    function (item) {
+      if (
+          (item.type == "text" || item.type == "textarea" || item.type == "hidden") &&
+          item.defaultValue != item.value) {
+        hasChanges = true;
+        return false;
+      }
+      else {
+        if ((item.type == "radio" || item.type == "checkbox") && item.defaultChecked != item.checked) {
+          hasChanges = true;
+          return false;
+        }
+        else {
+          if ((item.type == "select-one" || item.type == "select-multiple")) {
+            for (var x = 0; x < item.length; x++) {
+              if (item.options[x].selected != item.options[x].defaultSelected) {
+                hasChanges = true;
+                return false;
+              }
+            }
+          }
+        }
+      }
+    }
+  );
+  return hasChanges;
+}
+
+function storeForm() {
+  document.querySelectorAll("input:not(button):not([type=hidden])").forEach(
+    function (item) {
+      if (item.type == "text" || item.type == "textarea" || item.type == "hidden") {
+        item.defaultValue = item.value;
+      }
+      if (item.type == "radio" || item.type == "checkbox") {
+        item.defaultChecked = item.checked;
+      }
+      if (item.type == "select-one" || item.type == "select-multiple") {
+        for (var x = 0; x < item.length; x++) {
+          item.options[x].defaultSelecvalueted = item.options[x].selected
+        }
+      }
+    }
+  );
+}
 
 function currentBodyPop(){
   if(currentBody.length > 0) EbyId(currentBody.pop()).style.display = "none";
@@ -2426,6 +2488,7 @@ function resetDisplay(){
   editing = false;
   while(currentBody.length > 0) currentBodyPop();
   hide("mainBody");
+  storeForm(); // save form data to compare later
 }
 
 function loadGraph(){
