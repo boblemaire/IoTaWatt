@@ -600,13 +600,18 @@ bool configIntegrations(const char* JsonStr){
     log("integrations: Json parse failed");
     return false;
   }
-  ScriptSet* newIntegrations = new ScriptSet(integrationsArray);
+
+      // Make existing integrations null so integrations can't reference integrations.
+
+  ScriptSet *oldIntegrations = integrations;
+  integrations = new ScriptSet();
 
       // Move integrators for enduring integrations
 
+  ScriptSet* newIntegrations = new ScriptSet(integrationsArray);
   Script *newScript = newIntegrations->first();
   while(newScript){
-    Script *oldScript = integrations->first();
+    Script *oldScript = oldIntegrations->first();
     while(oldScript){
       if(strcmp(newScript->name(), oldScript->name()) == 0){
         newScript->setParm(oldScript->getParm());
@@ -620,7 +625,7 @@ bool configIntegrations(const char* JsonStr){
 
       // Remove integrators from abandoned integrations
 
-  Script *oldScript = integrations->first();
+  Script *oldScript = oldIntegrations->first();
   while(oldScript){
     if(oldScript->getParm()){
       ((integrator*)oldScript->getParm())->end();
@@ -634,7 +639,7 @@ bool configIntegrations(const char* JsonStr){
   newScript = newIntegrations->first();
   while(newScript){
     integrator *newIntegrator = (integrator *)newScript->getParm();
-    if(! newIntegrator){
+    if(! newIntegrator){ 
       newIntegrator = new integrator();
       newScript->setParm((void*)newIntegrator);
     }
@@ -644,6 +649,7 @@ bool configIntegrations(const char* JsonStr){
     newScript = newScript->next();
   }
 
+  delete oldIntegrations;
   delete integrations;
   integrations = newIntegrations;
   return true;

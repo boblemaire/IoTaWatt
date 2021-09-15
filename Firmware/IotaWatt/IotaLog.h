@@ -99,7 +99,7 @@ class IotaLog
 	 	      
     void     dumpFile();
 
-  private:
+  protected:
         
 	  File 	 IotaFile;
 
@@ -122,7 +122,7 @@ class IotaLog
     uint32_t* _cacheKey;
     int32_t*  _cacheSerial;
   
-    uint32_t _lastReadKey;           	    // Key of last record read with readKey
+    uint32_t _lastReadKey;           	      // Key of last record read with readKey
     int32_t  _lastReadSerial;         	    // Serial of last...
     uint32_t _readKeyIO;              	    // Running count of I/Os for keyed reads
 

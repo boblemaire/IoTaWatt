@@ -11,6 +11,7 @@ class integrator {
                         _id(0),
                         _script(0),
                         _interval(5),
+                        _synchronized(false),
                         _log(0),
                         _oldRec(0),
                         _newRec(0),
@@ -28,19 +29,20 @@ class integrator {
         void getStatusJson(JsonObject&);
         uint32_t dispatch(struct serviceBlock *serviceBlock);
         double run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units Units);
+        void newLogEntry(IotaLogRecord *oldRecord, IotaLogRecord *newRecord);
         char *name();
         IotaLog* get_log();
+        bool isSynchronized();
         void end();
 
     protected:
-        char *_name;
-        char *_id;
-        Script *_script;
-        int _interval;
-        bool _end;
-        IotaLog *_log;
-        IotaLog *_activelog;
-        IotaLogRecord *_oldRec;
+        char *_name;                    // Name of the integration
+        char *_id;                      // ID used in messages
+        Script *_script;                // --> integration Script
+        int _interval;                  // aggregation interval
+        bool _synchronized;             // integration log is up to date with datalog
+        IotaLog *_log;                  // integration log
+        IotaLogRecord *_oldRec;         // datalog records used during synchronization
         IotaLogRecord *_newRec;
 
         struct intRecord {
@@ -50,7 +52,7 @@ class integrator {
             intRecord() : UNIXtime(0), serial(0), sumPositive(0){}; 
         } _intRec;
 
-        intRecord _cache1, _cache2;
+        intRecord _cache1, _cache2;     // The integration log cache reduces reads during queries
         intRecord *oldInt = &_cache1;
         intRecord *newInt = &_cache2;
 

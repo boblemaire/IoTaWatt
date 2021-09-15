@@ -125,7 +125,7 @@ void    Script::print() {
             string += SCRIPT_CHAR_INPUT + String(tokenDetail);
           }
           else if(tokenType == tokenConstant){
-            string += String(_constants[tokenDetail],4);
+            string += String(_constants[tokenDetail - 1],4);
             while(string.endsWith("0")) string.remove(string.length()-1);
             if(string.endsWith(".")) string += '0';
           }
@@ -164,7 +164,7 @@ bool    Script::encodeScript(const char* script){
     }
   } while (scan);
   
-  // Alllocate storage and encode.
+  // Allocate storage and encode.
   
   _tokens = new uint8_t[tokenCount + 1];
   _constants = new float[constantCount];
@@ -184,7 +184,7 @@ bool    Script::encodeScript(const char* script){
     // Constant operand
 
     else if (script[j] == SCRIPT_CHAR_CONSTANT){
-      _tokens[i++] = tokenConstant + --constantCount;
+      _tokens[i++] = tokenConstant + constantCount--;
       char* endptr;
       _constants[constantCount] = strtof(&script[j+1], &endptr);
       j = endptr - script;
@@ -198,6 +198,8 @@ bool    Script::encodeScript(const char* script){
       j = endptr - script;
       _tokens[i++] = tokenVirtual + n;
     }
+
+    // Integration operand
 
     else if(script[j] == SCRIPT_CHAR_INTEGRATION){
       char method = 'N';
@@ -222,13 +224,15 @@ bool    Script::encodeScript(const char* script){
         integration = integration->next();
         index++;
       }
-      if(! integration){
+      if(integration){
+        _tokens[i++] = tokenIntegration + index;
+        _tokens[i++] = method;
+      }
+      else {
         log("Script: integration %s not defined in script %s.", name, this->_name);
-        return false;
+        _tokens[i++] = tokenConstant;
       }
       j += len + 1;
-      _tokens[i++] = tokenIntegration + index;
-      _tokens[i++] = method;
     }
 
     // Operator
@@ -365,7 +369,12 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
       break;
 
     case tokenConstant:
-      operand = _constants[tokenDetail];
+      if(tokenDetail){
+        operand = _constants[tokenDetail - 1];
+      }
+      else {
+        operand = 0;
+      }
       break;
 
     case tokenInput:
@@ -465,7 +474,7 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
 
     case tokenIntegration:
     {
-      trace(T_Script, 1);
+      trace(T_Script, 30);
       int index = tokenDetail;
       Script *integration = integrations->first();
       while (index && integration)
@@ -474,15 +483,17 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
       }
       if (!integration)
       {
+        trace(T_Script, 31);  
         return 0;
       }
-      integrator *_integrator = (integrator *)integration->getParm();
+      integrator *_integrator = (integrator *)(integration->getParm());
       char method = *(++token); 
       
       // If being called for stats, no need for integration
 
       if (!oldRec)
       {
+        trace(T_Script, 32);
         operand = integration->run(oldRec, newRec, "Watts");
 
         if (method == '+' && operand < 0)
@@ -500,7 +511,7 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
 
       if (method == 'N')
       {
-        trace(T_Script, 3);
+        trace(T_Script, 33);
         operand = integration->run(oldRec, newRec, Units);
         break;
       }
@@ -512,7 +523,7 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
       IotaLog *log = _integrator->get_log();
       if (oldRec->UNIXtime < log->firstKey() || newRec->UNIXtime > log->lastKey())
       {
-        trace(T_Script, 4);
+        trace(T_Script, 34);
         operand = integration->run(oldRec, newRec, Units);
         break;
       }
@@ -521,7 +532,7 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
 
       if (method == '+')
       {
-        trace(T_Script, 5);
+        trace(T_Script, 35);
         operand = _integrator->run(oldRec, newRec, Units);
       }
 
@@ -530,16 +541,16 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
 
       else if (method == '-')
       {
-        trace(T_Script, 6);
-        operand = integration->run(oldRec, newRec, integration->getUnits()) - _integrator->run(oldRec, newRec, Units);
+        trace(T_Script, 36);
+        operand = integration->run(oldRec, newRec, Units) - _integrator->run(oldRec, newRec, Units);
       }
 
       else
       {
-        trace(T_Script, 7);
+        trace(T_Script, 37);
         operand = 0;
       }
-      trace(T_Script, 8);
+      trace(T_Script, 38);
       break;
     }
     } // switch (tokenType)
@@ -564,9 +575,7 @@ double    Script::operate(double result, uint8_t token, double operand){
 }
 
 Script* ScriptSet::script(const char *name){
-  Serial.printf("\nnamep: %s", name);
   Script *script = _listHead;
-   Serial.printf("\nnames: %s", script->_name);
   while (script) {
     if(strcmp(script->name(), name) == 0){
       return script;
