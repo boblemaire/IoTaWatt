@@ -202,7 +202,6 @@ bool integrator::isSynchronized(){
 }
 
 void integrator::end(){
-    delete _log;
     if(_synchronized){
         delete this;
     }
@@ -213,6 +212,7 @@ void integrator::end(){
 
 uint32_t integrator::handle_end_s(){
     log("%s: ended. Last entry %s", _id, localDateString(_intRec.UNIXtime).c_str());
+    delete this;
     return 0;
 }
 
