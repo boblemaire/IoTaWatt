@@ -32,6 +32,8 @@
                 title="Specify the VTs and CTs that are used">Inputs</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,configOutputs)"
                 title="Define output values for status display and local graphs">Outputs</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,configIntegrations)"
+                title="Define integrations to develop import/export values">Integrations</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,buildWebServer)"
                 title="Specify data uploader(s) to external servers">Data Uploaders</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,setProxy)" 
@@ -159,6 +161,15 @@
         <table id="outputTable"></table>
       </div>
     </div>
+    
+     <!-- *************** Integrations configuration ******************-->
+
+    <div id="configIntegrations" class="body" style="display: none;">
+      <div class="bodyDiv color_body" id="divIntegrations">
+        <h3>Integrations</h3>
+        <table id="integrationsTable"></table>
+      </div>
+    </div>
         
                   <!-- *************** Burden configuration ******************--> 
     
@@ -280,7 +291,7 @@
                                                       STATUS DISPLAY
          *********************************************************************************************************************-->
 
-    <div id="divStatus" class="body color_body" style="display:inline">
+    <div id="divStatus" class="body color_body" style="display:none">
       
       <button id="tabIO" class="groupTab" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs Status</button>
         <div id="statusIODiv" class="statusDiv" style="display: block;">
@@ -536,8 +547,9 @@ var scriptEditNameTitle = "";
 var scriptEditNamePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
 var scriptEditUnits = [];
 var scriptEditUniqueNames = true;
+scriptEditAllowIntegrations = true;
 var scriptEditUnitsOutput = ["Watts","Volts","Amps","Hz","PF","VA","VAR","VARh"];
-var scriptEditUnitsIntegrations = ["Wh", "VARh"];
+var scriptEditUnitsIntegrations = ["Wh"];
 var scriptEditUnitsUpload = ["Watts","Volts","Amps","Hz","PF","VA","Wh","kWh","VAR","VARh"];
 var dstRules = [{id:"Americas",begOffset:-10,endOffset:-3.5,dstrule:{adj:60,utc:false,begin:{month:3,weekday:1,instance:2,time:120},end:{month:11,weekday:1,instance:1,time:120}}},
                 {id:"Europe",begOffset:0,endOffset:2,dstrule:{adj:60,utc:true,begin:{month:3,weekday:1,instance:-1,time:60},end:{month:10,weekday:1,instance:-1,time:60}}},
@@ -1307,6 +1319,34 @@ function calVTsave(obj){
     editScript();
   }
   
+  /*******************************************************************************************
+ *                    Configure Integrations
+ * ****************************************************************************************/
+ function configIntegrations(){
+    currentBodyPush("configIntegrations");
+    
+    scriptEditSave = function(){
+      config.integrations = scriptEditSet
+      uploadConfig();
+    };
+    scriptEditReturn = function(){
+      EbyId("divCalc").style.display = "none";
+      EbyId("divIntegrations").style.display = "table";
+      configIntegrations();
+    };
+    scriptEditTable = EbyId("integrationsTable");
+    scriptEditTable.innerHTML = "";
+    scriptEditSet = config.integrations;
+    scriptEditUnits = scriptEditUnitsIntegrations;
+    scriptEditNameList = [];
+    scriptEditAllowIntegrations = false;
+    scriptEditUniqueNames = true;
+    scriptEditNameTitle="Name must be alphanumeric and start with a letter";
+    scriptEditNamePattern="^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
+    editScript();
+    scriptEditAllowIntegrations = true;
+  }
+  
   /**********************************************************************************************
    *                editScript() - Generic Output Script Editor with "calculator"
    * 
@@ -1321,6 +1361,8 @@ function calVTsave(obj){
    *                scriptEditNameList - array of acceptable names values (empty = input)
    *                scriptEditNamePattern - regex pattern for validation
    *                scriptEditNameTitle - title to be associated with name
+   * 
+   *                scriptEditAllowIntegrations - Add integrations as inputs 
    *                
    * *******************************************************************************************/
    
@@ -1372,8 +1414,27 @@ function calVTsave(obj){
         var newItem = document.createElement("p");
         inputDropdown.appendChild(newItem);
         newItem.innerHTML = config.inputs[i].name;
-        newItem.value = Number(i);
+        newItem.value = "@" + Number(i);
         newItem.setAttribute("onclick", "keyInput(this)");
+      }
+    }
+    if(scriptEditAllowIntegrations && config.integrations !== undefined){
+      for (i in config.integrations){
+        var newNet = document.createElement("p");
+        inputDropdown.appendChild(newNet);
+        newNet.innerHTML = config.integrations[i].name + ".net";
+        newNet.value = "!" + config.integrations[i].name;
+        newNet.setAttribute("onclick", "keyInput(this)");
+        var newPos = document.createElement("p");
+        inputDropdown.appendChild(newPos);
+        newPos.innerHTML = config.integrations[i].name + ".pos";
+        newPos.value = "!+" + config.integrations[i].name;
+        newPos.setAttribute("onclick", "keyInput(this)");
+        var newNeg = document.createElement("p");
+        inputDropdown.appendChild(newNeg);
+        newNeg.innerHTML = config.integrations[i].name + ".neg";
+        newNeg.value = "!-" + config.integrations[i].name;
+        newNeg.setAttribute("onclick", "keyInput(this)");
       }
     }
   }
@@ -1490,13 +1551,13 @@ function calVTsave(obj){
   }
   
   function parseScript(script){
-    return script.match(/@\d+|#-?\d+\.?\d*|![a-zA-Z\d]+|[-+*\/()|<>=]/g);
+    return script.match(/~\d+|@\d+|#-?\d+\.?\d*|![+-]?[a-zA-Z0-9_]+|[a-zA-Z\d]+|[-+*\/()|<>=]/g);
   }
 
   function scriptDisplay(tokens){
     calcDisplay = "";
     for(var i=0; i<tokens.length; i++){
-      if(tokens[i].startsWith("#") || tokens[i].startsWith('!')){
+      if(tokens[i].startsWith("#")){
         calcDisplay += tokens[i].substr(1);
       }
       else if(tokens[i].startsWith("@")){
@@ -1505,6 +1566,26 @@ function calVTsave(obj){
         if(config.inputs[channel] != null) name = config.inputs[channel].name;
         if(name == "") name = "Input_" + channel;
         calcDisplay += name;
+      }
+      else if(tokens[i].startsWith("~")){
+        var id = tokens[i].substr(1);
+        if(id == 0){
+          calcDisplay += "simSolar";
+        }
+        else {
+          calcDisplay += tokens[i];
+        }
+      }
+      else if(tokens[i].startsWith("!")){
+        if(tokens[i].substr(1,1) == "+"){
+          calcDisplay += tokens[i].substr(2) + ".pos";
+        }
+        else if(tokens[i].substr(1,1) == "-"){
+          calcDisplay += tokens[i].substr(2) + ".neg";
+        }
+        else {
+          calcDisplay += tokens[i].substr(1) + ".net";
+        }
       }
       else if(tokens[i] == "*") calcDisplay += " x ";
       else if(tokens[i] == "+") calcDisplay += " + ";
@@ -1589,14 +1670,14 @@ function calVTsave(obj){
   }
   
   function keyUniPos(){
-    if(RegExp("[@)]").test(tokens[tokens.length-1])){
+    if(RegExp("[!@)]").test(tokens[tokens.length-1])){
        tokens.push("|");
      }
      refreshCalcDisplay();
   }
   
   function keyBinFunc(op){
-    if(RegExp("^[@#)\|]").test(tokens[tokens.length-1])){
+    if(RegExp("^[~!@#)\|]").test(tokens[tokens.length-1])){
       tokens.push(op);
     }
     else if(RegExp("^[-+*\/<>]").test(tokens[tokens.length-1])){
@@ -1618,7 +1699,7 @@ function calVTsave(obj){
   }
   
   function keyPop(){
-    if(parenLevel > 0 && RegExp("^[@#|)]").test(tokens[tokens.length-1])){
+    if(parenLevel > 0 && RegExp("^[~!@#|)]").test(tokens[tokens.length-1])){
       tokens.push(")");
       parenLevel--;
       refreshCalcDisplay();
@@ -1627,10 +1708,10 @@ function calVTsave(obj){
   
   function keyInput(obj){
     if(tokens.length == 1 && tokens[0] == "#0") {
-      tokens[0] = "@" + obj.value;
+      tokens[0] = obj.value;
     }
     else if(RegExp("^[-+*\/(<>]").test(tokens[tokens.length-1])){
-      tokens.push("@" + obj.value);
+      tokens.push(obj.value);
     }
     refreshCalcDisplay();
   }
