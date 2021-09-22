@@ -332,234 +332,235 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
     uint8_t tokenDetail = *token & ~TOKEN_TYPE_MASK;
     switch (tokenType)
     {
-    case tokenOperator:
+      case tokenOperator:
 
-      switch (tokenDetail)
-      {
-      case opAdd:
-      case opSub:
-      case opMult:
-      case opDiv:
-      case opMin:
-      case opMax:
-        result = operate(result, pendingOp, operand);
-        pendingOp = *token;
-        operand = 0;
-        if (tokenDetail == opDiv || tokenDetail == opMult)
-          operand = 1;
-        break;
-
-      case opAbs:
-        if (operand < 0)
-          operand = 0 - operand;
-        break;
-
-      case opPush:
-        token++;
-        operand = runRecursive(&token, oldRec, newRec, Units);
-        break;
-
-      case opPop:
-        *tokens = token;
-        return operate(result, pendingOp, operand);
-
-      case opEq:
-        return operate(result, pendingOp, operand);
-      } // switch (tokenDetail)
-      break;
-
-    case tokenConstant:
-      if(tokenDetail){
-        operand = _constants[tokenDetail - 1];
-      }
-      else {
-        operand = 0;
-      }
-      break;
-
-    case tokenInput:
-    {
-      int input = *token & ~TOKEN_TYPE_MASK;
-      double accum1 = newRec->accum1[input] - (oldRec ? oldRec->accum1[input] : 0);
-      double accum2 = newRec->accum2[input] - (oldRec ? oldRec->accum2[input] : 0);
-      ;
-      vchannel = inputChannel[input]->_vchannel;
-      double volts = newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0) * inputChannel[input]->_vmult;
-      double hz = newRec->accum2[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0);
-
-      switch (Units)
-      {
-
-      case Watts:
-        operand = accum1 / elapsedHours;
-        break;
-
-      case Volts:
-        operand = volts / elapsedHours;
-        break;
-
-      case Amps:
-      {
-        double va = accum2 / elapsedHours;
-        operand = volts / elapsedHours;
-        if (operand != 0.0)
+        switch (tokenDetail)
         {
-          operand = va / operand;
+          case opAdd:
+          case opSub:
+          case opMult:
+          case opDiv:
+          case opMin:
+          case opMax:
+            result = operate(result, pendingOp, operand);
+            pendingOp = *token;
+            operand = 0;
+            if (tokenDetail == opDiv || tokenDetail == opMult)
+              operand = 1;
+            break;
+
+          case opAbs:
+            if (operand < 0)
+              operand = 0 - operand;
+            break;
+
+          case opPush:
+            token++;
+            operand = runRecursive(&token, oldRec, newRec, Units);
+            break;
+
+          case opPop:
+            *tokens = token;
+            return operate(result, pendingOp, operand);
+
+          case opEq:
+            return operate(result, pendingOp, operand);
+        } // switch (tokenDetail)
+        break;
+
+      case tokenConstant:
+        if(tokenDetail){
+          operand = _constants[tokenDetail - 1];
+        }
+        else {
+          operand = 0;
         }
         break;
-      }
 
-      case VA:
-        operand = accum2 / elapsedHours;
-        break;
-
-      case VAh:
-        operand = accum2;
-        break;
-
-      case Hz:
-        operand = hz / elapsedHours;
-        break;
-
-      case Wh:
-        operand = accum1;
-        break;
-
-      case VAR:
+      case tokenInput:
       {
-        double va = accum2 / elapsedHours;
-        double watts = accum1 / elapsedHours;
-        operand = sqrt(va * va - watts * watts);
-        break;
-      }
+        int input = *token & ~TOKEN_TYPE_MASK;
+        double accum1 = newRec->accum1[input] - (oldRec ? oldRec->accum1[input] : 0);
+        double accum2 = newRec->accum2[input] - (oldRec ? oldRec->accum2[input] : 0);
+        ;
+        vchannel = inputChannel[input]->_vchannel;
+        double volts = newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0) * inputChannel[input]->_vmult;
+        double hz = newRec->accum2[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0);
 
-      case VARh:
-      {
-        double vah = accum2;
-        double wh = accum1;
-        operand = sqrt(vah * vah - wh * wh);
-        break;
-      }
-
-      default:
-        operand = 0.0;
-        break;
-      } // switch (units)
-      break;
-    }
-
-    case tokenVirtual:
-    {
-      if (tokenDetail == 0)
-      {
-        if (Units == Watts)
+        switch (Units)
         {
-          operand = simSolarPower(newRec->UNIXtime);
-        }
-        else if (Units = Wh)
+
+          case Watts:
+            operand = accum1 / elapsedHours;
+            break;
+
+          case Volts:
+            operand = volts / elapsedHours;
+            break;
+
+          case Amps:
+          {
+            double va = accum2 / elapsedHours;
+            operand = volts / elapsedHours;
+            if (operand != 0.0)
+            {
+              operand = va / operand;
+            }
+            break;
+          }
+
+          case VA:
+            operand = accum2 / elapsedHours;
+            break;
+
+          case VAh:
+            operand = accum2;
+            break;
+
+          case Hz:
+            operand = hz / elapsedHours;
+            break;
+
+          case Wh:
+            operand = accum1;
+            break;
+
+          case VAR:
+          {
+            double va = accum2 / elapsedHours;
+            double watts = accum1 / elapsedHours;
+            operand = sqrt(va * va - watts * watts);
+            break;
+          }
+
+          case VARh:
+          {
+            double vah = accum2;
+            double wh = accum1;
+            operand = sqrt(vah * vah - wh * wh);
+            break;
+          }
+
+          default:
+            operand = 0.0;
+            break;
+            
+        } // switch (units)
+        break;
+      }
+
+      case tokenVirtual:
+      {
+        if (tokenDetail == 0)
         {
-          operand = simSolarEnergy(oldRec->UNIXtime, newRec->UNIXtime);
+          if (Units == Watts)
+          {
+            operand = simSolarPower(newRec->UNIXtime);
+          }
+          else if (Units = Wh)
+          {
+            operand = simSolarEnergy(oldRec->UNIXtime, newRec->UNIXtime);
+          }
+          else
+          {
+            operand = 0;
+          }
         }
         else
         {
           operand = 0;
         }
+        break;
       }
-      else
-      {
-        operand = 0;
-      }
-      break;
-    }
 
-    case tokenIntegration:
-    {
-      trace(T_Script, 30);
-      int index = tokenDetail;
-      Script *integration = integrations->first();
-      while (index && integration)
+      case tokenIntegration:
       {
-        integration = integration->next();
-      }
-      if (!integration)
-      {
-        trace(T_Script, 31);  
-        return 0;
-      }
-      integrator *_integrator = (integrator *)(integration->getParm());
-      char method = *(++token); 
-      
-      // If being called for stats, no need for integration
-
-      if (!oldRec)
-      {
-        trace(T_Script, 32);
-        operand = integration->run(oldRec, newRec, "Watts");
-
-        if (method == '+' && operand < 0)
+        trace(T_Script, 30);
+        int index = tokenDetail;
+        Script *integration = integrations->first();
+        while (index && integration)
         {
+          integration = integration->next();
+        }
+        if (!integration)
+        {
+          trace(T_Script, 31);  
+          return 0;
+        }
+        integrator *_integrator = (integrator *)(integration->getParm());
+        char method = *(++token); 
+        
+        // If being called for stats, no need for integration
+
+        if (!oldRec)
+        {
+          trace(T_Script, 32);
+          operand = integration->run(oldRec, newRec, "Watts");
+
+          if (method == '+' && operand < 0)
+          {
+            operand = 0;
+          }
+          else if (method == '-' && operand > 0)
+          {
+            operand = 0;
+          }
+          break;
+        }
+
+        // If request is for Net, just run the integration Script.
+
+        if (method == 'N')
+        {
+          trace(T_Script, 33);
+          operand = integration->run(oldRec, newRec, Units);
+          break;
+        }
+
+        // Request requires the integration log.
+        // If out of the bounds of the log,
+        // Use the Net
+
+        IotaLog *log = _integrator->get_log();
+        if (oldRec->UNIXtime < log->firstKey() || newRec->UNIXtime > log->lastKey())
+        {
+          trace(T_Script, 34);
+          operand = integration->run(oldRec, newRec, Units);
+          break;
+        }
+
+        // The integration is the sum of positive components.
+
+        if (method == '+')
+        {
+          trace(T_Script, 35);
+          operand = _integrator->run(oldRec, newRec, Units);
+        }
+
+        // The sum of negative components is
+        // Net - sumPositive.
+
+        else if (method == '-')
+        {
+          trace(T_Script, 36);
+          operand = integration->run(oldRec, newRec, Units) - _integrator->run(oldRec, newRec, Units);
+        }
+
+        else
+        {
+          trace(T_Script, 37);
           operand = 0;
         }
-        else if (method == '-' and operand > 0)
-        {
-          operand = 0;
-        }
+        trace(T_Script, 38);
         break;
       }
-
-      // If request is for Net, just run the integration Script.
-
-      if (method == 'N')
-      {
-        trace(T_Script, 33);
-        operand = integration->run(oldRec, newRec, Units);
-        break;
-      }
-
-      // Request requires the integration log.
-      // If out of the bounds of the log,
-      // Use the Net
-
-      IotaLog *log = _integrator->get_log();
-      if (oldRec->UNIXtime < log->firstKey() || newRec->UNIXtime > log->lastKey())
-      {
-        trace(T_Script, 34);
-        operand = integration->run(oldRec, newRec, Units);
-        break;
-      }
-
-      // The integration is the sum of positive components.
-
-      if (method == '+')
-      {
-        trace(T_Script, 35);
-        operand = _integrator->run(oldRec, newRec, Units);
-      }
-
-      // The sum of negative components is
-      // Net - sumPositive.
-
-      else if (method == '-')
-      {
-        trace(T_Script, 36);
-        operand = integration->run(oldRec, newRec, Units) - _integrator->run(oldRec, newRec, Units);
-      }
-
-      else
-      {
-        trace(T_Script, 37);
-        operand = 0;
-      }
-      trace(T_Script, 38);
-      break;
-    }
     } // switch (tokenType)
 
     if (operand != operand)
       operand = 0;
 
-        } while(*token++);
-        return 0;
+  } while(*token++);
+  return 0;
 }
 
 double    Script::operate(double result, uint8_t token, double operand){

@@ -218,8 +218,11 @@ uint32_t integrator::handle_end_s(){
 
 double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units Units){
     trace(T_integrator, 0);
+    if( ! _synchronized){
+        return 0;
+    }
     double elapsedHours = newRecord->logHours - oldRecord->logHours;
-    if( ! _synchronized || elapsedHours == 0 || oldRecord->UNIXtime < _log->firstKey()){
+    if(elapsedHours == 0 || oldRecord->UNIXtime < _log->firstKey()){
         return 0;
     }
     trace(T_integrator, 1);
@@ -250,7 +253,7 @@ double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units
         trace(T_integrator, 3, rtc);
     }
 
-    double value = newInt->sumPositive - oldInt->sumPositive;
+    double value = MAX(newInt->sumPositive - oldInt->sumPositive, 0);
     if(Units == Watts){
         trace(T_integrator, 4);
         return value / elapsedHours;
