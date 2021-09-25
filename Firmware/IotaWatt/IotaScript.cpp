@@ -64,7 +64,9 @@ Script::Script(JsonObject& JsonScript)
 
       var = JsonScript["script"];
       if(var.success()){
-        encodeScript(var.as<char*>());
+        if( ! encodeScript(var.as<char*>())){
+          log("Script: invalid Script in output %s.", _name);
+        }
       }
     }
 
@@ -187,8 +189,15 @@ bool    Script::encodeScript(const char* script){
 
     // Operator
 
-    else {
+    else if(strchr(opChars, script[j])){
       _tokens[i++] = tokenOperator + strchr(opChars, script[j++]) - opChars;
+    }
+
+    // invalid token/script
+
+    else {
+      _tokens[0] = opEq;
+      return false;
     }
   }
   _tokens[i] = 0;
