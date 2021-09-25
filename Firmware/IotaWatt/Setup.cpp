@@ -161,8 +161,8 @@ if(spiffsBegin()){
     log("configuration recovery %ssuccessful.", validConfig ? "" : "un");
   }
 
-  log("Local time zone: %+d:%02d%s", (int)localTimeDiff/60, (int)localTimeDiff%60, timezoneRule ? ", Using DST/BST when in effect." : "");
-  log("device name: %s.local", deviceName); 
+  log("Local time zone: %+d:%02d%s", (int)localTimeDiff/60, (int)localTimeDiff%60, timezoneRule ? ", using DST/BST when in effect." : "");
+  log("device name: %s", deviceName); 
 
 //************************************* Load passwords *******************************************
 
