@@ -229,12 +229,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
 
           // Check RTC battery.
 
-  Wire.beginTransmission(PCF8523_ADDRESS);            // Read Control registers
-  Wire.write(PCF8523_CTL_3);
-  Wire.endTransmission();
-  Wire.requestFrom(PCF8523_ADDRESS, 1);
-  byte Control_3 = Wire.read();
-  if(Control_3 & PCF8523_CTL_3_BLF){
+  if(rtc.lowBattery()){
     if( ! RTClowBat){
       log("Real Time Clock battery is low.");
     }
