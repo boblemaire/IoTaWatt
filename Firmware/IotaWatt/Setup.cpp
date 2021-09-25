@@ -160,11 +160,9 @@ if(spiffsBegin()){
     validConfig = recoverConfig();
     log("configuration recovery %ssuccessful.", validConfig ? "" : "un");
   }
-  log("Local time zone: %+d:%02d", (int)localTimeDiff/60, (int)localTimeDiff%60);
-  if(timezoneRule){
-    log("Using Daylight Saving Time (BST) when in effect.");
-  }
-  log("device name: %s", deviceName); 
+
+  log("Local time zone: %+d:%02d%s", (int)localTimeDiff/60, (int)localTimeDiff%60, timezoneRule ? ", Using DST/BST when in effect." : "");
+  log("device name: %s.local", deviceName); 
 
 //************************************* Load passwords *******************************************
 
