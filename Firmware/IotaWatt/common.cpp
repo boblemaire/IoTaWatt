@@ -123,7 +123,7 @@ MDNSResponder MDNS;
 IotaLog Current_log(256,5,365);                 // current data log  (1 year) 
 IotaLog History_log(256,60,3652);               // history data log  (10 years)
 IotaLog *Export_log = nullptr;                  // Optional export log    
-RTC_PCF8523 rtc;                                // Instance of RTC_PCF8523
+RTC rtc;                                        // Instance of clock handler class
 Ticker Led_timer;
 messageLog Message_log;                         // Message log handler
 
