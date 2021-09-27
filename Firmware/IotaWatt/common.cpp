@@ -111,7 +111,8 @@
  *   03/19/21 02_06_02 More config cleanup and conversion
  *   05/04/21 02_06_03 Auth workaround for browser issue, allow local access, auto download new tables.txt files
  *   06/17/21 02_06_04 Fix query amps when doubled, suppress recovered pvouput http errors
- *   07/08/21 02_06_05 Issue with influxDB uploaders not recovering data from server outage. 
+ *   07/08/21 02_06_05 Issue with influxDB uploaders not recovering data from server outage.
+ *   09/25/21 02_06_06 Support alternate RTC, datalog low-write, influxDB2 restart query, more robust Script
  * 
  *****************************************************************************************************/
 
