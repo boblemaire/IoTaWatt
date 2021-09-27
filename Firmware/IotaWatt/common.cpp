@@ -112,7 +112,8 @@
  *   05/04/21 02_06_03 Auth workaround for browser issue, allow local access, auto download new tables.txt files
  *   06/17/21 02_06_04 Fix query amps when doubled, suppress recovered pvouput http errors
  *   07/08/21 02_06_05 Issue with influxDB uploaders not recovering data from server outage.
- *   09/15/21 02_07_05 Add integrations 
+ *   09/25/21 02_06_06 Support alternate RTC, datalog low-write, influxDB2 restart query, more robust Script
+ *   09/27/21 02_07_05 Add integrations 
  * 
  *****************************************************************************************************/
 
@@ -124,7 +125,7 @@ MDNSResponder MDNS;
 IotaLog Current_log(256,5,365,32);              // current data log  (1 year) 
 IotaLog History_log(256,60,3652,48);            // history data log  (10 years)
 IotaLog *Export_log = nullptr;                  // Optional export log    
-RTC_PCF8523 rtc;                                // Instance of RTC_PCF8523
+RTC rtc;                                        // Instance of clock handler class
 Ticker Led_timer;
 messageLog Message_log;                         // Message log handler
 

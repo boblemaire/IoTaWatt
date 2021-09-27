@@ -53,57 +53,34 @@ void setup()
   log("SD initialized.");
   
   //*************************************** Check RTC   *****************************
-
+  
   Wire.begin(pin_I2C_SDA, pin_I2C_SCL);
   rtc.begin();
-
-  Wire.beginTransmission(PCF8523_ADDRESS);            // Read Control registers
-  Wire.write(PCF8523_CTL_1);
-  Wire.endTransmission();
-  Wire.requestFrom(PCF8523_ADDRESS, 3);
-  byte Control_1 = Wire.read();
-  byte Control_2 = Wire.read();
-  byte Control_3 = Wire.read();
-  
-  if(rtc.initialized()){
+  if (rtc.isRunning())
+  {
+    if(rtc.lostPower()){
+      powerFailRestart = true;
+      rtc.resetLostPower();
+    }
     timeRefNTP = rtc.now().unixtime() + SECONDS_PER_SEVENTY_YEARS;
     timeRefMs = millis();
     RTCrunning = true;
     log("Real Time Clock is running. Unix time %d ", UTCtime());
-    if((Control_3 & PCF8523_CTL_3_BSF) != 0){
-      log("Power failure detected.");
-      powerFailRestart = true;
-      Wire.beginTransmission(PCF8523_ADDRESS);            
-      Wire.write((byte)PCF8523_CONTROL_3);
-      Wire.write((byte)0);
-      Wire.endTransmission();
-    }
-    else if(Control_2 & PCF8523_CTL_2_WTAF){
-      log("RTC watchdog timer reset");
-    }
-    if(Control_3 & PCF8523_CTL_3_BLF){
-      log("Real Time Clock battery is low.");
-      RTClowBat = true;
-    }
-    //SdFile::dateTimeCallback(dateTime);
   }
   else {
-    log("Real Time Clock not initialized.");
+    log("Real Time Clock not running.");
   }
   programStartTime = UTCtime();
   
-  Wire.beginTransmission(PCF8523_ADDRESS);            // Set crystal load capacitance
-  Wire.write((byte)0);
-  Wire.write((byte)PCF8523_CTL_1_CAP_SEL);
-  Wire.endTransmission();
-
     //**************************************** Display the trace ****************************************
-
-  log("Reset reason: %s", ESP.getResetReason().c_str());
-  if( ! powerFailRestart){
-      logTrace();
+  if(powerFailRestart){
+    log("Reset Reason: Power-fail restart.");
   }
-  log("ESP8266 ChipID: %d",ESP.getChipId());
+  else {
+    log("Reset reason: %s", ESP.getResetReason().c_str());
+    logTrace();
+  }
+  log("ESP8266 ID: %d, RTC %s",ESP.getChipId(), rtc.model().c_str());
 
   // ****************************************** Flush the trace ************************************
 
@@ -116,8 +93,9 @@ EEprom* EE = new EEprom;
 uint8_t* EEbytes = (uint8_t*) EE;
 size_t EEsize = sizeof(EEprom);
 
-    // Initialize the EEprom for testing
-    // Ordinarily to be done in manufacturing.
+    // Initialize the EEprom for testing.
+    // Ordinarily this is done in manufacturing but homegrown users
+    // can activate this code to initialize their EEprom.
 
 // EEPROM.begin(EEsize);
 // memcpy(EE->id, "IoTaWatt", 8);
@@ -182,10 +160,8 @@ if(spiffsBegin()){
     validConfig = recoverConfig();
     log("configuration recovery %ssuccessful.", validConfig ? "" : "un");
   }
-  log("Local time zone: %+d:%02d", (int)localTimeDiff/60, (int)localTimeDiff%60);
-  if(timezoneRule){
-    log("Using Daylight Saving Time (BST) when in effect.");
-  }
+
+  log("Local time zone: %+d:%02d%s", (int)localTimeDiff/60, (int)localTimeDiff%60, timezoneRule ? ", using DST/BST when in effect." : "");
   log("device name: %s", deviceName); 
 
 //************************************* Load passwords *******************************************

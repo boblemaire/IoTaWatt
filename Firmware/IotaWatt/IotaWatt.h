@@ -45,7 +45,7 @@
 #include <asyncHTTPrequest.h>
 
 #include <SPI.h>
-#include <RTClib.h>
+#include <RTC.h>
 #include <SD.h>
 #include <Wire.h>
 #include <ArduinoJson.h>
@@ -90,7 +90,7 @@ extern MDNSResponder MDNS;
 extern IotaLog Current_log;
 extern IotaLog History_log;
 extern IotaLog *Export_log;
-extern RTC_PCF8523 rtc;
+extern RTC rtc;
 extern Ticker Led_timer;
 extern messageLog Message_log;
 

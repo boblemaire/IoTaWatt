@@ -28,13 +28,13 @@ int IotaLog::begin (const char* path ){
 			return 2;
 		}
 		IotaFile.close();
-  	}
-	IotaFile = SD.open(_path, FILE_WRITE);
-		if(!IotaFile){
-			return 2;
 	}
-  
-  	_fileSize = _physicalSize = IotaFile.size();
+	IotaFile = SD.open(_path, FILE_WRITE);
+	if(!IotaFile){
+		return 2;
+	}
+	
+	_fileSize = _physicalSize = IotaFile.size();
 
 	if(_fileSize){
 			IotaFile.seek(0);
@@ -48,8 +48,8 @@ int IotaLog::begin (const char* path ){
 			_entries = _fileSize / _recordSize;
 	}
 
-					// If there are trailing zero recordKeys at the end,
-					// try to adjust _filesize down to match logical end of file.
+			// If there are trailing zero recordKeys at the end,
+			// try to adjust _filesize down to match logical end of file.
 
 	while(_fileSize && _lastSerial == 0){
 		IotaLogRecord* logRec = new IotaLogRecord;
@@ -61,17 +61,17 @@ int IotaLog::begin (const char* path ){
 		_entries--;	 
 		delete logRec;
 	}
-		
+	
 	if(_firstKey > _lastKey){
-			_wrap = findWrap(0,_firstKey, _fileSize - _recordSize, _lastKey);
-			IotaFile.seek(_wrap);
-			IotaFile.read((uint8_t*)&recordKey, sizeof(recordKey));
-			_firstKey = recordKey.UNIXtime;
-			_firstSerial = recordKey.serial;
-			IotaFile.seek(_wrap - _recordSize);
-			IotaFile.read((uint8_t*)&recordKey, sizeof(recordKey));
-			_lastKey = recordKey.UNIXtime;
-			_lastSerial = recordKey.serial;
+		_wrap = findWrap(0,_firstKey, _fileSize - _recordSize, _lastKey);
+		IotaFile.seek(_wrap);
+		IotaFile.read((uint8_t*)&recordKey, sizeof(recordKey));
+		_firstKey = recordKey.UNIXtime;
+		_firstSerial = recordKey.serial;
+		IotaFile.seek(_wrap - _recordSize);
+		IotaFile.read((uint8_t*)&recordKey, sizeof(recordKey));
+		_lastKey = recordKey.UNIXtime;
+		_lastSerial = recordKey.serial;
 	}
 
 	_lastReadKey = _firstKey;
@@ -79,21 +79,21 @@ int IotaLog::begin (const char* path ){
 	_maxFileSize = max(_fileSize, _maxFileSize);
 	
 	if(((int32_t) _lastSerial - _firstSerial + 1) != _entries){
-			log("IotaLog: file damaged %s\r\n", _path);
-			log("IotaLog: Creating diagnostic file.");
-			dumpFile();
-			log("IotaLog: Deleting %s and restarting.\r\n", _path);	
-			IotaFile.close();
-			SD.remove(_path);
-			ESP.restart();
+		log("IotaLog: file damaged %s\r\n", _path);
+		log("IotaLog: Creating diagnostic file.");
+		dumpFile();
+		log("IotaLog: Deleting %s and restarting.\r\n", _path);	
+		IotaFile.close();
+		SD.remove(_path);
+		ESP.restart();
 	}
-	
+		
 	for(int i=0; i<_cacheSize; i++){
 		_cacheKey[i] = _firstKey;
 		_cacheSerial[i] = _firstSerial;
 	}
 
-  	return 0;
+	return 0;
 }
 
 uint32_t IotaLog::findWrap(uint32_t highPos, uint32_t highKey, uint32_t lowPos, uint32_t lowKey){
@@ -118,8 +118,12 @@ uint32_t IotaLog::findWrap(uint32_t highPos, uint32_t highKey, uint32_t lowPos, 
 
 int IotaLog::readKey (IotaLogRecord* callerRecord){
 	uint32_t key = callerRecord->UNIXtime - (callerRecord->UNIXtime % _interval);
-	if(!IotaFile) return 2;
-	if(_entries == 0) return 1;
+	if(!IotaFile){
+		return 2;
+	}
+	if(_entries == 0){
+		return 1;
+	}
 	if(key < _firstKey){													// Before the beginning of time
 		readSerial(callerRecord, _firstSerial);
 		callerRecord->UNIXtime = key;
@@ -131,7 +135,7 @@ int IotaLog::readKey (IotaLogRecord* callerRecord){
 		if(key = _lastKey) return 0;
 		return 1;
 	}
-	//Serial.printf("search %d, highKey %d\r\n", key, _firstKey);
+	
 	uint32_t lowKey = _firstKey;
 	int32_t lowSerial = _firstSerial;
 	uint32_t highKey = _lastKey;
@@ -171,38 +175,38 @@ void IotaLog::searchKey(IotaLogRecord* callerRecord, const uint32_t key, const u
 
 	//Serial.printf("low %d(%d), high %d(%d), floor %d, Ceiling %d\r\n", lowKey, lowSerial, highKey, highSerial,floorSerial, ceilingSerial); 
 
-	if(ceilingSerial < highSerial || floorSerial == ceilingSerial){
-			readSerial(callerRecord, ceilingSerial);
-			
-			if(callerRecord->UNIXtime == key){
-				return;
-			}
-			searchKey(callerRecord, key, lowKey, lowSerial, callerRecord->UNIXtime, callerRecord->serial);
+  	if(ceilingSerial < highSerial || floorSerial == ceilingSerial){
+		readSerial(callerRecord, ceilingSerial);
+		
+		if(callerRecord->UNIXtime == key){
 			return;
+		}
+		searchKey(callerRecord, key, lowKey, lowSerial, callerRecord->UNIXtime, callerRecord->serial);
+		return;
 	}
 	if(floorSerial > lowSerial){
-			readSerial(callerRecord, floorSerial);
-			if(callerRecord->UNIXtime == key){
-				return;
-			}
-			searchKey(callerRecord, key, callerRecord->UNIXtime, callerRecord->serial, highKey, highSerial);
+		readSerial(callerRecord, floorSerial);
+		if(callerRecord->UNIXtime == key){
 			return;
+		}
+		searchKey(callerRecord, key, callerRecord->UNIXtime, callerRecord->serial, highKey, highSerial);
+		return;
 	}
 	if((highSerial - lowSerial) <= 1){		
-			readSerial(callerRecord, lowSerial);
-			return;
+		readSerial(callerRecord, lowSerial);
+		return;
 	}
 	readSerial(callerRecord, (lowSerial + highSerial) / 2);
 	_readKeyIO++;
 	if(callerRecord->UNIXtime == key){
-			return;
+		return;
 	}
 	if(callerRecord->UNIXtime < key){
-			searchKey(callerRecord, key, callerRecord->UNIXtime, callerRecord->serial, highKey, highSerial);
-			return;
-	}
-	searchKey(callerRecord, key, lowKey, lowSerial, callerRecord->UNIXtime, callerRecord->serial);
-	return;
+		searchKey(callerRecord, key, callerRecord->UNIXtime, callerRecord->serial, highKey, highSerial);
+		return;
+  }
+  searchKey(callerRecord, key, lowKey, lowSerial, callerRecord->UNIXtime, callerRecord->serial);
+  return;
 }
 
 int IotaLog::readNext(IotaLogRecord* callerRecord){
