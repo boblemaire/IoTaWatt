@@ -62,6 +62,9 @@ will continue it's
 startup procedure.  If you see another LED sequence, refer to 
 the `troubleshooting <troubleshooting.html>`__ section.
 
+Also make sure you connect the AC adaptor as per the next section to enable 
+the unit to initialize the RTC properly before continuing.
+
 When the LED glows dull green, proceed to the next step
 `Device Configuration  <devConfig.html>`__
 
