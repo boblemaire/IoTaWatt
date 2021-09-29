@@ -76,6 +76,7 @@
 #include "CSVquery.h"
 #include "xbuf.h"
 #include "xurl.h"
+#include "simSolar.h"
 
       // Declare global instances of classes
 
@@ -93,6 +94,7 @@ extern IotaLog *Export_log;
 extern RTC rtc;
 extern Ticker Led_timer;
 extern messageLog Message_log;
+extern simSolar *simsolar;
 
 #define SECONDS_PER_MINUTE 60
 #define SECONDS_PER_HOUR 3600

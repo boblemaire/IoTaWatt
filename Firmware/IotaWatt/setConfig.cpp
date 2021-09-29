@@ -12,6 +12,7 @@ bool configOutputs(const char*);
 void hashFile(uint8_t* sha, File file);
 bool exportLogConfig(const char *configObj);
 bool configIntegrations(const char *);
+bool configSimSolar(const char *);
 
 //************************************************************************************************
 //
@@ -155,7 +156,7 @@ boolean setConfig(const char* configPath){
   // ************************************ configure outputs *******************************
 
   {      
-    trace(T_CONFIG,25);
+    trace(T_CONFIG,30);
     delete outputs;
     outputs = nullptr;
     JsonArray& outputsArray = Config[F("outputs")];
@@ -173,7 +174,7 @@ boolean setConfig(const char* configPath){
          // ************************************** configure Emoncms **********************************
 
   {
-    trace(T_CONFIG,30);
+    trace(T_CONFIG,35);
     char* EmonStr = nullptr;
     JsonArray& EmonArray = Config[F("emoncms")];
     if(EmonArray.success()){
@@ -185,7 +186,7 @@ boolean setConfig(const char* configPath){
     
     else 
     {
-      trace(T_CONFIG,31);      
+      trace(T_CONFIG,36);      
       JsonArray& serverArray = Config[F("server")];
       if(serverArray.success()){
         EmonStr = JsonDetail(ConfigFile, serverArray);
@@ -196,14 +197,14 @@ boolean setConfig(const char* configPath){
       }
     }
 
-    trace(T_CONFIG,30);
+    trace(T_CONFIG,35);
     if(EmonStr){
       trace(T_CONFIG,31);   
       if(! Emoncms){
         trace(T_CONFIG,32);   
         Emoncms = new emoncms_uploader;
       }
-      trace(T_CONFIG,31);
+      trace(T_CONFIG,36);
       if( ! Emoncms->config(EmonStr)){
         logTrace();
         trace(T_CONFIG,32);   
@@ -214,7 +215,7 @@ boolean setConfig(const char* configPath){
       delete[] EmonStr;
     }   
     else if(Emoncms){
-      trace(T_CONFIG,33);   
+      trace(T_CONFIG,37);   
       Emoncms->end();
       Emoncms = nullptr;
     }
@@ -223,7 +224,7 @@ boolean setConfig(const char* configPath){
         // ************************************** configure influxDB1 *********************************
 
   {
-    trace(T_CONFIG,35);
+    trace(T_CONFIG,40);
     JsonArray& influxArray = Config[F("influxdb")];
     if(influxArray.success()){
       char* influxStr = JsonDetail(ConfigFile, influxArray);
@@ -246,7 +247,7 @@ boolean setConfig(const char* configPath){
         // ************************************** configure influxDB2 **********************************
 
   {
-    trace(T_CONFIG,40);
+    trace(T_CONFIG,45);
     JsonArray& influx2Array = Config[F("influxdb2")];
     if(influx2Array.success()){
       char* influx2Str = JsonDetail(ConfigFile, influx2Array);
@@ -265,10 +266,10 @@ boolean setConfig(const char* configPath){
       influxDB_v2 = nullptr;
     }
   }
-      // ************************************** configure PVoutput **********************************
+      // ************************************** configure PVoutput *****************************************
 
   {
-    trace(T_CONFIG,45);
+    trace(T_CONFIG,50);
     JsonArray& PVoutputArray = Config[F("pvoutput")];
     if(PVoutputArray.success()){
       char* PVoutputStr = JsonDetail(ConfigFile, PVoutputArray);
@@ -284,6 +285,21 @@ boolean setConfig(const char* configPath){
       pvoutput->end();
     }    
   }
+
+      //***************************************** configure simsolar ***************************************
+
+    trace(T_CONFIG,55);
+    JsonArray& simSolarArray = Config[F("simsolar")];
+    if(simSolarArray.success()){
+      char* simSolarStr = JsonDetail(ConfigFile, simSolarArray);
+      configSimSolar(simSolarStr);
+      delete[] simSolarStr;
+    } 
+    else {
+      delete simsolar;
+      simsolar = nullptr;
+    }
+
 
       // ************************************** Code to handle array of configurations****************************
 
@@ -380,6 +396,21 @@ boolean setConfig(const char* configPath){
 
 }  // End of setConfig
 
+bool configSimSolar(const char* JsonStr){
+  DynamicJsonBuffer Json;
+  JsonObject& simConfig = Json.parseObject(JsonStr);
+  if( ! simConfig.success()){
+    log("simsolar: Json parse failed");
+  }
+  if( ! simsolar){
+    simsolar = new simSolar;
+  }
+  uint32_t sunrise = simConfig["sunrise"].as<int>();
+  uint32_t sunset = simConfig["sunset"].as<int>();
+  uint32_t power = simConfig["power"].as<int>();
+  simsolar->config(sunrise, sunset, power);
+  return true;
+} 
 //************************************** configDevice() ********************************************
 bool configDevice(const char* JsonStr){
 

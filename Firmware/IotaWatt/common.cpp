@@ -128,6 +128,7 @@ IotaLog *Export_log = nullptr;                  // Optional export log
 RTC rtc;                                        // Instance of clock handler class
 Ticker Led_timer;
 messageLog Message_log;                         // Message log handler
+simSolar *simsolar = nullptr;
 
 // Define filename Strings of system files.          
 
