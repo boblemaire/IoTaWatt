@@ -460,15 +460,15 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
 
       case tokenVirtual:
       {
-        if (tokenDetail == 0)
+        if (tokenDetail == 0 && simsolar)
         {
           if (Units == Watts)
           {
-            operand = simSolarPower(newRec->UNIXtime);
+            operand = simsolar->power(localTime(newRec->UNIXtime));
           }
           else if (Units = Wh)
           {
-            operand = simSolarEnergy(oldRec->UNIXtime, newRec->UNIXtime);
+            operand = simsolar->energy(localTime(oldRec->UNIXtime), localTime(newRec->UNIXtime));
           }
           else
           {
@@ -527,14 +527,14 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
         }
 
         // Request requires the integration log.
-        // If out of the bounds of the log,
-        // Use the Net
+        // if not synchronized or out of bounds of the log, return zero;
+        // If out of the bounds of the log, return zero.
 
         IotaLog *log = _integrator->get_log();
-        if (oldRec->UNIXtime < log->firstKey() || newRec->UNIXtime > log->lastKey())
+        if ( ! _integrator->isSynchronized() || oldRec->UNIXtime < log->firstKey() || newRec->UNIXtime > log->lastKey())
         {
           trace(T_Script, 34);
-          operand = integration->run(oldRec, newRec, Units);
+          operand = 0;
           break;
         }
 
