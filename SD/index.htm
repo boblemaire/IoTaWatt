@@ -1418,6 +1418,13 @@ function calVTsave(obj){
         newItem.setAttribute("onclick", "keyInput(this)");
       }
     }
+    if(config.simsolar !== undefined){
+      var newsimSolar = document.createElement("p");
+      inputDropdown.appendChild(newsimSolar);
+      newsimSolar.innerHTML = "simSolar";
+      newsimSolar.value = "~0";
+      newsimSolar.setAttribute("onclick", "keyInput(this)");
+    }
     if(scriptEditAllowIntegrations && config.integrations !== undefined){
       for (i in config.integrations){
         var newNet = document.createElement("p");
