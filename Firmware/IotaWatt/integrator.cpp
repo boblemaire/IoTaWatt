@@ -72,21 +72,20 @@ uint32_t integrator::handle_initialize_s(){
         delete _log;
         return 0;
     }
-    
-    uint32_t lastWrite = MAX(_log->lastKey(), Current_log.lastKey() - (1800 * 24 * 1));
 
     // Initialize the intRecord;
 
-    _intRec.UNIXtime = lastWrite;
+    _intRec.UNIXtime = _log->lastKey();
     _intRec.serial = 0;
     _intRec.sumPositive = 0.0;
-
-    if(_log->lastKey()){
+ 
+    if(_intRec.UNIXtime){
         _log->readKey((IotaLogRecord*)&_intRec);
         log("%s: Last log entry %s", _id, localDateString(_log->lastKey()).c_str());
     }
     else {
-        log("%s: New log starting %s", _id, localDateString(lastWrite).c_str());
+        _intRec.UNIXtime = MAX(Current_log.lastKey() - (3600 * 24), Current_log.firstKey());
+        log("%s: New log starting %s", _id, localDateString(_intRec.UNIXtime).c_str());
     }
 
     _log->writeCache(true);
@@ -95,11 +94,6 @@ uint32_t integrator::handle_initialize_s(){
 }
 
 uint32_t integrator::handle_integrate_s(){
-    static uint32_t runus = 0;
-    static uint32_t reads = 0;
-    static uint32_t writes = 0;
-    static int runCount = 0;
-    uint32_t startus = micros();
     
     // While data is available
 
@@ -110,7 +104,6 @@ uint32_t integrator::handle_integrate_s(){
             _newRec = new IotaLogRecord;
             _newRec->UNIXtime = _intRec.UNIXtime;
             Current_log.readKey(_newRec);
-            reads++;
         }
 
         if(_newRec->UNIXtime < _intRec.UNIXtime + _interval){
@@ -120,7 +113,6 @@ uint32_t integrator::handle_integrate_s(){
             _newRec->UNIXtime = _oldRec->UNIXtime + _interval;
             _newRec->serial = _oldRec->serial;
             Current_log.readNext(_newRec);
-            reads++;
         }
 
         // If this record is within interval, add to integral.
@@ -140,18 +132,9 @@ uint32_t integrator::handle_integrate_s(){
         if(_newRec->UNIXtime >= _intRec.UNIXtime + _interval){
             _intRec.UNIXtime += _interval;
             _log->write((IotaLogRecord *)&_intRec);
-            writes++;
         }
 
-        if((micros() + 2500) >= bingoTime || reads > 500){
-            runCount++;
-            runus += micros() - startus;
-            if(runCount >= 100){
-                runCount = 0;
-                runus = 0;
-                reads = 0;
-                writes = 0;
-            }
+        if((micros() + 2500) >= bingoTime){
             return 10;
         }
     }
