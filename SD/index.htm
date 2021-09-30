@@ -2378,7 +2378,7 @@ function checkInfluxdb(){
   }
   else {
     complete &= validateRegex("serverBucket", pattern_bucket, "Alphanumeric._- bucket name required.");
-    complete &= validateRegex("serverOrgID", pattern_org, "16 character orgID required.");
+    complete &= validateRegex("serverOrgID", pattern_org, "16 character hex orgID required.");
     complete &= validateRegex("serverAuthToken", pattern_token, "88 character authorization token required.");
   }
   complete &= validateRegex("serverMeas", pattern_meas, "enter a string or $name, $units, if not specified $name will be used.");
