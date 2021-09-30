@@ -1336,7 +1336,7 @@ function calVTsave(obj){
     };
     scriptEditTable = EbyId("integrationsTable");
     scriptEditTable.innerHTML = "";
-    scriptEditSet = config.integrations;
+    scriptEditSet = config.integrations === undefined ? [] : config.integrations;
     scriptEditUnits = scriptEditUnitsIntegrations;
     scriptEditNameList = [];
     scriptEditAllowIntegrations = false;
