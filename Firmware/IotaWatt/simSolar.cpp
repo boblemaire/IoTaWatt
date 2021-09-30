@@ -36,4 +36,5 @@ bool simSolar::config(int sunrise, int sunset, uint32_t power){
     MM = sunset % 100;
     _sunset = float(HH) + float(MM) / 60.0;
     _power = power;
+    return true;
 }
