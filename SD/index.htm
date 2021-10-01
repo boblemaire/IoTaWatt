@@ -256,7 +256,7 @@
         <button class="actionSave" id="influxTagSave">save</button>
       </p>
     </div>
-    
+
                     <!-- ************* HTTPS Proxy Server ********************--> 
     
     <div id="setProxy" class="body color_body" style="display:none">
@@ -280,7 +280,7 @@
                                                       STATUS DISPLAY
          *********************************************************************************************************************-->
 
-    <div id="divStatus" class="body color_body" style="display:inline">
+    <div id="divStatus" class="body color_body" style="display:none">
       
       <button id="tabIO" class="groupTab" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs Status</button>
         <div id="statusIODiv" class="statusDiv" style="display: block;">
@@ -2265,7 +2265,7 @@ var pattern_URL = new RegExp('^(https?:\\/\\/)?'+ // protocol
     '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
     '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*$','i');  // port and path X
 var pattern_bucket = new RegExp('^[^_\\d]{1}[A-Z\\d_.\\-]{0,16}$', 'i');
-var pattern_org = new RegExp('^[A-Z\\d]{16}$','i');
+var pattern_org = new RegExp('^[A-F\\d]{16}$','i');
 var pattern_token = new RegExp('^[A-Z\\d_\\-]{86}[=]{2}$','i');
 var pattern_db = new RegExp('^[A-Z\\d_\\-]+$', 'i');
 var pattern_retp = new RegExp('^[A-Z\\d_]*$', 'i');
@@ -2290,7 +2290,7 @@ function checkInfluxdb(){
   }
   else {
     complete &= validateRegex("serverBucket", pattern_bucket, "Alphanumeric._- bucket name required.");
-    complete &= validateRegex("serverOrgID", pattern_org, "16 character orgID required.");
+    complete &= validateRegex("serverOrgID", pattern_org, "16 character hex orgID required.");
     complete &= validateRegex("serverAuthToken", pattern_token, "88 character authorization token required.");
   }
   complete &= validateRegex("serverMeas", pattern_meas, "enter a string or $name, $units, if not specified $name will be used.");
