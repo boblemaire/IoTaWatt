@@ -150,9 +150,9 @@ Unique Version 2 Parameters
     Roughly the equivalent of the `database` in v1.
 
 **organization ID**
-    The 16 hex-digit organization identifier obtained from influx.
-    Roughly equivalent to a user ID. Obtained from observing the URL
-    when browsing InfluxDB GUI ( http://server-name:port/orgs/<16 hex-digits>/... )
+    The 16 hex-digit organization identifier specific to the server instance.
+    Organization Id is found from the InfluxDB Web GUI by clicking your user
+    icon on the left navigation bar, then `About` and copy the 16 hex-digit value.
 
 **Authorization token**
     Authorization token produced by influx. (Data->Tokens->Generate Token-> Read/Write Token for IotaWatt bucket)
