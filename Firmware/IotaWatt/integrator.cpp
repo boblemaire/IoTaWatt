@@ -199,22 +199,84 @@ uint32_t integrator::handle_end_s(){
     return 0;
 }
 
-double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units Units){
+double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units Units, char method){
     trace(T_integrator, 0);
-    if( ! _synchronized){
+    if( ! _synchronized || newRecord->UNIXtime < _log->firstKey()){
         return 0;
     }
-    double elapsedHours = newRecord->logHours - oldRecord->logHours;
-    if(elapsedHours == 0 || oldRecord->UNIXtime < _log->firstKey()){
-        return 0;
-    }
-    trace(T_integrator, 1);
+    
+    // If being called for stats, no need for integration
 
-        // See if we already have either record (very likely).
-        // If so, move to correct position.
+    if (!oldRecord)
+    {
+        trace(T_integrator, 1);
+        double operand = _script->run(oldRecord, newRecord, "Watts");
+        trace(T_integrator, 1);
+
+        if (method == '+' && operand < 0)
+        {
+            return 0;
+        }
+        else if (method == '-' && operand > 0)
+        {
+            return 0;
+        }
+        return operand;
+    }
+
+    // Compute the net integration.
+
+    trace(T_integrator, 2);
+    double netWh = 0;
+    double posWh = 0;
+    double elapsedHours = 0;
+
+    if(oldRecord->UNIXtime >= _log->firstKey()){
+        trace(T_integrator, 3);
+        netWh = _script->run(oldRecord, newRecord, "Wh");
+        elapsedHours = newRecord->logHours - oldRecord->logHours;
+    }
+    else {
+        trace(T_integrator, 4);
+        IotaLogRecord baseRecord;
+        baseRecord.UNIXtime = _log->firstKey();
+        Current_log.readKey(&baseRecord);
+        netWh = _script->run(&baseRecord, newRecord, "Wh");
+        elapsedHours = newRecord->logHours - baseRecord.logHours;
+    }
+    trace(T_integrator, 5);
+
+    // If elapsed time is zero, result is zero.
+
+    if(elapsedHours == 0){
+        return 0;
+    }
+
+    // Set to produce Wh or Watts as appropriate;
+
+    if(Units == Wh){
+        trace(T_integrator, 6);
+        elapsedHours = 1;
+    }
+
+    // If net is requested,
+    // We have that, just return it;
+
+    if(method == 'N'){
+        trace(T_integrator, 7);
+        return netWh / elapsedHours;
+    }
+
+    // Request isn't net.
+    // Fetch the integration log records.
+
+    trace(T_integrator, 8);
+
+    // See if we already have either record (very likely).
+    // If so, move to correct position.
 
     if(oldRecord->UNIXtime == newInt->UNIXtime || newRecord->UNIXtime == oldInt->UNIXtime){
-        trace(T_integrator, 1);
+        trace(T_integrator, 8, 1);
         intRecord *swap = oldInt;
         oldInt = newInt;
         newInt = swap;
@@ -224,24 +286,29 @@ double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units
 
     if(oldRecord->UNIXtime != oldInt->UNIXtime){
         oldInt->UNIXtime = oldRecord->UNIXtime;
-        trace(T_integrator, 2);
+        trace(T_integrator, 9);
         int rtc = _log->readKey((IotaLogRecord*)oldInt); 
-        trace(T_integrator, 2, rtc);
+        trace(T_integrator, 9, rtc);
     }
 
     if(newRecord->UNIXtime != newInt->UNIXtime){
         newInt->UNIXtime = newRecord->UNIXtime;
-        trace(T_integrator, 3);
+        trace(T_integrator, 10);
         int rtc = _log->readKey((IotaLogRecord*)newInt);
-        trace(T_integrator, 3, rtc);
+        trace(T_integrator, 10, rtc);
     }
 
-    double value = MAX(newInt->sumPositive - oldInt->sumPositive, 0);
-    if(Units == Watts){
-        trace(T_integrator, 4);
-        return value / elapsedHours;
+    trace(T_integrator, 11);
+    posWh = MAX(newInt->sumPositive - oldInt->sumPositive, 0);
+
+    if(method == '+'){
+        trace(T_integrator, 12);
+        return posWh / elapsedHours;
     }
-    return value;
+
+    trace(T_integrator, 13);
+    return (netWh - posWh) / elapsedHours;
+
 }
 
 bool integrator::config(Script* script){

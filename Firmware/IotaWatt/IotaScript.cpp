@@ -468,7 +468,12 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
           }
           else if (Units = Wh)
           {
-            operand = simsolar->energy(localTime(oldRec->UNIXtime), localTime(newRec->UNIXtime));
+            if(oldRec){
+              operand = simsolar->energy(localTime(oldRec->UNIXtime), localTime(newRec->UNIXtime));
+            }
+            else {
+              operand = simsolar->energy(localTime(Current_log.firstKey()), localTime(newRec->UNIXtime));
+            }
           }
           else
           {
@@ -497,70 +502,13 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
           return 0;
         }
         integrator *_integrator = (integrator *)(integration->getParm());
-        char method = *(++token); 
-        
-        // If being called for stats, no need for integration
+        char method = *(++token);
 
-        if (!oldRec)
-        {
-          trace(T_Script, 32);
-          operand = integration->run(oldRec, newRec, "Watts");
+        // Get integrated value
 
-          if (method == '+' && operand < 0)
-          {
-            operand = 0;
-          }
-          else if (method == '-' && operand > 0)
-          {
-            operand = 0;
-          }
-          break;
-        }
-
-        // If request is for Net, just run the integration Script.
-
-        if (method == 'N')
-        {
-          trace(T_Script, 33);
-          operand = integration->run(oldRec, newRec, Units);
-          break;
-        }
-
-        // Request requires the integration log.
-        // if not synchronized or out of bounds of the log, return zero;
-        // If out of the bounds of the log, return zero.
-
-        IotaLog *log = _integrator->get_log();
-        if ( ! _integrator->isSynchronized() || oldRec->UNIXtime < log->firstKey() || newRec->UNIXtime > log->lastKey())
-        {
-          trace(T_Script, 34);
-          operand = 0;
-          break;
-        }
-
-        // The integration is the sum of positive components.
-
-        if (method == '+')
-        {
-          trace(T_Script, 35);
-          operand = _integrator->run(oldRec, newRec, Units);
-        }
-
-        // The sum of negative components is
-        // Net - sumPositive.
-
-        else if (method == '-')
-        {
-          trace(T_Script, 36);
-          operand = integration->run(oldRec, newRec, Units) - _integrator->run(oldRec, newRec, Units);
-        }
-
-        else
-        {
-          trace(T_Script, 37);
-          operand = 0;
-        }
-        trace(T_Script, 38);
+        trace(T_Script, 30);
+        operand = _integrator->run(oldRec, newRec, Units, method);
+        trace(T_Script, 30);
         break;
       }
     } // switch (tokenType)
