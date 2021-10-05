@@ -113,7 +113,8 @@
  *   06/17/21 02_06_04 Fix query amps when doubled, suppress recovered pvouput http errors
  *   07/08/21 02_06_05 Issue with influxDB uploaders not recovering data from server outage.
  *   09/25/21 02_06_06 Support alternate RTC, datalog low-write, influxDB2 restart query, more robust Script
- *   09/27/21 02_07_05 Add integrations 
+ *   09/27/21 02_07_05 Add integrations
+ *   10/05/21 02_07_05 Modify integrations algorithm to simplify and improve query range
  * 
  *****************************************************************************************************/
 
