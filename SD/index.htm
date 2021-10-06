@@ -2291,7 +2291,7 @@
                     serverConfig.revision++;
                     EbyId("serverHead").innerHTML = "Edit influxDB_v1 Uploader";
                     EbyId("serverDelete").style.display = "inline";
-                    EbyId("serverDelete").setAttribute("onclick", "deleteInfluxdb();");
+                    EbyId("serverDelete").setAttribute("onclick", "serverDelete();");
                 } else {
                     EbyId("serverHead").innerHTML = "Add influxDB_v1 Uploader";
                     serverConfig = {
@@ -2313,7 +2313,7 @@
                     serverConfig.revision++;
                     EbyId("serverHead").innerHTML = "Edit influxDB_v2 Uploader";
                     EbyId("serverDelete").style.display = "inline";
-                    EbyId("serverDelete").setAttribute("onclick", "deleteInfluxdb();");
+                    EbyId("serverDelete").setAttribute("onclick", "serverDelete();");
                 } else {
                     EbyId("serverHead").innerHTML = "Add influxDB_v2 Uploader";
                     serverConfig = {
