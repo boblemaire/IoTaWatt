@@ -18,6 +18,7 @@ IoTaWatt documentation
     Configure PVoutput <PVoutput>
     Configure Emoncms <Emoncms>
     Configure influxDB <influxDB>
+    Integrations <Integrations>
     Setting up Passwords <passConfig>
     Three-phase power <threePhase>
     CT Basics <CTbasics>
