@@ -22,6 +22,7 @@
  #include "IotaWatt.h"
  #define GapFill 600           // Fill in gaps of less than this seconds
  void dataLogWDT();
+ void logtoHistory(IotaLogRecord* logRecord);
 
  uint32_t dataLog(struct serviceBlock* _serviceBlock){
   enum states {initialize, synchronize, logData};
@@ -159,6 +160,11 @@
       
       Current_log.write(logRecord);
 
+      // Courtesy call to History Log handler.
+      // Will write appropriate records when synchronized.
+
+      logtoHistory(logRecord);
+
       // If there are integrations,
       // Call their handlers to add new integration records.
 
@@ -249,6 +255,13 @@ uint32_t logReadKey(IotaLogRecord* callerRecord) {
       // use current
 
   if(key % History_log.interval()){
+    return Current_log.readKey(callerRecord);
+  }
+
+      // If past end of history,
+      // use current
+
+  if(key > History_log.lastKey()){
     return Current_log.readKey(callerRecord);
   }
 
