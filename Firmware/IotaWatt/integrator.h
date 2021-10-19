@@ -49,7 +49,9 @@ class integrator {
             uint32_t UNIXtime;          // Time period represented by this record
             int32_t serial;             // record number in file
             double sumPositive;         // Sum of positive intervals (import)
-            intRecord() : UNIXtime(0), serial(0), sumPositive(0){}; 
+            double sumNegative;         // Sum of the negative intervals (export)
+            double sumNet;                 // Superfluous but need to fill to factor of blocksize (32)
+            intRecord() : UNIXtime(0), serial(0), sumPositive(0), sumNegative(0), sumNet(0){}; 
         } _intRec;
 
         intRecord _cache1, _cache2;     // The integration log cache reduces reads during queries

@@ -65,20 +65,23 @@ uint32_t integrator::handle_initialize_s(){
     filepath += '/';
     filepath += _name;
     filepath += ".log";
-    _log = new IotaLog(sizeof(intRecord), 5, 366, 128);
+    _log = new IotaLog(sizeof(intRecord), 5, 366, 32);
     trace(T_integrator,10);
     if(_log->begin(filepath.c_str())){
         log("%s: Couldn't open integration file %s.", _id, filepath.c_str());
         delete _log;
         return 0;
     }
+    trace(T_integrator,10);
 
     // Initialize the intRecord;
 
     _intRec.UNIXtime = _log->lastKey();
     _intRec.serial = 0;
-    _intRec.sumPositive = 0.0;
- 
+    _intRec.sumPositive = 0;
+    _intRec.sumNegative = 0;
+    _intRec.sumNet = 0;
+
     if(_intRec.UNIXtime){
         _log->readKey((IotaLogRecord*)&_intRec);
         log("%s: Last log entry %s", _id, localDateString(_log->lastKey()).c_str());
@@ -124,6 +127,10 @@ uint32_t integrator::handle_integrate_s(){
                 if(value > 0){
                     _intRec.sumPositive += value;
                 }
+                else {
+                    _intRec.sumNegative += value;
+                }
+                _intRec.sumNet += value;
             }
         }
 
@@ -159,8 +166,11 @@ void integrator::newLogEntry(IotaLogRecord* oldRecord, IotaLogRecord* newRecord)
         double elapsed = newRecord->logHours - oldRecord->logHours;
         if(elapsed == elapsed && elapsed > 0){
             double value = _script->run(oldRecord, newRecord, "Wh");
-            if(value > 0){
+            if(value >= 0){
                 _intRec.sumPositive += value;
+            }
+            else {
+                _intRec.sumNegative += value;
             }
         }
         _intRec.UNIXtime += _interval;
@@ -224,16 +234,10 @@ double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units
         return operand;
     }
 
-    // Compute the net integration.
-
-    trace(T_integrator, 2);
-    double netWh = 0;
-    double posWh = 0;
+    
     double elapsedHours = 0;
-
     if(oldRecord->UNIXtime >= _log->firstKey()){
         trace(T_integrator, 3);
-        netWh = _script->run(oldRecord, newRecord, "Wh");
         elapsedHours = newRecord->logHours - oldRecord->logHours;
     }
     else {
@@ -241,14 +245,13 @@ double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units
         IotaLogRecord baseRecord;
         baseRecord.UNIXtime = _log->firstKey();
         Current_log.readKey(&baseRecord);
-        netWh = _script->run(&baseRecord, newRecord, "Wh");
         elapsedHours = newRecord->logHours - baseRecord.logHours;
     }
     trace(T_integrator, 5);
 
     // If elapsed time is zero, result is zero.
 
-    if(elapsedHours == 0){
+    if(elapsedHours <= 0){
         return 0;
     }
 
@@ -259,15 +262,6 @@ double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units
         elapsedHours = 1;
     }
 
-    // If net is requested,
-    // We have that, just return it;
-
-    if(method == 'N'){
-        trace(T_integrator, 7);
-        return netWh / elapsedHours;
-    }
-
-    // Request isn't net.
     // Fetch the integration log records.
 
     trace(T_integrator, 8);
@@ -299,16 +293,21 @@ double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units
     }
 
     trace(T_integrator, 11);
-    posWh = MAX(newInt->sumPositive - oldInt->sumPositive, 0);
 
     if(method == '+'){
-        trace(T_integrator, 12);
-        return posWh / elapsedHours;
+        trace(T_integrator, 12,1);
+        return (newInt->sumPositive - oldInt->sumPositive) / elapsedHours;
     }
-
+    else if(method == '-'){
+        trace(T_integrator, 12,2);
+        return (newInt->sumNegative - oldInt->sumNegative) / elapsedHours;
+    }
+    else if(method == 'N'){
+        trace(T_integrator, 12,3);
+        return (newInt->sumNegative - oldInt->sumNegative + newInt->sumPositive - oldInt->sumPositive) / elapsedHours;
+    }
     trace(T_integrator, 13);
-    return (netWh - posWh) / elapsedHours;
-
+    return 0;
 }
 
 bool integrator::config(Script* script){
