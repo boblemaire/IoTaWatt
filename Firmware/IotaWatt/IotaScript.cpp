@@ -453,36 +453,26 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
           default:
             operand = 0.0;
             break;
-            
+             
         } // switch (units)
         break;
       }
 
       case tokenVirtual:
       {
+        operand = 0;
         if (tokenDetail == 0 && simsolar)
         {
-          if (Units == Watts)
-          {
+          if (oldRec) {
+            double elapsed = newRec->logHours - oldRec->logHours;
+            operand = simsolar->energy(localTime(oldRec->UNIXtime), localTime(newRec->UNIXtime)) * elapsed / (double(newRec->UNIXtime - oldRec->UNIXtime) / 3600);
+            if(Units == Watts){
+              operand /= double(newRec->UNIXtime - oldRec->UNIXtime) / 3600;
+            }
+          }
+          else {
             operand = simsolar->power(localTime(newRec->UNIXtime));
           }
-          else if (Units = Wh)
-          {
-            if(oldRec){
-              operand = simsolar->energy(localTime(oldRec->UNIXtime), localTime(newRec->UNIXtime));
-            }
-            else {
-              operand = simsolar->energy(localTime(Current_log.firstKey()), localTime(newRec->UNIXtime));
-            }
-          }
-          else
-          {
-            operand = 0;
-          }
-        }
-        else
-        {
-          operand = 0;
         }
         break;
       }
