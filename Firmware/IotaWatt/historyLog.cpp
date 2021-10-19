@@ -20,8 +20,15 @@
  * 
  **********************************************************************************************/
 #include "IotaWatt.h"
-#define GapFill 600           // Fill in gaps of less than this seconds 
-      
+#define GapFill 600           // Fill in gaps of less than this seconds
+bool synchronized = false;    // Set true when history log is synchronized with the current log
+
+void logtoHistory(IotaLogRecord* logRecord){
+  if(synchronized && (logRecord->UNIXtime % History_log.interval() == 0)){
+    History_log.write(logRecord);
+  }
+}
+
 uint32_t historyLog(struct serviceBlock* _serviceBlock){
   enum states {initialize, logFill, logData};
   static states state = initialize;
@@ -128,19 +135,19 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
           logRecord = nullptr;
           return 0;
         }
+
         trace(T_history,8); 
         History_log.write(logRecord);
-        if((History_log.lastKey() + History_log.interval()) > Current_log.lastKey()){
+        
+        if(micros() > bingoTime){
           delete logRecord;
           logRecord = nullptr;
-        }
-        if(micros() > bingoTime){
           return 15;
         }
       }
-      return History_log.lastKey() + History_log.interval() + 1;
+      trace(T_history, 9);
+      synchronized = true;
+      return 0; 
     }
   }
-  trace(T_history,9);
-  return History_log.lastKey() + History_log.interval(); 
 }
