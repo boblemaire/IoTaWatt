@@ -6,7 +6,9 @@
     // takes over with direct calls to create new entries at the
     // same time as datalog records, eliminating race conditions. 
 
-    uint32_t integrator_dispatch(struct serviceBlock* serviceBlock) {
+const char intDirectory_P[] PROGMEM = IOTA_INTEGRATIONS_DIR;
+
+uint32_t integrator_dispatch(struct serviceBlock* serviceBlock) {
     trace(T_integrator,0);
     integrator *_this = (integrator *)serviceBlock->serviceParm;
     trace(T_integrator,1);
@@ -36,6 +38,20 @@ uint32_t integrator::dispatch(struct serviceBlock *serviceBlock)
     return 0;
 }
 
+integrator::~integrator(){
+    _log->end();
+    String filepath(FPSTR(intDirectory_P));
+    filepath += "/";
+    filepath += _name;
+    filepath += ".log";
+    SD.remove(filepath.c_str());
+    log("%s: Integration log %s deleted.", _id, _name);
+    delete _log;
+    delete[] _name;
+    delete _oldRec;
+    delete _newRec;
+};
+
 uint32_t integrator::handle_initialize_s(){
     trace(T_integrator,10);
 
@@ -47,12 +63,9 @@ uint32_t integrator::handle_initialize_s(){
 
     // Insure /iotawatt/integrations exists.
 
-    char *dir = charstar(F(IOTA_INTEGRATIONS_DIR));
-
-    if( ! SD.exists(dir)){
-        if(!SD.mkdir(dir)){
+    if( ! SD.exists(FPSTR(intDirectory_P))){
+        if(!SD.mkdir(FPSTR(intDirectory_P))){
             log("%s: could not create integration directory.", _id);
-            delete[] dir;
             return 0;
         } 
     }
@@ -60,8 +73,7 @@ uint32_t integrator::handle_initialize_s(){
     // Open the integration log
 
     trace(T_integrator,10);
-    String filepath(dir);
-    delete[] dir;
+    String filepath(FPSTR(intDirectory_P));
     filepath += '/';
     filepath += _name;
     filepath += ".log";

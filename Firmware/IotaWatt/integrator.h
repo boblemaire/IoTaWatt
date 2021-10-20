@@ -17,13 +17,8 @@ class integrator {
                         _newRec(0),
                         _state(initialize_s){};
 
-        ~integrator(){ 
-            delete _log;
-            delete[] _name;
-            delete _oldRec;
-            delete _newRec;
-        };
-
+        ~integrator();
+       
         bool config(Script* script);
         void setScript(Script* script);
         void getStatusJson(JsonObject&);

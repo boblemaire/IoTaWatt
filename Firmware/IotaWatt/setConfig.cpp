@@ -665,7 +665,7 @@ bool configIntegrations(const char* JsonStr){
     oldScript = oldScript->next();
   }
 
-        // Create integrators for new integratioons and call config for all.
+        // Create integrators for new integrations and call config for all.
 
   newScript = newIntegrations->first();
   while(newScript){

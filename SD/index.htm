@@ -596,6 +596,7 @@
         var scriptEditIndex = -1;
         var scriptEditSave;
         var scriptEditReturn;
+        var scriptEditDelete;
         var scriptEditNameList = [];
         var scriptEditNameTitle = "";
         var scriptEditNamePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
@@ -1473,6 +1474,9 @@
                 EbyId("divIntegrations").style.display = "table";
                 configIntegrations();
             };
+            scriptEditDelete = function(script){
+              return confirm("Deleting the integration will delete the integration log.");
+            }
             scriptEditTable = EbyId("integrationsTable");
             scriptEditTable.innerHTML = "";
             scriptEditSet = config.integrations === undefined ? [] : config.integrations;
@@ -1614,6 +1618,7 @@
             editingScript = false;
             scriptEditReturn();
         }
+      
 
         function calcSave() {
             if (scriptEditIndex < scriptEditSet.length) {
@@ -1639,6 +1644,11 @@
         }
 
         function calcDelete() {
+            if(scriptEditDelete != undefined){
+              if(! scriptEditDelete(scriptEditSet[scriptEditIndex])){
+                return;
+              }
+            }
             scriptEditSet.splice(scriptEditIndex, 1);
             scriptEditSave();
             currentBodyPop();

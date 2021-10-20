@@ -115,6 +115,7 @@
  *   09/25/21 02_06_06 Support alternate RTC, datalog low-write, influxDB2 restart query, more robust Script
  *   09/27/21 02_07_00 Add integrations
  *   10/05/21 02_07_01 Modify integrations algorithm to simplify and improve query range
+ *   10/18/21 02_07_02 More changes to integrations and add synchronization of logs updates
  * 
  *****************************************************************************************************/
 
