@@ -36,8 +36,8 @@
                 title="Specify the VTs and CTs that are used">Inputs</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,configOutputs)"
                 title="Define output values for status display and local graphs">Outputs</button>
-            <button class="mainMenuButton" onclick="mainMenuButton(this,configIntegrations)"
-                title="Define integrations to develop import/export values">Integrations</button>
+            <button class="mainMenuButton" onclick="mainMenuButton(this,configIntegrators)"
+                title="Define Integrators to develop import/export values">Integrators</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,buildWebServer)"
                 title="Specify data uploader(s) to external servers">Data Uploaders</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,setProxy)" 
@@ -162,12 +162,12 @@
                 </div>
             </div>
 
-            <!-- *************** Integrations configuration ******************-->
+            <!-- *************** Integrators configuration ******************-->
 
-            <div id="configIntegrations" class="body" style="display: none;">
-                <div class="bodyDiv color_body" id="divIntegrations">
-                    <h3>Integrations</h3>
-                    <table id="integrationsTable"></table>
+            <div id="configIntegrators" class="body" style="display: none;">
+                <div class="bodyDiv color_body" id="divIntegrators">
+                    <h3>Integrators</h3>
+                    <table id="IntegratorsTable"></table>
                 </div>
             </div>
 
@@ -602,9 +602,9 @@
         var scriptEditNamePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
         var scriptEditUnits = [];
         var scriptEditUniqueNames = true;
-        scriptEditAllowIntegrations = true;
+        scriptEditAllowIntegrators = true;
         var scriptEditUnitsOutput = ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "VAR", "VARh"];
-        var scriptEditUnitsIntegrations = ["Wh"];
+        var scriptEditUnitsIntegrators = ["Wh"];
         var scriptEditUnitsUpload = ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"];
         var dstRules = [{
             id: "Americas",
@@ -1460,34 +1460,34 @@
         }
 
         /*******************************************************************************************
-         *                    Configure Integrations
+         *                    Configure Integrators
          * ****************************************************************************************/
-        function configIntegrations() {
-            currentBodyPush("configIntegrations");
+        function configIntegrators() {
+            currentBodyPush("configIntegrators");
 
             scriptEditSave = function() {
-                config.integrations = scriptEditSet
+                config.integrators = scriptEditSet
                 uploadConfig();
             };
             scriptEditReturn = function() {
                 EbyId("divCalc").style.display = "none";
-                EbyId("divIntegrations").style.display = "table";
-                configIntegrations();
+                EbyId("divIntegrators").style.display = "table";
+                configIntegrators();
             };
             scriptEditDelete = function(script){
               return confirm("Deleting the integration will delete the integration log.");
             }
-            scriptEditTable = EbyId("integrationsTable");
+            scriptEditTable = EbyId("IntegratorsTable");
             scriptEditTable.innerHTML = "";
-            scriptEditSet = config.integrations === undefined ? [] : config.integrations;
-            scriptEditUnits = scriptEditUnitsIntegrations;
+            scriptEditSet = config.integrators === undefined ? [] : config.integrators;
+            scriptEditUnits = scriptEditUnitsIntegrators;
             scriptEditNameList = [];
-            scriptEditAllowIntegrations = false;
+            scriptEditAllowIntegrators = false;
             scriptEditUniqueNames = true;
             scriptEditNameTitle = "Name must be alphanumeric and start with a letter";
             scriptEditNamePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
             editScript();
-            scriptEditAllowIntegrations = true;
+            scriptEditAllowIntegrators = true;
         }
 
         /**********************************************************************************************
@@ -1505,7 +1505,7 @@
          *                scriptEditNamePattern - regex pattern for validation
          *                scriptEditNameTitle - title to be associated with name
          * 
-         *                scriptEditAllowIntegrations - Add integrations as inputs 
+         *                scriptEditAllowIntegrators - Add Integrators as inputs 
          *                
          * *******************************************************************************************/
 
@@ -1568,22 +1568,22 @@
                 newsimSolar.value = "~0";
                 newsimSolar.setAttribute("onclick", "keyInput(this)");
             }
-            if (scriptEditAllowIntegrations && config.integrations !== undefined) {
-                for (i in config.integrations) {
+            if (scriptEditAllowIntegrators && config.Integrators !== undefined) {
+                for (i in config.Integrators) {
                     var newNet = document.createElement("p");
                     inputDropdown.appendChild(newNet);
-                    newNet.innerHTML = config.integrations[i].name + ".net";
-                    newNet.value = "!" + config.integrations[i].name;
+                    newNet.innerHTML = config.Integrators[i].name + ".net";
+                    newNet.value = "!" + config.Integrators[i].name;
                     newNet.setAttribute("onclick", "keyInput(this)");
                     var newPos = document.createElement("p");
                     inputDropdown.appendChild(newPos);
-                    newPos.innerHTML = config.integrations[i].name + ".pos";
-                    newPos.value = "!+" + config.integrations[i].name;
+                    newPos.innerHTML = config.Integrators[i].name + ".pos";
+                    newPos.value = "!+" + config.Integrators[i].name;
                     newPos.setAttribute("onclick", "keyInput(this)");
                     var newNeg = document.createElement("p");
                     inputDropdown.appendChild(newNeg);
-                    newNeg.innerHTML = config.integrations[i].name + ".neg";
-                    newNeg.value = "!-" + config.integrations[i].name;
+                    newNeg.innerHTML = config.Integrators[i].name + ".neg";
+                    newNeg.value = "!-" + config.Integrators[i].name;
                     newNeg.setAttribute("onclick", "keyInput(this)");
                 }
             }
@@ -3058,6 +3058,14 @@
                 }
                 config.server = undefined;
                 rewrite = true;
+            }
+            
+            if(config.integrations != undefined){
+              if(config.integrators == undefined){
+                config.integrators == config.integrations;
+              }
+              config.integrations = undefined;
+              rewrite = true;
             }
 
             if (rewrite) {
