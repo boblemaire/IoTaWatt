@@ -11,7 +11,7 @@ bool configMasterPhaseArray();
 bool configOutputs(const char*);
 void hashFile(uint8_t* sha, File file);
 bool exportLogConfig(const char *configObj);
-bool configIntegrations(const char *);
+bool configIntegrators(const char *);
 bool configSimSolar(const char *);
 
 //************************************************************************************************
@@ -138,19 +138,19 @@ boolean setConfig(const char* configPath){
   trace(T_CONFIG,20);
   configMasterPhaseArray();
 
-  // ************************************ configure integrations *************************
+  // ************************************ configure integrators *************************
 
   {      
     trace(T_CONFIG,25);
-    JsonArray& integrationsArray = Config[F("integrations")];
-    char* integrationsStr;
-    if(integrationsArray.success()){
-      integrationsStr = JsonDetail(ConfigFile, integrationsArray);
+    JsonArray& integratorsArray = Config[F("integrators")];
+    char* integratorsStr;
+    if(integratorsArray.success()){
+      integratorsStr = JsonDetail(ConfigFile, integratorsArray);
     } else {
-      integrationsStr = charstar("[]");
+      integratorsStr = charstar("[]");
     }
-    configIntegrations(integrationsStr);
-    delete[] integrationsStr;
+    configIntegrators(integratorsStr);
+    delete[] integratorsStr;
   }
 
   // ************************************ configure outputs *******************************
@@ -619,16 +619,16 @@ bool configInputs(const char* JsonStr){
   return true;
 }
 
-//********************************** configIntegrations ***********************************************
+//********************************** configIntegrators ***********************************************
 
-bool configIntegrations(const char* JsonStr){
+bool configIntegrators(const char* JsonStr){
 
       // Create new ScriptSet from Json config
 
   DynamicJsonBuffer Json;
-  JsonArray& integrationsArray = Json.parseArray(JsonStr);
-  if( ! integrationsArray.success()){
-    log("integrations: Json parse failed");
+  JsonArray& integratorsArray = Json.parseArray(JsonStr);
+  if( ! integratorsArray.success()){
+    log("integrators: Json parse failed");
     return false;
   }
 
@@ -639,7 +639,7 @@ bool configIntegrations(const char* JsonStr){
 
       // Move integrators for enduring integrations
 
-  ScriptSet* newIntegrations = new ScriptSet(integrationsArray);
+  ScriptSet* newIntegrations = new ScriptSet(integratorsArray);
   Script *newScript = newIntegrations->first();
   while(newScript){
     Script *oldScript = oldIntegrations->first();

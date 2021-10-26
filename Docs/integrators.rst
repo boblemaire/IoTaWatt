@@ -1,8 +1,8 @@
 ============
-Integrations
+Integrators
 ============
 
-What are integrations?
+What are integrators?
 ----------------------
 
 The IoTaWatt datalog provides high speed access to all monotonic data derived 
@@ -18,32 +18,36 @@ The individual five-second data in the datalog is signed and will be a net
 import (+) or export (-), but when the data is viewed in a broader context 
 of hours, the net does not provide accurate import and export values.
 
-What is needed is to add up those individual 5 second imports (positive values)
+What is needed is a way to add up those individual 5 second imports (positive values)
 and exports (negative values), and to save them as monotonic values that can
-be used in output Scripts.  That's what integrations do.
+be used in output Scripts.  That's what integrators do.
 
 How they work
 -------------
 
 As previously mentioned, the detail data exists in the five-second current datalog.
-When you create an integration, a small additional datalog is created to
-contain the integrated value. The new datalog has the same name as the Integration. 
+When you create an integrator, a small additional datalog is created to
+contain the integrated values. We call these integrations, in the mathematical sense,
+not to be confused with combining as in Home Assistant integrations.
 
-A background Service is created to begin processing the five-second datalog 
-from the previous 24 hours. This takes about ten minutes. The Integration accumulates
-the positive five-second values in the new datalog.
+A background Service is created to begin processing the five-second datalog, by default 
+from the previous 24 hours. This takes about ten minutes. The Integrator accumulates
+the positive and negative five-second values in the new integration datalog.
 
 When the background process has processed the historical data, it is *synchronized*
-with the current log.  At this point the Service terminates and the
+with the current log. At this point the Service terminates and the
 datalog Service, which maintains the current log, takes on the task of updating
-the Integration log as an atomic operation when writing new datalog entries.
+the integration log as an atomic operation when writing new datalog entries.
 
-Creating an Integration
+When the log is synchronized, 
+the integrated results are available for use in output Scripts (calculator)
+
+Creating an Integrator
 -----------------------
 
 Hover over |Setup| and click |Integrations| in the dropdown buttons.
 
-.. image:: pics/integrations/integrationsDisplay.png
+.. image:: pics/integrators/integratorsDisplay.png
     :scale: 60 %
     :align: center
     :alt: Outputs Display
@@ -87,7 +91,7 @@ Note that for any period,  .net = .pos + .neg
     :scale: 60 %
     :alt: **Setup button**
 
-.. |Integrations| image:: pics/integrations/integrationsButton.png
+.. |Integrations| image:: pics/integrators/integratorsButton.png
     :scale: 60 %
     :alt: **Integrations button**
 

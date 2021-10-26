@@ -14,11 +14,12 @@ IoTaWatt documentation
     CT Configuration <CTconfig>
     Status Display <status>
     Outputs <outputs.rst>
+    Integrators <integrators>
     Uploaders <uploaders>
     Configure PVoutput <PVoutput>
     Configure Emoncms <Emoncms>
     Configure influxDB <influxDB>
-    Integrations <Integrations>
+    Home Assistant <homeAssistant>
     Setting up Passwords <passConfig>
     Three-phase power <threePhase>
     CT Basics <CTbasics>
