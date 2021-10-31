@@ -85,6 +85,7 @@ Script::Script(const char* name, const char* unit, const char* script)
             break;
           } 
         }
+        trace(T_Script, 0);
       encodeScript(script);
     }
 
@@ -147,14 +148,17 @@ void    Script::print() {
 }
 
 bool    Script::encodeScript(const char* script){
-  char parseChars[16] = {SCRIPT_CHAR_CONSTANT, SCRIPT_CHAR_INPUT};
-  strcpy(&parseChars[2], opChars);
+  trace(T_Script, 5);
+  char parseChars[16] = {SCRIPT_CHAR_CONSTANT, SCRIPT_CHAR_INPUT, SCRIPT_CHAR_INTEGRATION, SCRIPT_CHAR_VIRTUAL};
+  trace(T_Script, 5);
+  strcpy(&parseChars[4], opChars);
   int tokenCount = 0;
   int constantCount = 0;
 
   // Count the tokens, constants and integrations.
 
   const char *scan = script;
+  trace(T_Script, 5);
   do {
     scan = strpbrk(scan, parseChars);
     if(scan){
@@ -165,6 +169,7 @@ bool    Script::encodeScript(const char* script){
       scan++;
     }
   } while (scan);
+  trace(T_Script, 6, tokenCount);
   
   // Allocate storage and encode.
   
@@ -179,6 +184,7 @@ bool    Script::encodeScript(const char* script){
     if(script[j] == SCRIPT_CHAR_INPUT){
       char* endptr;
       int n = strtol(&script[j+1], &endptr, 10);
+      trace(T_Script, 10, n);
       j = endptr - script;
       _tokens[i++] = tokenInput + n;
     } 
@@ -186,6 +192,7 @@ bool    Script::encodeScript(const char* script){
     // Constant operand
 
     else if (script[j] == SCRIPT_CHAR_CONSTANT){
+      trace(T_Script, 15);
       _tokens[i++] = tokenConstant + constantCount--;
       char* endptr;
       _constants[constantCount] = strtof(&script[j+1], &endptr);
@@ -197,6 +204,7 @@ bool    Script::encodeScript(const char* script){
     else if(script[j] == SCRIPT_CHAR_VIRTUAL){
       char* endptr;
       int n = strtol(&script[j+1], &endptr, 10);
+      trace(T_Script, 20, n);
       j = endptr - script;
       _tokens[i++] = tokenVirtual + n;
     }
@@ -204,6 +212,7 @@ bool    Script::encodeScript(const char* script){
     // Integration operand
 
     else if(script[j] == SCRIPT_CHAR_INTEGRATION){
+      trace(T_Script, 25, script[j+1]);
       char method = 'N';
       if(script[j+1] == '+'){
         method = '+';
@@ -227,10 +236,12 @@ bool    Script::encodeScript(const char* script){
         index++;
       }
       if(integration){
+        trace(T_Script, 28, index);
         _tokens[i++] = tokenIntegration + index;
         _tokens[i++] = method;
       }
       else {
+        trace(T_Script, 29);
         log("Script: integration %s not defined in script %s.", name, this->_name);
         _tokens[i++] = tokenConstant;
       }
@@ -240,6 +251,7 @@ bool    Script::encodeScript(const char* script){
     // Operator
 
     else if(strchr(opChars, script[j])){
+      trace(T_Script, 30);
       _tokens[i++] = tokenOperator + strchr(opChars, script[j++]) - opChars;
     }
 

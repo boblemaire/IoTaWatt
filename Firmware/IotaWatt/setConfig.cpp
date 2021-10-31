@@ -159,6 +159,7 @@ boolean setConfig(const char* configPath){
     trace(T_CONFIG,30);
     delete outputs;
     outputs = nullptr;
+    trace(T_CONFIG,30,1);
     JsonArray& outputsArray = Config[F("outputs")];
     char* outputsStr;
     if(outputsArray.success()){
@@ -166,7 +167,9 @@ boolean setConfig(const char* configPath){
     } else {
       outputsStr = charstar("[]");
     }
+    trace(T_CONFIG,30,2);
     configOutputs(outputsStr);
+    trace(T_CONFIG,30,3);
     delete[] outputsStr;
 
   }
@@ -690,12 +693,16 @@ bool configIntegrators(const char* JsonStr){
 
 bool configOutputs(const char* JsonStr){
   DynamicJsonBuffer Json;
+  trace(T_CONFIG,31);
   JsonArray& outputsArray = Json.parseArray(JsonStr);
+  trace(T_CONFIG,31,1);
   if( ! outputsArray.success()){
     log("outputs: Json parse failed");
     return false;
   }
+  trace(T_CONFIG,31,2);
   outputs = new ScriptSet(outputsArray);
+  trace(T_CONFIG,31,3);
   // outputs->sort([](Script* a, Script* b)->int{
   //   int res = strcmp(a->name(), b->name());
   //   Serial.printf("%s, %s, %d\r\n",a->getUnits(), b->getUnits(), res);

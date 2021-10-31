@@ -206,7 +206,8 @@ struct EEprom {
 #define T_uploader 31      // Uploader base class
 #define T_influx1 32       // influxDB_v1_uploader
 #define T_integrator 33    // Integrator class  
-#define T_Script 34                        
+#define T_Script 34
+#define T_Scriptset 35                        
 
       // LED codes
 
