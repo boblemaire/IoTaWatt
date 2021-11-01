@@ -113,6 +113,14 @@ Insure that they indicate positive when importing power (at night).
 If they indicate negative at night, reverse the CT or check the
 "reverse" box in the config.
 
+Solar inverter connects after mains (most common)
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The most common service has the solar inverter connected to a breaker
+in the service panel, or to the mains cable(s) after the mains CT.
+With this configuration, the solar reduces the energy flow in the mains
+and will drive the mains negative when generation exceeds energy use.  
+
 .. figure:: pics/integrators/configureMainIntegrator.png
     :scale: 60 %
     :align: right
@@ -134,6 +142,13 @@ a three-phase service will have three:
   (three-phase)
     grid = main_1 + main_2 + main_3 
 
+Solar inverter connects before mains
+""""""""""""""""""""""""""""""""""""
+
+In this configuration, the solar inverter is connected to the mains feeder
+before (on meter side) the mains CT. Solar generation does not effect the energy measured
+by the mains CTs.
+
 .. figure:: pics/integrators/configureType1Solar.png
     :scale: 60 %
     :align: right
@@ -141,8 +156,7 @@ a three-phase service will have three:
 
     Single-phase solar connected before mains.
 
-if your solar is connected to your service on the meter side of
-the mains, subtract the solar from the grid total:
+You must subtract the solar from the grid total:
 
   (single-phase)
     grid = main_1 - (solar max 0)
