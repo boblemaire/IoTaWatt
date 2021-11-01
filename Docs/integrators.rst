@@ -10,7 +10,7 @@ directly from the datalog or indirectly with output Scripts.  That is to say, if
 the total value only increases, or only decreases, everything works just fine.
 
 The exception is where a CT is configured with "allow negative values" as with 
-a mains CT where solar or other alternative energy sources can "export"
+a mains CT where solar or other alternative energy sources can send excess
 energy to the grid.  In those cases, the total energy represented is the net 
 energy, not a monotonically increasing value. Additionally, Scripts that do 
 not result in monotonically increasing values may not produce the intended result.
@@ -65,7 +65,7 @@ You can click |edit| on existing integrations to change or delete them.
     :alt: Configure Integrator
 
 From here, the process is identical to adding any other output.
-For a refresher, see `Adding a new Output <outputs.rst>`_ 
+For a refresher, see `Adding a new Output <outputs.html>`_ 
 Integrations must be uniquely named using alpha-numeric characters and the
 underscore (_) character.
 
@@ -159,7 +159,7 @@ where you can see the solar directly reduce the grid power.
 
 .. image:: pics/integrators/gridoutput.png
     :scale: 60 %
-    :align: center
+    :align: right
     :alt: grid plot
 
 When you are satisfied the grid output correctly reflects your grid power flow,
