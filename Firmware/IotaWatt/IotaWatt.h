@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.   
 ***********************************************************************************/
-#define IOTAWATT_VERSION "02_06_06"
+#define IOTAWATT_VERSION "02_07_03"
 #define DEVICE_NAME "IotaWatt"
 
 #define PRINT(txt,val) Serial.print(txt); Serial.print(val);      // Quick debug aids
@@ -76,6 +76,7 @@
 #include "CSVquery.h"
 #include "xbuf.h"
 #include "xurl.h"
+#include "simSolar.h"
 
       // Declare global instances of classes
 
@@ -93,6 +94,7 @@ extern IotaLog *Export_log;
 extern RTC rtc;
 extern Ticker Led_timer;
 extern messageLog Message_log;
+extern simSolar *simsolar;
 
 #define SECONDS_PER_MINUTE 60
 #define SECONDS_PER_HOUR 3600
@@ -113,7 +115,7 @@ extern messageLog Message_log;
 #define IOTA_CONFIG_OLD_PATH  "/config-1.txt"
 #define IOTA_TABLE_PATH       "/tables.txt"
 #define IOTA_NEW_TABLE_PATH   "/table+1.txt"
-
+#define IOTA_INTEGRATIONS_DIR "/iotawatt/integrations/"
 #define IOTA_UPDATE_HOST      "iotawatt.com"
 #define IOTA_VERSIONS_PATH    "/firmware/versions.json"
 #define IOTA_VERSIONS_DIR     "/firmware/bin/"     
@@ -204,7 +206,8 @@ struct EEprom {
 #define T_uploader 31      // Uploader base class
 #define T_influx1 32       // influxDB_v1_uploader
 #define T_integrator 33    // Integrator class  
-#define T_Script 34                        
+#define T_Script 34
+#define T_Scriptset 35                        
 
       // LED codes
 
@@ -281,11 +284,12 @@ extern float   heapMs;
 extern uint32_t heapMsPeriod;
 extern IotaLogRecord statRecord;
 
-      // ****************************** list of output channels **********************
+      // ************* lists of output channels, integrations and integrators **************
 
 extern ScriptSet *outputs;
+extern ScriptSet *integrations;
 
-      // ****************************** SDWebServer stuff ****************************
+// ****************************** SDWebServer stuff ****************************
 
 #define DBG_OUTPUT_PORT Serial
 extern bool     hasSD;
@@ -405,5 +409,7 @@ uint32_t  HTTPreserve(uint16_t id, bool lock = false);
 void      HTTPrelease(uint32_t HTTPtoken);
 
 void      getSamples();
+double    simSolarPower(uint32_t);
+double    simSolarEnergy(uint32_t, uint32_t);
 
 #endif

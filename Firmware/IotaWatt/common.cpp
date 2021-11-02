@@ -113,6 +113,10 @@
  *   06/17/21 02_06_04 Fix query amps when doubled, suppress recovered pvouput http errors
  *   07/08/21 02_06_05 Issue with influxDB uploaders not recovering data from server outage.
  *   09/25/21 02_06_06 Support alternate RTC, datalog low-write, influxDB2 restart query, more robust Script
+ *   09/27/21 02_07_00 Add integrations
+ *   10/05/21 02_07_01 Modify integrations algorithm to simplify and improve query range
+ *   10/18/21 02_07_02 More changes to integrations and add synchronization of logs updates
+ *   11/01/21 02_07_03 Release integrations
  * 
  *****************************************************************************************************/
 
@@ -121,12 +125,13 @@
 WiFiClient WifiClient;
 DNSServer DNS_server;
 MDNSResponder MDNS;    
-IotaLog Current_log(256,5,365);                 // current data log  (1 year) 
-IotaLog History_log(256,60,3652);               // history data log  (10 years)
+IotaLog Current_log(256,5,365,32);              // current data log  (1 year) 
+IotaLog History_log(256,60,3652,48);            // history data log  (10 years)
 IotaLog *Export_log = nullptr;                  // Optional export log    
 RTC rtc;                                        // Instance of clock handler class
 Ticker Led_timer;
 messageLog Message_log;                         // Message log handler
+simSolar *simsolar = nullptr;
 
 // Define filename Strings of system files.          
 
@@ -161,6 +166,7 @@ IotaInputChannel* *inputChannel = nullptr; // -->s to incidences of input channe
 uint8_t     maxInputs = 0;                // channel limit based on configured hardware (set in Config)
 int16_t    *masterPhaseArray = nullptr;   // Single array containing all individual phase shift arrays          
 ScriptSet  *outputs = new ScriptSet();    // -> ScriptSet for output channels
+ScriptSet  *integrations = new ScriptSet(); // -> Scriptset for integrations
 
 uint8_t     deviceMajorVersion = 4;       // Default to 4.8
 uint8_t     deviceMinorVersion = 8;                 
@@ -181,7 +187,7 @@ float    heapMs = 0;                      // heap size * milliseconds for weight
 uint32_t heapMsPeriod = 0;                // total ms measured above.
 IotaLogRecord statRecord;                 // Maintained by statService with real-time values
 
-      // ****************************** SDWebServer stuff ****************************
+// ****************************** SDWebServer stuff ****************************
 
 #define DBG_OUTPUT_PORT Serial
 ESP8266WebServer server(80);

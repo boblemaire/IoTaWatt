@@ -573,12 +573,14 @@ void handleStatus(){
     trace(T_WEB,16);
     JsonArray& outputArray = jsonBuffer.createArray();
     Script* script = outputs->first();
+    statRecord.UNIXtime = UTCtime();
+    statRecord.logHours = 1;
     while(script){
       trace(T_WEB,16,1);
       JsonObject& channelObject = jsonBuffer.createObject();
       channelObject.set(F("name"),script->name());
       channelObject.set(F("units"),script->getUnits());
-      double value = script->run((IotaLogRecord*)nullptr, &statRecord, 1.0);
+      double value = script->run(nullptr, &statRecord);
       channelObject.set(F("value"),value);
       outputArray.add(channelObject);
       script = script->next();
@@ -652,6 +654,20 @@ void handleStatus(){
       histlog.set(F("size"),History_log.fileSize());
       histlog.set(F("interval"),History_log.interval());
       datalogs.add(histlog);
+
+      Script *script = integrations->first();
+      while(script){
+        IotaLog *log = ((integrator *)script->getParm())->get_log();
+        JsonObject& intlog = jsonBuffer.createObject();
+        intlog.set(F("id"), script->name());
+        intlog.set(F("firstkey"),log->firstKey());
+        intlog.set(F("lastkey"),log->lastKey());
+        intlog.set(F("size"),log->fileSize());
+        intlog.set(F("interval"),log->interval());
+        datalogs.add(intlog);
+        script = script->next();
+      }
+
 
       trace(T_WEB,17);
       root.set(F("datalogs"),datalogs);

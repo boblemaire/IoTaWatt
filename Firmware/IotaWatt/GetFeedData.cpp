@@ -217,16 +217,16 @@ uint32_t getFeedData(){ //(struct serviceBlock* _serviceBlock){
               *replyData += "null";
             }
             else if(reqPtr->queryType == 'V'){
-              *replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), 1);
+              *replyData += String(reqPtr->output->run(lastRecord, logRecord, Volts), 1);
             }
             else if(reqPtr->queryType == 'P'){
-              *replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), 1);
+              *replyData += String(reqPtr->output->run(lastRecord, logRecord, Watts), 1);
             }
             else if(reqPtr->queryType == 'E'){
-                *replyData += String(reqPtr->output->run((IotaLogRecord*) nullptr, logRecord, 1000.0), 3);
+                *replyData += String(reqPtr->output->run(nullptr, logRecord, kWh), 3);
             }
             else if(reqPtr->queryType == 'O'){
-              *replyData += String(reqPtr->output->run(lastRecord, logRecord, elapsedHours), reqPtr->output->precision());
+              *replyData += String(reqPtr->output->run(lastRecord, logRecord), reqPtr->output->precision());
             }
             else {
               *replyData += "null";

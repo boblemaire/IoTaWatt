@@ -37,11 +37,19 @@ enum opCodes // Must match opChars[] in .cpp
   opPop   = 9
 };
 
+#define TOKEN_TYPE_MASK 0B11100000
+#define SCRIPT_CHAR_INPUT '@'
+#define SCRIPT_CHAR_CONSTANT '#'
+#define SCRIPT_CHAR_INTEGRATION '!'
+#define SCRIPT_CHAR_VIRTUAL '~'
+
 enum tokenTypes
 {
   tokenOperator = 0,
   tokenInput = 0x20,
   tokenConstant = 0x40,
+  tokenIntegration = 0x60,
+  tokenVirtual = 0x80
 };
 
 class Script {
@@ -61,26 +69,23 @@ class Script {
     void*   getParm();           // Retrieve parm value
     Script* next();           // -> next Script in set
 
-    double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours); // Run this Script
-    double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units); // Run w/overide units
-    double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, const char* overideUnits);
+    double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec); // Run this Script
+    double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, units); // Run w/overide units
+    double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, const char* overideUnits);
 
     void    print();
     int     precision();
 
-  private:
+  protected:
 
     Script*     _next;      // -> next in list
     char*       _name;      // name associated with this Script
-    void*       _parm;      // External parameter
-    union {
-      float *_constants;    // Constant values referenced in Script
-      Script **_integrations;
-    };
+    void*       _parm;      // External parameter 
+    float*      _constants; // Constant values referenced in Script
     uint8_t*    _tokens;    // Script tokens
     units       _units;     // Units to be computed              
 
-    double    runRecursive(uint8_t**, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units Units);
+    double    runRecursive(uint8_t**, IotaLogRecord* oldRec, IotaLogRecord* newRec, units Units);
     double    operate(double, byte, double);
     bool      encodeScript(const char* script);
 

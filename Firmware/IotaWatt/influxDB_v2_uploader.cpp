@@ -224,7 +224,7 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
         while(script)
         {
             trace(T_influx2,63);     
-            double value = script->run(oldRecord, newRecord, elapsedHours);
+            double value = script->run(oldRecord, newRecord);
             if(value == value){
                 trace(T_influx2,64);   
                 thisMeasurement = varStr(_measurement, script);

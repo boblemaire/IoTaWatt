@@ -44,23 +44,27 @@ class IotaLog
 {
   public:
 
-	IotaLog(size_t recordSize = 256, int interval=5, uint32_t days = 365)
-    :_path(0)
-		,_interval(interval)
-		,_recordSize(recordSize)
-    ,_fileSize(0)
-    ,_physicalSize(0)
-		,_lastReadKey(0)
-		,_lastReadSerial(0)
-		,_readKeyIO(0)
-		,_wrap(0)
-		,_firstKey(0)
-		,_firstSerial(0)
-		,_lastKey(0)
-		,_lastSerial(-1)
-    ,_entries(0)
-    ,_cacheSize(10)
-    ,_cacheWrap(0)
+	IotaLog(size_t recordSize = 256, int interval=5, int days = 365, int preformat=IOTALOG_PREFORMAT_RECORDS)
+      :_path(0)
+      ,_interval(interval)
+      ,_recordSize(recordSize)
+      ,_fileSize(0)
+      ,_physicalSize(0)
+      ,_lastReadKey(0)
+      ,_lastReadSerial(0)
+      ,_readKeyIO(0)
+      ,_wrap(0)
+      ,_preformat(preformat)
+      ,_firstKey(0)
+      ,_firstSerial(0)
+      ,_lastKey(0)
+      ,_lastSerial(-1)
+      ,_entries(0)
+      ,_cacheSize(10)
+      ,_cacheWrap(0)
+      ,_writeCacheBuf(0)
+      ,_writeCachePos(-IOTALOG_BLOCK_SIZE)
+      ,_writeCache(false)
     {
     _cacheKey = new uint32_t[_cacheSize];
     _cacheSerial = new int32_t[_cacheSize];
@@ -72,13 +76,15 @@ class IotaLog
     delete[] _path;
     delete[] _cacheKey;
     delete[] _cacheSerial;
-	}
+    delete[] _writeCacheBuf;
+  }
 	      
     int begin (const char* /* filepath */);
     int write (IotaLogRecord* /* pointer to record to be written*/);
     int readKey (IotaLogRecord* /* pointer to caller's buffer */);
     int readSerial(IotaLogRecord* callerRecord, int32_t serial); 
     int readNext(IotaLogRecord* /* pointer to caller's buffer */);
+    void writeCache(bool on);
     int end();
     
     boolean  isOpen();
@@ -93,7 +99,7 @@ class IotaLog
 	 	      
     void     dumpFile();
 
-  private:
+  protected:
         
 	  File 	 IotaFile;
 
@@ -109,15 +115,20 @@ class IotaLog
     uint32_t _lastKey;                      // Key of last logical record
     int32_t  _lastSerial;                   // Serial of...
     uint32_t _wrap;                         // Offset of logical record zero (0 if file not wrapped)
+    uint32_t _preformat;                    // Number of records to preformat (or 0)
 
     uint32_t  _cacheSize = 10;
     uint32_t  _cacheWrap = 0;  
     uint32_t* _cacheKey;
     int32_t*  _cacheSerial;
   
-    uint32_t _lastReadKey;           	    // Key of last record read with readKey
+    uint32_t _lastReadKey;           	      // Key of last record read with readKey
     int32_t  _lastReadSerial;         	    // Serial of last...
     uint32_t _readKeyIO;              	    // Running count of I/Os for keyed reads
+
+    uint8_t *_writeCacheBuf;
+    uint32_t _writeCachePos;
+    bool     _writeCache;
 
     uint32_t  findWrap(uint32_t highPos, uint32_t highKey, uint32_t lowPos, uint32_t lowKey);
     void      searchKey(IotaLogRecord* callerRecord, const uint32_t key,

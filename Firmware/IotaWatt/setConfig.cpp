@@ -11,7 +11,8 @@ bool configMasterPhaseArray();
 bool configOutputs(const char*);
 void hashFile(uint8_t* sha, File file);
 bool exportLogConfig(const char *configObj);
-bool configIntegrations(const char *);
+bool configIntegrators(const char *);
+bool configSimSolar(const char *);
 
 //************************************************************************************************
 //
@@ -137,12 +138,28 @@ boolean setConfig(const char* configPath){
   trace(T_CONFIG,20);
   configMasterPhaseArray();
 
-  // ************************************ configure output channels *************************
+  // ************************************ configure integrators *************************
 
   {      
     trace(T_CONFIG,25);
+    JsonArray& integratorsArray = Config[F("integrators")];
+    char* integratorsStr;
+    if(integratorsArray.success()){
+      integratorsStr = JsonDetail(ConfigFile, integratorsArray);
+    } else {
+      integratorsStr = charstar("[]");
+    }
+    configIntegrators(integratorsStr);
+    delete[] integratorsStr;
+  }
+
+  // ************************************ configure outputs *******************************
+
+  {      
+    trace(T_CONFIG,30);
     delete outputs;
     outputs = nullptr;
+    trace(T_CONFIG,30,1);
     JsonArray& outputsArray = Config[F("outputs")];
     char* outputsStr;
     if(outputsArray.success()){
@@ -150,7 +167,9 @@ boolean setConfig(const char* configPath){
     } else {
       outputsStr = charstar("[]");
     }
+    trace(T_CONFIG,30,2);
     configOutputs(outputsStr);
+    trace(T_CONFIG,30,3);
     delete[] outputsStr;
 
   }
@@ -158,7 +177,7 @@ boolean setConfig(const char* configPath){
          // ************************************** configure Emoncms **********************************
 
   {
-    trace(T_CONFIG,30);
+    trace(T_CONFIG,35);
     char* EmonStr = nullptr;
     JsonArray& EmonArray = Config[F("emoncms")];
     if(EmonArray.success()){
@@ -170,7 +189,7 @@ boolean setConfig(const char* configPath){
     
     else 
     {
-      trace(T_CONFIG,31);      
+      trace(T_CONFIG,36);      
       JsonArray& serverArray = Config[F("server")];
       if(serverArray.success()){
         EmonStr = JsonDetail(ConfigFile, serverArray);
@@ -181,14 +200,14 @@ boolean setConfig(const char* configPath){
       }
     }
 
-    trace(T_CONFIG,30);
+    trace(T_CONFIG,35);
     if(EmonStr){
       trace(T_CONFIG,31);   
       if(! Emoncms){
         trace(T_CONFIG,32);   
         Emoncms = new emoncms_uploader;
       }
-      trace(T_CONFIG,31);
+      trace(T_CONFIG,36);
       if( ! Emoncms->config(EmonStr)){
         logTrace();
         trace(T_CONFIG,32);   
@@ -199,7 +218,7 @@ boolean setConfig(const char* configPath){
       delete[] EmonStr;
     }   
     else if(Emoncms){
-      trace(T_CONFIG,33);   
+      trace(T_CONFIG,37);   
       Emoncms->end();
       Emoncms = nullptr;
     }
@@ -208,7 +227,7 @@ boolean setConfig(const char* configPath){
         // ************************************** configure influxDB1 *********************************
 
   {
-    trace(T_CONFIG,35);
+    trace(T_CONFIG,40);
     JsonArray& influxArray = Config[F("influxdb")];
     if(influxArray.success()){
       char* influxStr = JsonDetail(ConfigFile, influxArray);
@@ -231,7 +250,7 @@ boolean setConfig(const char* configPath){
         // ************************************** configure influxDB2 **********************************
 
   {
-    trace(T_CONFIG,40);
+    trace(T_CONFIG,45);
     JsonArray& influx2Array = Config[F("influxdb2")];
     if(influx2Array.success()){
       char* influx2Str = JsonDetail(ConfigFile, influx2Array);
@@ -250,10 +269,10 @@ boolean setConfig(const char* configPath){
       influxDB_v2 = nullptr;
     }
   }
-      // ************************************** configure PVoutput **********************************
+      // ************************************** configure PVoutput *****************************************
 
   {
-    trace(T_CONFIG,45);
+    trace(T_CONFIG,50);
     JsonArray& PVoutputArray = Config[F("pvoutput")];
     if(PVoutputArray.success()){
       char* PVoutputStr = JsonDetail(ConfigFile, PVoutputArray);
@@ -269,6 +288,21 @@ boolean setConfig(const char* configPath){
       pvoutput->end();
     }    
   }
+
+      //***************************************** configure simsolar ***************************************
+
+    trace(T_CONFIG,55);
+    JsonArray& simSolarArray = Config[F("simsolar")];
+    if(simSolarArray.success()){
+      char* simSolarStr = JsonDetail(ConfigFile, simSolarArray);
+      configSimSolar(simSolarStr);
+      delete[] simSolarStr;
+    } 
+    else {
+      delete simsolar;
+      simsolar = nullptr;
+    }
+
 
       // ************************************** Code to handle array of configurations****************************
 
@@ -365,6 +399,21 @@ boolean setConfig(const char* configPath){
 
 }  // End of setConfig
 
+bool configSimSolar(const char* JsonStr){
+  DynamicJsonBuffer Json;
+  JsonObject& simConfig = Json.parseObject(JsonStr);
+  if( ! simConfig.success()){
+    log("simsolar: Json parse failed");
+  }
+  if( ! simsolar){
+    simsolar = new simSolar;
+  }
+  uint32_t sunrise = simConfig["sunrise"].as<int>();
+  uint32_t sunset = simConfig["sunset"].as<int>();
+  uint32_t power = simConfig["power"].as<int>();
+  simsolar->config(sunrise, sunset, power);
+  return true;
+} 
 //************************************** configDevice() ********************************************
 bool configDevice(const char* JsonStr){
 
@@ -573,16 +622,87 @@ bool configInputs(const char* JsonStr){
   return true;
 }
 
+//********************************** configIntegrators ***********************************************
+
+bool configIntegrators(const char* JsonStr){
+
+      // Create new ScriptSet from Json config
+
+  DynamicJsonBuffer Json;
+  JsonArray& integratorsArray = Json.parseArray(JsonStr);
+  if( ! integratorsArray.success()){
+    log("integrators: Json parse failed");
+    return false;
+  }
+
+      // Make existing integrations null so integrations can't reference integrations.
+
+  ScriptSet *oldIntegrations = integrations;
+  integrations = new ScriptSet();
+
+      // Move integrators for enduring integrations
+
+  ScriptSet* newIntegrations = new ScriptSet(integratorsArray);
+  Script *newScript = newIntegrations->first();
+  while(newScript){
+    Script *oldScript = oldIntegrations->first();
+    while(oldScript){
+      if(strcmp(newScript->name(), oldScript->name()) == 0){
+        newScript->setParm(oldScript->getParm());
+        oldScript->setParm(nullptr);
+        break;
+      }
+      oldScript = oldScript->next();
+    }
+    newScript = newScript->next();
+  }
+
+      // Remove integrators from abandoned integrations
+
+  Script *oldScript = oldIntegrations->first();
+  while(oldScript){
+    if(oldScript->getParm()){
+      ((integrator*)oldScript->getParm())->end();
+      oldScript->setParm(nullptr);
+    }
+    oldScript = oldScript->next();
+  }
+
+        // Create integrators for new integrations and call config for all.
+
+  newScript = newIntegrations->first();
+  while(newScript){
+    integrator *newIntegrator = (integrator *)newScript->getParm();
+    if(! newIntegrator){ 
+      newIntegrator = new integrator();
+      newScript->setParm((void*)newIntegrator);
+    }
+    if(! newIntegrator->config(newScript)){
+      log("integrator: config failed %s", newScript->name());
+    }
+    newScript = newScript->next();
+  }
+
+  delete oldIntegrations;
+  delete integrations;
+  integrations = newIntegrations;
+  return true;
+} 
+
 //********************************** configOutputs ***********************************************
 
 bool configOutputs(const char* JsonStr){
   DynamicJsonBuffer Json;
+  trace(T_CONFIG,31);
   JsonArray& outputsArray = Json.parseArray(JsonStr);
+  trace(T_CONFIG,31,1);
   if( ! outputsArray.success()){
     log("outputs: Json parse failed");
     return false;
   }
+  trace(T_CONFIG,31,2);
   outputs = new ScriptSet(outputsArray);
+  trace(T_CONFIG,31,3);
   // outputs->sort([](Script* a, Script* b)->int{
   //   int res = strcmp(a->name(), b->name());
   //   Serial.printf("%s, %s, %d\r\n",a->getUnits(), b->getUnits(), res);

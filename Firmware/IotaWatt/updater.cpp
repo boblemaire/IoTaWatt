@@ -120,7 +120,6 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         }
         return UTCtime() + 301;
       }
-      
       DynamicJsonBuffer Json;
       JsonObject& response = Json.parseObject(responseText);
       if( ! response.success()){
@@ -174,9 +173,9 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
         latestTableVersion = parseSemanticVersion(response[F("tables")].as<char *>());
         if (latestTableVersion > tableVersion){
           log("Updater: update tables from %s to %s", displaySemanticVersion(tableVersion).c_str(), displaySemanticVersion(latestTableVersion).c_str());
+          state = getTable;
+          return 1;
         }
-        state = getTable;
-        return 1;
       }
 
       state = checkAutoUpdate;

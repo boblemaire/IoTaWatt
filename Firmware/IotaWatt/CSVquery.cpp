@@ -514,13 +514,7 @@ void CSVquery::buildLine(){
         else {
             trace(T_CSVquery,64);
             double value = 0.0;
-            if(col->source == 'N'){
-                integrator *integration = (integrator *)col->script->getParm();
-                value = integration->run(_oldRec, _newRec, elapsedHours);
-            }
-            else {
-                value = col->script->run(_oldRec, _newRec, elapsedHours, col->unit);
-            }
+            value = col->script->run(_oldRec, _newRec, col->unit);
             trace(T_CSVquery,65);
             printValue(value, col->decimals);
         }

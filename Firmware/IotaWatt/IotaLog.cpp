@@ -30,8 +30,8 @@ int IotaLog::begin (const char* path ){
 		IotaFile.close();
 	}
 	IotaFile = SD.open(_path, FILE_WRITE);
-		if(!IotaFile){
-			return 2;
+	if(!IotaFile){
+		return 2;
 	}
 	
 	_fileSize = _physicalSize = IotaFile.size();
@@ -244,10 +244,13 @@ int IotaLog::readSerial(IotaLogRecord* callerRecord, int32_t serial){
 			return 1;
 	}
 	int pos = ((serial - _firstSerial) * _recordSize + _wrap) % _fileSize;
-	if(pos != IotaFile.position()){
-		IotaFile.seek(pos);
+	if(_writeCache && pos >= _writeCachePos && pos < (_writeCachePos + IOTALOG_BLOCK_SIZE)){
+		memcpy(callerRecord, _writeCacheBuf + (pos % IOTALOG_BLOCK_SIZE), _recordSize);
 	}
-	IotaFile.read((uint8_t*)callerRecord, _recordSize);
+	else {
+		IotaFile.seek(pos);
+		IotaFile.read((uint8_t*)callerRecord, _recordSize);
+	}
 	_cacheKey[_cacheWrap] = callerRecord->UNIXtime;
 	_cacheSerial[_cacheWrap++] = callerRecord->serial;
 	_cacheWrap %= _cacheSize;
@@ -270,6 +273,9 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 		// overwrite oldest and set first to following record.
 
 	if(_wrap || _fileSize >= _maxFileSize){
+		if(_writeCache){
+			writeCache(false);
+		}
 		IotaFile.seek(_wrap);
 		_wrap = (_wrap + _recordSize) % _fileSize;
 		IotaFile.write((char*)callerRecord, _recordSize);
@@ -281,30 +287,79 @@ int IotaLog::write (IotaLogRecord* callerRecord){
 		return 0;
 	}
 
-		// not wrapped. Preformat if needed.
+		// not wrapped.
 
-	IotaFile.seek(_fileSize);
-	if(_fileSize == _physicalSize){
+		// If write cache active,
+		// Add record to cache
+		// Write cache block if full
+
+	if (_writeCache){
+		memcpy(_writeCacheBuf + (_fileSize % IOTALOG_BLOCK_SIZE), callerRecord, _recordSize);
+		_fileSize += _recordSize;
+		if((_fileSize % IOTALOG_BLOCK_SIZE) == 0){
+			IotaFile.seek(_writeCachePos);
+			IotaFile.write(_writeCacheBuf, IOTALOG_BLOCK_SIZE);
+			_writeCachePos += IOTALOG_BLOCK_SIZE;
+			IotaFile.flush();
+			_physicalSize = IotaFile.size();
+		}
+	}
+
+		// No write cache active
+		// If no prewrite records (SD wear reduction)
+		// Write this record and follow with prewrite records.
+
+	else if(_fileSize == _physicalSize){
 		IotaLogRecord formatRecord;
+		IotaFile.seek(_fileSize);
 		IotaFile.write((char*)callerRecord, _recordSize);
+		_fileSize += _recordSize;
 		_physicalSize += _recordSize;
-		int count = 0;
-		while(++count < IOTALOG_PREFORMAT_RECORDS && _physicalSize < _maxFileSize){
+		int count = _preformat;
+		while(count-- && _physicalSize < _maxFileSize){
 			IotaFile.write((char*)&formatRecord, _recordSize);
 			_physicalSize += _recordSize;
 		}
 		IotaFile.flush();
 	}
+
+		// No write cache active
+		// write this record over a prewrite record
+
 	else {
+		IotaFile.seek(_fileSize);
 		IotaFile.write((char*)callerRecord, _recordSize);
+		_fileSize += _recordSize;
 	}
-	_fileSize += _recordSize;
+
 	_entries++;
 	if(_firstKey == 0){
 		_firstKey = callerRecord->UNIXtime;
 	}
 	return 0;
 }
+
+void IotaLog::writeCache(bool on){
+	if((on && _writeCache) || (!on && !_writeCache)){
+		return;
+	}
+	if(on){
+		_writeCacheBuf = new uint8_t[IOTALOG_BLOCK_SIZE];
+		_writeCachePos = _fileSize & ~(IOTALOG_BLOCK_SIZE - 1);
+		IotaFile.seek(_writeCachePos);
+		IotaFile.read(_writeCacheBuf, MIN(_physicalSize - _writeCachePos, IOTALOG_BLOCK_SIZE));
+		_writeCache = true;
+	}
+	else {
+		IotaFile.seek(_writeCachePos);
+		IotaFile.write(_writeCacheBuf, MIN(_fileSize - _writeCachePos, IOTALOG_BLOCK_SIZE));
+		IotaFile.flush();
+		_physicalSize = IotaFile.size();
+		delete[] _writeCacheBuf;
+		_writeCacheBuf = nullptr;
+		_writeCache = false;
+	}
+} 
 
 void IotaLog::dumpFile(){
 	setLedCycle(LED_DUMPING_LOG);

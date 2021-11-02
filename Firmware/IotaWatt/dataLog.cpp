@@ -22,9 +22,10 @@
  #include "IotaWatt.h"
  #define GapFill 600           // Fill in gaps of less than this seconds
  void dataLogWDT();
+ void logtoHistory(IotaLogRecord* logRecord);
 
  uint32_t dataLog(struct serviceBlock* _serviceBlock){
-  enum states {initialize, checkClock, logData};
+  enum states {initialize, synchronize, logData};
   static states state = initialize;                                                       
   static IotaLogRecord* logRecord = new IotaLogRecord;
   static double accum1Then [MAXINPUTS];
@@ -75,18 +76,19 @@
         Current_log.readKey(logRecord);
         log("dataLog: Last log entry %s", datef(UTC2Local(Current_log.lastKey())).c_str());
       }
+ 
+        // If not at multiple of interval, return when we are.
 
-      // If not at current log interval, return until then.  
-
-      state = checkClock;
-      uint32_t syncDelay = UTCtime() % Current_log.interval();
-      if(syncDelay) return syncDelay;
-
-      // Fall through to checkClock
+      state = synchronize;
+      if( ! UTCtime() % Current_log.interval()){
+        return UTCtime() + Current_log.interval() - (UTCtime() % Current_log.interval());
+      }
+      
+      // In sync, drop through.
 
     }
 
-    case checkClock: {
+    case synchronize: {
       
       // Initialize local accumulators
       
@@ -120,8 +122,17 @@
 
       if(UTCtime() < logRecord->UNIXtime) return 2;
 
+      // Save the old record if there are integration logs to update
+
+      IotaLogRecord *oldRecord = nullptr;
+      if(integrations->count()){
+        oldRecord = new IotaLogRecord;
+        memcpy(oldRecord, logRecord, sizeof(IotaLogRecord));
+        oldRecord->UNIXtime -= Current_log.interval();
+      }
+
       // If log is up to date, update the entry with latest data.
-          
+
       if(logRecord->UNIXtime >= UTCtime()){
         uint32_t msNow = millis();
         double elapsedHrs = double((uint32_t)(msNow - msThen)) / MS_PER_HOUR;
@@ -148,6 +159,23 @@
       // Write the record
       
       Current_log.write(logRecord);
+
+      // Courtesy call to History Log handler.
+      // Will write appropriate records when synchronized.
+
+      logtoHistory(logRecord);
+
+      // If there are integrations,
+      // Call their handlers to add new integration records.
+
+      if(integrations->count()){
+        Script *integration = integrations->first();
+        while(integration){ 
+          ((integrator*)integration->getParm())->newLogEntry(oldRecord, logRecord);
+          integration = integration->next();
+        }
+        delete oldRecord;
+      }
 
       // Logging data is the primary purpose of IoTaWatt.
       // Set a WDT to make sure it continues.
@@ -227,6 +255,13 @@ uint32_t logReadKey(IotaLogRecord* callerRecord) {
       // use current
 
   if(key % History_log.interval()){
+    return Current_log.readKey(callerRecord);
+  }
+
+      // If past end of history,
+      // use current
+
+  if(key > History_log.lastKey()){
     return Current_log.readKey(callerRecord);
   }
 

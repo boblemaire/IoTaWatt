@@ -1,8 +1,12 @@
 #include "iotawatt.h"
  
-    // This is the worm hole that the scheduler uses to get into the class state machine.
-    // It invokes the dispatch method of the class.
-    // On return, it checks for no_schedule return and invokes the stop() method. 
+    // The integrator Service is created at startup to synchronize the 
+    // integration log with the datalog, including [re]creating.
+    // When the log catches up to the datalog, the datalog Service
+    // takes over with direct calls to create new entries at the
+    // same time as datalog records, eliminating race conditions. 
+
+const char intDirectory_P[] PROGMEM = IOTA_INTEGRATIONS_DIR;
 
 uint32_t integrator_dispatch(struct serviceBlock* serviceBlock) {
     trace(T_integrator,0);
@@ -31,85 +35,80 @@ uint32_t integrator::dispatch(struct serviceBlock *serviceBlock)
     }
     trace(T_integrator,3,_state);
     log("%s: Unrecognized state, stopping;",_id);
-    delete this;
     return 0;
 }
+
+integrator::~integrator(){
+    _log->end();
+    String filepath(FPSTR(intDirectory_P));
+    filepath += "/";
+    filepath += _name;
+    filepath += ".log";
+    SD.remove(filepath.c_str());
+    log("%s: Integration log %s deleted.", _id, _name);
+    delete _log;
+    delete[] _name;
+    delete _oldRec;
+    delete _newRec;
+};
 
 uint32_t integrator::handle_initialize_s(){
     trace(T_integrator,10);
 
-    // Wait until history log is open.
-
-    if(!History_log.isOpen()){
-        return 5;
+    if( ! Current_log.isOpen()){
+        return UTCtime() + 5;
     }
 
     log("%s: Started", _id);
 
     // Insure /iotawatt/integrations exists.
 
-    char *dir = charstar(F("/iotawatt/integrations"));
-
-    if( ! SD.exists(dir)){
-        if(!SD.mkdir(dir)){
+    if( ! SD.exists(FPSTR(intDirectory_P))){
+        if(!SD.mkdir(FPSTR(intDirectory_P))){
             log("%s: could not create integration directory.", _id);
-            delete this;
             return 0;
-        }
+        } 
     }
 
     // Open the integration log
 
     trace(T_integrator,10);
-    String filepath(dir);
+    String filepath(FPSTR(intDirectory_P));
     filepath += '/';
     filepath += _name;
-    _log = new IotaLog(16, 60, 3650);
+    filepath += ".log";
+    _log = new IotaLog(sizeof(intRecord), 5, 366, 32);
     trace(T_integrator,10);
     if(_log->begin(filepath.c_str())){
         log("%s: Couldn't open integration file %s.", _id, filepath.c_str());
         delete _log;
-        delete this;
         return 0;
     }
-
-    uint32_t lastWrite = MAX(_log->lastKey(), History_log.firstKey());
+    trace(T_integrator,10);
 
     // Initialize the intRecord;
 
-    _intRec.UNIXtime = lastWrite;
-    //_intRec.UNIXtime = UTCtime() - 172800;
-    _intRec.UNIXtime -= _intRec.UNIXtime % 60;
+    _intRec.UNIXtime = _log->lastKey();
     _intRec.serial = 0;
-    _intRec.sumIntegral = 0.0;
+    _intRec.sumPositive = 0;
+    _intRec.sumNegative = 0;
+    _intRec.sumNet = 0;
 
-    if(_log->lastKey()){
+    if(_intRec.UNIXtime){
         _log->readKey((IotaLogRecord*)&_intRec);
         log("%s: Last log entry %s", _id, localDateString(_log->lastKey()).c_str());
     }
     else {
-        log("%s: New log starting %s", _id, localDateString(lastWrite).c_str());
+        _intRec.UNIXtime = MAX(Current_log.lastKey() - (3600 * 24), Current_log.firstKey());
+        log("%s: New log starting %s", _id, localDateString(_intRec.UNIXtime).c_str());
     }
 
-    if((_intRec.UNIXtime + _interval + _interval) > Current_log.firstKey()){
-        _activelog = &Current_log;
-        log("%s: Integrating from Current Log", _id);
-    }
-    else {
-        _activelog = &History_log;
-        log("%s: Integrating from History Log", _id);
-    }
-
+    _log->writeCache(true);
     _state = integrate_s;
     return 1;
 }
 
 uint32_t integrator::handle_integrate_s(){
-    static uint32_t runus = 0;
-    static uint32_t reads = 0;
-    static uint32_t writes = 0;
-    static int runCount = 0;
-    uint32_t startus = micros();
     
     // While data is available
 
@@ -119,31 +118,31 @@ uint32_t integrator::handle_integrate_s(){
             _oldRec = new IotaLogRecord;
             _newRec = new IotaLogRecord;
             _newRec->UNIXtime = _intRec.UNIXtime;
-            _activelog->readKey(_newRec);
-            reads++;
+            Current_log.readKey(_newRec);
         }
 
-        if(_activelog == &History_log && _intRec.UNIXtime >= Current_log.firstKey()){
-            log("%s: Integrating from Current Log", _id);
-            _activelog = &Current_log;
-            _activelog->readKey(_newRec);
-            reads++;
+        if(_newRec->UNIXtime < _intRec.UNIXtime + _interval){
+            IotaLogRecord *swapRec = _oldRec;
+            _oldRec = _newRec;
+            _newRec = swapRec;
+            _newRec->UNIXtime = _oldRec->UNIXtime + _interval;
+            _newRec->serial = _oldRec->serial;
+            Current_log.readNext(_newRec);
         }
 
-        IotaLogRecord *swapRec = _oldRec;
-        _oldRec = _newRec;
-        _newRec = swapRec;
-        _newRec->UNIXtime = _oldRec->UNIXtime;
-        _newRec->serial = _oldRec->serial;
-        _activelog->readNext(_newRec);
-        reads++;
-
-        // If this record is within interval, add integral.
+        // If this record is within interval, add to integral.
 
         if(_newRec->UNIXtime <= _intRec.UNIXtime + _interval){
             double elapsed = _newRec->logHours - _oldRec->logHours;
             if(elapsed == elapsed && elapsed > 0){
-                _intRec.sumIntegral += _script->run(_oldRec, _newRec, elapsed);
+                double value = _script->run(_oldRec, _newRec, "Wh");
+                if(value > 0){
+                    _intRec.sumPositive += value;
+                }
+                else {
+                    _intRec.sumNegative += value;
+                }
+                _intRec.sumNet += value;
             }
         }
 
@@ -152,19 +151,9 @@ uint32_t integrator::handle_integrate_s(){
         if(_newRec->UNIXtime >= _intRec.UNIXtime + _interval){
             _intRec.UNIXtime += _interval;
             _log->write((IotaLogRecord *)&_intRec);
-            writes++;
         }
 
-        if((micros() + 2500) >= bingoTime || reads > 500){
-            runCount++;
-            runus += micros() - startus;
-            if(runCount >= 100){
-                Serial.printf("integrations %d, avg time: %u us, %u reads, %u writes\n", runCount, runus / runCount, reads, writes);
-                runCount = 0;
-                runus = 0;
-                reads = 0;
-                writes = 0;
-            }
+        if((micros() + 2500) >= bingoTime){
             return 10;
         }
     }
@@ -173,7 +162,32 @@ uint32_t integrator::handle_integrate_s(){
     _oldRec = nullptr;
     delete _newRec;
     _newRec = nullptr;
-    return UTCtime() + 1;
+    _log->writeCache(false);
+    _synchronized = true;
+    return 0;
+}
+
+            // This method is invoked from the datalog Service when after a new entry is written.
+            // If the integration log is up to date, it will write a corresponding integration log record.
+            // Because the integration log is an extension of the datalog, race conditions can
+            // produce invalid results if there is a window between datalog and integration log records.
+            // This routine tightly couples the two to eliminate that window in normal operation.
+
+void integrator::newLogEntry(IotaLogRecord* oldRecord, IotaLogRecord* newRecord){
+    if(_synchronized){
+        double elapsed = newRecord->logHours - oldRecord->logHours;
+        if(elapsed == elapsed && elapsed > 0){
+            double value = _script->run(oldRecord, newRecord, "Wh");
+            if(value >= 0){
+                _intRec.sumPositive += value;
+            }
+            else {
+                _intRec.sumNegative += value;
+            }
+        }
+        _intRec.UNIXtime += _interval;
+        _log->write((IotaLogRecord *)&_intRec);
+    }
 }
 
 char *integrator::name(){
@@ -188,8 +202,17 @@ void integrator::setScript(Script* script){
     _script = script;
 }
 
+bool integrator::isSynchronized(){
+    return _synchronized;
+}
+
 void integrator::end(){
-    _state = end_s;
+    if(_synchronized){
+        delete this;
+    }
+    else {
+        _state = end_s;
+    }
 }
 
 uint32_t integrator::handle_end_s(){
@@ -198,19 +221,105 @@ uint32_t integrator::handle_end_s(){
     return 0;
 }
 
-double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, double elapsedHours){
-    if(oldRecord->UNIXtime % _interval || newRecord->UNIXtime % _interval){
-        if(oldRecord->UNIXtime >= Current_log.firstKey() && (newRecord->UNIXtime - oldRecord->UNIXtime) < _interval){
-            Script *script = _script;
-            return script->run(oldRecord, newRecord, elapsedHours);
-        }
+double integrator::run(IotaLogRecord *oldRecord, IotaLogRecord *newRecord, units Units, char method){
+    trace(T_integrator, 0);
+    if( ! _synchronized || newRecord->UNIXtime < _log->firstKey()){
         return 0;
     }
-    intRecord oldInt = {UNIXtime : oldRecord->UNIXtime};
-    intRecord newInt = {UNIXtime : newRecord->UNIXtime};
-    _log->readKey((IotaLogRecord*)&oldInt);
-    _log->readKey((IotaLogRecord*)&newInt);
-    return newInt.sumIntegral - oldInt.sumIntegral;
+    
+    // If being called for stats, no need for integration
+
+    if (!oldRecord)
+    {
+        trace(T_integrator, 1);
+        double operand = _script->run(oldRecord, newRecord, "Watts");
+        trace(T_integrator, 1);
+
+        if (method == '+' && operand < 0)
+        {
+            return 0;
+        }
+        else if (method == '-' && operand > 0)
+        {
+            return 0;
+        }
+        return operand;
+    }
+
+    
+    double elapsedHours = 0;
+    if(oldRecord->UNIXtime >= _log->firstKey()){
+        trace(T_integrator, 3);
+        elapsedHours = newRecord->logHours - oldRecord->logHours;
+    }
+    else {
+        trace(T_integrator, 4);
+        IotaLogRecord baseRecord;
+        baseRecord.UNIXtime = _log->firstKey();
+        Current_log.readKey(&baseRecord);
+        elapsedHours = newRecord->logHours - baseRecord.logHours;
+    }
+    trace(T_integrator, 5);
+
+    // If elapsed time is zero, result is zero.
+
+    if(elapsedHours <= 0){
+        return 0;
+    }
+
+    // Set to produce Wh or Watts as appropriate;
+
+    if(Units == Wh){
+        trace(T_integrator, 6);
+        elapsedHours = 1;
+    }
+
+    // Fetch the integration log records.
+
+    trace(T_integrator, 8);
+
+    // See if we already have either record (very likely).
+    // If so, move to correct position.
+
+    if(oldRecord->UNIXtime == newInt->UNIXtime || newRecord->UNIXtime == oldInt->UNIXtime){
+        trace(T_integrator, 8, 1);
+        intRecord *swap = oldInt;
+        oldInt = newInt;
+        newInt = swap;
+    }
+
+        // Now read if necessary.
+
+    if(oldRecord->UNIXtime != oldInt->UNIXtime){
+        oldInt->UNIXtime = oldRecord->UNIXtime;
+        trace(T_integrator, 9);
+        int rtc = _log->readKey((IotaLogRecord*)oldInt); 
+        trace(T_integrator, 9, rtc);
+    }
+
+    if(newRecord->UNIXtime != newInt->UNIXtime){
+        newInt->UNIXtime = newRecord->UNIXtime;
+        trace(T_integrator, 10);
+        int rtc = _log->readKey((IotaLogRecord*)newInt);
+        trace(T_integrator, 10, rtc);
+    }
+
+    trace(T_integrator, 11);
+
+    if(method == '+'){
+        trace(T_integrator, 12,1);
+        return (newInt->sumPositive - oldInt->sumPositive) / elapsedHours;
+    }
+    else if(method == '-'){
+        trace(T_integrator, 12,2);
+        return (newInt->sumNegative - oldInt->sumNegative) / elapsedHours;
+    }
+    else if(method == 'N'){
+        trace(T_integrator, 12,3);
+        return (newInt->sumNegative - oldInt->sumNegative + newInt->sumPositive - oldInt->sumPositive) / elapsedHours;
+    }
+    trace(T_integrator, 13);
+    return 0;
 }
 
 bool integrator::config(Script* script){

@@ -33,9 +33,6 @@ uint8_t     unitsPrecision[] = {
                     };
 
 const char  opChars[] = "=+-*/<>|()";
-#define  TOKEN_TYPE_MASK 0B11100000
-#define SCRIPT_CHAR_INPUT '@'
-#define SCRIPT_CHAR_CONSTANT '#'
 
 Script::Script(JsonObject& JsonScript)
       :_next(nullptr)
@@ -68,6 +65,7 @@ Script::Script(JsonObject& JsonScript)
           log("Script: invalid Script in output %s.", _name);
         }
       }
+      print();
     }
 
 Script::Script(const char* name, const char* unit, const char* script)
@@ -87,6 +85,7 @@ Script::Script(const char* name, const char* unit, const char* script)
             break;
           } 
         }
+        trace(T_Script, 0);
       encodeScript(script);
     }
 
@@ -120,36 +119,46 @@ void    Script::print() {
         string += _units;
         string += ' ';
         while(*token){
-          uint8_t tokenType = *token && TOKEN_TYPE_MASK;
-          uint8_t tokenDetail = *token && ~TOKEN_TYPE_MASK;
+          uint8_t tokenType = *token & TOKEN_TYPE_MASK;
+          uint8_t tokenDetail = *token & ~TOKEN_TYPE_MASK;
           if(tokenType == tokenOperator){
             string += String(opChars[tokenDetail]);
           }
           else if(tokenType == tokenInput) {
-            string += "@" + String(tokenDetail);
+            string += SCRIPT_CHAR_INPUT + String(tokenDetail);
           }
           else if(tokenType == tokenConstant){
-            string += String(_constants[tokenDetail],4);
+            string += String(_constants[tokenDetail - 1],4);
             while(string.endsWith("0")) string.remove(string.length()-1);
             if(string.endsWith(".")) string += '0';
           }
+          else if(tokenType == tokenVirtual){
+            string += SCRIPT_CHAR_VIRTUAL;
+          }
+          else if(tokenType == tokenIntegration){
+            int index = tokenDetail;
+            string += SCRIPT_CHAR_INTEGRATION + String(tokenDetail);
+            string += char(*(++token));
+          }
           else {
-            string += "token(" + String(*token) + ")";
+            string += "token(" + String(*token) + String(tokenType) + ")";
           }
           token++;
         }
-        Serial.println(string);
 }
 
 bool    Script::encodeScript(const char* script){
-  char parseChars[16] = {SCRIPT_CHAR_CONSTANT, SCRIPT_CHAR_INPUT};
-  strcpy(&parseChars[2], opChars);
+  trace(T_Script, 5);
+  char parseChars[16] = {SCRIPT_CHAR_CONSTANT, SCRIPT_CHAR_INPUT, SCRIPT_CHAR_INTEGRATION, SCRIPT_CHAR_VIRTUAL};
+  trace(T_Script, 5);
+  strcpy(&parseChars[4], opChars);
   int tokenCount = 0;
   int constantCount = 0;
 
   // Count the tokens, constants and integrations.
 
   const char *scan = script;
+  trace(T_Script, 5);
   do {
     scan = strpbrk(scan, parseChars);
     if(scan){
@@ -160,8 +169,9 @@ bool    Script::encodeScript(const char* script){
       scan++;
     }
   } while (scan);
+  trace(T_Script, 6, tokenCount);
   
-  // Alllocate storage and encode.
+  // Allocate storage and encode.
   
   _tokens = new uint8_t[tokenCount + 1];
   _constants = new float[constantCount];
@@ -174,6 +184,7 @@ bool    Script::encodeScript(const char* script){
     if(script[j] == SCRIPT_CHAR_INPUT){
       char* endptr;
       int n = strtol(&script[j+1], &endptr, 10);
+      trace(T_Script, 10, n);
       j = endptr - script;
       _tokens[i++] = tokenInput + n;
     } 
@@ -181,15 +192,66 @@ bool    Script::encodeScript(const char* script){
     // Constant operand
 
     else if (script[j] == SCRIPT_CHAR_CONSTANT){
-      _tokens[i++] = tokenConstant + --constantCount;
+      trace(T_Script, 15);
+      _tokens[i++] = tokenConstant + constantCount--;
       char* endptr;
       _constants[constantCount] = strtof(&script[j+1], &endptr);
       j = endptr - script;
+    }
+   
+    // Virtual operand
+
+    else if(script[j] == SCRIPT_CHAR_VIRTUAL){
+      char* endptr;
+      int n = strtol(&script[j+1], &endptr, 10);
+      trace(T_Script, 20, n);
+      j = endptr - script;
+      _tokens[i++] = tokenVirtual + n;
+    }
+
+    // Integration operand
+
+    else if(script[j] == SCRIPT_CHAR_INTEGRATION){
+      trace(T_Script, 25, script[j+1]);
+      char method = 'N';
+      if(script[j+1] == '+'){
+        method = '+';
+        j++;
+      }
+      else if(script[j+1] == '-'){
+        method = '-';
+        j++;
+      }
+      int len = strcspn(&script[j + 1], opChars);
+      char name[32];
+      memcpy(name, &script[j+1], len);
+      name[len] = 0;
+      int index = 0;
+      Script* integration = integrations->first();
+      while(integration){
+        if(strcmp(name, integration->name()) == 0){
+          break;
+        }
+        integration = integration->next();
+        index++;
+      }
+      if(integration){
+        trace(T_Script, 28, index);
+        _tokens[i++] = tokenIntegration + index;
+        _tokens[i++] = method;
+      }
+      else {
+        trace(T_Script, 29);
+        log("Script: integration %s not defined in script %s.", name, this->_name);
+        _tokens[i++] = tokenConstant;
+      }
+      j += len + 1;
     }
 
     // Operator
 
     else if(strchr(opChars, script[j])){
+      trace(T_Script, 30);
       _tokens[i++] = tokenOperator + strchr(opChars, script[j++]) - opChars;
     }
 
@@ -204,63 +266,67 @@ bool    Script::encodeScript(const char* script){
   return true;
 }
 
-double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, const char* overideUnits){
+double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, const char* overideUnits){
         for(int i=0; i<unitsNone; i++){
           if(strcmp_ci(overideUnits,unitstr[i]) == 0){
-            return run(oldRec, newRec, elapsedHours, (units) i);
+            return run(oldRec, newRec, (units) i);
           } 
         }
         return 0;
 }
 
-double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours){
-        double result = run(oldRec, newRec, elapsedHours, _units);
-        return result;
+double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec){
+        return run(oldRec, newRec, _units);
 }
 
-double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units Units){
-        uint8_t* tokens = _tokens;
-        double result, va;
-        union {
-          double watts; 
-          double wh;
-         };
-        union {
-          double var;
-          double varh;
-        };
-        switch(Units) {
-          case Watts:
-          case Volts:
-          case Amps:
-          case Hz:
-          case Wh:
-          case VAR:
-          case VARh:
-            result = runRecursive(&tokens, oldRec, newRec, elapsedHours, Units); 
-            break;
+double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, units Units){
+  double elapsedHours = 1.0;
+  if(oldRec){
+    elapsedHours = newRec->logHours - oldRec->logHours;
+  }
+  //Serial.printf("run Script %s, units %s\n", this->_name, unitstr[Units]);
+  uint8_t *tokens = _tokens;
+  double result;
 
-          case VA:
-            var = runRecursive(&tokens, oldRec, newRec, elapsedHours, VAR); 
-            watts = runRecursive(&tokens, oldRec, newRec, elapsedHours, Watts);
-            result = sqrt(var * var + watts * watts);
-            break;
+  switch (Units)
+  {
+  case Watts:
+  case Volts:
+  case Amps:
+  case Hz:
+  case Wh:
+  case VAR:
+  case VARh:
+    result = runRecursive(&tokens, oldRec, newRec, Units);
+    break;
+
+  case VA:
+  {
+    double var = runRecursive(&tokens, oldRec, newRec, VAR);
+    double watts = runRecursive(&tokens, oldRec, newRec, Watts);
+    result = sqrt(var * var + watts * watts);
+    break;
+          }
           
           case VAh:
-            varh = runRecursive(&tokens, oldRec, newRec, elapsedHours, VARh); 
-            wh = runRecursive(&tokens, oldRec, newRec, elapsedHours, Wh);
+          {
+            double varh = runRecursive(&tokens, oldRec, newRec, VARh); 
+            double wh = runRecursive(&tokens, oldRec, newRec, Wh);
             result = sqrt(varh * varh + wh * wh);
             break;
+          }
 
           case kWh:
-            result = runRecursive(&tokens, oldRec, newRec, elapsedHours, Wh) / 1000.0; 
+            result = runRecursive(&tokens, oldRec, newRec, Wh) / 1000.0; 
             break;
 
           case PF:
-            watts = runRecursive(&tokens, oldRec, newRec, elapsedHours, Watts);
-            var = runRecursive(&tokens, oldRec, newRec, elapsedHours, VAR);
-            result = watts / sqrt(var * var + watts * watts);
+          {
+            double watts = runRecursive(&tokens, oldRec, newRec, Watts);
+            double va = runRecursive(&tokens, oldRec, newRec, VA);
+            result = watts / va;
             break;
+          }
 
           default:
             result = 0.0;
@@ -271,124 +337,189 @@ double  Script::run(IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsed
                 
 }
 
-double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRecord* newRec, double elapsedHours, units Units){
-        double result = 0.0;
-        double operand = 0.0;
-        uint8_t pendingOp = opAdd;
-        int vchannel;
-        uint8_t* token = *tokens;
-        do {
-          uint8_t tokenType = *token & TOKEN_TYPE_MASK;
-          uint8_t tokenDetail = *token & ~TOKEN_TYPE_MASK;
-          switch (tokenType)
+double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRecord* newRec, units Units){
+  double elapsedHours = 1.0;
+  if(oldRec){
+    elapsedHours = newRec->logHours - oldRec->logHours;
+  }
+  double result = 0.0;
+  double operand = 0.0;
+  uint8_t pendingOp = opAdd;
+  int vchannel;
+  uint8_t *token = *tokens;
+  do
+  {
+    uint8_t tokenType = *token & TOKEN_TYPE_MASK;
+    uint8_t tokenDetail = *token & ~TOKEN_TYPE_MASK;
+    switch (tokenType)
+    {
+      case tokenOperator:
+
+        switch (tokenDetail)
+        {
+          case opAdd:
+          case opSub:
+          case opMult:
+          case opDiv:
+          case opMin:
+          case opMax:
+            result = operate(result, pendingOp, operand);
+            pendingOp = *token;
+            operand = 0;
+            if (tokenDetail == opDiv || tokenDetail == opMult)
+              operand = 1;
+            break;
+
+          case opAbs:
+            if (operand < 0)
+              operand = 0 - operand;
+            break;
+
+          case opPush:
+            token++;
+            operand = runRecursive(&token, oldRec, newRec, Units);
+            break;
+
+          case opPop:
+            *tokens = token;
+            return operate(result, pendingOp, operand);
+
+          case opEq:
+            return operate(result, pendingOp, operand);
+        } // switch (tokenDetail)
+        break;
+
+      case tokenConstant:
+        if(tokenDetail){
+          operand = _constants[tokenDetail - 1];
+        }
+        else {
+          operand = 0;
+        }
+        break;
+
+      case tokenInput:
+      {
+        int input = *token & ~TOKEN_TYPE_MASK;
+        double accum1 = newRec->accum1[input] - (oldRec ? oldRec->accum1[input] : 0);
+        double accum2 = newRec->accum2[input] - (oldRec ? oldRec->accum2[input] : 0);
+        ;
+        vchannel = inputChannel[input]->_vchannel;
+        double volts = newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0) * inputChannel[input]->_vmult;
+        double hz = newRec->accum2[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0);
+
+        switch (Units)
+        {
+
+          case Watts:
+            operand = accum1 / elapsedHours;
+            break;
+
+          case Volts:
+            operand = volts / elapsedHours;
+            break;
+
+          case Amps:
           {
-            case tokenOperator:
-            
-              switch (tokenDetail)
-              {
-                case opAdd:
-                case opSub:
-                case opMult:
-                case opDiv:
-                case opMin:
-                case opMax:
-                  result = operate(result, pendingOp, operand);
-                  pendingOp = *token;
-                  operand = 0;
-                  if(tokenDetail == opDiv || tokenDetail == opMult) operand = 1;
-                  break;
+            double va = accum2 / elapsedHours;
+            operand = volts / elapsedHours;
+            if (operand != 0.0)
+            {
+              operand = va / operand;
+            }
+            break;
+          }
 
-                case opAbs:
-                  if(operand < 0) operand = 0 - operand;
-                  break;
+          case VA:
+            operand = accum2 / elapsedHours;
+            break;
 
-                case opPush:
-                  token++;
-                  operand = runRecursive(&token, oldRec, newRec, elapsedHours, Units);
-                  break;
+          case VAh:
+            operand = accum2;
+            break;
 
-                case opPop:
-                  *tokens = token;
-                  return operate(result, pendingOp, operand);
+          case Hz:
+            operand = hz / elapsedHours;
+            break;
 
-                case opEq:
-                    return operate(result, pendingOp, operand);
-              } // switch (tokenDetail)
-              break;
+          case Wh:
+            operand = accum1;
+            break;
 
-            case tokenConstant:
-              operand = _constants[tokenDetail];
-              break;
+          case VAR:
+          {
+            double va = accum2 / elapsedHours;
+            double watts = accum1 / elapsedHours;
+            operand = sqrt(va * va - watts * watts);
+            break;
+          }
 
-            case tokenInput:
-              union {
-                double va;
-                double vah;
-              };
-              union {
-                double watts;
-                double wh;
-              };
-              switch(Units)
-              {
+          case VARh:
+          {
+            double vah = accum2;
+            double wh = accum1;
+            operand = sqrt(vah * vah - wh * wh);
+            break;
+          }
 
-                case Watts:
-                  operand = (newRec->accum1[*token % 32] - (oldRec ? oldRec->accum1[*token % 32] : 0.0)) / elapsedHours;
-                  break;
+          default:
+            operand = 0.0;
+            break;
+             
+        } // switch (units)
+        break;
+      }
 
-                case Volts:
-                  vchannel = inputChannel[*token % 32]->_vchannel;
-                  operand = (newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0.0)) / elapsedHours;
-                  break;
-                  
-                case Amps:
-                  va = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0)) / elapsedHours;
-                  vchannel = inputChannel[*token % 32]->_vchannel;
-                  operand = ((newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0.0)) / elapsedHours);
-                  if(operand != 0.0){
-                    operand = va / (operand * inputChannel[*token % 32]->_vmult);
-                  }
-                  break;
+      case tokenVirtual:
+      {
+        operand = 0;
+        if (tokenDetail == 0 && simsolar)
+        {
+          if (oldRec) {
+            double elapsed = newRec->logHours - oldRec->logHours;
+            operand = simsolar->energy(localTime(oldRec->UNIXtime), localTime(newRec->UNIXtime)) * elapsed / (double(newRec->UNIXtime - oldRec->UNIXtime) / 3600);
+            if(Units == Watts){
+              operand /= double(newRec->UNIXtime - oldRec->UNIXtime) / 3600;
+            }
+          }
+          else {
+            operand = simsolar->power(localTime(newRec->UNIXtime));
+          }
+        }
+        break;
+      }
 
-                case VA:
-                  operand = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0)) / elapsedHours;
-                  break;
+      case tokenIntegration:
+      {
+        trace(T_Script, 30);
+        int index = tokenDetail;
+        Script *integration = integrations->first();
+        while (index && integration)
+        {
+          integration = integration->next();
+        }
+        if (!integration)
+        {
+          trace(T_Script, 31);  
+          return 0;
+        }
+        integrator *_integrator = (integrator *)(integration->getParm());
+        char method = *(++token);
 
-                case VAh:
-                  operand = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0));
-                  break;
+        // Get integrated value
 
-                case Hz:
-                  vchannel = inputChannel[*token % 32]->_vchannel;
-                  operand = (newRec->accum2[vchannel] - (oldRec ? oldRec->accum2[vchannel] : 0.0)) / elapsedHours;
-                  break;
+        trace(T_Script, 30);
+        operand = _integrator->run(oldRec, newRec, Units, method);
+        trace(T_Script, 30);
+        break;
+      }
+    } // switch (tokenType)
 
-                case Wh:
-                  operand = (newRec->accum1[*token % 32] - (oldRec ? oldRec->accum1[*token % 32] : 0.0));
-                  break;
+    if (operand != operand)
+      operand = 0;
 
-                case VAR:
-                  va = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0)) / elapsedHours;
-                  watts = (newRec->accum1[*token % 32] - (oldRec ? oldRec->accum1[*token % 32] : 0.0)) / elapsedHours;
-                  operand = sqrt(va*va - watts*watts);
-                  break;
-
-                case VARh:
-                  vah = (newRec->accum2[*token % 32] - (oldRec ? oldRec->accum2[*token % 32] : 0.0));
-                  wh = (newRec->accum1[*token % 32] - (oldRec ? oldRec->accum1[*token % 32] : 0.0));
-                  operand = sqrt(vah*vah - wh*wh);
-                  break;
-
-                default:
-                  operand = 0.0;
-                  break;
-              } // switch (units)
-          } // switch (tokenType)
-          
-          if(operand != operand) operand = 0;
-
-        } while(token++);
-        return 0.0;
+  } while(*token++);
+  return 0;
 }
 
 double    Script::operate(double result, uint8_t token, double operand){
@@ -404,9 +535,7 @@ double    Script::operate(double result, uint8_t token, double operand){
 }
 
 Script* ScriptSet::script(const char *name){
-  Serial.printf("\nnamep: %s", name);
   Script *script = _listHead;
-   Serial.printf("\nnames: %s", script->_name);
   while (script) {
     if(strcmp(script->name(), name) == 0){
       return script;
