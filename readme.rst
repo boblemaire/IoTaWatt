@@ -52,7 +52,7 @@ The unit is manufactured in the USA.
     *   `Project Website <https://iotawatt.com>`_
     *   `User Forum <https://community.iotawatt.com>`_
 
-.. image:: Docs/pics/inputsOutputsDisplay.png
+.. image:: Docs/pics/status/inputsOutputsDisplay.png
     :scale: 20 %
     :align: left
 
@@ -60,11 +60,11 @@ The unit is manufactured in the USA.
     :scale: 20 %
     :align: right
 
-.. image:: Docs/pics/totalPowerOutput.png
+.. image:: Docs/pics/outputs/totalPowerOutput.png
     :scale: 20 %
     :align: center
 
-.. image:: Docs/pics/PVoutputDisplay.png
+.. image:: Docs/pics/PVoutput/PVoutputDisplay.png
     :scale: 20 %
     :align: center
 
