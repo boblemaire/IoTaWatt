@@ -15,12 +15,13 @@ energy to the grid.  In those cases, the total energy represented is the net
 energy, not a monotonically increasing value. Additionally, Scripts that do 
 not result in monotonically increasing values may not produce the intended result.
 
-The individual five-second data in the datalog is signed and will be a net
-import (+) or export (-), but when the data is viewed in a broader context 
-of hours, the net does not provide accurate import and export values.
+The individual five-second data in the datalog is signed is the net energy
+imported (+) or exported (-) during each five second interval. When that data is viewed in a broader context 
+of hours, the net does not provide accurate individual import and export values.
 
-What is needed is a way to process 5 second measurements 
-to accumulate the sums of their individual positive and negative values,
+To develop the individual total imported and exported energy values,
+IoTaWatt needs to process the five-second detail measurements 
+to accumulate the sums of the individual positive and negative values,
 and to save them as monotonic values that can
 be used in output Scripts.  That's what integrators do.
 
@@ -29,8 +30,8 @@ How they work
 
 As previously mentioned, the detail data exists in the five-second current datalog.
 When you create an integrator, an additional datalog is created to
-contain the integrated values. We call these integrations, in the mathematical sense 
-(not to be confused with combining as in Home Assistant integrations).
+contain the integrated values. These are called integrations - in the mathematical sense, 
+not to be confused with combining as with integrations in Home Assistant terminology.
 
 A background Service is created to process the five-second datalog, by default 
 beginning with the previous 24 hours. This takes about ten minutes. The Integrator accumulates
@@ -183,6 +184,7 @@ You will see the integration "grid" listed under the Data Logs tab in the Status
 Wait about 10-15 minutes for the integration to process the last 24 hours of data.
 When the end time is the same as the current log, the integration is "synchronized"
 and you can use it to add import and export outputs.
+You can reference or query the import and export outputs to get accurate Wh. 
 
 .. image:: pics/integrators/addExport.png
     :scale: 50 %
@@ -193,8 +195,6 @@ and you can use it to add import and export outputs.
     :scale: 50 %
     :align: center
     :alt: Add output "import"
-
-You can now reference or query the import and export outputs to get accurate Wh. 
 
 Home Assistant Energy
 ---------------------
