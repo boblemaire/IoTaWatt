@@ -22,7 +22,7 @@ of hours, the net does not provide accurate individual import and export values.
 To develop the individual total imported and exported energy values,
 IoTaWatt needs to process the detail measurements 
 to accumulate the sums of the individual positive and negative values,
-and to save them as a monotonic series that can
+and to save each as a monotonic series that can
 be used in output Scripts.  That's what integrators do.
 
 How they work
