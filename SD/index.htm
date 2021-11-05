@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- version 0.7.0 -->
+<!-- version 0.6.1 -->
 <html lang="en-US">
 
 <head>
@@ -215,7 +215,7 @@
                 </p>
             </div>
 
-            <!-- ************* WebServer ********************-->
+            <!-- ************* Uploaders ********************-->
 
             <div class="body color_body" id="divWebServer" style="display:none">
                 <h3 id=serverHead>Setup Server Uploaders</h3>
@@ -235,6 +235,35 @@
                     <button class="actionCancel" id="serverCancel" onclick="serverCancel()">cancel</button>
                     <button class="actionSave" id="serverSave" onclick="serverSave()">save</button>
                 </p>
+            </div>
+            
+                
+                  <!-- ************* Influx tags ********************--> 
+    
+            <div class="body color_body" id="divInfluxTag" style="display:none">
+              <h3>Edit influx tag</h3>
+              <table width="80%">
+                <tr><th>tag key</th><th> </th><th>tag value</th></tr>
+                <tr>
+                  <td><input id="influxTagKey" oninput="influxTagCheck()"></td>
+                  <td>=</td>
+                  <td><input id="influxTagValue" oninput="influxTagCheck()" title="enter a string or variable ($name, $units..)."></td>
+                </tr>
+              </table>
+              
+              <p>Tags are optional key-value pairs of metadata that can be associated with the measurement.
+              Because they are indexed, queries on tags perform better than queries on fields.
+              </p>
+              <p>When tags are specified, IoTaWatt assumes the first tag is unique to this measurement
+              and is referenced to determine the time of last measurement during restart recovery. 
+              In that way, an IoTaWatt can maintain context and continuity where multiple data
+              sources are writing to a single database.</p>
+              <p>Tag-values can be a fixed string, or one of the variables $device, $name, $units</p>
+              <p>
+                <button class="actionDelete" id="influxTagDelete">delete</button>
+                <button class="actionCancel" id="influxTagCancel" onclick="influxTagCancel()">cancel</button>
+                <button class="actionSave" id="influxTagSave">save</button>
+              </p>
             </div>
 
             <!-- ************* HTTPS Proxy Server ********************-->
@@ -591,7 +620,7 @@
             vphase: -150,
             vmult: 1.732
         }];
-
+        
         var dstRules = [{
             id: "Americas",
             begOffset: -10,
@@ -1424,26 +1453,26 @@
          * ****************************************************************************************/
         function configOutputs() {
             currentBodyPush("configOutputs");
-
+            
             var scriptEdit = {
-                table: EbyId("outputTable"),
-                set: config.outputs,
-                units: ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "VAR", "VARh"],
-                nameList: [],
-                uniqueNames: true,
-                namePrompt: "Name must be alphanumeric and start with a letter",
-                namePattern: "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$",
+              table : EbyId("outputTable"),
+              set : config.outputs,
+              units : ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "VAR", "VARh"],
+              nameList : [],
+              uniqueNames : true,
+              namePrompt : "Name must be alphanumeric and start with a letter",
+              namePattern : "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$",
             };
-
+            
             scriptEdit.save = function() {
                 config.outputs = scriptEdit.set;
                 uploadConfig();
-            };
-
+              };
+              
             scriptEdit.return = function() {
-                EbyId("divCalc").style.display = "none";
-                EbyId("divOutputs").style.display = "table";
-                editScript(scriptEdit);
+              EbyId("divCalc").style.display = "none";
+              EbyId("divOutputs").style.display = "table";
+              editScript(scriptEdit);
             };
 
             editScript(scriptEdit);
@@ -1454,37 +1483,37 @@
          * ****************************************************************************************/
         function configIntegrators() {
             currentBodyPush("configIntegrators");
-
+            
             var scriptEdit = {
-                table: EbyId("integratorsTable"),
-                set: config.integrators === undefined ? [] : config.integrators,
-                units: ["Wh"],
-                nameList: [],
-                allowIntegrators: false,
-                uniqueNames: true,
-                namePrompt: "Name must be alphanumeric and start with a letter",
-                namePattern: "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$",
-                title: "Integrator"
+              table : EbyId("integratorsTable"),
+              set : config.integrators === undefined ? [] : config.integrators,
+              units : ["Wh"],
+              nameList : [],
+              allowIntegrators : false,
+              uniqueNames : true,
+              namePrompt : "Name must be alphanumeric and start with a letter",
+              namePattern : "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$",
+              title : "Integrator"
             };
 
             scriptEdit.save = function() {
                 config.integrators = scriptEdit.set
                 uploadConfig();
             };
-
+            
             scriptEdit.return = function() {
                 EbyId("divCalc").style.display = "none";
                 EbyId("divIntegrators").style.display = "table";
                 editScript(scriptEdit);
             };
-
-            scriptEdit.delete = function(script) {
-                return confirm("Deleting the integration will delete the integration log.");
+            
+            scriptEdit.delete = function(script){
+              return confirm("Deleting the integration will delete the integration log.");
             }
-
+            
             editScript(scriptEdit);
         }
-
+        
         /**********************************************************************************************
          * 
          *          EEEEE  DDDD    III   TTTTT   SSS    CCCC  RRRR   III   PPPP   TTTTT
@@ -1518,29 +1547,29 @@
          *                
          * *******************************************************************************************/
 
-        function editScript(scriptEdit) {
-
+        function editScript(scriptEdit){
+          
             // Set defaults
-
-            if (scriptEdit.nameList === undefined) {
-                scriptEdit.nameList = [];
+            
+            if(scriptEdit.nameList === undefined){
+              scriptEdit.nameList = [];
             }
-            if (scriptEdit.namePrompt === undefined) {
-                scriptEdit.namePrompt = "Invalid name.";
+            if(scriptEdit.namePrompt === undefined){
+              scriptEdit.namePrompt = "Invalid name.";
             }
-            if (scriptEdit.namePattern === undefined) {
-                scriptEdit.namePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
+            if(scriptEdit.namePattern === undefined){
+              scriptEdit.namePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
             }
-            if (scriptEdit.units === undefined) {
-                scriptEdit.units = [];
+            if(scriptEdit.units === undefined){
+              scriptEdit.units = [];
             }
-            if (scriptEdit.uniqueNames === undefined) {
-                scriptEdit.uniqueNames = true;
+            if(scriptEdit.uniqueNames === undefined){
+              scriptEdit.uniqueNames = true;
             }
-            if (scriptEdit.allowIntegrators === undefined) {
-                scriptEdit.allowIntegrators = true;
+            if(scriptEdit.allowIntegrators === undefined){
+              scriptEdit.allowIntegrators = true;
             }
-
+            
             scriptEdit.index = -1;
             table = scriptEdit.table;
             table.innerHTML = "";
@@ -1578,315 +1607,315 @@
             editButton.setAttribute("onclick", "addOutput()");
             selColumn.appendChild(editButton);
 
-            function calcBuildDropdown() {
-                var inputDropdown = EbyId("calcInputDropdown-content");
-                inputDropdown.innerHTML = "";
-                for (i in config.inputs) {
-                    if (config.inputs[i] != null) {
-                        var newItem = document.createElement("p");
-                        inputDropdown.appendChild(newItem);
-                        newItem.innerHTML = config.inputs[i].name;
-                        newItem.value = "@" + Number(i);
-                        newItem.setAttribute("onclick", "keyInput(this)");
-                    }
+          function calcBuildDropdown() {
+              var inputDropdown = EbyId("calcInputDropdown-content");
+              inputDropdown.innerHTML = "";
+              for (i in config.inputs) {
+                  if (config.inputs[i] != null) {
+                      var newItem = document.createElement("p");
+                      inputDropdown.appendChild(newItem);
+                      newItem.innerHTML = config.inputs[i].name;
+                      newItem.value = "@" + Number(i);
+                      newItem.setAttribute("onclick", "keyInput(this)");
+                  }
+              }
+              if (config.simsolar !== undefined) {
+                  var newsimSolar = document.createElement("p");
+                  inputDropdown.appendChild(newsimSolar);
+                  newsimSolar.innerHTML = "simSolar";
+                  newsimSolar.value = "~0";
+                  newsimSolar.setAttribute("onclick", "keyInput(this)");
+              }
+              if (scriptEdit.allowIntegrators && config.integrators !== undefined) {
+                  for (i in config.integrators) {
+                      var newNet = document.createElement("p");
+                      inputDropdown.appendChild(newNet);
+                      newNet.innerHTML = config.integrators[i].name + ".net";
+                      newNet.value = "!" + config.integrators[i].name;
+                      newNet.setAttribute("onclick", "keyInput(this)");
+                      var newPos = document.createElement("p");
+                      inputDropdown.appendChild(newPos);
+                      newPos.innerHTML = config.integrators[i].name + ".pos";
+                      newPos.value = "!+" + config.integrators[i].name;
+                      newPos.setAttribute("onclick", "keyInput(this)");
+                      var newNeg = document.createElement("p");
+                      inputDropdown.appendChild(newNeg);
+                      newNeg.innerHTML = config.integrators[i].name + ".neg";
+                      newNeg.value = "!-" + config.integrators[i].name;
+                      newNeg.setAttribute("onclick", "keyInput(this)");
+                  }
+              }
+          };
+  
+          function parseScript(script) {
+              return script.match(/~\d+|@\d+|#-?\d+\.?\d*|![+-]?[a-zA-Z0-9_]+|[-+*\/()|<>=]/g);
+              //                   virt|inpu|constant    |integration        |operator
+          };
+  
+          function scriptDisplay(tokens) {
+              calcDisplay = "";
+              for (var i = 0; i < tokens.length; i++) {
+                  if (tokens[i].startsWith("#")) {
+                      calcDisplay += tokens[i].substr(1);
+                  } else if (tokens[i].startsWith("@")) {
+                      var channel = tokens[i].substr(1);
+                      var name = "Input_" + channel;
+                      if (config.inputs[channel] != null) name = config.inputs[channel].name;
+                      if (name == "") name = "Input_" + channel;
+                      calcDisplay += name;
+                  } else if (tokens[i].startsWith("~")) {
+                      var id = tokens[i].substr(1);
+                      if (id == 0) {
+                          calcDisplay += "simSolar";
+                      } else {
+                          calcDisplay += tokens[i];
+                      }
+                  } else if (tokens[i].startsWith("!")) {
+                      if (tokens[i].substr(1, 1) == "+") {
+                          calcDisplay += tokens[i].substr(2) + ".pos";
+                      } else if (tokens[i].substr(1, 1) == "-") {
+                          calcDisplay += tokens[i].substr(2) + ".neg";
+                      } else {
+                          calcDisplay += tokens[i].substr(1) + ".net";
+                      }
+                  } else if (tokens[i] == "*") calcDisplay += " x ";
+                  else if (tokens[i] == "+") calcDisplay += " + ";
+                  else if (tokens[i] == "-") calcDisplay += " - ";
+                  else if (tokens[i] == "/") calcDisplay += " &#247 ";
+                  else if (tokens[i] == "(") calcDisplay += "(";
+                  else if (tokens[i] == ")") calcDisplay += ")";
+                  else if (tokens[i] == "|") calcDisplay += " abs ";
+                  else if (tokens[i] == "<") calcDisplay += " min ";
+                  else if (tokens[i] == ">") calcDisplay += " max ";
+              }
+              return calcDisplay;
+          };
+          
+          this.calculator = function(index) {
+              editingScript = true;
+              EbyId("calcTitle").innerHTML = "Configure " + (scriptEdit.title === undefined ? "Output" : scriptEdit.title);
+              currentBodyPush("divCalc");
+              EbyId("calcTable").innerHTML = "";
+              buildNames(scriptEdit.set[index].name);
+              buildUnitsList(scriptEdit.set[index].units);
+              tokens = parseScript(scriptEdit.set[index].script);
+              EbyId("calcDelete").style.display = "inline";
+              scriptEdit.index = index;
+              refreshCalcDisplay();
+          };
+  
+          function buildNames(name) {
+              var calcTable = EbyId("calcTable");
+              if (scriptEdit.nameList.length == 0) {
+                  var calcName = addTableRow(calcTable, "Name:", "calcName", "input", 1);
+                  calcName.setAttribute("onchange", "refreshCalcDisplay()");
+                  calcName.pattern = scriptEdit.namePattern;
+                  calcName.title = scriptEdit.namePrompt;
+                  calcName.value = name;
+              } else {
+                  var calcName = addTableRow(calcTable, "Name:", "calcName", "select", 1);
+                  calcName.setAttribute("oninput", "refreshCalcDisplay()");
+                  calcName.value = name;
+                  for (i in scriptEdit.nameList) {
+                      var option = document.createElement("option");
+                      option.value = scriptEdit.nameList[i];
+                      option.innerHTML = scriptEdit.nameList[i];
+                      calcName.add(option);
+                      if (option.value == name) {
+                          option.selected = true;
+                      }
+                  }
+              }
+          };
+  
+          function buildUnitsList(units) {
+              var calcTable = EbyId("calcTable");
+              var calcUnits = addTableRow(calcTable, "Units:", "calcUnits", "select", 1);
+              calcUnits.style = "width: 80px;";
+              for (i in scriptEdit.units) {
+                  var option = document.createElement("option");
+                  option.value = scriptEdit.units[i];
+                  option.innerHTML = scriptEdit.units[i];
+                  calcUnits.add(option);
+                  if (option.value == units) {
+                      option.selected = true;
+                  }
+              }
+          };
+          
+          this.addOutput = function() {
+              editingScript = true;
+              currentBodyPush("divCalc");
+              EbyId("calcTable").innerHTML = "";
+              EbyId("calcTitle").innerHTML = "Configure " + (scriptEdit.title === undefined ? "Output" : scriptEdit.title);
+              buildNames("");
+              buildUnitsList("watts");
+              tokens = ["#0"];
+              EbyId("calcDelete").style.display = "none";
+              scriptEdit.index = scriptEdit.set.length;
+              refreshCalcDisplay();
+          };
+  
+          this.calcCancel = function() {
+              currentBodyPop();
+              editingScript = false;
+              scriptEdit.return();
+          };
+        
+  
+          this.calcSave = function() {
+              if (scriptEdit.index < scriptEdit.set.length) {
+                  scriptEdit.set.splice(scriptEdit.index, 1);
+              }
+              scriptEdit.set.push({
+                  name: EbyId("calcName").value.trim(),
+                  units: EbyId("calcUnits").value.trim(),
+                  script: tokens.join("")
+              });
+              scriptEdit.set.sort(function(a, b) {
+                  return a.name.toString().localeCompare(b.name.toString())
+              });
+              if (scriptEdit.uniqueNames) {
+                  for (var i = 0; i < scriptEdit.set.length - 1; i++) {
+                      if (scriptEdit.set[i].name == scriptEdit.set[i + 1].name) scriptEdit.set.splice(i, 1);
+                  }
+              }
+              scriptEdit.save();
+              currentBodyPop();
+              editingScript = false;
+              scriptEdit.return();
+          };
+  
+          this.calcDelete = function() {
+              if(scriptEdit.delete != undefined){
+                if(! scriptEdit.delete(scriptEdit.set[scriptEdit.index])){
+                  return;
                 }
-                if (config.simsolar !== undefined) {
-                    var newsimSolar = document.createElement("p");
-                    inputDropdown.appendChild(newsimSolar);
-                    newsimSolar.innerHTML = "simSolar";
-                    newsimSolar.value = "~0";
-                    newsimSolar.setAttribute("onclick", "keyInput(this)");
-                }
-                if (scriptEdit.allowIntegrators && config.integrators !== undefined) {
-                    for (i in config.integrators) {
-                        var newNet = document.createElement("p");
-                        inputDropdown.appendChild(newNet);
-                        newNet.innerHTML = config.integrators[i].name + ".net";
-                        newNet.value = "!" + config.integrators[i].name;
-                        newNet.setAttribute("onclick", "keyInput(this)");
-                        var newPos = document.createElement("p");
-                        inputDropdown.appendChild(newPos);
-                        newPos.innerHTML = config.integrators[i].name + ".pos";
-                        newPos.value = "!+" + config.integrators[i].name;
-                        newPos.setAttribute("onclick", "keyInput(this)");
-                        var newNeg = document.createElement("p");
-                        inputDropdown.appendChild(newNeg);
-                        newNeg.innerHTML = config.integrators[i].name + ".neg";
-                        newNeg.value = "!-" + config.integrators[i].name;
-                        newNeg.setAttribute("onclick", "keyInput(this)");
-                    }
-                }
-            };
-
-            function parseScript(script) {
-                return script.match(/~\d+|@\d+|#-?\d+\.?\d*|![+-]?[a-zA-Z0-9_]+|[-+*\/()|<>=]/g);
-                //                   virt|inpu|constant    |integration        |operator
-            };
-
-            function scriptDisplay(tokens) {
-                calcDisplay = "";
-                for (var i = 0; i < tokens.length; i++) {
-                    if (tokens[i].startsWith("#")) {
-                        calcDisplay += tokens[i].substr(1);
-                    } else if (tokens[i].startsWith("@")) {
-                        var channel = tokens[i].substr(1);
-                        var name = "Input_" + channel;
-                        if (config.inputs[channel] != null) name = config.inputs[channel].name;
-                        if (name == "") name = "Input_" + channel;
-                        calcDisplay += name;
-                    } else if (tokens[i].startsWith("~")) {
-                        var id = tokens[i].substr(1);
-                        if (id == 0) {
-                            calcDisplay += "simSolar";
-                        } else {
-                            calcDisplay += tokens[i];
-                        }
-                    } else if (tokens[i].startsWith("!")) {
-                        if (tokens[i].substr(1, 1) == "+") {
-                            calcDisplay += tokens[i].substr(2) + ".pos";
-                        } else if (tokens[i].substr(1, 1) == "-") {
-                            calcDisplay += tokens[i].substr(2) + ".neg";
-                        } else {
-                            calcDisplay += tokens[i].substr(1) + ".net";
-                        }
-                    } else if (tokens[i] == "*") calcDisplay += " x ";
-                    else if (tokens[i] == "+") calcDisplay += " + ";
-                    else if (tokens[i] == "-") calcDisplay += " - ";
-                    else if (tokens[i] == "/") calcDisplay += " &#247 ";
-                    else if (tokens[i] == "(") calcDisplay += "(";
-                    else if (tokens[i] == ")") calcDisplay += ")";
-                    else if (tokens[i] == "|") calcDisplay += " abs ";
-                    else if (tokens[i] == "<") calcDisplay += " min ";
-                    else if (tokens[i] == ">") calcDisplay += " max ";
-                }
-                return calcDisplay;
-            };
-
-            this.calculator = function(index) {
-                editingScript = true;
-                EbyId("calcTitle").innerHTML = "Configure " + (scriptEdit.title === undefined ? "Output" : scriptEdit.title);
-                currentBodyPush("divCalc");
-                EbyId("calcTable").innerHTML = "";
-                buildNames(scriptEdit.set[index].name);
-                buildUnitsList(scriptEdit.set[index].units);
-                tokens = parseScript(scriptEdit.set[index].script);
-                EbyId("calcDelete").style.display = "inline";
-                scriptEdit.index = index;
-                refreshCalcDisplay();
-            };
-
-            function buildNames(name) {
-                var calcTable = EbyId("calcTable");
-                if (scriptEdit.nameList.length == 0) {
-                    var calcName = addTableRow(calcTable, "Name:", "calcName", "input", 1);
-                    calcName.setAttribute("onchange", "refreshCalcDisplay()");
-                    calcName.pattern = scriptEdit.namePattern;
-                    calcName.title = scriptEdit.namePrompt;
-                    calcName.value = name;
-                } else {
-                    var calcName = addTableRow(calcTable, "Name:", "calcName", "select", 1);
-                    calcName.setAttribute("oninput", "refreshCalcDisplay()");
-                    calcName.value = name;
-                    for (i in scriptEdit.nameList) {
-                        var option = document.createElement("option");
-                        option.value = scriptEdit.nameList[i];
-                        option.innerHTML = scriptEdit.nameList[i];
-                        calcName.add(option);
-                        if (option.value == name) {
-                            option.selected = true;
-                        }
-                    }
-                }
-            };
-
-            function buildUnitsList(units) {
-                var calcTable = EbyId("calcTable");
-                var calcUnits = addTableRow(calcTable, "Units:", "calcUnits", "select", 1);
-                calcUnits.style = "width: 80px;";
-                for (i in scriptEdit.units) {
-                    var option = document.createElement("option");
-                    option.value = scriptEdit.units[i];
-                    option.innerHTML = scriptEdit.units[i];
-                    calcUnits.add(option);
-                    if (option.value == units) {
-                        option.selected = true;
-                    }
-                }
-            };
-
-            this.addOutput = function() {
-                editingScript = true;
-                currentBodyPush("divCalc");
-                EbyId("calcTable").innerHTML = "";
-                EbyId("calcTitle").innerHTML = "Configure " + (scriptEdit.title === undefined ? "Output" : scriptEdit.title);
-                buildNames("");
-                buildUnitsList("watts");
-                tokens = ["#0"];
-                EbyId("calcDelete").style.display = "none";
-                scriptEdit.index = scriptEdit.set.length;
-                refreshCalcDisplay();
-            };
-
-            this.calcCancel = function() {
-                currentBodyPop();
-                editingScript = false;
-                scriptEdit.return();
-            };
-
-
-            this.calcSave = function() {
-                if (scriptEdit.index < scriptEdit.set.length) {
-                    scriptEdit.set.splice(scriptEdit.index, 1);
-                }
-                scriptEdit.set.push({
-                    name: EbyId("calcName").value.trim(),
-                    units: EbyId("calcUnits").value.trim(),
-                    script: tokens.join("")
-                });
-                scriptEdit.set.sort(function(a, b) {
-                    return a.name.toString().localeCompare(b.name.toString())
-                });
-                if (scriptEdit.uniqueNames) {
-                    for (var i = 0; i < scriptEdit.set.length - 1; i++) {
-                        if (scriptEdit.set[i].name == scriptEdit.set[i + 1].name) scriptEdit.set.splice(i, 1);
-                    }
-                }
-                scriptEdit.save();
-                currentBodyPop();
-                editingScript = false;
-                scriptEdit.return();
-            };
-
-            this.calcDelete = function() {
-                if (scriptEdit.delete != undefined) {
-                    if (!scriptEdit.delete(scriptEdit.set[scriptEdit.index])) {
-                        return;
-                    }
-                }
-                scriptEdit.set.splice(scriptEdit.index, 1);
-                scriptEdit.save();
-                currentBodyPop();
-                editingScript = false;
-                scriptEdit.return();
-            };
-
-            this.refreshCalcDisplay = function() {
-                EbyId("calcDisplay").innerHTML = scriptDisplay(tokens);
-                var calcName = EbyId("calcName");
-                if (EbyId("calcName").value.trim() == "" ||
-                    parenLevel > 0 ||
-                    RegExp("^[-+*\/<>]").test(tokens[tokens.length - 1])) {
-                    EbyId("calcSave").style.display = "none";
-                } else if (!RegExp(calcName.pattern).test(calcName.value)) {
-                    EbyId("calcSave").style.display = "none";
-                } else EbyId("calcSave").style.display = "inline";
-            };
-
-
-            this.keyClearAll = function() {
-                while (tokens.length > 1) {
-                    keyClearEntry();
-                }
-                keyClearEntry();
-            };
-
-            this.keyClearEntry = function() {
-                if (tokens[tokens.length - 1] == ")") {
-                    parenLevel++;
-                } else if (tokens[tokens.length - 1] == "(") {
-                    parenLevel--;
-                }
-                if (tokens.length > 1) {
-                    tokens.pop();
-                } else {
-                    tokens[0] = "#0";
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyClearChar = function() {
-                if (RegExp("^[-+*\/()|@<>]").test(tokens[tokens.length - 1])) {
-                    keyClearEntry();
-                } else if (RegExp("#-?[0-9]$").test(tokens[tokens.length - 1])) {
-                    keyClearEntry();
-                } else {
-                    tokens[tokens.length - 1] = tokens[tokens.length - 1].substr(0, tokens[tokens.length - 1].length - 1);
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyDigit = function(digit) {
-                if (RegExp("^#0$").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] = "#" + digit;
-                } else if (RegExp("^#").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] += digit;
-                } else if (RegExp("^[-+*\/<>(]").test(tokens[tokens.length - 1])) {
-                    tokens.push("#" + digit);
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyDecimal = function() {
-                if (RegExp("^#-?[0-9]*$").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] += ".";
-                } else if (RegExp("^[-+*\/<>(]").test(tokens[tokens.length - 1])) {
-                    tokens.push("#0.");
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyUniNeg = function() {
-                if (RegExp("^#[0-9]+\.?[0-9]*").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] = tokens[tokens.length - 1].charAt(0) + "-" + tokens[tokens.length - 1].substr(1);
-                } else if (RegExp("^#\-[0-9]+\.?[0-9]*").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] = tokens[tokens.length - 1].charAt(0) + tokens[tokens.length - 1].substr(2);
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyUniPos = function() {
-                if (RegExp("[!@)]").test(tokens[tokens.length - 1])) {
-                    tokens.push("|");
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyBinFunc = function(op) {
-                if (RegExp("^[~!@#)\|]").test(tokens[tokens.length - 1])) {
-                    tokens.push(op);
-                } else if (RegExp("^[-+*\/<>]").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] = op;
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyPush = function() {
-                if (tokens.length == 1 && tokens[0] == "#0") {
-                    tokens[0] = "(";
-                    parenLevel++;
-                } else if (RegExp("^[-+*\/<>(]").test(tokens[tokens.length - 1])) {
-                    tokens.push("(");
-                    parenLevel++;
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyPop = function() {
-                if (parenLevel > 0 && RegExp("^[~!@#|)]").test(tokens[tokens.length - 1])) {
-                    tokens.push(")");
-                    parenLevel--;
-                    refreshCalcDisplay();
-                }
-            };
-
-            this.keyInput = function(obj) {
-                if (tokens.length == 1 && tokens[0] == "#0") {
-                    tokens[0] = obj.value;
-                } else if (RegExp("^[-+*\/(<>]").test(tokens[tokens.length - 1])) {
-                    tokens.push(obj.value);
-                }
-                refreshCalcDisplay();
-            };
+              }
+              scriptEdit.set.splice(scriptEdit.index, 1);
+              scriptEdit.save();
+              currentBodyPop();
+              editingScript = false;
+              scriptEdit.return();
+          };
+  
+          this.refreshCalcDisplay = function() {
+              EbyId("calcDisplay").innerHTML = scriptDisplay(tokens);
+              var calcName = EbyId("calcName");
+              if (EbyId("calcName").value.trim() == "" ||
+                  parenLevel > 0 ||
+                  RegExp("^[-+*\/<>]").test(tokens[tokens.length - 1])) {
+                  EbyId("calcSave").style.display = "none";
+              } else if (!RegExp(calcName.pattern).test(calcName.value)) {
+                  EbyId("calcSave").style.display = "none";
+              } else EbyId("calcSave").style.display = "inline";
+          };
+  
+          
+          this.keyClearAll = function() {
+              while (tokens.length > 1) {
+                  keyClearEntry();
+              }
+              keyClearEntry();
+          };
+  
+          this.keyClearEntry = function() {
+              if (tokens[tokens.length - 1] == ")") {
+                  parenLevel++;
+              } else if (tokens[tokens.length - 1] == "(") {
+                  parenLevel--;
+              }
+              if (tokens.length > 1) {
+                  tokens.pop();
+              } else {
+                  tokens[0] = "#0";
+              }
+              refreshCalcDisplay();
+          };
+  
+          this.keyClearChar = function() {
+              if (RegExp("^[-+*\/()|@<>]").test(tokens[tokens.length - 1])) {
+                  keyClearEntry();
+              } else if (RegExp("#-?[0-9]$").test(tokens[tokens.length - 1])) {
+                  keyClearEntry();
+              } else {
+                  tokens[tokens.length - 1] = tokens[tokens.length - 1].substr(0, tokens[tokens.length - 1].length - 1);
+              }
+              refreshCalcDisplay();
+          };
+  
+          this.keyDigit = function(digit) {
+              if (RegExp("^#0$").test(tokens[tokens.length - 1])) {
+                  tokens[tokens.length - 1] = "#" + digit;
+              } else if (RegExp("^#").test(tokens[tokens.length - 1])) {
+                  tokens[tokens.length - 1] += digit;
+              } else if (RegExp("^[-+*\/<>(]").test(tokens[tokens.length - 1])) {
+                  tokens.push("#" + digit);
+              }
+              refreshCalcDisplay();
+          }; 
+  
+          this.keyDecimal = function() {
+              if (RegExp("^#-?[0-9]*$").test(tokens[tokens.length - 1])) {
+                  tokens[tokens.length - 1] += ".";
+              } else if (RegExp("^[-+*\/<>(]").test(tokens[tokens.length - 1])) {
+                  tokens.push("#0.");
+              }
+              refreshCalcDisplay();
+          };
+  
+          this.keyUniNeg = function() {
+              if (RegExp("^#[0-9]+\.?[0-9]*").test(tokens[tokens.length - 1])) {
+                  tokens[tokens.length - 1] = tokens[tokens.length - 1].charAt(0) + "-" + tokens[tokens.length - 1].substr(1);
+              } else if (RegExp("^#\-[0-9]+\.?[0-9]*").test(tokens[tokens.length - 1])) {
+                  tokens[tokens.length - 1] = tokens[tokens.length - 1].charAt(0) + tokens[tokens.length - 1].substr(2);
+              }
+              refreshCalcDisplay();
+          };
+  
+          this.keyUniPos = function() { 
+              if (RegExp("[!@)]").test(tokens[tokens.length - 1])) {
+                  tokens.push("|");
+              }
+              refreshCalcDisplay();
+          };
+  
+          this.keyBinFunc = function(op) {
+              if (RegExp("^[~!@#)\|]").test(tokens[tokens.length - 1])) {
+                  tokens.push(op);
+              } else if (RegExp("^[-+*\/<>]").test(tokens[tokens.length - 1])) {
+                  tokens[tokens.length - 1] = op;
+              }
+              refreshCalcDisplay();
+          };
+  
+          this.keyPush = function() {
+              if (tokens.length == 1 && tokens[0] == "#0") {
+                  tokens[0] = "(";
+                  parenLevel++;
+              } else if (RegExp("^[-+*\/<>(]").test(tokens[tokens.length - 1])) {
+                  tokens.push("(");
+                  parenLevel++;
+              }
+              refreshCalcDisplay();
+          };
+  
+          this.keyPop = function() {
+              if (parenLevel > 0 && RegExp("^[~!@#|)]").test(tokens[tokens.length - 1])) {
+                  tokens.push(")");
+                  parenLevel--;
+                  refreshCalcDisplay();
+              }
+          };
+  
+          this.keyInput = function(obj) {
+              if (tokens.length == 1 && tokens[0] == "#0") {
+                  tokens[0] = obj.value;
+              } else if (RegExp("^[-+*\/(<>]").test(tokens[tokens.length - 1])) {
+                  tokens.push(obj.value);
+              }
+              refreshCalcDisplay();
+          };
         }
 
         /********************************************************************************************
@@ -2265,14 +2294,14 @@
 
             EbyId("divServerOutputs").style.display = "inline";
             EbyId("serverOutputsHeader").innerHTML = "Emoncms inputs";
-
+            
             var scriptEdit = {
-                table: EbyId("serverOutputs"),
-                set: config[emoncmsAlias].outputs,
-                units: ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
-                namePrompt: "Name is Emoncms Input Key 1-29",
-                namePattern: "^[1-9]{1}$|^[1-2]{1}[0-9]{1}$",
-                title: "Emoncms input"
+              table : EbyId("serverOutputs"),
+              set : config[emoncmsAlias].outputs,
+              units : ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
+              namePrompt : "Name is Emoncms Input Key 1-29",
+              namePattern : "^[1-9]{1}$|^[1-2]{1}[0-9]{1}$",
+              title : "Emoncms input"
             };
 
             scriptEdit.save = function() {
@@ -2286,7 +2315,7 @@
                 editScript(scriptEdit);
                 checkEmoncms();
             };
-
+            
             editScript(scriptEdit);
             checkEmoncms();
         }
@@ -2404,7 +2433,7 @@
             urlInput.setAttribute("oninput", "serverConfig.url = this.value; checkInfluxdb();");
             urlInput.type = "url";
 
-            if (version == 1) {
+            if (version == 1){
                 var dbInput = addTableRow(serverTable, "database:", "serverDb", "input", 16);
                 dbInput.value = serverConfig.database;
                 dbInput.setAttribute("oninput", "serverConfig.database = this.value; checkInfluxdb();");
@@ -2431,9 +2460,10 @@
                 pwdInput.setAttribute("oninput", "serverConfig.pwd = this.value; checkInfluxdb();");
                 pwdInput.setAttribute("type", "password");
                 pwdInput.placeholder = "optional";
-
-            } else { // version 2
-
+                
+            } 
+            else { // version 2
+            
                 var dbInput = addTableRow(serverTable, "Bucket:", "serverBucket", "input", 16);
                 dbInput.value = serverConfig.bucket;
                 dbInput.setAttribute("oninput", "serverConfig.bucket = this.value; checkInfluxdb();");
@@ -2478,25 +2508,25 @@
             EbyId("serverOutputsHeader").innerHTML = "measurements";
 
             var scriptEdit = {
-                table: EbyId("serverOutputs"),
-                set: serverConfig.outputs,
-                uniqueName: false,
-                units: ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
-                namePrompt: "Name must be valid field name",
-                namePattern: "^[0-9a-zA-Z_$-/\.\+]+$",
-                title: "influxDB Measurement"
+              table : EbyId("serverOutputs"),
+              set : serverConfig.outputs,
+              uniqueName : false,
+              units : ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
+              namePrompt : "Name must be valid field name",
+              namePattern : "^[0-9a-zA-Z_$-/\.\+]+$",
+              title : "influxDB Measurement"
             };
 
             scriptEdit.save = function() {
                 serverConfig.outputs = scriptEdit.set;
             };
-
+            
             scriptEdit.return = function() {
                 scriptEdit.table.innerHTML = "";
                 editScript(scriptEdit);
                 checkInfluxdb();
             };
-
+            
             editScript(scriptEdit);
             checkInfluxdb();
         }
@@ -2720,24 +2750,24 @@
             EbyId("serverOutputsHeader").innerHTML = "Status Outputs";
 
             var scriptEdit = {
-                table: EbyId("serverOutputs"),
-                set: config.pvoutput.outputs,
-                units: ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
-                nameList: ["generation", "consumption", "voltage", "extended_1(v7)", "extended_2(v8)", "extended_3(v9)", "extended_4(v10)", "extended_5(v11)", "extended_6(v12)"],
-                namePrompt: "extended is used for donator mode only",
-                title: "Status Output"
+              table : EbyId("serverOutputs"),
+              set : config.pvoutput.outputs,
+              units : ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
+              nameList : ["generation", "consumption", "voltage", "extended_1(v7)", "extended_2(v8)", "extended_3(v9)", "extended_4(v10)", "extended_5(v11)", "extended_6(v12)"],
+              namePrompt : "extended is used for donator mode only",
+              title : "Status Output"
             };
 
             scriptEdit.save = function() {
                 config.pvoutput.outputs = scriptEdit.set;
             };
-
+            
             scriptEdit.return = function() {
                 scriptEdit.table.innerHTML = "";
                 editScript(scriptEdit);
                 checkPVOutput();
             };
-
+            
             editScript(scriptEdit);
             checkPVOutput();
         }
@@ -3106,13 +3136,13 @@
                 config.server = undefined;
                 rewrite = true;
             }
-
-            if (config.integrations != undefined) {
-                if (config.integrators == undefined) {
-                    config.integrators == config.integrations;
-                }
-                config.integrations = undefined;
-                rewrite = true;
+            
+            if(config.integrations != undefined){
+              if(config.integrators == undefined){
+                config.integrators == config.integrations;
+              }
+              config.integrations = undefined;
+              rewrite = true;
             }
 
             if (rewrite) {
