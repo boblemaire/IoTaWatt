@@ -12,29 +12,29 @@ the total value only increases, or only decreases, everything works just fine.
 The exception is where a CT is configured with "allow negative values" as with 
 a mains CT where solar or other alternative energy sources can send excess
 energy to the grid.  In those cases, the total energy represented is the net 
-energy, not a monotonically increasing value. Additionally, Scripts that do 
+energy, and is not a monotonically increasing value. Additionally, Scripts that do 
 not result in monotonically increasing values may not produce the intended result.
 
-The individual five-second data in the datalog is signed is the net energy
-imported (+) or exported (-) during each five second interval. When that data is viewed in a broader context 
+The individual five-second data in the datalog is the signed net energy
+imported (+) or exported (-) during each interval. When that data is viewed in a broader context 
 of hours, the net does not provide accurate individual import and export values.
 
 To develop the individual total imported and exported energy values,
-IoTaWatt needs to process the five-second detail measurements 
+IoTaWatt needs to process the detail measurements 
 to accumulate the sums of the individual positive and negative values,
-and to save them as monotonic values that can
+and to save them as a monotonic series that can
 be used in output Scripts.  That's what integrators do.
 
 How they work
 -------------
 
-As previously mentioned, the detail data exists in the five-second current datalog.
+As previously mentioned, the detail data exists in the current datalog.
 When you create an integrator, an additional datalog is created to
-contain the integrated values. These are called integrations - in the mathematical sense, 
+contain the integrated values. These are called integrations in the mathematical sense, 
 not to be confused with combining as with integrations in Home Assistant terminology.
 
-A background Service is created to process the five-second datalog, by default 
-beginning with the previous 24 hours. This takes about ten minutes. The Integrator accumulates
+A background Service is started to process the five-second datalog, by default 
+beginning 24 hours prior. This takes about ten minutes. The Integrator accumulates
 the positive and negative five-second values in the new integration datalog.
 
 When the background process has processed the historical data, it is *synchronized*
