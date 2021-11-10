@@ -54,8 +54,8 @@ uint32_t influxDB_v2_uploader::handle_query_s(){
                 reqData.printf_P(PSTR(" and r[\"%s\"] == \"%s\""), tag->key, varStr(tag->value, script).c_str());
                 tag = tag->next;
             }
-            reqData.printf_P(PSTR(" and r[\"_field\"] == \"%s\")"), varStr(_fieldKey, script).c_str());
         }
+        reqData.printf_P(PSTR(" and r[\"_field\"] == \"%s\")"), varStr(_fieldKey, script).c_str());
         connectOr = " or";
         script = script->next();
     }
