@@ -117,6 +117,7 @@
  *   10/05/21 02_07_01 Modify integrations algorithm to simplify and improve query range
  *   10/18/21 02_07_02 More changes to integrations and add synchronization of logs updates
  *   11/01/21 02_07_03 Release integrations
+ *   11/14/21 02_07_04 Fix several issues with influxDB2. Modify integrations Docs.
  * 
  *****************************************************************************************************/
 
