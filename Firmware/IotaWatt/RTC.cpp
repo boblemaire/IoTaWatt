@@ -785,7 +785,6 @@ void RTC::adjust(const DateTime &dt){
     if(_model == unknown){
         return;
     }
-    Serial.println("RTC adjust: ");
     RTCWireBus->beginTransmission(_RTCaddr);
     if(_model == PCF8523){
         RTCWireBus->write((byte)PCF8523_CONTROL_3);
