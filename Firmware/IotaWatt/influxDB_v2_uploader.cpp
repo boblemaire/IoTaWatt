@@ -46,16 +46,16 @@ uint32_t influxDB_v2_uploader::handle_query_s(){
     while(script)
     {
         trace(T_influx2,21);
-        reqData.printf_P(PSTR("%s\n    (r[\"_measurement\"] == \"%s\""), connectOr.c_str(), varStr(_measurement, script).c_str());
+        reqData.printf_P(PSTR("%s\n    (r._measurement == \"%s\""), connectOr.c_str(), varStr(_measurement, script).c_str());
         if(_tagSet){
             trace(T_influx2, 22);
             influxTag* tag = _tagSet;
             while(tag){
-                reqData.printf_P(PSTR(" and r[\"%s\"] == \"%s\""), tag->key, varStr(tag->value, script).c_str());
+                reqData.printf_P(PSTR(" and r.%s == \"%s\""), tag->key, varStr(tag->value, script).c_str());
                 tag = tag->next;
             }
         }
-        reqData.printf_P(PSTR(" and r[\"_field\"] == \"%s\")"), varStr(_fieldKey, script).c_str());
+        reqData.printf_P(PSTR(" and r._field == \"%s\")"), varStr(_fieldKey, script).c_str());
         connectOr = " or";
         script = script->next();
     }
