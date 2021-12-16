@@ -878,14 +878,14 @@ void RTC::stop(){
 }
 
 String RTC::model(){
-    String model(F("unknown"));
-    if(_model == PCF8523){
-        model = F("PCF8523");
-    }
-    if(_model == M41T81){
-        model = F("M41T81");
-    }
-    return model;
+  char response[32] = "unknown";
+  if (_model == PCF8523){
+    sprintf(response, "PCF8523 (%.2x)", _RTCaddr);
+  }
+  if(_model == M41T81){
+      sprintf(response, "M41T81 (%.2x)", _RTCaddr);
+  }
+  return String(response);
 }
 
 boolean RTC::isPCF8525(){
