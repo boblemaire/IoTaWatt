@@ -405,8 +405,8 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
         double accum2 = newRec->accum2[input] - (oldRec ? oldRec->accum2[input] : 0);
         ;
         vchannel = inputChannel[input]->_vchannel;
-        double volts = newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0) * inputChannel[input]->_vmult;
-        double hz = newRec->accum2[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0);
+        double volts = (newRec->accum1[vchannel] - (oldRec ? oldRec->accum1[vchannel] : 0)) * inputChannel[input]->_vmult;
+        double hz = newRec->accum2[vchannel] - (oldRec ? oldRec->accum2[vchannel] : 0);
 
         switch (Units)
         {
@@ -497,6 +497,7 @@ double  Script::runRecursive(uint8_t** tokens, IotaLogRecord* oldRec, IotaLogRec
         while (index && integration)
         {
           integration = integration->next();
+          index--;
         }
         if (!integration)
         {
