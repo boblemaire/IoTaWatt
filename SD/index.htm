@@ -1834,7 +1834,7 @@
           };
   
           this.keyClearChar = function() {
-              if (RegExp("^[-+*\/()|@<>]").test(tokens[tokens.length - 1])) {
+              if (RegExp("^[-+*\/()|@<>!~]").test(tokens[tokens.length - 1])) {
                   keyClearEntry();
               } else if (RegExp("#-?[0-9]$").test(tokens[tokens.length - 1])) {
                   keyClearEntry();
