@@ -118,6 +118,7 @@
  *   10/18/21 02_07_02 More changes to integrations and add synchronization of logs updates
  *   11/01/21 02_07_03 Release integrations
  *   11/14/21 02_07_04 Fix several issues with influxDB2. Modify integrations Docs.
+ *   12/16/21 02_07_05 Fix several problems with Scripts
  * 
  *****************************************************************************************************/
 
