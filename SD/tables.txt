@@ -1,5 +1,5 @@
 {
-"version":"0.0.4",
+"version":"0.0.5",
 "VT":[
 	{"model":"TDC DA-10-09-E6","cal":10.79,"phase":0.07,"p60":[0.07]},
 	{"model":"Jameco/2270815","cal":10.72,"phase":0.16,"p60":[0.16]},
@@ -8,7 +8,9 @@
   	{"model":"DCSS AC910(Aus)","mfg":"Radio Parts","cal":20.72,"p50":[2.17]},
   	{"model":"Powertech MP-3027(Aus)","mfg":"jaycar","cal":23.18,"p50":[0.92]},
   	{"model":"Ideal 77DB-06-09(UK)","cal":20.01,"p50":[1.05]},
-  	{"model":"Ideal 77DE-06-09(EU)","cal":19.12,"p50":[1.48],"p60":[0.77]},
+  	{"model":"Ideal 77DE-06-09(EU)","cal":19.06,"p50":[1.46],"p60":[0.82]},
+	{"model":"Ideal 77DE-06-09-V(EU)","cal":19.00,"p50":[0.82],"p60":[0.46]},
+	{"model":"Ideal 77DE-06-09-VI(EU)","cal":18.98,"p50":[0.82],"p60":[0.36]},
   	{"model":"Ideal 77DA-10-09-MI(USA)","cal":11.06,"p60":[0.10]},
   	{"model":"TDC DE-10-09(EU)","cal":18.66,"p50":[0.16]},
   	{"model":"Jameco/100061","cal":11.68,"p60":[3.00]}, 
