@@ -314,32 +314,22 @@ bool DateTime::isValid() const {
 char *DateTime::toString(char *buffer) {
   uint8_t apTag =
       (strstr(buffer, "ap") != nullptr) || (strstr(buffer, "AP") != nullptr);
-  uint8_t hourReformatted = 0, isPM = false;
+  uint8_t hourReformatted = hh, isPM = false;
   if (apTag) {     // 12 Hour Mode
     if (hh == 0) { // midnight
-      isPM = false;
       hourReformatted = 12;
     } else if (hh == 12) { // noon
       isPM = true;
-      hourReformatted = 12;
-    } else if (hh < 12) { // morning
-      isPM = false;
-      hourReformatted = hh;
-    } else { // 1 o'clock or after
+    } else if (hh > 12) { // morning
       isPM = true;
-      hourReformatted = hh - 12;
+      hourReformatted -= 12;
     }
   }
 
   for (size_t i = 0; i < strlen(buffer) - 1; i++) {
     if (buffer[i] == 'h' && buffer[i + 1] == 'h') {
-      if (!apTag) { // 24 Hour Mode
-        buffer[i] = '0' + hh / 10;
-        buffer[i + 1] = '0' + hh % 10;
-      } else { // 12 Hour Mode
-        buffer[i] = '0' + hourReformatted / 10;
-        buffer[i + 1] = '0' + hourReformatted % 10;
-      }
+      buffer[i] = '0' + hourReformatted / 10;
+      buffer[i + 1] = '0' + hourReformatted % 10;
     }
     if (buffer[i] == 'm' && buffer[i + 1] == 'm') {
       buffer[i] = '0' + mm / 10;
@@ -349,36 +339,41 @@ char *DateTime::toString(char *buffer) {
       buffer[i] = '0' + ss / 10;
       buffer[i + 1] = '0' + ss % 10;
     }
-    if (buffer[i] == 'D' && buffer[i + 1] == 'D' && buffer[i + 2] == 'D') {
-      static PROGMEM const char day_names[] = "SunMonTueWedThuFriSat";
-      const char *p = &day_names[3 * dayOfTheWeek()];
-      buffer[i] = pgm_read_byte(p);
-      buffer[i + 1] = pgm_read_byte(p + 1);
-      buffer[i + 2] = pgm_read_byte(p + 2);
-    } else if (buffer[i] == 'D' && buffer[i + 1] == 'D') {
-      buffer[i] = '0' + d / 10;
-      buffer[i + 1] = '0' + d % 10;
+    if (buffer[i] == 'D' && buffer[i + 1] == 'D') {
+      if (buffer[i + 2] == 'D') {
+        static PROGMEM const char day_names[] = "SunMonTueWedThuFriSat";
+        const char *p = &day_names[3 * dayOfTheWeek()];
+        buffer[i] = pgm_read_byte(p);
+        buffer[i + 1] = pgm_read_byte(p + 1);
+        buffer[i + 2] = pgm_read_byte(p + 2);
+      } else {
+        buffer[i] = '0' + d / 10;
+        buffer[i + 1] = '0' + d % 10;
+      }
     }
-    if (buffer[i] == 'M' && buffer[i + 1] == 'M' && buffer[i + 2] == 'M') {
-      static PROGMEM const char month_names[] =
-          "JanFebMarAprMayJunJulAugSepOctNovDec";
-      const char *p = &month_names[3 * (m - 1)];
-      buffer[i] = pgm_read_byte(p);
-      buffer[i + 1] = pgm_read_byte(p + 1);
-      buffer[i + 2] = pgm_read_byte(p + 2);
-    } else if (buffer[i] == 'M' && buffer[i + 1] == 'M') {
-      buffer[i] = '0' + m / 10;
-      buffer[i + 1] = '0' + m % 10;
+    if (buffer[i] == 'M' && buffer[i + 1] == 'M') {
+      if (buffer[i + 2] == 'M') {
+        static PROGMEM const char month_names[] =
+            "JanFebMarAprMayJunJulAugSepOctNovDec";
+        const char *p = &month_names[3 * (m - 1)];
+        buffer[i] = pgm_read_byte(p);
+        buffer[i + 1] = pgm_read_byte(p + 1);
+        buffer[i + 2] = pgm_read_byte(p + 2);
+      } else {
+        buffer[i] = '0' + m / 10;
+        buffer[i + 1] = '0' + m % 10;
+      }
     }
-    if (buffer[i] == 'Y' && buffer[i + 1] == 'Y' && buffer[i + 2] == 'Y' &&
-        buffer[i + 3] == 'Y') {
-      buffer[i] = '2';
-      buffer[i + 1] = '0';
-      buffer[i + 2] = '0' + (yOff / 10) % 10;
-      buffer[i + 3] = '0' + yOff % 10;
-    } else if (buffer[i] == 'Y' && buffer[i + 1] == 'Y') {
-      buffer[i] = '0' + (yOff / 10) % 10;
-      buffer[i + 1] = '0' + yOff % 10;
+    if (buffer[i] == 'Y' && buffer[i + 1] == 'Y') {
+      if (buffer[i + 2] == 'Y' && buffer[i + 3] == 'Y') {
+        buffer[i] = '2';
+        buffer[i + 1] = '0';
+        buffer[i + 2] = '0' + (yOff / 10) % 10;
+        buffer[i + 3] = '0' + yOff % 10;
+      } else {
+        buffer[i] = '0' + (yOff / 10) % 10;
+        buffer[i + 1] = '0' + yOff % 10;
+      }
     }
     if (buffer[i] == 'A' && buffer[i + 1] == 'P') {
       if (isPM) {
