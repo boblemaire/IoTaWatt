@@ -774,7 +774,6 @@ void RTC::adjust(const DateTime &dt){
         RTCWireBus->write(bin2bcd(0)); // skip weekdays
         RTCWireBus->write(bin2bcd(dt.month()));
         RTCWireBus->write(bin2bcd(dt.year() - 2000U));
-        RTCWireBus->endTransmission();
     }
     else if(_model == M41T81){
         RTCWireBus->write((byte)0x01);              
@@ -793,12 +792,7 @@ void RTC::adjust(const DateTime &dt){
         RTCWireBus->write((byte)0x00);              // 0Dh - AFE=0, SQWE=0, ABE=1, ALM=0
         RTCWireBus->write((byte)0x00);              // 0Eh - AFE=0, SQWE=0, ABE=1, ALM=0
         RTCWireBus->write((byte)0x00);              // 0Fh - AFE=0, SQWE=0, ABE=1, ALM=0
-        RTCWireBus->endTransmission();
     }
-    else {
-        return;
-    }
-
     RTCWireBus->endTransmission();
 }
 
