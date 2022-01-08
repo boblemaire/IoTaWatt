@@ -144,12 +144,12 @@ static uint8_t conv2d(const char *p) {
   uint8_t v = 0;
   if ('0' <= p[0] && p[0] <= '9')
     v = p[0] - '0';
-  if ('0' <= p[1] && p[1] <= '9') {
+  if ('0' <= p[1] && p[1] <= '9')
     v = 10 * v + p[1] - '0';
   return v;
 }
 
-static int decodeMonth(const char *date) {
+static uint8_t decodeMonth(const char *date) {
   int m = 0;
   switch (date[0]) {
   case 'J':
