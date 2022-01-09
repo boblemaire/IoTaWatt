@@ -54,7 +54,7 @@ uint32_t influxDB_v1_uploader::handle_checkQuery_s(){
         }
         else {
             trace(T_influx1,33);
-            sprintf_P(message, PSTR("Query failed, code %d, response: %.50"), HTTPcode, _request->responseText().c_str());
+            sprintf_P(message, PSTR("Query failed, code %d, response: %.50s"), HTTPcode, _request->responseText().c_str());
         }
         trace(T_influx1,31);
         _statusMessage = charstar(message);
