@@ -182,7 +182,7 @@ if(spiffsBegin()){
 
   if( (! RTCrunning) || powerFailRestart){
     uint32_t autoConnectTimeout = millis() + 3000UL;
-    while(WiFi.status() != WL_CONNECTED){
+    while(!WiFi.isConnected()){
       if(millis() > autoConnectTimeout){
         setLedCycle(LED_CONNECT_WIFI);
         WiFiManager wifiManager;
@@ -191,9 +191,9 @@ if(spiffsBegin()){
         String ssid = "iota" + String(ESP.getChipId());
         String pwd = deviceName;
         log("Connecting with WiFiManager.");
-        wifiManager.autoConnect(ssid.c_str(), deviceName);
+        wifiManager.autoConnect(ssid.c_str(), pwd.c_str());
         endLedCycle();
-        while(WiFi.status() != WL_CONNECTED && RTCrunning == false){
+        while(!WiFi.isConnected() && RTCrunning == false){
           log("RTC not running, waiting for WiFi.");
           setLedCycle(LED_CONNECT_WIFI_NO_RTC);
           wifiManager.setConfigPortalTimeout(3600);
