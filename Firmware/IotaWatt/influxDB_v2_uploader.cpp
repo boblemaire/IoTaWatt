@@ -256,7 +256,7 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
     
     // Add optional heap measurement
 
-    if(_heap && heapMsPeriod != 0){
+    if(_heap){
         reqData.printf_P(PSTR("heap"));
         if(_tagSet){
             trace(T_influx1,66);
@@ -267,9 +267,7 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
                 tag = tag->next;
             }
         }
-        reqData.printf_P(PSTR(" value=%d %d\n"), (uint32_t)heapMs / heapMsPeriod, UTCtime());
-        heapMs = 0.0;
-        heapMsPeriod = 0;
+        reqData.printf_P(PSTR(" value=%d %d\n"), ESP.getFreeHeap(), UTCtime());
     }  
 
     delete oldRecord;
