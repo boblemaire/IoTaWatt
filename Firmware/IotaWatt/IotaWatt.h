@@ -225,8 +225,6 @@ struct EEprom {
 #define ADC_BITS 12
 #define ADC_RANGE 4096      // 2^12
 
-extern uint32_t lastCrossMs;           // Timestamp at last zero crossing (ms) (set in samplePower)
-extern uint32_t nextCrossMs;           // Time just before next zero crossing (ms) (computed in Loop)
 extern uint32_t firstCrossUs;          // Time cycle at usec resolution for phase calculation
 extern uint32_t lastCrossUs;
 extern uint32_t bingoTime;

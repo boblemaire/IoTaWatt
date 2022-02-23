@@ -2,48 +2,65 @@
  
 void loop()
 {
-/******************************************************************************
- * The main loop is very simple:
- *  Sample a power channel.
- *  Yield to the OS and Wifi Server.
- *  Run next dispatchable service if there is one
- *  Yield to the OS and Wifi Server.
- *  Go back, Jack, and do it again.
- ******************************************************************************/
+  static int lastChannel = 0;
+
+  /******************************************************************************
+   * The main loop is very simple:
+   * 
+   *  Set the LED state.
+   *  Sample a channel.
+   *  Run the Wifi Server.
+   *  Check for and update a new config
+   *  Run next dispatchable service if there is one
+   * 
+   ******************************************************************************/
 
   setLedState();
 
-  // ------- If AC zero crossing approaching, go sample a channel.
-  static int lastChannel = 0;
-  uint32_t microsNow = micros();
-  if(microsNow <= lastCrossMs){
+  // Check for rollover of micros() clock and if so reset bingo time as well.
+
+  if(micros() <= lastCrossUs){
     bingoTime = 0;
   }
-  if(maxInputs && microsNow > bingoTime){
+
+  // If there are Inputs and next crossing is close ("bingo time"),
+  // sample a cycle. 
+
+  if(maxInputs && micros() > bingoTime){
+
+    // Determine next channel to sample.
+
     trace(T_LOOP,1,lastChannel);
     int nextChannel = (lastChannel + 1) % maxInputs;
     while( (! inputChannel[nextChannel]->isActive()) && nextChannel != lastChannel){
       nextChannel = ++nextChannel % maxInputs;
     }
-    ESP.wdtFeed();
     trace(T_LOOP,2,nextChannel);
+
+    // Sample it.
+
+    ESP.wdtFeed();
     samplePower(nextChannel, 0);
-    trace(T_LOOP,2);
-    nextCrossMs = lastCrossMs + 490 / int(frequency);
+    ESP.wdtFeed();
+
+    // Set "bingo" time to micros when Services should return control in order to catch next AC cycle.
+
     if(int(frequency) > 25){
       bingoTime = lastCrossUs + 500000 / int(frequency) - 2000;
     }
     else {
-      bingoTime = lastCrossUs + 3500;
+      bingoTime = lastCrossUs + 6333;
     }
-    //bingoTime = lastCrossUs + ((lastCrossUs - firstCrossUs) / 2) - 1500;
+    
+    // Indicate sampling active after one pass through inputs 
+
     if(nextChannel <= lastChannel) sampling = true;
     lastChannel = nextChannel;
   }
 
-  // --------- Give web server a shout out.
-  //           serverAvailable will be false if there is a request being serviced by
-  //           an Iota SERVICE. (GetFeedData)
+  // Give web server a shout out.
+  // serverAvailable will be false if there is a request being serviced by
+  // an Iota SERVICE.
 
   yield();
   ESP.wdtFeed();
@@ -66,15 +83,17 @@ void loop()
       copyFile("/esp_spiffs/config.txt", "config.txt");
     }
     else {
-
+      log("Config update failed.");
     }
   }
 
-// ---------- If the head of the service queue is dispatchable
-//            call the SERVICE.
+// If the head of the service queue is dispatchable
+// Find the highest priority Service that is dispatchable.
+// Remove it from the serviceQueue
+// call it
+// Reschedule it.
 
-  microsNow = micros();
-  if(microsNow < bingoTime && serviceQueue != NULL && millis() >= serviceQueue->scheduleTime){
+  if(micros() < bingoTime && serviceQueue != NULL && millis() >= serviceQueue->scheduleTime){
     trace(T_LOOP,6,1);
     serviceBlock *selPtr = (serviceBlock*)&serviceQueue;
     serviceBlock *tstPtr = selPtr->next;

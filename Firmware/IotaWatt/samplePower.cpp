@@ -318,7 +318,6 @@ void samplePower(int channel, int overSample){
           else if(crossCount == crossLimit) {
             trace(T_SAMP,6);
             lastCrossUs = micros();                       // To compute frequency
-            lastCrossMs = millis();
             *VsamplePtr = (lastV + rawV) >> 1;                                       
             *IsamplePtr = rawI;                           // For main loop dispatcher to estimate when next crossing is imminent
             lastCrossSamples = samples;
