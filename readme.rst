@@ -11,8 +11,8 @@ Configuration and administration is through an easy to
 use browser based utility running on a 
 computer, tablet or smartphone.
 
-.. figure:: Docs/pics/USAbundle.jpg
-    :scale: 20 %
+.. figure:: Docs/pics/readmepic.jpg
+    :scale: 100 %
     :align: center
     :alt: **IoTaWatt USA Bundle**
 
