@@ -451,10 +451,10 @@ uint32_t PVoutput::tickCheckUploadStatus(){
     switch (_HTTPresponse) {
         default:{
             delete[] _statusMessage;
-            _statusMessage = charstar(F("Unrecognized HTTP completion, upload "), response->peek(40).c_str());
+            _statusMessage = charstar(F("Unrecognized HTTP completion, upload "), response->peek(80).c_str());
             log("%s: %s", _id, _statusMessage);
             _state = getSystemService;
-            return UTCtime() + 3600;
+            return UTCtime() + 1800;
         }
 
         case DATE_TOO_OLD:
