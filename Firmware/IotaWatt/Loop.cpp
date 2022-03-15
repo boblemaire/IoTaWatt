@@ -54,7 +54,9 @@ void loop()
     
     // Indicate sampling active after one pass through inputs 
 
-    if(nextChannel <= lastChannel) sampling = true;
+    if(nextChannel <= lastChannel){
+      sampling = true;
+    }
     lastChannel = nextChannel;
   }
 
@@ -134,30 +136,38 @@ void loop()
  * The main loop steps through and samples the channels at the millisecond level.  It invokes samplePower()
  * which samples one or more waves and updates the corresponding data buckets.  After each sample, there 
  * are a few milliseconds before the next AC zero crossing, so we try to do everything else during that
- * downtime.
+ * interval. Bingo time is set as the micros() time when sampling should be resumed.
  * 
- * To accomplish that, other activities are organized as SERVICEs that are scheduled and are dispatched in 
- * Loop during the half-cycle downtime. The ESP8266 is already running a lower level operating system that 
- * is task oriented and dispatches this program along with other tasks - most notably the WiFi stack. Ticker
- * taps into that and provides one time or periodic interrupts that could be used to run services, but we
- * run the channel sampling with interrupts disabled, and we really don't need sub-second scheduling for 
- * our services anyway, so Ticker is not used.
+ * The WiFi server is invoked each time through the loop to check for work.
  * 
- * This mechanism schedules at a resolution of one second, and dispatches during the optimal time period
- * between AC cycles.  To avoid context and synchonization issues, each service is coded as a state-machine.
- * They must be well behaved and should try to run for less than a few milliseconds. Although that isn't
- * always possible and doesn't do any real harm if they run over - just reduces the sampling frequency a bit.
+ * Other activities are organized as Services that are scheduled and dispatched in Loop during the half-cycle
+ * downtime. This mechanism schedules at a resolution of one millisecond, and dispatches during the optimal 
+ * time period between AC cycles.  To preserve context and synchonization, each Service is coded as a 
+ * state-machine. They must be well behaved and should try to run for less than a few milliseconds and/or
+ * relinquish at Bingo time. That isn't always possible and doesn't do any real harm if they run over
+ * occasionally as it just reduces the sampling frequency a bit.
  * 
- * Services return the UNIXtime of the next requested dispatch.  If the requested time is in the past, 
- * the service is requeued at the current time, so if a service just wants to relinquish but reschedule 
- * for the next available opportunity, just return 1.  If a service returns zero, it's service block will
- * be deleted.  To reschedule, AddService would have to be called to create a new serviceBlock.
+ * Services return a value that is used to set their reschedule time as follows:
+ * 0 - Do not reschedule, deallocate the Service Block.
+ * 1 - Set to redispatch immediately.
+ * 2-1000 value is milliseconds to delay before redispatch.
+ * > 1000 value is UNIXtime of requested redispatch.
+ * So if a service just wants to relinquish in deference to sampling but is not finished with its
+ * business, just reeturn 1 to be redispatched at the next available opportunity.
  * 
- * The schedule itself is kept as an ordered list of control blocks in ascending order of time + priority.
- * Loop simply invokes the service currently at the beginning of the list.
+ * The schedule itself is kept as an ordered list of control blocks in ascending order of time + priority
+ * called serviceQueue. Loop invokes the service with the highest priority that is dispatchable.
  * 
- * The WiFi server is not one of these services.  It is invoked each time through the loop because it
- * polls for activity.
+ * The following two functions are used to maintain the serviceQueue.
+ * 
+ * NewService creates a new serviceBlock that is immediately dispatchable. This is used to create an
+ * instance of a Service and is mostly used at startup.  Ad-hoc Services can be created as well at any
+ * time and they can terminate by simply returning zero.
+ * 
+ * AddService is the workhorse.  It inserts a serviceBlock into the serviceQueue in the appropriate
+ * order.  When Services are dispatched, they are removed from the queue and then reinserted into
+ * the serviceQueue upon return using AddService.
+ * 
  ********************************************************************************************************/
 
 serviceBlock* NewService(Service serviceFunction, const uint8_t taskID, void* parm){
