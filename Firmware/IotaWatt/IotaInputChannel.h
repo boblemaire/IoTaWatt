@@ -70,7 +70,7 @@ class IotaInputChannel {
     ,_p50(nullptr)
     ,_p60(nullptr)
     ,_turns(0)
-    ,_offset(2048)
+    ,_offset(2047)
     ,_channel(channel)
     ,_addr(channel + channel / 8)
     ,_aRef(8)
