@@ -165,8 +165,8 @@ void loop()
  * time and they can terminate by simply returning zero.
  * 
  * AddService is the workhorse.  It inserts a serviceBlock into the serviceQueue in the appropriate
- * order.  When Services are dispatched, they are removed from the queue and then reinserted into
- * the serviceQueue upon return using AddService.
+ * order based on its scheduleTime and priority.  When Services are dispatched, they are removed 
+ * from the serviceQueue and then reinserted into the serviceQueue upon return using AddService.
  * 
  ********************************************************************************************************/
 
