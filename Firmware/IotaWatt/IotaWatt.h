@@ -32,11 +32,7 @@
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <WiFiManager.h>
-#ifdef CORE_3_0
-      #include "ESP8266mDNS.h"
-#else
-      #include "ESP8266mDNS_Legacy.h"
-#endif
+#include "ESP8266mDNS.h"
 #include <ESP8266LLMNR.h>
 #include <DNSServer.h> 
 #include <WiFiClient.h>
@@ -84,9 +80,6 @@ extern WiFiClient WifiClient;
 extern WiFiManager wifiManager;
 extern ESP8266WebServer server;
 extern DNSServer DNS_server;
-#ifndef CORE_3_0
-   using MDNSResponder = Legacy_MDNSResponder::MDNSResponder;   
-#endif
 extern MDNSResponder MDNS;
 extern IotaLog Current_log;
 extern IotaLog History_log;
