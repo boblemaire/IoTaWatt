@@ -73,6 +73,7 @@ void handleRequest(){
   if(serverOn(authAdmin, F("/edit"), HTTP_DELETE, handleDelete)) return;
   if(serverOn(authAdmin, F("/edit"), HTTP_PUT, handleCreate)) return;
   if(serverOn(authUser,  F("/feed/list.json"), HTTP_GET, handleGetFeedList)) return;
+  if(serverOn(authUser,  F("/prometheus"), HTTP_GET, handleGetPrometheus)) return;
   if(serverOn(authUser,  F("/feed/data.json"), HTTP_GET, handleGetFeedData)) return;
   if(serverOn(authAdmin, F("/graph/create"),HTTP_POST, handleGraphCreate)) return;
   if(serverOn(authAdmin, F("/graph/update"),HTTP_POST, handleGraphCreate)) return;
@@ -787,6 +788,97 @@ void handleCommand(){
     ESP.restart();
   }
   server.send(400, txtPlain_P, F("Unrecognized request"));
+}
+
+void handleGetPrometheus() {
+  trace(T_WEB,18);
+  String response;
+  {
+    for(int i=0; i<maxInputs; i++){
+      if(inputChannel[i]->isActive()){
+        if(inputChannel[i]->_type == channelTypeVoltage){
+          response += "volts{input=\"" + String(inputChannel[i]->_name) + "\"} " + statRecord.accum1[i] + "\n";
+          response += "hz{input=\"" + String(inputChannel[i]->_name) + "\"} " + statRecord.accum2[i] + "\n";
+        } 
+        else
+          if(inputChannel[i]->_type == channelTypePower){
+          response += "watts{input=\"" + String(inputChannel[i]->_name) + "\"} " + String(statRecord.accum1[i],0) + "\n";
+        }
+      }
+    }
+    trace(T_WEB,18);
+    if(outputs){
+      Script* script = outputs->first();
+      statRecord.UNIXtime = UTCtime();
+      statRecord.logHours = 1;
+      while(script){
+        if(String(script->name()).indexOf(' ') == -1){
+          String units = script->getUnits();
+          double value = script->run(nullptr, &statRecord);
+          if(units.equalsIgnoreCase("volts")){
+            response += "volts{output=\"" + String(script->name()) + "\"} " + value + "\n";
+          } 
+          else if(units.equalsIgnoreCase("watts")) {
+            response += "watts{output=\"" + String(script->name()) + "\"} " + value + "\n";
+          }
+        }
+        script = script->next();
+      }
+    }
+  }
+
+/*  if(server.hasArg(F("outputs"))){
+    trace(T_WEB,16);
+    JsonArray& outputArray = jsonBuffer.createArray();
+    Script* script = outputs->first();
+    statRecord.UNIXtime = UTCtime();
+    statRecord.logHours = 1;
+    while(script){
+      trace(T_WEB,16,1);
+      JsonObject& channelObject = jsonBuffer.createObject();
+      channelObject.set(F("name"),script->name());
+      channelObject.set(F("units"),script->getUnits());
+      double value = script->run(nullptr, &statRecord);
+      channelObject.set(F("value"),value);
+      outputArray.add(channelObject);
+      script = script->next();
+    }
+    trace(T_WEB,16,2);
+    root["outputs"] = outputArray;
+  }*/
+  /*
+      if(server.hasArg(F("inputs"))){
+      trace(T_WEB,15);
+      JsonArray& channelArray = jsonBuffer.createArray();
+      for(int i=0; i<maxInputs; i++){
+        if(inputChannel[i]->isActive()){
+          JsonObject& channelObject = jsonBuffer.createObject();
+          channelObject.set(F("channel"),inputChannel[i]->_channel);
+          if(inputChannel[i]->_type == channelTypeVoltage){
+            channelObject.set(F("Vrms"),statRecord.accum1[i]);
+            channelObject.set(F("Hz"),statRecord.accum2[i]);
+            channelObject.set("phase", inputChannel[i]->getPhase(inputChannel[i]->dataBucket.volts));
+          }
+          else if(inputChannel[i]->_type == channelTypePower){
+            if(statRecord.accum1[i] > -2 && statRecord.accum1[i] < 2) statRecord.accum1[i] = 0;
+            channelObject.set(F("Watts"),String(statRecord.accum1[i],0));
+            double pf = statRecord.accum2[i];
+            if(pf != 0){
+              pf = statRecord.accum1[i] / pf;
+            }
+            channelObject.set("Pf",pf);
+            if(inputChannel[i]->_reversed){
+              channelObject.set(F("reversed"),true);
+            }
+            double volts = inputChannel[inputChannel[i]->_vchannel]->dataBucket.volts;
+            double amps = (volts < 50) ? 0 : inputChannel[i]->dataBucket.VA / volts;
+            channelObject.set("phase", inputChannel[i]->getPhase(amps));
+            channelObject.set("lastphase", inputChannel[i]->_lastPhase);
+          }
+          channelArray.add(channelObject);
+        }
+      }*/
+  server.send(200, appJson_P,response);
 }
 
 void handleGetFeedList(){ 

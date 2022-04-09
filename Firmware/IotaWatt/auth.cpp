@@ -12,7 +12,8 @@ static const char qop_authquote[] PROGMEM = "qop=\"auth\"";
 static bool       authDebug = false;
 
 bool auth(authLevel level){
-
+  // don't care about auth
+  return true;
   if(authDebug) Serial.printf_P(PSTR("\nAuth: authenticate %s, authcount %d\n"), level==authAdmin ? "admin" : "user", authCount());
 
         // If no passwords or authorization not required, return true

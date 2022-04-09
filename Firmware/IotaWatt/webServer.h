@@ -40,5 +40,7 @@ void handlePasswords();
 void handleQuery();
 void handleUpdate();
 void handleDSTtest();
+void handleGetPrometheus();
+
 
 #endif
