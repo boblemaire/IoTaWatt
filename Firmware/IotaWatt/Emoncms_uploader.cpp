@@ -282,10 +282,8 @@ uint32_t emoncms_uploader::handle_checkWrite_s(){
             trace(T_Emoncms,93);
             return 1;
         }
-        String msg = "Invalid response ";
-        msg += response.substring(0, 8);
-        msg += '/';
-        msg += base64encode(_sha256, 32).substring(0, 8);
+        Serial.println(response.substring(0, 80));
+        String msg = "Invalid response: " + response.substring(0, 80);
         _statusMessage = charstar(msg.c_str());
     }
     
