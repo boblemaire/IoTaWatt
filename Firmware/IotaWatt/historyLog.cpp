@@ -149,5 +149,7 @@ uint32_t historyLog(struct serviceBlock* _serviceBlock){
       synchronized = true;
       return 0; 
     }
+    
   }
+  return 1000;
 }
