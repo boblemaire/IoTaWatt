@@ -154,7 +154,7 @@ var groups = [
   { group: "Daily", query: "1d" },
   { group: "Weekly", query: "1w" },
   { group: "Monthly", query: "1M" },
-  { group: "Yearly", query: "1h" },
+  { group: "Yearly", query: "1y" },
   { group: "all", query: "all" },
 ];
 
