@@ -59,7 +59,7 @@ int sampleCycle(IotaInputChannel *Vchannel, IotaInputChannel *Ichannel, int cycl
   int16_t offsetV = Vchannel->_offset;        // Bias offset
   int16_t offsetI = Ichannel->_offset;
   
-  int16_t rawV;                               // Raw ADC readings
+  int16_t rawV = 0;                               // Raw ADC readings
   int16_t lastV = 0;
   int16_t avgV;
   int16_t rawI = 0;
@@ -69,7 +69,7 @@ int sampleCycle(IotaInputChannel *Vchannel, IotaInputChannel *Ichannel, int cycl
     
   int16_t crossLimit = cycles * 2 + 1;        // number of crossings in total
   int16_t crossCount = 0;                     // number of crossings encountered
-  int16_t crossGuard = 3;                     // Guard against faux crossings (must be >= 2 initially)  
+  int16_t crossGuard = 4;                     // Guard against faux crossings (must be >= 2 initially), more to detect no voltage
 
   uint32_t startMs = millis();                // Start of current half cycle
   uint32_t timeoutMs = 12;                    // Maximum time allowed per half cycle
@@ -82,6 +82,7 @@ int sampleCycle(IotaInputChannel *Vchannel, IotaInputChannel *Ichannel, int cycl
   uint32_t ADC_IselectMask = 1 << ADC_IselectPin;             // Mask for hardware chip select (pins 0-15)
   uint32_t ADC_VselectMask = 1 << ADC_VselectPin;
 
+  bool Vsensed = false;                       // Voltage greater than 5 counts sensed.
   bool Vreverse = inputChannel[Vchan]->_reverse;
   bool Ireverse = inputChannel[Ichan]->_reverse;
   
@@ -123,6 +124,15 @@ int sampleCycle(IotaInputChannel *Vchannel, IotaInputChannel *Ichannel, int cycl
               return 2;
             }
           }
+
+              // Check for a significant voltage reading before first cross.
+              // Will abort sample after initial crossGuard if not found.
+
+          else {
+            if(rawV < -10 || rawV > 10){
+              Vsensed = true;
+            }
+          }
           crossGuard--;    
           
               // Now wait for SPI to complete
@@ -150,15 +160,23 @@ int sampleCycle(IotaInputChannel *Vchannel, IotaInputChannel *Ichannel, int cycl
               
               // Check for timeout.  The clock gets reset at each crossing, so the
               // timeout value is a little more than a half cycle - 10ms @ 60Hz, 12ms @ 50Hz.
-              // The most common cause of timeout here is unplugging the AC reference VT.  Since the
-              // device is typically sampling 60% of the time, there is a high probability this
-              // will happen if the adapter is unplugged.
-              // So handling needs to be robust.
-        
+                      
           if((uint32_t)(millis()-startMs)>timeoutMs){                   // Something is wrong
             trace(T_SAMP,2,Ichan);                                      // Leave a meaningful trace
             trace(T_SAMP,2,Vchan);
-            GPOS = ADC_VselectMask;                                     // ADC select pin high 
+            GPOS = ADC_VselectMask;                                     // ADC select pin high
+            lastCrossUs = micros();                       
+            return 2;                                                   // Return a failure
+          }
+
+              // Check that a significant voltage reading was found before first zero cross.
+              // If not, abort cycle sample.
+
+          else if(!crossGuard && !Vsensed){
+            trace(T_SAMP,3,Ichan);                                      // Leave a meaningful trace
+            trace(T_SAMP,3,Vchan);
+            GPOS = ADC_VselectMask;                                     // ADC select pin high
+            lastCrossUs = micros();                       
             return 2;                                                   // Return a failure
           }
           if(rawI >= -1 && rawI <= 1) rawI = 0;
