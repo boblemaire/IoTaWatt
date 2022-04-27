@@ -515,6 +515,7 @@ void handleStatus(){
     if(server.hasArg(F("stats"))){
       trace(T_WEB,14);
       JsonObject& stats = jsonBuffer.createObject();
+      trace(T_WEB,14);
       stats.set(F("cyclerate"), samplesPerCycle);
       trace(T_WEB,14);
       stats.set(F("chanrate"),cycleSampleRate);
@@ -746,7 +747,13 @@ void handleCommand(){
   if(server.hasArg(F("sample"))){
     trace(T_WEB,5); 
     uint16_t chan = server.arg(F("sample")).toInt();
-    sampleCycle(inputChannel[0], inputChannel[chan]);
+    int rtc = sampleCycle(inputChannel[inputChannel[chan]->_vchannel], inputChannel[chan]);
+    if(rtc){
+      char response[100];
+      sprintf_P(response, PSTR("Sample Channel %d, return code %d"), chan, rtc);
+      server.send(200, txtPlain_P, response);
+      return;
+    }
     getSamples();
     return; 
   }
