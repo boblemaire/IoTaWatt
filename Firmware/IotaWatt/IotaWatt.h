@@ -32,8 +32,7 @@
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <WiFiManager.h>
-#include "ESP8266mDNS.h"
-#include <ESP8266LLMNR.h>
+// #include <ESP8266LLMNR.h>
 #include <DNSServer.h> 
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
@@ -80,7 +79,6 @@ extern WiFiClient WifiClient;
 extern WiFiManager wifiManager;
 extern ESP8266WebServer server;
 extern DNSServer DNS_server;
-extern MDNSResponder MDNS;
 extern IotaLog Current_log;
 extern IotaLog History_log;
 extern IotaLog *Export_log;

@@ -1,4 +1,6 @@
 #include "IotaWatt.h"
+#include "ESP8266mDNS.h"
+#include <ESP8266LLMNR.h>
 
 struct tcp_pcb {
   uint32_t ip_pcba;
@@ -24,18 +26,16 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
       localIP = WiFi.localIP();
       gatewayIP = WiFi.gatewayIP();
       subnetMask = WiFi.subnetMask();
+      WiFi.hostname(deviceName);
       log("WiFi connected. SSID=%s, IP=%s, channel=%d, RSSI %ddb", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.channel(), WiFi.RSSI());
     }
-    if( ! mDNSstarted){
+    if( !MDNS.isRunning()){
       if (MDNS.begin(deviceName)) {
         MDNS.addService("http", "tcp", 80);
-        log("MDNS responder started for hostname %s", deviceName);
-        mDNSstarted = true;
       }
     }
     if( ! LLMNRstarted){
       if (LLMNR.begin(deviceName)){
-        log("LLMNR responder started for hostname %s", deviceName);
         LLMNRstarted = true;
       } 
     }
@@ -46,6 +46,7 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
       trace(T_WiFi,2);
       wifiConnectTime = 0;
       lastDisconnect = UTCtime();
+      MDNS.close();
       log("WiFi disconnected.");
     }
     else if((UTCtime() - lastDisconnect) >= restartInterval){
@@ -54,6 +55,7 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
       ESP.restart();
     }
   }
+  MDNS.update();
 
     // Check for degraded heap.
 

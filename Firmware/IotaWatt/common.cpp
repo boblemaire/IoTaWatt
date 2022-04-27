@@ -126,7 +126,6 @@
 
 WiFiClient WifiClient;
 DNSServer DNS_server;
-MDNSResponder MDNS;    
 IotaLog Current_log(256,5,365,32);              // current data log  (1 year) 
 IotaLog History_log(256,60,3652,48);            // history data log  (10 years)
 IotaLog *Export_log = nullptr;                  // Optional export log    
