@@ -5,32 +5,33 @@
   *  sampleCycle(Vchan, Ichan)
   *  
   *  This code accounts for up to 66% (60Hz) of the execution of IotaWatt.
-  *  It collects voltage and current sample pairs and produces some preliminary
-  *  metrics in the process.
+  *  Voltage and current sample pairs are collected and some preliminary
+  *  metrics are produced.
   *     
   *  The approach is to start sampling voltage/current pairs in a tuned balanced loop
-  *  so as to maximize sample rate and minimize sampling phase-shift.
-  *  When voltage crosses zero, we start recording the pairs.
-  *  When we cross zero two more times, we stop, compute preliminary results and return.
+  *  that maximizes sample rate and minimizes sampling phase-shift.
+  *  When voltage crosses zero, recording of the sample pairs is started.
+  *  After two more zero crosses, a complete cycle is recorded and sampling stops.
+  *  Preliminary results are developed before returning.
   * 
   *  The loop is controlled by the voltage signal which should be a good sine-wave with
-  *  reasonable amplitude.  Multiple crosses within several samples are ignored.
-  * 
-  *  Voltage and Current signals are synchronized by averaging successive ADC samples,
-  *  effectively producing a new signal with linear interpolation.  This technique relies
+  *  reasonable amplitude.  The crossguard counter insures that crossings are unambiguous.
+  *  Voltage and Current signals are synchronized by averaging successive voltage samples,
+  *  effectively producing a new signal via linear interpolation.  This technique relies
   *  on balancing of the time required to take the voltage and current ADC readings.
   * 
-  *  There are timeout safeguards in place to detect loss of signal.
+  *  There are various timeout safeguards in place to detect absence or loss of signal, as well
+  *  as incomplete sample sets that can be caused by processor interrupts. 
   *  
   *  Note:  If ever there was a time for low-level hardware manipulation, this is it.
-  *  the tighter and faster the samples can be taken, the more accurate the results can be.
+  *  The tighter and faster the samples can be taken, the more accurate the results will be.
   *  The ESP8266 has pretty good SPI functions, but even using them optimally, it's only possible
   *  to achieve about 350 sample pairs per cycle.
   *  
   *  By manipulating the SPI chip select pin through hardware registers and
   *  running the SPI for only the required bits, again using the hardware 
-  *  registers, it's possinble to get about 640 sample pairs per cycle (60Hz) running
-  *  the SPI at 2MHz, which is the spec for the MCP3208.
+  *  registers, it's possible to get about 640 sample pairs per cycle (60Hz) running
+  *  the SPI at 2MHz, which is the maximum data rate for the MCP3208.
   *  
   *  I've tried to segregate the bit-banging and document it well.
   *  For anyone interested in the low level registers, you can find 
