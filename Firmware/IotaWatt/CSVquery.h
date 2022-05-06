@@ -54,7 +54,7 @@ class  CSVquery {
         tUnits      _groupUnits;                // Basic group time unit
         tformat     _timeFormat;                // Time output format
         format      _format;                    // Output format (Json or CSV)
-        tm*         _tm;                        // -> external tm struct
+        struct tm*  _tm;                        // -> external tm struct
         query       _query;                     // Type of query 
         bool        _header;                    // True if header = yes
         bool        _highRes;

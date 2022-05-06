@@ -484,13 +484,13 @@ void CSVquery::buildLine(){
         }
 
         else if(col->source == 'T'){
-            uint32_t Time = col->timeLocal ? UTC2Local(_oldRec->UNIXtime) : _oldRec->UNIXtime;
+            time_t Time = col->timeLocal ? UTC2Local(_oldRec->UNIXtime) : _oldRec->UNIXtime;
             if(col->timeFormat == unix){
                 _buffer.print(Time);
             }
             else {
                 trace(T_CSVquery,62);
-                _tm = gmtime((time_t*) &Time); 
+                _tm = gmtime(&Time); 
                 char out[80];
                 strftime(out, 80, "%FT%T", _tm);
                 if(_format == formatJson){
