@@ -14,7 +14,7 @@ void setup()
 {
   //*************************************** Start Serial connection (if any)***************************
    
-  Serial.begin(115200);
+  Serial.begin(115200, SERIAL_8N1, SERIAL_TX_ONLY);
   delay(250);
   //Serial.println(F("\r\n\n\n** Restart **\r\n\n"));
   //Serial.println(F("Serial Initialized"));
