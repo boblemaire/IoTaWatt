@@ -84,6 +84,7 @@ void handleRequest(){
   if(serverOn(authUser,  F("/query"), HTTP_GET, handleQuery)) return;
   if(serverOn(authUser,  F("/DSTtest"), HTTP_GET, handleDSTtest)) return;
   if(serverOn(authAdmin, F("/update"), HTTP_GET, handleUpdate)) return;
+  if(serverOn(authUser,  F("/metrics"), HTTP_GET, handleMetrics)) return;
 
 
   if(loadFromSdCard(uri)){
@@ -997,4 +998,49 @@ size_t sendChunk(char* buf, size_t bufPos){
   *(buf+5) = '\n';
   memcpy(buf+bufPos,"\r\n",2);
   return server.client().write(buf,bufPos+2);
+}
+
+void handleMetrics() {
+  xbuf buf;
+
+  buf.print("# HELP iotawatt_info Information about iotawatt\n# TYPE iotawatt_info gauge\n");
+  buf.printf_P(PSTR("iotawatt_info{version=\"%s\"} %d\n"), IOTAWATT_VERSION, 1);
+
+  buf.print("# HELP iotawatt_uptime Uptime\n# TYPE iotawatt_uptime counter\n");
+  buf.printf_P(PSTR("iotawatt_uptime %d\n"), UTCtime()-programStartTime);
+
+  buf.print("# HELP iotawatt_cycle_rate samples per AC cycle\n# TYPE iotawatt_cycle_rate gauge\n");
+  buf.printf_P(PSTR("iotawatt_cycle_rate %f\n"), samplesPerCycle);
+
+  buf.print("# HELP iotawatt_cycle_sample_rate AC cycles sampled per second\n# TYPE iotawatt_cycle_sample_rate gauge\n");
+  buf.printf_P(PSTR("iotawatt_cycle_sample_rate %f\n"), cycleSampleRate);
+
+  buf.print("# HELP iotawatt_heap_free Free heap memory\n# TYPE iotawatt_heap_free gauge\n");
+  buf.printf_P(PSTR("iotawatt_heap_free %d\n"), ESP.getFreeHeap());
+
+  buf.print("# HELP iotawatt_input_frequency Input frequency\n# TYPE iotawatt_input_frequency gauge\n");
+  buf.printf_P(PSTR("iotawatt_input_frequency %f\n"), frequency);
+
+  buf.print("# HELP iotawatt_low_battery Low Battery\n# TYPE iotawatt_low_battery gauge\n");
+  buf.printf_P(PSTR("iotawatt_low_battery %d\n"), RTClowBat ? 1 : 0);
+
+  buf.print("# HELP iotawatt_volts_rms Volts RMS\n# TYPE iotawatt_volts_rms gauge\n");
+  for(int j=0; j<maxInputs; j++) if(inputChannel[j]->isActive() && inputChannel[j]->_type == channelTypeVoltage) buf.printf_P(PSTR("iotawatt_volts_rms{input=\"%s\"} %f\n"), inputChannel[j]->_name, inputChannel[j]->dataBucket.volts);
+
+  buf.print("# HELP iotawatt_hertz Hertz\n# TYPE iotawatt_hertz gauge\n");
+  for(int j=0; j<maxInputs; j++) if(inputChannel[j]->isActive() && inputChannel[j]->_type == channelTypeVoltage) buf.printf_P(PSTR("iotawatt_hertz{input=\"%s\"} %f\n"), inputChannel[j]->_name, inputChannel[j]->dataBucket.Hz);
+
+  buf.print("# HELP iotawatt_va Volt-Ampere\n# TYPE iotawatt_va gauge\n");
+  for(int j=0; j<maxInputs; j++) if(inputChannel[j]->isActive() && inputChannel[j]->_type == channelTypePower) buf.printf_P(PSTR("iotawatt_va{input=\"%s\"} %f\n"), inputChannel[j]->_name, inputChannel[j]->dataBucket.VA);
+
+  buf.print("# HELP iotawatt_va_hours Volt-Ampere Hours\n# TYPE iotawatt_va_hours counter\n");
+  for(int j=0; j<maxInputs; j++) if(inputChannel[j]->isActive() && inputChannel[j]->_type == channelTypePower) buf.printf_P(PSTR("iotawatt_va_hours{input=\"%s\"} %f\n"), inputChannel[j]->_name, inputChannel[j]->dataBucket.VAHrs);
+
+  buf.print("# HELP iotawatt_watts Watts\n# TYPE iotawatt_watts gauge\n");
+  for(int j=0; j<maxInputs; j++) if(inputChannel[j]->isActive() && inputChannel[j]->_type == channelTypePower) buf.printf_P(PSTR("iotawatt_watts{input=\"%s\"} %f\n"), inputChannel[j]->_name, inputChannel[j]->dataBucket.watts);
+
+  buf.print("# HELP iotawatt_watt_hours Watt Hours\n# TYPE iotawatt_watt_hours counter\n");
+  for(int j=0; j<maxInputs; j++) if(inputChannel[j]->isActive() && inputChannel[j]->_type == channelTypePower) buf.printf_P(PSTR("iotawatt_watt_hours{input=\"%s\"} %f\n"), inputChannel[j]->_name, inputChannel[j]->dataBucket.wattHrs);
+  
+  server.send(200, txtPlain_P, buf.readString(buf.available()).c_str());
 }
