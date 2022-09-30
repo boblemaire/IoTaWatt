@@ -142,7 +142,7 @@ uint32_t PVoutput::tickCheckSystemService(){
     switch (_HTTPresponse) {
         default:{
             log("%s: Unrecognized HTTP completion, getSystemService %.40s", _id, response->peek(40).c_str());
-            delete _statusMessage;
+            delete[] _statusMessage;
             _statusMessage = charstar(F("getservice failed, HTTPcode: "), String(request->responseHTTPcode()).c_str());
             _state = getSystemService;
             return UTCtime() + 60;
@@ -162,7 +162,7 @@ uint32_t PVoutput::tickCheckSystemService(){
         case LOAD_IN_PROGRESS:
         case RATE_LIMIT:
         case HTTP_FAILURE: {
-            delete _statusMessage;
+            delete[] _statusMessage;
             _statusMessage = charstar(F("getservice failed, HTTPcode: "), String(request->responseHTTPcode()).c_str());
             _state = getSystemService;
             return UTCtime() + 1;
@@ -189,11 +189,11 @@ uint32_t PVoutput::tickGotStatus(){
         case LOAD_IN_PROGRESS:
         case RATE_LIMIT:
         case HTTP_FAILURE: {
-            delete _statusMessage;
+            delete[] _statusMessage;
             _statusMessage = charstar(F("getstatus failed, HTTPcode: "), String(request->responseHTTPcode()).c_str());
             _state = getStatus; 
             return UTCtime() + 2;
-        }
+        }   
         case NO_STATUS: {
             trace(T_PVoutput,76);
             _lastPostTime = 0;
@@ -323,6 +323,13 @@ uint32_t PVoutput::tickUploadStatus(){
         oldRecord = nullptr;
         delete newRecord;
         newRecord = nullptr;
+        delete request;
+        request = nullptr;
+        delete response;
+        response = nullptr;
+        delete _POSTrequest;
+        reqData.flush();
+        _POSTrequest = nullptr;
         return UTCtime() + 1;
     }
 
