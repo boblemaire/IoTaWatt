@@ -95,6 +95,9 @@ public:
 
     ~PVoutput(){
         delete[] _apiKey;
+        delete[] _systemID;
+        delete[] _statusMessage;
+        delete[] _id;
         delete oldRecord;
         delete newRecord;
         delete _outputs;
