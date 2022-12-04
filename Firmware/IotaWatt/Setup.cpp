@@ -235,12 +235,6 @@ if(spiffsBegin()){
     setLedCycle(LED_BAD_CONFIG);
   }
 
-  // uint32_t t = 1630728000UL; 	
-  // for (int i = 0; i < 48; i++){
-  //   Serial.printf("time: %s, power: %0.3f, energy: %0.3f\n", localDateString(t).c_str(), simSolarPower(t), simSolarEnergy(1630728000UL, t));
-  //   t += 7200;
-  // }
-
 }  // setup()
 /***************************************** End of Setup **********************************************/
 
