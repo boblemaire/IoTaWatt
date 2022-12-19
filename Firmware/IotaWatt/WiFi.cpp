@@ -29,9 +29,10 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
       WiFi.hostname(deviceName);
       log("WiFi connected. SSID=%s, IP=%s, channel=%d, RSSI %ddb", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.channel(), WiFi.RSSI());
     }
-    if( !MDNS.isRunning()){
+    if( ! mDNSstarted){
       if (MDNS.begin(deviceName)) {
         MDNS.addService("http", "tcp", 80);
+        mDNSstarted = true;
       }
     }
     if( ! LLMNRstarted){
