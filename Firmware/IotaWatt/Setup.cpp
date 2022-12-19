@@ -43,6 +43,8 @@ void setup()
   if(!SDFS.begin()) {
     log("SD initiatization failed. Retrying.");
     setLedCycle(LED_SD_INIT_FAILURE);
+    SDFSConfig SDconfig(pin_CS_SDcard, SD_SCK_MHZ(8));
+    SDFS.setConfig(SDconfig);
     while(!SDFS.begin()){ 
       yield();
     }
