@@ -120,6 +120,7 @@
  *   11/14/21 02_07_04 Fix several issues with influxDB2. Modify integrations Docs.
  *   12/16/21 02_07_05 Fix several problems with Scripts
  *   10/04/22 02_08_00 Core 3.0.2, Robust no Voltage, rework sample cycle and power, misc fixes
+ *   12/18/22 02_08_01 Regress to core 2.4.0. Fix PVoutput rate-limit resume.
  * 
  *****************************************************************************************************/
 
