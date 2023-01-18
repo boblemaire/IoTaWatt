@@ -665,10 +665,12 @@
         var tree = createTree("tree", editor);
         createFileUploader("uploader", tree, editor);
       };
+
+      document.addEventListener('DOMContentLoaded', onBodyLoad);
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.1.9/ace.js" type="text/javascript" charset="utf-8"></script>
   </head>
-  <body onload="onBodyLoad();">
+  <body>
     <div id="uploader"></div>
     <div id="tree"></div>
     <div id="editor"></div>

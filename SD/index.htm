@@ -10,7 +10,7 @@
 
 </head>
 
-<body onload="setup()">
+<body>
 
     <div id="outerContainer" class="color_outer">
         <h3 id="heading">IoTaWatt Power Monitor</h3>
@@ -523,6 +523,8 @@
     <!-- outerContainer -->
 
     <script>
+        document.addEventListener('DOMContentLoaded', setup);
+
         var units = [{
             unit: "Volts",
             SI: "V",
@@ -3019,7 +3021,7 @@
             }
 
             setTimeout(function() {
-                if (getStatus) statusGet();
+                if (getStatus) requestAnimationFrame(statusGet);
             }, 1000);
 
             function addRow() {
