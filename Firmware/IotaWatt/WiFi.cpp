@@ -35,6 +35,9 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
         mDNSstarted = true;
       }
     }
+    else {
+      MDNS.update();
+    }
     if( ! LLMNRstarted){
       if (LLMNR.begin(deviceName)){
         LLMNRstarted = true;
@@ -47,7 +50,6 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
       trace(T_WiFi,2);
       wifiConnectTime = 0;
       lastDisconnect = UTCtime();
-      MDNS.close();
       log("WiFi disconnected.");
     }
     else if((UTCtime() - lastDisconnect) >= restartInterval){
@@ -56,7 +58,6 @@ uint32_t WiFiService(struct serviceBlock* _serviceBlock) {
       ESP.restart();
     }
   }
-  MDNS.update();
 
     // Check for degraded heap.
 
