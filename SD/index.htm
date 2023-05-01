@@ -3327,7 +3327,7 @@
             formData.append("file", blob, url);
             var URI = "/edit";
             xmlHttp.open("POST", URI);
-            if (url == configFileURL) {
+            if (url == configNewURL) {
                 xmlHttp.setRequestHeader("X-configSHA256", configSHA256);
             }
             xmlHttp.send(formData);
