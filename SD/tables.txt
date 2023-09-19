@@ -1,6 +1,7 @@
 {
-"version":"0.0.7",
+"version":"0.0.8",
 "VT":[
+  {"model":"Jameco/112336","cal":11.43,"phase":0.6,"p60":[0.6]},
 	{"model":"JW-95001-NA","mfg":"Global Village","cal":11.14,"phase":0.74,"p60":[0.74]},
   {"model":"Ideal 77DE-06-09(EU)","cal":19.06,"p50":[1.46],"p60":[0.82]},
   {"model":"Ideal 77DB-06-09(UK)","cal":20.01,"p50":[1.05]},
