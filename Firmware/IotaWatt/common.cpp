@@ -122,6 +122,7 @@
  *   10/04/22 02_08_00 Core 3.0.2, Robust no Voltage, rework sample cycle and power, misc fixes
  *   12/18/22 02_08_01 Regress to core 2.4.0. Fix PVoutput rate-limit resume.
  *   01/25/23 02_08_02 Fix mDNS when AP changes
+ *   09/19/23 02_08_03 Default config and Tables change
  * 
  *****************************************************************************************************/
 
