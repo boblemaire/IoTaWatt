@@ -11,7 +11,7 @@ If your initial configuration has this channel pre-configured,
 your LED will be glowing green because it's rhythmically sampling that voltage.
 
 Various transformer models produce different voltages,
-and it's important to insure that the VT specified 
+and it's important to ensure that the VT specified 
 matches the model that you have installed.
 To do this, select the inputs button in the Setup dropdown menu.
 
