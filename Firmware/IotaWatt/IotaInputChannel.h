@@ -42,7 +42,7 @@ class IotaInputChannel {
     float        _calibration;                // Calibration factor
     float        _phase;                      // Phase correction in degrees (+lead, - lag);
     float        _vphase;                     // Phase offset for 3-phase voltage reference
-    float        _vmult;                      // Voltage multiplier (overides _double)
+    float        _vmult;                      // Voltage multiplier (overrides _double)
     float        _lastPhase; 
     int16_t*     _p50;                        // -> 50Hz phase correction array
     int16_t*     _p60;                        // -> 60Hz phase correction array

@@ -144,7 +144,7 @@ if(spiffsBegin()){
   log("SPIFFS mounted.");
 } else {
   if(spiffsFormat()){
-    log("SPIFFS formated");
+    log("SPIFFS formatted");
     if(spiffsBegin()){
       log("SPIFFS mounted.");
     }

@@ -35,7 +35,7 @@
  *   04/21/17 2.01.01 Add polyphase correction with single VT
  *   05/06/17 2.01.02 Rework samplePower for better phase correction
  *   05/28/17 2.01.03 Add automatic update and rework WiFiManager use
- *   06/04/17 2.01.04 Miscelaneous cleanup
+ *   06/04/17 2.01.04 Miscellaneous cleanup
  *   06/26/17 2.01.05 Ongoing development
  *   07/09/17 2.02.00 Version 4 hardware support
  *   07/12/17 2.02.01 Fix sample power, enhance graph
@@ -73,7 +73,7 @@
  *   03/29/18 02_03_03 Units computation in calculator, heap management improvements
  *   03/30/18 02_03_04 Punchlist, fix memory loak in getConfig, build server payload at bulk maturation
  *   04/15/18 02_03_05 Rework influxDB support with variables and double buffering 
- *   05/16/18 02_03_06 Reimpliment messagelog, upgrade to 2.4.1 core and lwip 2
+ *   05/16/18 02_03_06 Reimplement messagelog, upgrade to 2.4.1 core and lwip 2
  *   06/03/18 02_03_07 Add web server authorization, temp time-wait fix
  *   06/20/18 02_03_08 Use lwip 2 "high bandwidth", misc fixes   
  *   07/11/18 02_03_09 Lastest asyngHTTPrequest, Issue#166, improve auth&trace  
@@ -100,11 +100,11 @@
  *   02/12/20 02_05_04 Update to core 2.6.3, Fix URL handling influx, fix heap requirement issues during config start and update.                 
  *   02/27/20 02_05_05 Fix problem creating datalogs 
  *   03/27/20 02_05_06 Use legacy mDNS, combine influxDBmeasurements
- *   04/02/20 02_05_07 Overide HTTPS with HTTP in Emonservice, influxService
+ *   04/02/20 02_05_07 Override HTTPS with HTTP in Emonservice, influxService
  *   04/20/20 02_05_08 Nothing to see here, just a change to tables.txt to add AccuCTs forced version change
  *   05/03/20 02_05_09 Add VAR VARh to script and query, Disable datalog WDT during update download, rp in influx query
  *   09/14/20 02_05_10 Add WiFi to status query
- *   09/21/20 02_05_11 Add Graph+ imbed
+ *   09/21/20 02_05_11 Add Graph+ embed
  *   12/02/20 02_05_12 Maintenance. Fix query chunking, Tables updates, contributed app changes.
  *   03/10/21 02_06_00 Add HTTPSproxy, influx2, ms Scheduler, recode Script, uploader base class, more..
  *   03/18/21 02_06_01 "server" restart issue, vars in influx tags, init influx bucket
@@ -181,7 +181,7 @@ float       VrefVolts = 2.5;              // Voltage reference shunt value used 
       // handlers if the statistics are used.
 
 float   frequency = 55;                  // Split the difference to start
-float   configFrequency;                 // Frequency at last config (phase corrrection basis)    
+float   configFrequency;                 // Frequency at last config (phase correction basis)    
 float   samplesPerCycle = 550;           // Here as well
 float   cycleSampleRate = 0;
 int16_t cycleSamples = 0;

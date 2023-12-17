@@ -187,7 +187,7 @@ struct EEprom {
 #define T_RTCWDT 24        // Dead man pedal service
 #define T_CSVquery 25      // CSVquery
 #define T_xurl 26          // xurl 
-#define T_utility 27       // Miscelaneous utilities 
+#define T_utility 27       // Miscellaneous utilities 
 #define T_EXPORTLOG 28     // Export log
 #define T_influx2 29       // influxDB_v2_uploader 
 #define T_influx2Config 30 // influx2 configuration 
@@ -262,7 +262,7 @@ extern int16_t* masterPhaseArray;             // Single array containing all ind
       // handlers if the statistics are used.
 
 extern float   frequency;                             // Split the difference to start
-extern float   configFrequency;                       // Frequency at last config (phase corrrection basis)         
+extern float   configFrequency;                       // Frequency at last config (phase correction basis)         
 extern float   samplesPerCycle;                       // Here as well
 extern float   cycleSampleRate;
 extern int16_t cycleSamples;
@@ -289,7 +289,7 @@ extern bool     getNewConfig;             // Set to update config after running 
 #define HTTPrequestMax 1                  // Maximum number of concurrent HTTP requests  
 extern int16_t  HTTPrequestFree;          // Request semaphore
 extern uint32_t HTTPrequestStart[HTTPrequestMax]; // request start time tokens
-extern uint16_t HTTPrequestId[HTTPrequestMax];    // Module ID of requestor
+extern uint16_t HTTPrequestId[HTTPrequestMax];    // Module ID of requester
 extern uint32_t HTTPlock;                 // start time token of locking request  
 
       // ************************** HTTPS proxy host ******************************************

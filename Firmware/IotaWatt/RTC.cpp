@@ -315,7 +315,7 @@ bool DateTime::isValid() const {
     above specifiers are left as-is.
     __Example__: The format "DDD, DD MMM YYYY hh:mm:ss" generates an output
     of the form "Thu, 16 Apr 2020 18:34:56.
-    @see The `timestamp()` method provides similar functionnality, but it
+    @see The `timestamp()` method provides similar functionality, but it
         returns a `String` object and supports a limited choice of
         predefined formats.
     @param[in,out] buffer Array of `char` for holding the format description

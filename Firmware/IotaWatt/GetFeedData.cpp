@@ -4,7 +4,7 @@
  *  GetFeedData SERVICE.
  *  
  *  The web server does a pretty good job of handling file downloads and uploads asynchronously, 
- *  but assumes that any callbacks to new handlers get the job completely done befor returning. 
+ *  but assumes that any callbacks to new handlers get the job completely done before returning. 
  *  The GET /feed/data/ request takes a long time and generates a lot of data so it needs to 
  *  run as a SERVICE so that sampling can continue while it works on providing the data.  
  *  To accomplish that without modifying ESP8266WebServer, we schedule this SERVICE and

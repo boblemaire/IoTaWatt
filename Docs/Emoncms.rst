@@ -8,7 +8,7 @@ Setup Emoncms
 Emoncms is an open-source system that stores time-series 
 data and has multiple reporting apps developed by the authors 
 as well as apps contributed by users in the open community. 
-The graph application used locally by IoTaWatt is a derivitive
+The graph application used locally by IoTaWatt is a derivative
 of that effort.
 
 For a nominal fee you can use the managed

@@ -70,7 +70,7 @@ select=[*series1* [, *series2* ...]]
             * .volts (default) 
             * .hz (frequency).
 
-        The .d<n> modifier overides the default number of decimal digits.
+        The .d<n> modifier overrides the default number of decimal digits.
 
     <power input or output> [ **.watts** | .amps | .wh | .va | .var | .varh | .pf] [.d<n>]
         A power input or output. A unit modifier can be used to specify:
@@ -82,7 +82,7 @@ select=[*series1* [, *series2* ...]]
             * .varh (volt-ampere-reactive hours)
             * .pf (power factor)
 
-        The .d<n> modifier overides the default number of decimal digits.
+        The .d<n> modifier overrides the default number of decimal digits.
 
     An example might be:
         `select=[time.local.unix,mains.watts.d0,solar.wh.d1]`
@@ -118,7 +118,7 @@ select=[*series1* [, *series2* ...]]
     For most units, this will result in the average value over the entire period.
     For Wh, it will result in the total Wh for the entire period.
 
-    To overide, specify a time unit preceeded by a multiplier, as in:
+    To override, specify a time unit preceeded by a multiplier, as in:
     
         * 10s (ten seconds)
         * 5m (five minutes)
@@ -175,7 +175,7 @@ select=[*series1* [, *series2* ...]]
 &limit={**n** | none }
 ......................
 
-    Optional parameter overides the default output limit.
+    Optional parameter overrides the default output limit.
     The default is 1,000 lines.
 
     :n:
