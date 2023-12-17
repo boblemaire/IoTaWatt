@@ -118,7 +118,7 @@ select=[*series1* [, *series2* ...]]
     For most units, this will result in the average value over the entire period.
     For Wh, it will result in the total Wh for the entire period.
 
-    To override, specify a time unit preceeded by a multiplier, as in:
+    To override, specify a time unit preceded by a multiplier, as in:
     
         * 10s (ten seconds)
         * 5m (five minutes)

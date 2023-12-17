@@ -131,7 +131,7 @@ and will drive the mains negative when generation exceeds energy use.
 
 Create an output that is the sum of all of the mains.
 Typically a 230V single-phase service will have one main,
-a split-phase North-American servive will have two mains and
+a split-phase North-American service will have two mains and
 a three-phase service will have three:
 
   (single-phase)
