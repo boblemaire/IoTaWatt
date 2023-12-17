@@ -29,7 +29,7 @@ if there is anyone out there that called iotawatt.
 
 At startup, IoTaWatt creates a process that listens for those datagrams.
 When it hears it's name, it responds to the sender saying "I'm iotawatt
-and my IP address is xx.xx.xx.xx".  The requestor makes a note of
+and my IP address is xx.xx.xx.xx".  The requester makes a note of
 this address and uses it to send subsequent transactions to iotawatt.local.
 
 How does that *not* work?

@@ -13,7 +13,7 @@
   The server also came with a great editor utility which, if placed on the SD,
   can be used to edit the web pages or any other text file on the SDcard.
   
-  Small parts of the code are imbedded elsewhere as needed in the preamble and Setup sections.
+  Small parts of the code are embedded elsewhere as needed in the preamble and Setup sections.
   and "handleClient()" is invoked as often as practical in Loop to keep it running.
   
   The author's copyright and license info follows:
@@ -41,8 +41,8 @@
 
   Have a FAT Formatted SD Card connected to the SPI port of the ESP8266
   The web root is the SD Card root folder
-  File extensions with more than 3 charecters are not supported by the SD Library
-  File Names longer than 8 charecters will be truncated by the SD library, so keep filenames shorter
+  File extensions with more than 3 characters are not supported by the SD Library
+  File Names longer than 8 characters will be truncated by the SD library, so keep filenames shorter
   index.htm is the default index (works on subfolders as well)
 
   upload the contents of SdRoot to the root of the SDcard and access the editor by going to http://esp8266sd.local/edit
@@ -876,7 +876,7 @@ void handleGetFeedData(){
 
 // Had to roll our own streamFile function so we can set the actual partial
 // file length rather than the total file length.  Safari won't work otherwise.
-// No big deal.  BTW/ This instance of Client.send is depricated in the newer
+// No big deal.  BTW/ This instance of Client.send is deprecated in the newer
 // ESP8266WiFiClient, so probably change at some point. (Remove buffer size parameter).
 
 void sendMsgFile(File &dataFile, int32_t relPos){

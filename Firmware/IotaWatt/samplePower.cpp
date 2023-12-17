@@ -124,7 +124,7 @@ void samplePower(int channel, int overSample){
   _watts *= Ichannel->_vmult;
   _VA *= Ichannel->_vmult;
   
-        // If watts is negative and the channel is not explicitely signed, reverse it (backward CT).
+        // If watts is negative and the channel is not explicitly signed, reverse it (backward CT).
         // If we do reverse it, and it's significant, mark it as such for reporting in the status API.
 
   Ichannel->_reversed = false;

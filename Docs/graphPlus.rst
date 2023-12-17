@@ -79,7 +79,7 @@ that the color is blue under the Watts unit, while it is green under the Wh unit
 indicating they are different traces.
 
 One final note about the sidebar.  It will disappear when the screen size gets to be 
-too narrow to accomodate it.  When that happens, it is replaced by a list icon at the 
+too narrow to accommodate it.  When that happens, it is replaced by a list icon at the 
 top left of the main screen.  Pressing that will overlay the main body with the selection 
 sidebar. An X on the sidebar is used to hide it again.
 
@@ -198,7 +198,7 @@ You will know it is auto refresh mode because the Refresh button will change to
 revert to the manual |refreshImage| button.
 
 The Refresh/Freeze state is retained when saving and subsequently restoring graphs.
-This feature is useful when loading a saved graph as an embeded window where there are
+This feature is useful when loading a saved graph as an embedded window where there are
 no controls, allowing an auto refresh graph can be displayed in a frame.
 
 .. |refreshImage| image:: pics/graphPlus/refreshButton.png
@@ -258,7 +258,7 @@ an immediate effect on the graph.  There is no Save or Refresh required.
   Removes the trace from the graph and deselects from the source list.
 
 :Color: 
-  Selects an overide color.
+  Selects an override color.
 
 :Line/Bar:
   Toggle between line or bar chart for this trace.
@@ -284,7 +284,7 @@ an immediate effect on the graph.  There is no Save or Refresh required.
   sometimes increasing the precision provides a more detailed representation.
 
 :Scale:
-  The values returned in the query will be muliplied by this scale factor.
+  The values returned in the query will be multiplied by this scale factor.
   This will affect the values in the CSV table as well.
 
 
@@ -338,10 +338,10 @@ Yaxes Range Table
 
 This list is used to modify the Yaxis range for each unit.  The default is "auto",
 which works well to represent the full range of the data, however the Min and/or Max 
-can be specified here to overide the auto default.  Once changed, the new limit will remain 
+can be specified here to override the auto default.  Once changed, the new limit will remain 
 in effect until one of these things happens:
 
-* The overide value is removed.
+* The override value is removed.
 * A saved graph is loaded.
 * The reset button is clicked.
 

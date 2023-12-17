@@ -10,7 +10,7 @@ for three-phase monitoring, particularly in three phase countries like
 Australia and Germany. For home energy monitoring, the *derived reference*
 method has been overwhelmingly popular.
 
-This chapter explains two methods for measuring a so calld "four wire"
+This chapter explains two methods for measuring a so called "four wire"
 or "wye" system, by far the most common implementation of three-phase.
 IoTaWatt can also be used with "three wire" or "delta" systems using 
 different methods.

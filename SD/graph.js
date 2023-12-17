@@ -965,7 +965,7 @@ $("body").on("click", ".histogram", function () {
   histogram(feedid, type, resolution);
 });
 
-// Chage the histogram resolution
+// Change the histogram resolution
 $("#histogram-resolution").change(function () {
   var type = $("#histogram-type").val();
   var resolution = $("#histogram-resolution").val();

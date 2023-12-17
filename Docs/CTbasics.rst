@@ -95,7 +95,7 @@ CTs are manufactured to produce a secondary current that is in
 phase with the primary current when installed with a particular 
 orientation. In single and split-phase installations it is
 important to observe polarity in certain situations.  In
-three-phase installations, it is imperitive that a polarity 
+three-phase installations, it is imperative that a polarity 
 convention be observed.
 
 IoTaWatt will accept many different CTs from different manufacturers.
@@ -197,7 +197,7 @@ systems in the next chapter.
 
 As explained above, split-phase systems can provide 
 high-voltage for large appliances. These circuits are connected 
-to two adjascent CTs that are on different legs.  The usual
+to two adjacent CTs that are on different legs.  The usual
 convention is to use RED and BLACK wires or, as explained below, 
 BLACK and WHITE for *pure* 240V circuits.
 
@@ -221,7 +221,7 @@ correct power and amperage.
 ^^^^^^^^^^^^^^^^^
 
 Like the *pure* 240V circuits above, these circuits use two 
-adjascent circuit-breakers, but also have a neutral conductor. 
+adjacent circuit-breakers, but also have a neutral conductor. 
 They usually have RED and BLACK conductors on the circuit-breaker 
 and a white neutral conductor that connects to the neutral bussbar. 
 Typical appliances are ranges, ovens, and clothes-dryers.  Circuits

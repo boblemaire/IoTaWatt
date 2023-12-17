@@ -5,8 +5,8 @@ Troubleshooting
 Led Indicator
 -------------
 
-The IotaWatt has a bi-color external LED indicator that is usefull in 
-determining the current state and for explicitely indicating 
+The IotaWatt has a bi-color external LED indicator that is useful in 
+determining the current state and for explicitly indicating 
 serious problems. Whenever there is a question about whether 
 something may be wrong, it is important to look at the LED indicator. 
 The LED can blink RED (R) or GREEN (G). 

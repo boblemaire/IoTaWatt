@@ -67,7 +67,7 @@ You can click |edit| on existing integrations to change or delete them.
 
 From here, the process is identical to adding any other output.
 For a refresher, see `Adding a new Output <outputs.html>`_ 
-Integrations must be uniquely named using alpha-numeric characters and the
+Integrations must be uniquely named using alphanumeric characters and the
 underscore (_) character.
 
 The Script that is specified will be integrated to sum the positive and negative components.
@@ -131,7 +131,7 @@ and will drive the mains negative when generation exceeds energy use.
 
 Create an output that is the sum of all of the mains.
 Typically a 230V single-phase service will have one main,
-a split-phase North-American servive will have two mains and
+a split-phase North-American service will have two mains and
 a three-phase service will have three:
 
   (single-phase)
