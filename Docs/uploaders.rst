@@ -68,7 +68,7 @@ similar systems within close proximity allows both short and
 longer term performance issues to be identified.
 
 While pvoutput is primarily focused on monitoring energy generation, 
-it also provides equally capabable facilities to upload and monitor 
+it also provides equally capable facilities to upload and monitor 
 energy consumption data from various energy monitoring devices.
 
 Both solar generation and energy consumption data can be 

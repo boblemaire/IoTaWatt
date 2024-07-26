@@ -203,7 +203,7 @@ uint32_t timeSync(struct serviceBlock* _serviceBlock) {
     programStartTime = UTCtime();
     rtc.adjust(UTCtime());
     RTCrunning = true;
-    log("timeSync: RTC initalized to NTP time");
+    log("timeSync: RTC initialized to NTP time");
     //SdFile::dateTimeCallback(dateTime);
   }
 

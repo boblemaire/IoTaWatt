@@ -98,7 +98,7 @@ boolean setConfig(const char* configPath){
   localTimeDiff = 60.0 * Config[F("timezone")].as<float>();
     
   if(Config.containsKey("logdays")){ 
-    log("Current log overide days: %d", Current_log.setDays(Config[F("logdays")].as<int>()));
+    log("Current log override days: %d", Current_log.setDays(Config[F("logdays")].as<int>()));
   }      
 
   //************************************ Configure device ***************************

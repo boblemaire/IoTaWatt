@@ -67,7 +67,7 @@ There are three possibilities:
 ....
     These circuits are typically larger appliances like Hot-Water,
     Range, Pumps, Electric Heat, Dryers, Heat-pumps, sub-panels, 
-    and Air-conditioners. They use two circuit breakers in adjascent
+    and Air-conditioners. They use two circuit breakers in adjacent
     rows, so one of the breakers is on phase A and the other is on phase B.
     
     As explained in the `CT Basics <CTbasics.html>`_ section, 240V 
