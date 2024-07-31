@@ -872,6 +872,9 @@ time_t  CSVquery::parseTimeArg(String timeArg){
         // Process any modifiers
 
     while(*ptr != 0){
+        if(*ptr == ' '){
+            *ptr = '+';
+        }
         if(*ptr != '-' && *ptr != '+') return 0;
         long mult = strtol(ptr, &ptr, 10);
         if(mult == 0) return 0;
