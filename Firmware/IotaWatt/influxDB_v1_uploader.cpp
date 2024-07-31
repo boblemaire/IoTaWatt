@@ -17,8 +17,6 @@ uint32_t influxDB_v1_uploader::handle_query_s(){
     }
     trace(T_influx1,20);
     reqData.printf_P(PSTR("&q= SELECT LAST(\"%s\") FROM %s "),varStr(_fieldKey, _script).c_str(),varStr(_measurement, _script).c_str());
-    Serial.printf_P(PSTR("&q= SELECT LAST(\"%s\") FROM %s "),varStr(_fieldKey, _script).c_str(),varStr(_measurement, _script).c_str());
-
     influxTag *tag = _tagSet;
     trace(T_influx1,20);
     while(tag){
