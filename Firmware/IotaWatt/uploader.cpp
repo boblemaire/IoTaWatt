@@ -183,15 +183,17 @@ uint32_t uploader::handle_HTTPpost_s(){
     }
     trace(T_uploader,120);
     {
-        char URL[128];
+        char URL[200];
+        size_t len;
         if(_useProxyServer){
             trace(T_uploader,121);
-            size_t len = sprintf_P(URL, PSTR("%s%s"), HTTPSproxy, _POSTrequest->endpoint);
+            len = snprintf_P(URL, 200, PSTR("%s%s"), HTTPSproxy, _POSTrequest->endpoint);
         }
         else {
             trace(T_uploader,122);
-            size_t len = sprintf_P(URL, PSTR("%s%s"),  _url->build().c_str(), _POSTrequest->endpoint);
+            len = snprintf_P(URL, 200,  PSTR("%s%s"),  _url->build().c_str(), _POSTrequest->endpoint);
         }
+
         trace(T_uploader,123);
         if( ! _request->open("POST", URL)){
             trace(T_uploader,123);
