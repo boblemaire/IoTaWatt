@@ -50,7 +50,7 @@ class  CSVquery {
         uint32_t    _begin;                     // Beginning time - UTC
         uint32_t    _end;                       // Ending time - UTC
         int32_t     _limit;                     // Output limit in lines, -1 is nolimit  
-        uint32_t    _groupMult;                 // Group unit muliplier as in 7d
+        uint32_t    _groupMult;                 // Group unit multiplier as in 7d
         tUnits      _groupUnits;                // Basic group time unit
         tformat     _timeFormat;                // Time output format
         format      _format;                    // Output format (Json or CSV)
@@ -74,7 +74,7 @@ class  CSVquery {
                         units   unit;           // Units to produce
                         tformat timeFormat;     // Format of Time column
                     };
-                    int8_t  decimals;           // Overide decimal positions    
+                    int8_t  decimals;           // Override decimal positions    
                     bool    timeLocal;          // output local time if source=='T'
                     bool    delta;              // Output change in value;
                     Script* script;             // -> Script

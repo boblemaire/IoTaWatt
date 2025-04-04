@@ -10,10 +10,10 @@
 
 #define PCF8523_CTL_3           2       // Control Register 3 address
 #define PCF8523_CTL_3_PM        0xe0    // Battery Switch over and low detection ctl
-#define PCF8523_CTL_3_BSF       0x08    // Battery switchover occured (power fail)
+#define PCF8523_CTL_3_BSF       0x08    // Battery switchover occurred (power fail)
 #define PCF8523_CTL_3_BLF       0x04    // Battery Status (1 = low)
-#define PCF8523_CTL_3_BSIE      0x02    // Interupt on battery switchover = 1
-#define PCF8523_CTL_3_BLIE      0x01    // Interupt on battery low = 1
+#define PCF8523_CTL_3_BSIE      0x02    // Interrupt on battery switchover = 1
+#define PCF8523_CTL_3_BLIE      0x01    // Interrupt on battery low = 1
 
 #define PCF8523_Tmr_CLKOUT_ctrl         0x0f    // Control Timers
 #define PCF8523_Tmr_CLKOUT_ctrl_TAM     0x80    // Timer A (pulsed=1)

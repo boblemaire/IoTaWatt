@@ -1,0 +1,6 @@
+[codespell]
+skip = .git,*.pdf,*.svg,go.sum,*.css,.codespellrc
+check-hidden = true
+# guessed lines with German, and some specific variables, regexes
+ignore-regex = .*( die |ü).*|\b(upToDate|AFE|DOUT)\b|.*irt\|inpu\|con.*
+ignore-words-list = busses,parm

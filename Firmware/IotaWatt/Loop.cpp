@@ -142,7 +142,7 @@ void loop()
  * 
  * Other activities are organized as Services that are scheduled and dispatched in Loop during the half-cycle
  * downtime. This mechanism schedules at a resolution of one millisecond, and dispatches during the optimal 
- * time period between AC cycles.  To preserve context and synchonization, each Service is coded as a 
+ * time period between AC cycles.  To preserve context and synchronization, each Service is coded as a 
  * state-machine. They must be well behaved and should try to run for less than a few milliseconds and/or
  * relinquish at Bingo time. That isn't always possible and doesn't do any real harm if they run over
  * occasionally as it just reduces the sampling frequency a bit.
@@ -153,7 +153,7 @@ void loop()
  * 2-1000 value is milliseconds to delay before redispatch.
  * > 1000 value is UNIXtime of requested redispatch.
  * So if a service just wants to relinquish in deference to sampling but is not finished with its
- * business, just reeturn 1 to be redispatched at the next available opportunity.
+ * business, just return 1 to be redispatched at the next available opportunity.
  * 
  * The schedule itself is kept as an ordered list of control blocks in ascending order of time + priority
  * called serviceQueue. Loop invokes the service with the highest priority that is dispatchable.
