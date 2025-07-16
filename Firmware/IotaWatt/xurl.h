@@ -2,7 +2,7 @@
 
 // simple xurl parse construct class.
 
-#include <arduino.h>
+#include <Arduino.h>
 
 class xurl {
     public: 
