@@ -3,7 +3,7 @@
 
    /***********************************************************************************
     IotaWatt Electric Power Monitor System
-    Copyright (C) <2021>  <Bob Lemaire, IoTaWatt, Inc.>
+    Copyright (C) <2025>  <Bob Lemaire, IoTaWatt, Inc.>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
