@@ -1,4 +1,4 @@
-#include "iotawatt.h"
+#include "IotaWatt.h"
 #include "uploader.h"
 #include "splitstr.h"
 
@@ -354,6 +354,8 @@ bool uploader::config(const char *jsonConfig)
     if(influxDB_v2)
         uploaders++;
     if(Emoncms)
+        uploaders++;
+    if(postgrest)
         uploaders++;
     if(uploaders){
         uploaderBufferLimit = MIN(uploaderBufferTotal / uploaders, 4000);

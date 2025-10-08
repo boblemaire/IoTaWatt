@@ -196,6 +196,7 @@ struct EEprom {
 #define T_integrator 33    // Integrator class  
 #define T_Script 34
 #define T_Scriptset 35                        
+#define T_postgrest 36     // PostgREST uploader
 
       // LED codes
 
@@ -299,6 +300,7 @@ extern char *HTTPSproxy;                  // Host for nginx (or other) reverse H
 extern uploader *influxDB_v1;
 extern uploader *influxDB_v2;
 extern uploader *Emoncms;
+extern uploader *postgrest;
 extern int32_t uploaderBufferLimit;       // Dynamic limit to try to control overload during recovery
 extern int32_t uploaderBufferTotal;       // Total aggregate target of uploader buffers       
 

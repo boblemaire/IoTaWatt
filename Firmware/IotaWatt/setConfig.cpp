@@ -2,6 +2,7 @@
 #include "Emoncms_uploader.h"
 #include "influxDB_v1_uploader.h"
 #include "influxDB_v2_uploader.h"
+#include "postgrest_uploader.h"
 
 bool configDevice(const char*);
 bool configDST(const char* JsonStr);
@@ -269,6 +270,29 @@ boolean setConfig(const char* configPath){
       influxDB_v2 = nullptr;
     }
   }
+
+  // Configure PostgREST uploader
+  {
+    trace(T_CONFIG,46);
+    JsonArray& postgrestArray = Config[F("postgrest")];
+    if(postgrestArray.success()){
+      char* postgrestStr = JsonDetail(ConfigFile, postgrestArray);
+      if(! postgrest){
+        postgrest = new postgrest_uploader;
+      }
+      if( ! postgrest->config(postgrestStr)){
+        log("PostgREST: Invalid configuration.");
+        postgrest->end();
+        postgrest = nullptr;
+      }
+      delete[] postgrestStr;
+    }   
+    else if(postgrest){
+      postgrest->end();
+      postgrest = nullptr;
+    }
+  }
+
       // ************************************** configure PVoutput *****************************************
 
   {
