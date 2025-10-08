@@ -1,7 +1,7 @@
 #ifndef SPLITSTR_H
 #define SPLITSTR_H
 
-#include "arduino.h"
+#include "Arduino.h"
 
 class splitstr {
     public:

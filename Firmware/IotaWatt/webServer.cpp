@@ -623,6 +623,17 @@ void handleStatus(){
       }  
       root["emoncms"] = status;
     }
+
+    if(server.hasArg(F("postgrest"))){
+      trace(T_WEB,19);
+      JsonObject& status = jsonBuffer.createObject();
+      if(!postgrest){
+        status.set(F("state"),"not running");
+      } else {
+        postgrest->getStatusJson(status);
+      }  
+      root["postgrest"] = status;
+    }
     
     if(server.hasArg(F("pvoutput"))){
       trace(T_WEB,23);

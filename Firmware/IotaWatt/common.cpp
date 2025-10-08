@@ -228,6 +228,7 @@ char *HTTPSproxy = nullptr;
 uploader *influxDB_v1 = nullptr;
 uploader *influxDB_v2 = nullptr;
 uploader *Emoncms = nullptr;
+uploader *postgrest = nullptr;
 
 int32_t uploaderBufferLimit = 3000;          // Dynamic limit to try to control overload during recovery
 int32_t uploaderBufferTotal = 6000;          // Total aggregate target of uploader buffers       
