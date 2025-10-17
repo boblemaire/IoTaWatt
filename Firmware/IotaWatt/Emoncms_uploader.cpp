@@ -199,9 +199,9 @@ uint32_t emoncms_uploader::handle_write_s(){
 
     trace(T_Emoncms,70);  
     
-    uint8_t iv[16];
+    uint8_t IV[16];
     for (int i = 0; i < 16; i++){
-        iv[i] = random(256);
+        IV[i] = random(256);
     }
 
         // Initialize sha256, shaHMAC and cypher
@@ -211,32 +211,38 @@ uint32_t emoncms_uploader::handle_write_s(){
     sha256->reset();
     SHA256* shaHMAC = new SHA256;
     shaHMAC->resetHMAC(_cryptoKey,16);
-    CBC<AES128>* cypher = new CBC<AES128>;
-    cypher->setIV(iv, 16);
+    AES128* cypher = new AES128;
     cypher->setKey(_cryptoKey, 16);
+    size_t supply = reqData.available();
 
     // Process payload while
     // updating SHAs and encrypting. 
+    // Output the IV
 
+    reqData.write(IV, 16);
+
+    // Now chain the blocks and encrypt with AES128
+    
     trace(T_Emoncms,70);     
-    uint8_t* temp = new uint8_t[64+16];
-    size_t supply = reqData.available();
-    reqData.write(iv, 16);
+    uint8_t* temp = new uint8_t[16];
     while(supply){
-        size_t len = supply < 64 ? supply : 64;
+        size_t len = MIN(supply, 16);
         reqData.read(temp, len);
         supply -= len;
         sha256->update(temp, len);
         shaHMAC->update(temp, len);
-        if(len < 64 || supply == 0){
+        if(len < 16){
             size_t padlen = 16 - (len % 16);
             for(int i=0; i<padlen; i++){
                 temp[len+i] = padlen;
             }
             len += padlen;
         }
-        cypher->encrypt(temp, temp, len);
-        reqData.write(temp, len);
+        for (int i = 0; i < 16; i++){
+            IV[i] ^= temp[i];
+        }
+        cypher->encryptBlock(IV, IV);
+        reqData.write(IV, 16);
     }
     trace(T_Emoncms,70);
     delete[] temp;
