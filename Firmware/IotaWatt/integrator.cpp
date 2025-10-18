@@ -1,4 +1,4 @@
-#include "iotawatt.h"
+#include "IotaWatt.h"
  
     // The integrator Service is created at startup to synchronize the 
     // integration log with the datalog, including [re]creating.
