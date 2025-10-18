@@ -1,6 +1,6 @@
 #ifndef webServer_h
 #define webServer_h
-#include "iotawatt.h"
+#include "IotaWatt.h"
 #include "auth.h"
 #include <libb64/cdecode.h>
 

@@ -1,7 +1,7 @@
 #ifndef INTEGRATOR_H
 #define INTEGRATOR_H
 
-#include "iotaScript.h"
+#include "IotaScript.h"
 class Script;
 
 class integrator {
