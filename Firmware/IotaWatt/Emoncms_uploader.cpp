@@ -196,6 +196,8 @@ uint32_t emoncms_uploader::handle_write_s(){
     }
 
     // Encrypted protocol, encrypt the payload
+    // Note: beginning with firmware 02_09_00, the Crypto library no longer provides AES128CBC.
+    // The code here has been changed to blockchain the input and use AES128 to produce AES128CBC output.
 
     trace(T_Emoncms,70);  
     
@@ -214,25 +216,25 @@ uint32_t emoncms_uploader::handle_write_s(){
     AES128* cypher = new AES128;
     cypher->setKey(_cryptoKey, 16);
     size_t supply = reqData.available();
-
-    // Process payload while
-    // updating SHAs and encrypting. 
-    // Output the IV
-
     reqData.write(IV, 16);
 
     // Now chain the blocks and encrypt with AES128
     
     trace(T_Emoncms,70);     
-    uint8_t* temp = new uint8_t[16];
+    uint8_t* temp = new uint8_t[16+16];
     while(supply){
         size_t len = MIN(supply, 16);
         reqData.read(temp, len);
         supply -= len;
         sha256->update(temp, len);
         shaHMAC->update(temp, len);
-        if(len < 16){
-            size_t padlen = 16 - (len % 16);
+        size_t padlen = 0;
+        
+            // if end of input,
+            // add padding.
+
+        if(!supply){
+            padlen = 16 - (len % 16);
             for(int i=0; i<padlen; i++){
                 temp[len+i] = padlen;
             }
@@ -241,8 +243,22 @@ uint32_t emoncms_uploader::handle_write_s(){
         for (int i = 0; i < 16; i++){
             IV[i] ^= temp[i];
         }
+
+            // encrypt and output.
+            
         cypher->encryptBlock(IV, IV);
         reqData.write(IV, 16);
+
+            // if full block of padding,
+            // add the extra block.
+
+        if(padlen == 16){
+            for (int i = 0; i < 16; i++){
+                IV[i] ^= temp[16 + i];
+            }
+            cypher->encryptBlock(IV, IV);
+            reqData.write(IV, 16);
+        }
     }
     trace(T_Emoncms,70);
     delete[] temp;
