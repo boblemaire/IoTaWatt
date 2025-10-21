@@ -233,9 +233,9 @@ uint32_t updater(struct serviceBlock* _serviceBlock) {
       request->send();
 
           // Writing to the SD in async handler can cause problems. If we return
-          // and keep sampling, the onData handler could interupt another service
+          // and keep sampling, the onData handler could interrupt another service
           // in the middle of SDcard work.  So we will go synchronous here and wait
-          // for the entire update blob to be transfered and written to SD.
+          // for the entire update blob to be transferred and written to SD.
           // Takes about 5-10 seconds.
 
       setLedCycle(LED_UPDATING);

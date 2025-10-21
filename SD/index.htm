@@ -194,7 +194,7 @@
                     If the LAN does not provide suitable protection, or there is a need to provide port-forward passthough from the internet, access control is recommended.
                 </p>
                 <p>
-                    IoTaWatt uses the cryptographic Digest authorization method that employs an encrypted password. Data is transfered in plaintext, but IoTaWatt will not accept unauthorized requests to view or change data when passwords are enabled. Given the limitations
+                    IoTaWatt uses the cryptographic Digest authorization method that employs an encrypted password. Data is transferred in plaintext, but IoTaWatt will not accept unauthorized requests to view or change data when passwords are enabled. Given the limitations
                     of an IoT device, you may find it is a reasonable balance between exposure and data value.
                 </p>
                 <p>
@@ -2739,7 +2739,7 @@
             begdateInput.type = "date";
 
             var reload = addTableRow(serverTable, "Reload History", "reload", "input");
-            addInfo(reload, "Will ovewrite existing data, may take hours to complete.");
+            addInfo(reload, "Will overwrite existing data, may take hours to complete.");
             reload.setAttribute("type", "checkbox");
             reload.setAttribute("onchange", "config.pvoutput.reload = this.checked; checkPVOutput();");
             if (config.pvoutput.reload != undefined && config.pvoutput.reload) {

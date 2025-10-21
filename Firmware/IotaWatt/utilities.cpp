@@ -302,7 +302,7 @@ String datef(uint32_t unixtime, const char* format){
     } else {                                                // Ends in leap year
         value[0] += 3;                                      // Count three good years    
         unixtime -= 1095;                                   // Days in last year (-1)    
-        while(unixtime >= month2leapdate[++month]);          // Lookup month in leapyear
+        while(unixtime >= month2leapdate[++month]);          // Lookup month in leap year
         value[2] = unixtime - month2leapdate[month-1] + 1;  // Compute residual days
     }
     value[1] = month;

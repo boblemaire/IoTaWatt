@@ -16,7 +16,7 @@
  * but they are ordered.  It is relatively quick to find any record by key (UNIXtime) and a 
  * readKEY method is provided in the IotaLog class.
  * 
- * As with all of the SERVICES, it has a  single function call and is implimented as state machine.
+ * As with all of the SERVICES, it has a  single function call and is implemented as state machine.
  * Services should try not to execute for more than a few milliseconds at a time.
  **********************************************************************************************/
  #include "IotaWatt.h"

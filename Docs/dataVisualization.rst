@@ -43,4 +43,4 @@ whose capabilities are adequate for your needs.  It remains as a menu pick under
 Data tab.
 
 The new Graphic Viewer is a superset of the functions of the Original Graph, so
-this feature should be considered depricated and may be removed in a future release.
+this feature should be considered deprecated and may be removed in a future release.

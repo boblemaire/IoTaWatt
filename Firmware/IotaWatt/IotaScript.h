@@ -70,7 +70,7 @@ class Script {
     Script* next();           // -> next Script in set
 
     double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec); // Run this Script
-    double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, units); // Run w/overide units
+    double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, units); // Run w/override units
     double  run(IotaLogRecord* oldRec, IotaLogRecord* newRec, const char* overideUnits);
 
     void    print();
