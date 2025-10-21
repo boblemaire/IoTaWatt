@@ -110,7 +110,7 @@ of a Script that calculates the power flow from the grid (+) and
 to the grid (-).
 
 Set "allow negative values" in the config for all mains.
-Insure that they indicate positive when importing power (at night).
+Ensure that they indicate positive when importing power (at night).
 If they indicate negative at night, reverse the CT or check the
 "reverse" box in the config.
 
