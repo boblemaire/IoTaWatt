@@ -1,6 +1,7 @@
 #include "IotaWatt.h"
+#include "user_interface.h"
 #include "splitstr.h"
-
+#include "uploaders/Uploader_Registry.h"
 
 String formatHex(uint32_t data);
 void dropDead(void);
@@ -81,6 +82,12 @@ void setup()
   else {
     log("Reset reason: %s", ESP.getResetReason().c_str());
     logTrace();
+    rst_info *info = system_get_rst_info();
+    if(info->reason == REASON_EXCEPTION_RST ||
+       info->reason == REASON_WDT_RST ||
+       info->reason == REASON_SOFT_WDT_RST){
+        dropDead();
+    }
   }
   log("ESP8266 ID: %d, RTC %s",ESP.getChipId(), rtc.model().c_str());
 
@@ -152,6 +159,10 @@ if(spiffsBegin()){
     log("SPIFFS format failed");
   }
 }
+
+//*************************** */ Initialize the uploader registry **********************************
+
+declare_uploaders();
 
 //************************************* Process Config file *****************************************
   deviceName = charstar(F(DEVICE_NAME));
