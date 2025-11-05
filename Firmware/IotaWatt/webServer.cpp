@@ -1,4 +1,6 @@
 #include "IotaWatt.h"
+#include "uploaders/Uploader_Registry.h"
+
 
 /*
   This WebServer code is incorporated with very little modification.
@@ -221,7 +223,7 @@ void handleFileUpload(){
     if(!upload.filename.startsWith("/")){
       upload.filename = "/" + upload.filename;
     }
-    Serial.println(upload.filename);
+    //DBG_OUTPUT_PORT.println(upload.filename);
     if(upload.filename.equals(F(IOTA_CONFIG_PATH)) ||
        upload.filename.startsWith(F(IOTA_SYSTEM_DIR))){
       returnFail("Protected", 403);
@@ -238,7 +240,7 @@ void handleFileUpload(){
     }
     if(SD.exists((char *)upload.filename.c_str())) SD.remove((char *)upload.filename.c_str());
     if(uploadFile = SD.open(upload.filename.c_str(), FILE_WRITE)){
-      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
+      //DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
     }
   } 
   
@@ -256,7 +258,7 @@ void handleFileUpload(){
         getNewConfig = true;
       }
       uploadFile.close();
-      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
+      //DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
     }
   } else if(upload.status == UPLOAD_FILE_ABORTED){
     if(uploadFile){
@@ -272,14 +274,14 @@ void handleSpiffsUpload(){
   if(upload.status == UPLOAD_FILE_START){
     if( ! authenticate(authAdmin)) return;
     upload.filename.toLowerCase();
-    DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
+    //DBG_OUTPUT_PORT.printf_P(PSTR("Upload: START, filename: %s\r\n"), upload.filename.c_str());
     spiffsWrite(upload.filename.substring(11).c_str(), "", 0);        // Create a null file
 
   } else if(upload.status == UPLOAD_FILE_WRITE){
       spiffsWrite(upload.filename.substring(11).c_str(), upload.buf, upload.currentSize, true);   // append to the file (true)
 
   } else if(upload.status == UPLOAD_FILE_END){
-      DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
+      //DBG_OUTPUT_PORT.printf_P(PSTR("Upload: END, Size: %d\r\n"), upload.totalSize);
   }
 }
 
@@ -570,73 +572,48 @@ void handleStatus(){
       root["inputs"] = channelArray;
     }
 
-  if(server.hasArg(F("outputs"))){
-    trace(T_WEB,16);
-    JsonArray& outputArray = jsonBuffer.createArray();
-    Script* script = outputs->first();
-    statRecord.UNIXtime = UTCtime();
-    statRecord.logHours = 1;
-    while(script){
-      trace(T_WEB,16,1);
-      JsonObject& channelObject = jsonBuffer.createObject();
-      channelObject.set(F("name"),script->name());
-      channelObject.set(F("units"),script->getUnits());
-      double value = script->run(nullptr, &statRecord);
-      channelObject.set(F("value"),value);
-      outputArray.add(channelObject);
-      script = script->next();
-    }
-    trace(T_WEB,16,2);
-    root["outputs"] = outputArray;
-  }
-
-
-    if(server.hasArg(F("influx1"))){
-      trace(T_WEB,17);
-      JsonObject& status = jsonBuffer.createObject();
-      if(!influxDB_v1){
-        status.set(F("state"),"not running");
-      } else {
-        influxDB_v1->getStatusJson(status);
-      }  
-      root["influx1"] = status;
-    }
-
-    if(server.hasArg(F("influx2"))){
-      trace(T_WEB,17);
-      JsonObject& status = jsonBuffer.createObject();
-      if(!influxDB_v2){
-        status.set(F("state"),"not running");
-      } else {
-        influxDB_v2->getStatusJson(status);
-      }  
-      root["influx2"] = status;
-    }
-
-    if(server.hasArg(F("emoncms"))){
-      trace(T_WEB,18);
-      JsonObject& status = jsonBuffer.createObject();
-      if(!Emoncms){
-        status.set(F("state"),"not running");
-      } else {
-        Emoncms->getStatusJson(status);
-      }  
-      root["emoncms"] = status;
-    }
-    
-    if(server.hasArg(F("pvoutput"))){
-      trace(T_WEB,23);
-      JsonObject& status = jsonBuffer.createObject();
-      if(!pvoutput){
-        status.set(F("state"),"not running");
-      } else {
-        pvoutput->getStatusJson(status);
+    if(server.hasArg(F("outputs"))){
+      trace(T_WEB,16);
+      JsonArray& outputArray = jsonBuffer.createArray();
+      Script* script = outputs->first();
+      statRecord.UNIXtime = UTCtime();
+      statRecord.logHours = 1;
+      while(script){
+        trace(T_WEB,16,1);
+        JsonObject& channelObject = jsonBuffer.createObject();
+        channelObject.set(F("name"),script->name());
+        channelObject.set(F("units"),script->getUnits());
+        double value = script->run(nullptr, &statRecord);
+        channelObject.set(F("value"),value);
+        outputArray.add(channelObject);
+        script = script->next();
       }
-      root["pvoutput"] = status;
+      trace(T_WEB,16,2);
+      root["outputs"] = outputArray;
+    }
+
+    if(server.hasArg(F("uploaders"))){
+      char **uploader_names = get_uploader_list();
+      int i = -1;
+      while(uploader_names[++i]){
+        JsonObject &status = jsonBuffer.createObject();
+        Uploader *uploader = get_uploader_instance(uploader_names[i]);
+        if (uploader){
+          uploader->getStatusJson(status);
+          root[uploader->id()] = status;
+        }
+      }
+
+      trace(T_WEB,17,4);
+      JsonObject& status = jsonBuffer.createObject();
+      if(PVoutput){
+        PVoutput->getStatusJson(status);
+        root[PVoutput->id()] = status;
+      }
     }
 
     if(server.hasArg(F("datalogs"))){
-      trace(T_WEB,17);
+      trace(T_WEB,18,1);
       JsonArray& datalogs = jsonBuffer.createArray();
 
       JsonObject& currlog = jsonBuffer.createObject();
@@ -648,6 +625,7 @@ void handleStatus(){
       //currlog.set("wrap",Current_log._wrap ? true : false);
       datalogs.add(currlog);
 
+      trace(T_WEB,18,2);  
       JsonObject& histlog = jsonBuffer.createObject();
       histlog.set(F("id"), "History");
       histlog.set(F("firstkey"),History_log.firstKey());
@@ -656,6 +634,7 @@ void handleStatus(){
       histlog.set(F("interval"),History_log.interval());
       datalogs.add(histlog);
 
+      trace(T_WEB,18,3);  
       Script *script = integrations->first();
       while(script){
         IotaLog *log = ((integrator *)script->getParm())->get_log();
@@ -669,13 +648,12 @@ void handleStatus(){
         script = script->next();
       }
 
-
-      trace(T_WEB,17);
+      trace(T_WEB,18,4);
       root.set(F("datalogs"),datalogs);
     }
 
     if(server.hasArg(F("wifi"))){
-      trace(T_WEB,17);
+      trace(T_WEB,19,1);
       JsonObject& wifi = jsonBuffer.createObject();
       wifi.set(F("connecttime"),wifiConnectTime);
       if(wifiConnectTime){
@@ -691,7 +669,7 @@ void handleStatus(){
     }
 
     if(server.hasArg(F("passwords"))){
-      trace(T_WEB,18);
+      trace(T_WEB,19,2);
       JsonObject& passwords = jsonBuffer.createObject();
       passwords.set(F("admin"),adminH1 != nullptr);
       passwords.set(F("user"),userH1 != nullptr);
