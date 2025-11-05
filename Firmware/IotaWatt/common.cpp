@@ -192,7 +192,6 @@ IotaLogRecord statRecord;                 // Maintained by statService with real
 
 // ****************************** SDWebServer stuff ****************************
 
-#define DBG_OUTPUT_PORT Serial
 ESP8266WebServer server(80);
 bool    hasSD = false;
 File    uploadFile;
@@ -225,9 +224,6 @@ uint32_t HTTPlock = 0;                      // Time(ms) HTTP was locked (no new 
       // ************************** HTTPS proxy host ******************************************
 
 char *HTTPSproxy = nullptr;
-uploader *influxDB_v1 = nullptr;
-uploader *influxDB_v2 = nullptr;
-uploader *Emoncms = nullptr;
 
 int32_t uploaderBufferLimit = 3000;          // Dynamic limit to try to control overload during recovery
 int32_t uploaderBufferTotal = 6000;          // Total aggregate target of uploader buffers       
