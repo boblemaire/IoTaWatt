@@ -1,7 +1,5 @@
 #include "IotaWatt.h"
-#include "Emoncms_uploader.h"
-#include "influxDB_v1_uploader.h"
-#include "influxDB_v2_uploader.h"
+#include "uploaders/Uploader_Registry.h"
 
 bool configDevice(const char*);
 bool configDST(const char* JsonStr);
@@ -171,121 +169,58 @@ boolean setConfig(const char* configPath){
     configOutputs(outputsStr);
     trace(T_CONFIG,30,3);
     delete[] outputsStr;
-
   }
-
-         // ************************************** configure Emoncms **********************************
+  
+    // *************************** configure Uploader based uploaders ***********************
 
   {
     trace(T_CONFIG,35);
-    char* EmonStr = nullptr;
-    JsonArray& EmonArray = Config[F("emoncms")];
-    if(EmonArray.success()){
-      EmonStr = JsonDetail(ConfigFile, EmonArray);
-    }
-    
-    // Handle legacy "server" specification for emoncms.
-    // Must ignore if type != "emoncms"
-    
-    else 
-    {
-      trace(T_CONFIG,36);      
-      JsonArray& serverArray = Config[F("server")];
-      if(serverArray.success()){
-        EmonStr = JsonDetail(ConfigFile, serverArray);
-        if( ! strstr(EmonStr, "emoncms")){
-          delete[] EmonStr;
-          EmonStr = nullptr;
+    char **uploader_names = get_uploader_list();
+    for (int i = 0; uploader_names[i]; i++){
+      char uploader_name_lower[16];
+      strcpy(uploader_name_lower, uploader_names[i]);
+      for (int j = 0; uploader_names[i][j]; j++){
+        uploader_name_lower[j] = tolower(uploader_names[i][j]);
+      }
+      JsonArray &uploader_array = Config[uploader_name_lower];
+      if(uploader_array.success()){
+        trace(T_CONFIG,35,1);
+        char* config_json = JsonDetail(ConfigFile, uploader_array);
+        trace(T_CONFIG,35,2);
+        Uploader * uploader = new_uploader(uploader_names[i]);
+        trace(T_CONFIG,35,3);
+        if(!uploader->config(config_json)){
+          log("%s: Invalid configuration.", uploader_names[i]);
+          uploader->end();
+          delete_uploader(uploader_names[i]);
         }
+        trace(T_CONFIG,35);
+        delete[] config_json;
       }
-    }
-
-    trace(T_CONFIG,35);
-    if(EmonStr){
-      trace(T_CONFIG,31);   
-      if(! Emoncms){
-        trace(T_CONFIG,32);   
-        Emoncms = new emoncms_uploader;
+      else{
+        delete_uploader(uploader_names[i]);
       }
-      trace(T_CONFIG,36);
-      if( ! Emoncms->config(EmonStr)){
-        logTrace();
-        trace(T_CONFIG,32);   
-        log("Emoncms: Invalid configuration.");
-        Emoncms->end();
-        Emoncms = nullptr;
-      }
-      delete[] EmonStr;
-    }   
-    else if(Emoncms){
-      trace(T_CONFIG,37);   
-      Emoncms->end();
-      Emoncms = nullptr;
     }
   }
 
-        // ************************************** configure influxDB1 *********************************
-
-  {
-    trace(T_CONFIG,40);
-    JsonArray& influxArray = Config[F("influxdb")];
-    if(influxArray.success()){
-      char* influxStr = JsonDetail(ConfigFile, influxArray);
-      if(! influxDB_v1){
-        influxDB_v1 = new influxDB_v1_uploader;
-      }
-      if( ! influxDB_v1->config(influxStr)){
-        log("influxDB_v1: Invalid configuration.");
-        influxDB_v1->end();
-        influxDB_v1 = nullptr;
-      }
-      delete[] influxStr;
-    }   
-    else if(influxDB_v1){
-      influxDB_v1->end();
-      influxDB_v1 = nullptr;
-    }
-  }
-
-        // ************************************** configure influxDB2 **********************************
-
-  {
-    trace(T_CONFIG,45);
-    JsonArray& influx2Array = Config[F("influxdb2")];
-    if(influx2Array.success()){
-      char* influx2Str = JsonDetail(ConfigFile, influx2Array);
-      if(! influxDB_v2){
-        influxDB_v2 = new influxDB_v2_uploader;
-      }
-      if( ! influxDB_v2->config(influx2Str)){
-        log("influxDB_v2: Invalid configuration.");
-        influxDB_v2->end();
-        influxDB_v2 = nullptr;
-      }
-      delete[] influx2Str;
-    }   
-    else if(influxDB_v2){
-      influxDB_v2->end();
-      influxDB_v2 = nullptr;
-    }
-  }
-      // ************************************** configure PVoutput *****************************************
+  
+      // ************************ configure PVoutput (not Uploader based) ******************
 
   {
     trace(T_CONFIG,50);
     JsonArray& PVoutputArray = Config[F("pvoutput")];
     if(PVoutputArray.success()){
       char* PVoutputStr = JsonDetail(ConfigFile, PVoutputArray);
-      if(! pvoutput){
-        pvoutput = new PVoutput();
+      if(! PVoutput){
+        PVoutput = new PVoutput_uploader();
       }
-      if( ! pvoutput->config(PVoutputStr)){
+      if( ! PVoutput->config(PVoutputStr)){
         log("PVoutput: Invalid configuration."); 
       } 
       delete[] PVoutputStr;
     }   
-    else if(pvoutput){
-      pvoutput->end();
+    else if(PVoutput){
+      PVoutput->end();
     }    
   }
 
@@ -304,93 +239,6 @@ boolean setConfig(const char* configPath){
     }
 
 
-      // ************************************** Code to handle array of configurations****************************
-
-  // {
-  //   trace(T_CONFIG,40);
-  //   JsonArray& locArray = Config[F("integrators")];
-  //   if(locArray.success()){
-
-  //     // Target is an array,
-  //     // summarize it into an array of locators
-
-  //     ConfigFile.seek(locArray[0].as<int>());
-  //     String summary = JsonSummary(ConfigFile, 1);
-  //     JsonArray& subArray = Json.parseArray(summary);
-
-  //     // Now process each entry in the array as an integrator.
-
-  //     int count = subArray.size();
-  //     for (int i = 0; i < count; i++){
-
-  //       // Extract the configuration detail for this integrator
-
-  //       JsonArray &locArray = subArray[i];
-  //       char *configtxt = JsonDetail(ConfigFile, locArray);
-
-  //       // New context to clean up on each iteration
-
-  //       {
-  //         DynamicJsonBuffer Json;
-  //         JsonObject &config = Json.parseObject(configtxt);
-
-  //         // Won't parse, log config error and abort
-
-  //         if (!config.success())
-  //         {
-  //             log("Config: parse failed integrator %d", i);
-  //             delete[] configtxt;
-  //             return false;
-  //         }
-
-  //         // Try to find existing match
-
-  //         int j = 0;
-  //         while (j < 4 && integrators[j] && strcmp(integrators[j]->name(), config.get<const char *>("name")) != 0){
-  //           j++;
-  //         }
-
-  //         // If no match and maximum integrators configured...
-
-  //         if(j >= 4){
-  //           log("config: more than 4 integrators.");
-  //           break;
-  //         }
-
-  //         // If this matches an already specified integrator... 
-
-  //         if (j < i){
-  //           log("config: duplicate integrator %s", config.get<const char *>("name"));
-  //           delete[] configtxt;
-  //           return false;
-  //         }
-
-  //         // New or existing integrator, swap entry into config order.
-
-  //         integrator *swap = integrators[i];
-  //         integrators[i] = integrators[j];
-  //         integrators[j] = swap;
-
-  //         // If not yet defined, create a new instance.
-
-  //         if(integrators[i] == 0){
-  //           integrators[i] = new integrator;
-  //         }
-
-  //         // call the config handler
-
-  //         if(!integrators[i]->config(config)){
-  //           log("config: integrator %s config failed.", config.get<const char *>("name"));
-  //           delete integrators[i];
-  //           integrators[i] = 0;
-  //           delete[] configtxt;
-  //           return false;
-  //         }
-  //       }
-  //       delete[] configtxt;
-  //     }
-  //   }
-  // }
 
   hashFile(configSHA256, ConfigFile);
   ConfigFile.close();
@@ -415,6 +263,7 @@ bool configSimSolar(const char* JsonStr){
   return true;
 } 
 //************************************** configDevice() ********************************************
+
 bool configDevice(const char* JsonStr){
 
   hasRTC = true;
