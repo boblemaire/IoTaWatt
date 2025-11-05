@@ -1,8 +1,8 @@
 #include "IotaWatt.h"
-#include "uploader.h"
+#include "Uploader.h"
 #include "splitstr.h"
 
-void uploader::getStatusJson(JsonObject& status)
+void Uploader::getStatusJson(JsonObject& status)
 {
     // Set status information in callers's json object.
 
@@ -19,7 +19,7 @@ void uploader::getStatusJson(JsonObject& status)
     trace(T_uploader,110);
 }
 
-void uploader::end()
+void Uploader::end()
 {
     trace(T_uploader,120);    
     _stop = true;
@@ -32,7 +32,7 @@ void uploader::end()
 
 uint32_t uploader_dispatch(struct serviceBlock* serviceBlock) {
     trace(T_uploader,0);
-    uploader *_this = (uploader *)serviceBlock->serviceParm;
+    Uploader*_this = (Uploader*)serviceBlock->serviceParm;
     trace(T_uploader,1);
     uint32_t reschedule = _this->dispatch(serviceBlock);
     trace(T_uploader,1);
@@ -44,7 +44,7 @@ uint32_t uploader_dispatch(struct serviceBlock* serviceBlock) {
 }
 
 
-uint32_t uploader::dispatch(struct serviceBlock *serviceBlock)
+uint32_t Uploader::dispatch(struct serviceBlock *serviceBlock)
 {
     trace(T_uploader,2,_state);
     switch (_state) {
@@ -73,7 +73,7 @@ uint32_t uploader::dispatch(struct serviceBlock *serviceBlock)
     return 0;
 }
 
-void uploader::stop(){
+void Uploader::stop(){
     log("%s: stopped, Last post %s", _id, localDateString(_lastSent).c_str());
     delete oldRecord;
     oldRecord = nullptr;
@@ -89,7 +89,7 @@ void uploader::stop(){
     _state = stopped_s;
 }
 
-uint32_t uploader::handle_stopped_s(){
+uint32_t Uploader::handle_stopped_s(){
     trace(T_uploader,5);
     if(_end){
         trace(T_uploader,6);
@@ -107,7 +107,7 @@ uint32_t uploader::handle_stopped_s(){
     return 1;
 }
 
-uint32_t uploader::handle_initialize_s(){
+uint32_t Uploader::handle_initialize_s(){
     trace(T_uploader,10);
     log("%s: Starting, interval:%d, url:%s", _id, _interval, _url->build().c_str());
     _state = query_s;
@@ -129,7 +129,7 @@ uint32_t uploader::handle_initialize_s(){
 // Subsystem to initiate HTTP transactions and wait for completion.
 // Handles directing to HTTPS proxy when configured and requested.
 
-void uploader::HTTPPost(const char* endpoint, states completionState, const char* contentType){
+void Uploader::HTTPPost(const char* endpoint, states completionState, const char* contentType){
     
     // Build a request control block for this request,
     // set state to handle the request and return to caller.
@@ -146,7 +146,7 @@ void uploader::HTTPPost(const char* endpoint, states completionState, const char
     _state = HTTPpost_s;
 }
 
-uint32_t uploader::handle_HTTPpost_s(){
+uint32_t Uploader::handle_HTTPpost_s(){
 
     // Initiate the post request.
     // If WiFi not connected or can't get semaphore
@@ -224,7 +224,7 @@ uint32_t uploader::handle_HTTPpost_s(){
     return 10; 
 }
 
-uint32_t uploader::handle_HTTPwait_s(){
+uint32_t Uploader::handle_HTTPwait_s(){
     trace(T_uploader,90);
     if(_request && _request->readyState() == 4){
         HTTPrelease(_HTTPtoken);
@@ -241,15 +241,15 @@ uint32_t uploader::handle_HTTPwait_s(){
     return 10;
 }
 
-void uploader::setRequestHeaders(){};
+void Uploader::setRequestHeaders(){};
 
-void uploader::delay(uint32_t seconds, states resumeState){
+void Uploader::delay(uint32_t seconds, states resumeState){
     _delayResumeTime = UTCtime() + seconds;
     _delayResumeState = resumeState;
     _state = delay_s;
 }
 
-uint32_t uploader::handle_delay_s(){
+uint32_t Uploader::handle_delay_s(){
     if(_stop){
         stop();
         return 1;
@@ -271,7 +271,7 @@ uint32_t uploader::handle_delay_s(){
 //
 //********************************************************************************************************************
 
-bool uploader::config(const char *jsonConfig)
+bool Uploader::config(const char *jsonConfig)
 {
     trace(T_uploader, 100);
 
@@ -345,20 +345,6 @@ bool uploader::config(const char *jsonConfig)
         return false;
     }
 
-    // Attempt to apportion buffer size to control overloading in the event of
-    // recovery of many uploaders.
-
-    int uploaders = 0;
-    if(influxDB_v1)
-        uploaders++;
-    if(influxDB_v2)
-        uploaders++;
-    if(Emoncms)
-        uploaders++;
-    if(uploaders){
-        uploaderBufferLimit = MIN(uploaderBufferTotal / uploaders, 4000);
-    }
-
     // Callback to derived class for unique configuration requirements
     // if that goes OK (true) then start the Service.
 
@@ -379,4 +365,4 @@ bool uploader::config(const char *jsonConfig)
     return false;
 }
 
-bool uploader::configCB(JsonObject &) { return true; };
+bool Uploader::configCB(JsonObject &) { return true; };

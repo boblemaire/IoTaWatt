@@ -1,14 +1,16 @@
-#ifndef emoncms_uploader_h
-#define emoncms_uploader_h
+#ifndef Emoncms_uploader_h
+#define Emoncms_uploader_h
 
 #include "IotaWatt.h"
+#include "Uploader.h"
 
-extern uint32_t emoncms_dispatch(struct serviceBlock *serviceBlock);
+//extern uint32_t emoncms_dispatch(struct serviceBlock *serviceBlock);
+extern Uploader*emoncms;
 
-class emoncms_uploader : public uploader 
+class Emoncms_uploader : public Uploader
 {
     public:
-        emoncms_uploader() :_node(0),
+        Emoncms_uploader() :_node(0),
                             _userID(0),
                             _sha256(0),
                             _base64Sha(0),
@@ -16,16 +18,20 @@ class emoncms_uploader : public uploader
                             _encrypt(false),
                             _encrypted(false)
         {
-            _id = charstar("emoncms");
+            _id = charstar("Emoncms");
         };
 
-        ~emoncms_uploader(){
+        ~Emoncms_uploader(){
             
-            Emoncms = nullptr;
+            delete[] _id;
+            delete[] _node;
+            delete[] _userID;
+            delete[] _base64Sha;
+            emoncms = nullptr;
         };
 
         bool configCB(const char *JsonText);
-        uint32_t dispatch(struct serviceBlock *serviceBlock);
+        //uint32_t dispatch(struct serviceBlock *serviceBlock);
 
     protected:
         char *_node;

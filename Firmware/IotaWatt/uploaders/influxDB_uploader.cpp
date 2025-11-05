@@ -1,11 +1,15 @@
-#include "influxDB_v1_uploader.h"
+#include "influxDB_Uploader.h"
 #include "splitstr.h"
 
-/*****************************************************************************************
- *          handle_query_s()
- * **************************************************************************************/
-uint32_t influxDB_v1_uploader::handle_query_s(){
-        
+Uploader*influxDB_v1 = nullptr;
+
+    /*****************************************************************************************
+     *          handle_query_s()
+     * **************************************************************************************/
+    uint32_t
+    influxDB_uploader::handle_query_s()
+{
+
     trace(T_influx1,20);
     if (!_script) {
         _script = _outputs->first();
@@ -34,7 +38,7 @@ uint32_t influxDB_v1_uploader::handle_query_s(){
 /*****************************************************************************************
  *          handle_checkQuery_s()
  * **************************************************************************************/
-uint32_t influxDB_v1_uploader::handle_checkQuery_s(){
+uint32_t influxDB_uploader::handle_checkQuery_s(){
     trace(T_influx1,30);
     int HTTPcode = _request->responseHTTPcode();
     
@@ -111,7 +115,7 @@ uint32_t influxDB_v1_uploader::handle_checkQuery_s(){
 /*****************************************************************************************
  *          handle_write_s())
  * **************************************************************************************/
-uint32_t influxDB_v1_uploader::handle_write_s(){
+uint32_t influxDB_uploader::handle_write_s(){
     trace(T_influx1,60);
 
     // This is the predominant state of the uploader
@@ -251,7 +255,7 @@ uint32_t influxDB_v1_uploader::handle_write_s(){
 /*****************************************************************************************
  *          handle_checkWrite_s()
  * **************************************************************************************/
-uint32_t influxDB_v1_uploader::handle_checkWrite_s(){
+uint32_t influxDB_uploader::handle_checkWrite_s(){
     trace(T_influx1,91);
 
     // Check the result of a write transaction.
@@ -283,7 +287,7 @@ uint32_t influxDB_v1_uploader::handle_checkWrite_s(){
 /*****************************************************************************************
  *          setRequestHeaders()
  * **************************************************************************************/
-void influxDB_v1_uploader::setRequestHeaders(){
+void influxDB_uploader::setRequestHeaders(){
     trace(T_influx1,95);
     _request->setDebug(false);
     if(_user && _pwd){
@@ -308,7 +312,7 @@ void influxDB_v1_uploader::setRequestHeaders(){
 //               CCC     OOO    N   N   F       III    GGG    CCC   B BBB
 //
 //********************************************************************************************************************
-bool influxDB_v1_uploader::configCB(JsonObject& config){
+bool influxDB_uploader::configCB(JsonObject& config){
     trace(T_influx1, 101);
     delete[] _database;
     _database = charstar(config.get<char*>(F("database")));
@@ -376,7 +380,7 @@ bool influxDB_v1_uploader::configCB(JsonObject& config){
 }
     
 
-String influxDB_v1_uploader::varStr(const char* in, Script* script)
+String influxDB_uploader::varStr(const char* in, Script* script)
 {
     // Return String with variable substitutions.
 

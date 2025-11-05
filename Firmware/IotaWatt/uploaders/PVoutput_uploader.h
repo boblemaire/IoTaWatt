@@ -1,6 +1,7 @@
 #ifndef PVoutput_h
 #define PVoutput_h
 #include "IotaWatt.h"
+#include "Uploader_Registry.h"
 
 //********************************************************************************************************
 // PVoutput class
@@ -60,11 +61,11 @@ class PVresponse {
     
  };
 
-class PVoutput {
+class PVoutput_uploader {
 
 public:
 
-    PVoutput()
+    PVoutput_uploader()
         :_interval(0)
         ,_apiKey(nullptr)
         ,_systemID(nullptr)
@@ -91,9 +92,11 @@ public:
         ,_errorCode(0)
         ,_errorCount(0)
         ,_baseTime(0)
-        {};
+        {
+            _id = charstar("PVoutput");
+        };
 
-    ~PVoutput(){
+    ~PVoutput_uploader(){
         delete[] _apiKey;
         delete[] _systemID;
         delete[] _statusMessage;
@@ -113,6 +116,7 @@ public:
     void end();                                         // Destroy this instance of the class ASAP
     void restart();                                     // Force a restart of the state machine ASAP
     void getStatusJson(JsonObject&);                    // Add status objects to the supplied Json object
+    char *id() { return _id; };
     uint32_t tick(struct serviceBlock* serviceBlock);   // Invoke state machine execution
 
 private:
@@ -198,7 +202,7 @@ private:
     IotaLogRecord* newRecord;               // Newer of two log records bracketing a reporting interval    
     POSTrequest* _POSTrequest;              // Details of active POST request
     char        *_statusMessage;            // message for status query
-    char        *_id;                       // uploader ID
+    char        *_id;                       // UploaderID
 
     int32_t     _rateLimitLimit;            // Flow control from PVoutput response headers
     int32_t     _rateLimitRemaining;
@@ -213,8 +217,6 @@ private:
 
 };
 
-extern PVoutput* pvoutput;                  // external pointer to the instance of pvoutput
-
-uint32_t PVOutputTick(struct serviceBlock* serviceBlock); // external function used to schedule state machine
+extern PVoutput_uploader *PVoutput;
 
 #endif  

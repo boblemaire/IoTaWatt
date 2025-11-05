@@ -1,43 +1,46 @@
-#ifndef influxDB_v1_uploader_h
-#define influxDB_v1_uploader_h
+#ifndef influxDB2_uploader_h
+#define influxDB2_uploader_h
 
 #include "IotaWatt.h"
+#include "Uploader.h"
 
-extern uint32_t influxDB_v1_dispatch(struct serviceBlock *serviceBlock);
+extern uint32_t influxDB_v2_dispatch(struct serviceBlock *serviceBlock);
+extern Uploader*influxDB_v2;
 
-class influxDB_v1_uploader : public uploader 
+class influxDB2_uploader: public Uploader
 {
     public:
-        influxDB_v1_uploader():
+        influxDB2_uploader(): 
             _tagSet(0),
-            _user(0),
-            _pwd(0),
-            _retention(0),
-            _fieldKey(0),
-            _database(0),
+            _lookbackHours(0),
+            _orgID(0),
+            _bucket(0),
+            _token(0),
             _measurement(0),
+            _fieldKey(0),
             _staticKeySet(false),
             _heap(false)
         {
-            _id = charstar("influxDB_v1");
+            _id = charstar("influxDB2");
         };
 
-        ~influxDB_v1_uploader(){
+        ~influxDB2_uploader(){
+            delete[] _orgID;
+            delete[] _bucket;
+            delete[] _token;
             delete[] _measurement;
             delete[] _fieldKey;
-            delete[] _retention;
-            delete[] _database;
-            delete[] _user;
-            delete[] _pwd;
+            delete[] _id;
             delete _tagSet;
             delete _outputs;
-            influxDB_v1 = nullptr;
+            influxDB_v2 = nullptr;
         };
 
         bool configCB(const char *JsonText);
         uint32_t dispatch(struct serviceBlock *serviceBlock);
 
     private:
+
 
         struct influxTag {
             influxTag* next;
@@ -54,17 +57,16 @@ class influxDB_v1_uploader : public uploader
                 delete   next;
             }
         } *_tagSet;
-
-        char *_user;
-        char *_pwd;
-        char *_retention;
-        char *_fieldKey;
-        char *_database;
+        
+        uint32_t _lookbackHours;
+        char *_orgID;
+        char *_bucket;
+        char *_token;
         char *_measurement;
+        char *_fieldKey;
         bool _staticKeySet;
         bool _heap;
 
-        void queryLast();
         uint32_t handle_query_s();
         uint32_t handle_checkQuery_s();
         uint32_t handle_write_s();

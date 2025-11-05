@@ -1,9 +1,10 @@
-#include "Emoncms_uploader.h"
+#include "Emoncms_Uploader.h"
+Uploader*emoncms = nullptr;
 
 /*****************************************************************************************
  *          handle_query_s()
  * **************************************************************************************/
-uint32_t emoncms_uploader::handle_query_s(){
+uint32_t Emoncms_uploader::handle_query_s(){
     trace(T_Emoncms,20);
     String endpoint = "/input/get?node=";
     endpoint += _node;
@@ -15,7 +16,7 @@ uint32_t emoncms_uploader::handle_query_s(){
 /*****************************************************************************************
  *          handle_checkQuery_s()
  * **************************************************************************************/
-uint32_t emoncms_uploader::handle_checkQuery_s(){
+uint32_t Emoncms_uploader::handle_checkQuery_s(){
     trace(T_Emoncms,30);
     if(_request->responseHTTPcode() != 200){
         log("%s: Query failed %d", _id, _request->responseHTTPcode());
@@ -55,7 +56,7 @@ uint32_t emoncms_uploader::handle_checkQuery_s(){
 /*****************************************************************************************
  *          handle_write_s())
  * **************************************************************************************/
-uint32_t emoncms_uploader::handle_write_s(){
+uint32_t Emoncms_uploader::handle_write_s(){
     trace(T_Emoncms,60);
     
     // This is the predominant state of the uploader
@@ -287,7 +288,7 @@ uint32_t emoncms_uploader::handle_write_s(){
 /*****************************************************************************************
  *          handle_checkWrite_s()
  * **************************************************************************************/
-uint32_t emoncms_uploader::handle_checkWrite_s(){
+uint32_t Emoncms_uploader::handle_checkWrite_s(){
     trace(T_Emoncms,91);
 
     // Check the result of a write transaction.
@@ -330,7 +331,7 @@ uint32_t emoncms_uploader::handle_checkWrite_s(){
 /*****************************************************************************************
  *          setRequestHeaders()
  * **************************************************************************************/
-void emoncms_uploader::setRequestHeaders(){
+void Emoncms_uploader::setRequestHeaders(){
     trace(T_Emoncms,95);
     if(_encrypted){
         String auth(_userID);
@@ -354,7 +355,7 @@ void emoncms_uploader::setRequestHeaders(){
 //               CCC     OOO    N   N   F       III    GGG    CCC   B BBB
 //
 //********************************************************************************************************************
-bool emoncms_uploader::configCB(JsonObject& config){
+bool Emoncms_uploader::configCB(JsonObject& config){
     
     trace(T_Emoncms,100);
     const char *apikey = config["apikey"].as<char *>();

@@ -45,6 +45,7 @@
 #include <math.h>
 #include <Ticker.h>
 
+#include "trace.h"
 #include "IotaLog.h"
 #include "IotaInputChannel.h"
 #include "IotaScript.h"
@@ -59,12 +60,10 @@
 #include "webServer.h"
 #include "updater.h"
 #include "samplePower.h"
-#include "uploader.h"
 #include "integrator.h"
 #include "auth.h"
 #include "spiffs.h"
 #include "timeServices.h"
-#include "PVoutput.h"
 #include "CSVquery.h"
 #include "xbuf.h"
 #include "xurl.h"
@@ -125,20 +124,6 @@ extern char* deviceName;
 
 extern uint8_t ADC_selectPin[2];            // indexable reference for ADC select pins
 
-      // Trace context and work area
-
-union traceUnion {
-      uint32_t    traceWord;
-      struct {
-            uint8_t     seq;
-            uint8_t     mod;
-            uint8_t     id;
-            uint8_t     det;
-      };
-};
-
-extern traceUnion traceEntry;
-
       // Structure of EEPROM
 
 struct EEprom {
@@ -159,42 +144,6 @@ struct EEprom {
 #define QUERY_POWER  2
 #define QUERY_ENERGY 3
 #define QUERY_OTHER 4
-
-     // RTC trace trace module values by module. (See trace routines in Loop tab)
-
-#define T_LOOP 1           // Loop
-#define T_LOG 2            // dataLog
-#define T_Emoncms 3        // Emoncms uploader
-#define T_GFD 4            // GetFeedData
-#define T_UPDATE 5         // updater
-#define T_SETUP 6          // Setup
-#define T_influx 7         // influxDB
-#define T_SAMP 8           // sampleCycle
-#define T_POWER 9          // Sample Power
-#define T_WEB 10           // (30)Web server handlers
-#define T_CONFIG 11        //  Get Config
-#define T_encryptEncode 12 //  base64encode and encryptData in EmonService
-#define T_uploadGraph 13 
-#define T_history 14
-#define T_base64 15        // base 64 encode
-#define T_stats 18         // Stat service 
-#define T_datalog 19       // datalog service
-#define T_timeSync 20      // timeSync service 
-#define T_WiFi 21          // WiFi service
-#define T_PVoutput 22      // PVoutput class 
-#define T_samplePhase 23   // Sample phase (within samplePower) 
-#define T_RTCWDT 24        // Dead man pedal service
-#define T_CSVquery 25      // CSVquery
-#define T_xurl 26          // xurl 
-#define T_utility 27       // Miscelaneous utilities 
-#define T_EXPORTLOG 28     // Export log
-#define T_influx2 29       // influxDB_v2_uploader 
-#define T_influx2Config 30 // influx2 configuration 
-#define T_uploader 31      // Uploader base class
-#define T_influx1 32       // influxDB_v1_uploader
-#define T_integrator 33    // Integrator class  
-#define T_Script 34
-#define T_Scriptset 35                        
 
       // LED codes
 
@@ -294,10 +243,6 @@ extern uint32_t HTTPlock;                 // start time token of locking request
       // ************************** HTTPS proxy host ******************************************
 
 extern char *HTTPSproxy;                  // Host for nginx (or other) reverse HTTPS proxy server
-
-extern uploader *influxDB_v1;
-extern uploader *influxDB_v2;
-extern uploader *Emoncms;
 extern int32_t uploaderBufferLimit;       // Dynamic limit to try to control overload during recovery
 extern int32_t uploaderBufferTotal;       // Total aggregate target of uploader buffers       
 
@@ -358,8 +303,6 @@ extern int16_t  Isample [MAX_SAMPLES];
       // ************************ Declare global functions
 void      setup();
 void      loop();
-void      trace(const uint8_t module, const uint8_t id, const uint8_t det=0); 
-void      logTrace(void);
 
 serviceBlock* NewService(Service, const uint8_t taskID=0, void* parm=0);
 void      AddService(struct serviceBlock*);

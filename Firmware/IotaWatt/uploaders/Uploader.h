@@ -5,12 +5,14 @@
 
 #define DEFAULT_BUFFER_LIMIT 4000
 
+extern void Declare_Uploader(const char *);
+
 extern uint32_t uploader_dispatch(struct serviceBlock *serviceBlock);
 
-class uploader
+class Uploader
 {
     public:
-        uploader() : 
+        Uploader() : 
                     newRecord(0),
                     oldRecord(0),
                     _state(initialize_s),
@@ -33,7 +35,7 @@ class uploader
 
         {};
         
-        ~uploader(){
+        ~Uploader(){
             delete[] _statusMessage;
             delete _POSTrequest;
             delete _request;
@@ -49,6 +51,7 @@ class uploader
         virtual void stop();
         virtual void end();
         virtual void setRequestHeaders();
+        virtual char *id() { return _id; };
 
     protected:
 

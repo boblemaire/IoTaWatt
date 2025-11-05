@@ -1,10 +1,12 @@
-#include "influxDB_v2_uploader.h"
+#include "influxDB2_Uploader.h"
 #include "splitstr.h"
+
+Uploader*influxDB_v2 = nullptr;
 
 /*****************************************************************************************
  *          handle_query_s()
  * **************************************************************************************/
-uint32_t influxDB_v2_uploader::handle_query_s(){
+uint32_t influxDB2_uploader::handle_query_s(){
     trace(T_influx2,20);
 
     // Set range for lookback.
@@ -74,7 +76,7 @@ uint32_t influxDB_v2_uploader::handle_query_s(){
 /*****************************************************************************************
  *          setRequestHeaders()
  * **************************************************************************************/
-void influxDB_v2_uploader::setRequestHeaders(){
+void influxDB2_uploader::setRequestHeaders(){
     String auth = "Token ";
     auth += _token;
     _request->setReqHeader(F("Authorization"), auth.c_str());
@@ -83,7 +85,7 @@ void influxDB_v2_uploader::setRequestHeaders(){
 /*****************************************************************************************
  *         handle_checkQuery_s()
  * **************************************************************************************/
-uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
+uint32_t influxDB2_uploader::handle_checkQuery_s(){
     trace(T_influx2,30);
 
     // Deal with failure.
@@ -150,7 +152,7 @@ uint32_t influxDB_v2_uploader::handle_checkQuery_s(){
 /*****************************************************************************************
  *          handle_write_s
  * **************************************************************************************/
-uint32_t influxDB_v2_uploader::handle_write_s(){
+uint32_t influxDB2_uploader::handle_write_s(){
     trace(T_influx2,60);
 
     // This is the predominant state of the uploader
@@ -288,7 +290,7 @@ uint32_t influxDB_v2_uploader::handle_write_s(){
 /*****************************************************************************************
  *          handle_checkWrite_s()
  * **************************************************************************************/
-uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
+uint32_t influxDB2_uploader::handle_checkWrite_s(){
     trace(T_influx2,91);
 
     // Check the result of a write transaction.
@@ -333,7 +335,7 @@ uint32_t influxDB_v2_uploader::handle_checkWrite_s(){
 //               CCC     OOO    N   N   F       III    GGG    CCC   B BBB
 //
 //********************************************************************************************************************
-bool influxDB_v2_uploader::configCB(JsonObject& config){
+bool influxDB2_uploader::configCB(JsonObject& config){
     trace(T_influx2, 101);
     _heap = config.get<bool>(F("heap"));
     delete[] _bucket;
@@ -421,7 +423,7 @@ bool influxDB_v2_uploader::configCB(JsonObject& config){
 }
     
 
-String influxDB_v2_uploader::varStr(const char* in, Script* script)
+String influxDB2_uploader::varStr(const char* in, Script* script)
 {
     // Return String with variable substitutions.
 

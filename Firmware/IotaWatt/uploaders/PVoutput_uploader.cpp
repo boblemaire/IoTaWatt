@@ -1,4 +1,5 @@
 #include "IotaWatt.h"
+#include "PVoutput_uploader.h"
 
 /******************************************************************************************************
 *    PVoutput server class, modeled after framework by Brendon Costa and updated to
@@ -8,7 +9,8 @@
 
 // null pointer until configured (or if deleted);
 
-PVoutput* pvoutput = nullptr;
+PVoutput_uploader *PVoutput = nullptr;
+
 const char P_getstatus[] PROGMEM = "getstatus.jsp";
 const char P_getsystem[] PROGMEM = "getsystem.jsp";
 const char P_addbatchstatus[] PROGMEM = "addbatchstatus.jsp";
@@ -19,6 +21,7 @@ const char P_addbatchstatus[] PROGMEM = "addbatchstatus.jsp";
 
 uint32_t PVoutputTick(struct serviceBlock* serviceBlock) {
     trace(T_PVoutput,0);
+    PVoutput_uploader *pvoutput = (PVoutput_uploader*)serviceBlock->serviceParm;
     if(pvoutput){
         trace(T_PVoutput,1);
         uint32_t reschedule = pvoutput->tick(serviceBlock);
@@ -36,14 +39,14 @@ uint32_t PVoutputTick(struct serviceBlock* serviceBlock) {
 
         // stop() - At the first opportunity, enter _state = stopped and idle.
 
-void PVoutput::stop(){
+void PVoutput_uploader::stop(){
     _stop = true;
     _restart = false;
 }
 
         // restart() - At the first opportunity, restart the state sequence from the beginning (getSystemService)
 
-void PVoutput::restart(){
+void PVoutput_uploader::restart(){
     if(_state == stopped){
         _restart = true;
     } else {
@@ -52,15 +55,18 @@ void PVoutput::restart(){
     }
 }
 
-        // end() - At the first opportunity, delete this instance of PVoutput
+        // end() - At the first opportunity, delete this instance of PVoutput_uploader
 
-void PVoutput::end(){
+void PVoutput_uploader::end(){
     _end = true;
+    if(!_started){
+        delete this;
+    }
 }
 
         // Get the current status as a Json object.
 
-void PVoutput::getStatusJson(JsonObject& status){
+void PVoutput_uploader::getStatusJson(JsonObject& status){
     status.set(F("status"), (_started && _state != stopped) ? "running" : "stopped");
     status.set(F("lastpost"),local2UTC(_lastPostTime));
     if(_statusMessage){
@@ -77,7 +83,7 @@ void PVoutput::getStatusJson(JsonObject& status){
 //                                   T     III    CCC   K   K
 // 
 //******************************************************************************************************************/
-uint32_t PVoutput::tick(struct serviceBlock* serviceBlock){
+uint32_t PVoutput_uploader::tick(struct serviceBlock* serviceBlock){
     trace(T_PVoutput,0);
     switch (_state) {
         case initialize:            {return handle_initialize_s();}
@@ -98,9 +104,9 @@ uint32_t PVoutput::tick(struct serviceBlock* serviceBlock){
     }
 }
 
-uint32_t PVoutput::handle_stopped_s(){
+uint32_t PVoutput_uploader::handle_stopped_s(){
     if(_end){
-        pvoutput = nullptr;
+        delete_uploader(_id);
         delete this;
         return 0;
     }
@@ -118,7 +124,7 @@ uint32_t PVoutput::handle_stopped_s(){
     
 }
 
-uint32_t PVoutput::handle_initialize_s(){
+uint32_t PVoutput_uploader::handle_initialize_s(){
     trace(T_PVoutput,10);
     if( ! History_log.isOpen()){
         return UTCtime() + 10;
@@ -130,14 +136,14 @@ uint32_t PVoutput::handle_initialize_s(){
     return 1;
 }
 
-uint32_t PVoutput::tickGetSystemService(){
+uint32_t PVoutput_uploader::tickGetSystemService(){
     trace(T_PVoutput,20);
     reqData.print(F("donations=1"));
     HTTPPost(FPSTR(P_getsystem), checkSystemService);
     return 1;
 }
 
-uint32_t PVoutput::tickCheckSystemService(){
+uint32_t PVoutput_uploader::tickCheckSystemService(){
     trace(T_PVoutput,25);
     switch (_HTTPresponse) {
         default:{
@@ -170,13 +176,13 @@ uint32_t PVoutput::tickCheckSystemService(){
     }
 }
 
-uint32_t PVoutput::tickGetStatus(){
+uint32_t PVoutput_uploader::tickGetStatus(){
     trace(T_PVoutput,70);
     HTTPPost(FPSTR(P_getstatus), gotStatus);
     return 1;
 }
 
-uint32_t PVoutput::tickGotStatus(){
+uint32_t PVoutput_uploader::tickGotStatus(){
     trace(T_PVoutput,75);
     switch (_HTTPresponse) {
         default: {
@@ -245,7 +251,7 @@ uint32_t PVoutput::tickGotStatus(){
         // we subtract interval to get the timestamp of each status.
         // Report maximum statuses unless current where we revert to single writes.
 
-uint32_t PVoutput::tickUploadStatus(){
+uint32_t PVoutput_uploader::tickUploadStatus(){
     trace(T_PVoutput,80);
 
             // This is the basic heartbeat of the service,
@@ -453,7 +459,7 @@ uint32_t PVoutput::tickUploadStatus(){
     return 1;
 }
 
-uint32_t PVoutput::tickCheckUploadStatus(){
+uint32_t PVoutput_uploader::tickCheckUploadStatus(){
     trace(T_PVoutput,90);
     switch (_HTTPresponse) {
         default:{
@@ -516,9 +522,9 @@ const char respHeaderLimit[] PROGMEM = "X-Rate-Limit-Limit";
 const char respHeaderReset[] PROGMEM = "X-Rate-Limit-Reset";
 const char reqHeaderContentType[] PROGMEM = "Content-type";
 
-//void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, const __FlashStringHelper *contentType){
+//void PVoutput_uploader::HTTPPost(const __FlashStringHelper *URI, states completionState, const __FlashStringHelper *contentType){
     
-void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, const char* contentType){
+void PVoutput_uploader::HTTPPost(const __FlashStringHelper *URI, states completionState, const char* contentType){
     trace(T_PVoutput,100);
     delete _POSTrequest;
     _POSTrequest = new POSTrequest;
@@ -532,7 +538,7 @@ void PVoutput::HTTPPost(const __FlashStringHelper *URI, states completionState, 
     _state = HTTPpost;
 }
 
-uint32_t PVoutput::handle_HTTPpost_s(){
+uint32_t PVoutput_uploader::handle_HTTPpost_s(){
     trace(T_PVoutput,110);
     if( ! WiFi.isConnected()){
         return UTCtime() + 1;
@@ -581,7 +587,7 @@ uint32_t PVoutput::handle_HTTPpost_s(){
     return 1;
 }
 
-uint32_t PVoutput::handle_HTTPwait_s(){
+uint32_t PVoutput_uploader::handle_HTTPwait_s(){
     trace(T_PVoutput,120);
     if(request->readyState() != 4){
         return 1;
@@ -676,7 +682,7 @@ uint32_t PVoutput::handle_HTTPwait_s(){
     return 1;
 }
 
-uint32_t PVoutput::tickLimitWait(){
+uint32_t PVoutput_uploader::tickLimitWait(){
     if(_stop || _end){
         delete[] _statusMessage;
         _statusMessage = nullptr;
@@ -706,7 +712,7 @@ uint32_t PVoutput::tickLimitWait(){
 //               CCC     OOO    N   N   F       III    GGG
 //
 //********************************************************************************************************************
-bool PVoutput::config(const char* configObj){
+bool PVoutput_uploader::config(const char* configObj){
     DynamicJsonBuffer Json;
     JsonObject& config = Json.parseObject(configObj);
     if( ! config.success()){
@@ -743,7 +749,8 @@ bool PVoutput::config(const char* configObj){
     trace(T_PVoutput,205);
     if( ! _started) {
         trace(T_PVoutput,206);
-        NewService(PVoutputTick, T_PVoutput);
+        serviceBlock *sb = NewService(PVoutputTick, T_PVoutput);
+        sb->serviceParm = (void *)this;
         _started = true;
     }
     trace(T_PVoutput,207);
