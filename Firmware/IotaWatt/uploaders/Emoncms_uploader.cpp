@@ -9,7 +9,7 @@ uint32_t Emoncms_uploader::handle_query_s(){
     String endpoint = "/input/get?node=";
     endpoint += _node;
     _encrypted = false;
-    HTTPPost(endpoint.c_str(), checkQuery_s, "application/x-www-form-urlencoded");
+    HTTPGet(endpoint.c_str(), checkQuery_s);
     return 1;
 }
 

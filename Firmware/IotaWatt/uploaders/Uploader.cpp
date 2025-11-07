@@ -130,6 +130,14 @@ uint32_t Uploader::handle_initialize_s(){
 // Handles directing to HTTPS proxy when configured and requested.
 
 void Uploader::HTTPPost(const char* endpoint, states completionState, const char* contentType){
+    HTTP("POST", endpoint, completionState, contentType);
+}
+
+void Uploader::HTTPGet(const char* endpoint, states completionState){
+    HTTP("GET", endpoint, completionState);
+}
+
+void Uploader::HTTP(const char *method, const char* endpoint, states completionState, const char* contentType){
     
     // Build a request control block for this request,
     // set state to handle the request and return to caller.
@@ -143,6 +151,7 @@ void Uploader::HTTPPost(const char* endpoint, states completionState, const char
     delete _POSTrequest->contentType;
     _POSTrequest->contentType = charstar(contentType);
     _POSTrequest->completionState = completionState;
+    _POSTrequest->method = strcmp(method,"GET") == 0 ? method_GET : method_POST;
     _state = HTTPpost_s;
 }
 
@@ -195,7 +204,7 @@ uint32_t Uploader::handle_HTTPpost_s(){
         }
 
         trace(T_uploader,123);
-        if( ! _request->open("POST", URL)){
+        if( ! _request->open(_POSTrequest->method == method_POST ? "POST" : "GET", URL)){
             trace(T_uploader,123);
             HTTPrelease(_HTTPtoken);
             delete _request;
@@ -206,10 +215,19 @@ uint32_t Uploader::handle_HTTPpost_s(){
     if(_useProxyServer){
         _request->setReqHeader(F("X-proxypass"),  _url->build().c_str());
     }
-    _request->setReqHeader(F("content-type"), _POSTrequest->contentType);
-    trace(T_uploader,124);
-    setRequestHeaders();
-    if( ! _request->send(&reqData, reqData.available())){
+    bool sent = true;
+    if(_POSTrequest->method == method_GET){
+        trace(T_uploader,124,1);
+        setRequestHeaders();
+        sent = _request->send();
+    }
+    else {
+        trace(T_uploader,124,2);
+        _request->setReqHeader(F("content-type"), _POSTrequest->contentType);
+        setRequestHeaders();
+        sent = _request->send(&reqData, reqData.available());
+    }
+    if(!sent){
         trace(T_uploader,125);
         HTTPrelease(_HTTPtoken);
         reqData.flush();
