@@ -40,6 +40,8 @@ void declare_uploaders(){
     uploaderNames[uploaderCount++] = charstar("influxDB");
     trace(T_uploaderRegistry, 0,3);
     uploaderNames[uploaderCount++] = charstar("influxDB2");
+    trace(T_uploaderRegistry, 0,4);
+    uploaderNames[uploaderCount++] = charstar("postgrest");
     
 }
 
@@ -82,6 +84,10 @@ void set_buffer_limit(){
                 else if (strcmp(ID, "influxDB2") == 0)
                 {
                     uploaderInstances[i] = new influxDB2_uploader;
+                }
+                else if (strcmp(ID, "postgrest") == 0)
+                {
+                    uploaderInstances[i] = new postgrest_uploader;
                 }
                 else{
                     uploaderInstancesCount--;

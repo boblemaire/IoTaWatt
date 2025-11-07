@@ -5,6 +5,8 @@
 #include "Emoncms_uploader.h"
 #include "influxDB_uploader.h"
 #include "influxDB2_uploader.h"
+#include "postgrest_uploader.h"
+
 #include "PVoutput_uploader.h"
 
 void declare_uploaders();
