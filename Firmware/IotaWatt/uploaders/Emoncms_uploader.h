@@ -4,9 +4,6 @@
 #include "IotaWatt.h"
 #include "Uploader.h"
 
-//extern uint32_t emoncms_dispatch(struct serviceBlock *serviceBlock);
-extern Uploader*emoncms;
-
 class Emoncms_uploader : public Uploader
 {
     public:
@@ -27,11 +24,7 @@ class Emoncms_uploader : public Uploader
             delete[] _node;
             delete[] _userID;
             delete[] _base64Sha;
-            emoncms = nullptr;
         };
-
-        bool configCB(const char *JsonText);
-        //uint32_t dispatch(struct serviceBlock *serviceBlock);
 
     protected:
         char *_node;
@@ -51,7 +44,6 @@ class Emoncms_uploader : public Uploader
         bool     configCB(JsonObject &);
 
         void     setRequestHeaders();
-        int      scriptCompare(Script *a, Script *b);
 };
 
 #endif

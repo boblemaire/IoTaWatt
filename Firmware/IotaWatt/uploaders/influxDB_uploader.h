@@ -4,9 +4,6 @@
 #include "IotaWatt.h"
 #include "Uploader.h"
 
-extern uint32_t influxDB_v1_dispatch(struct serviceBlock *serviceBlock);
-extern Uploader* influxDB_v1;
-
 class influxDB_uploader : public Uploader
 {
     public:
@@ -34,13 +31,9 @@ class influxDB_uploader : public Uploader
             delete[] _id;
             delete _tagSet;
             delete _outputs;
-            influxDB_v1 = nullptr;
         };
 
-        bool configCB(const char *JsonText);
-        uint32_t dispatch(struct serviceBlock *serviceBlock);
-
-    private:
+private:
 
         struct influxTag {
             influxTag* next;
@@ -67,7 +60,6 @@ class influxDB_uploader : public Uploader
         bool _staticKeySet;
         bool _heap;
 
-        void queryLast();
         uint32_t handle_query_s();
         uint32_t handle_checkQuery_s();
         uint32_t handle_write_s();
@@ -76,7 +68,6 @@ class influxDB_uploader : public Uploader
 
         void setRequestHeaders();
         String varStr(const char *in, Script *script);
-        int scriptCompare(Script *a, Script *b);
 };
 
 #endif
