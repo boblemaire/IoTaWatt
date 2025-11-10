@@ -331,40 +331,7 @@
 
                 <div id="tabUploaders" style="display:none;">
                     <button class="groupTab" onclick="toggleDisplay('statusUploaders')">Uploaders</button>
-                    <div id="statusUploaders" style="display: none;">
-
-                        <div id="statusInflux1Div" class="statusDiv" style="display: none;">
-                            <button id="influx1Button" style="configButton" value="influxdb" onclick="serverToggle(this)"></button>
-                            <span>influxDB1:</span>
-                            <span id="influx1text"></span>
-                            <span id="influx1msg"></span>
-
-                        </div>
-
-                        <div id="statusInflux2Div" class="statusDiv" style="display: none;">
-                            <button id="influx2Button" style="configButton" value="influxdb2" onclick="serverToggle(this)"></button>
-                            <span>influxDB2:</span>
-                            <span id="influx2text"></span>
-                            <span id="influx2msg"></span>
-
-                        </div>
-
-                        <div id="statusEmoncmsDiv" class="statusDiv" style="display: none;">
-                            <button id="EmoncmsButton" style="configButton" value="emoncms" onclick="serverToggle(this)"></button>
-                            <span>Emoncms:</span>
-                            <span id="Emoncmstext"></span>
-                            <span id="Emoncmsmsg"></span>
-
-                        </div>
-
-                        <div id="statusPVoutDiv" class="statusDiv" style="display: none;">
-                            <button id="PVoutputButton" style="configButton" value="pvoutput" onclick="serverToggle(this)"></button>
-                            <span>PVoutput:</span>
-                            <span id="PVoutputtext"></span>
-                            <span id="PVoutputmsg"></span>
-
-                        </div>
-                    </div>
+                    <div id="statusUploaders"></div>
                 </div>
 
                 <button id="tabLogs" class="groupTab" onclick="toggleDisplay('statusLogsDiv')">Data Logs</button>
@@ -2183,15 +2150,16 @@
 
         function serverToggle(button) {
             button.disabled = true;
-            config[button.value].stop = button.innerHTML == "Stop";
+            var uploader = button.value.toLowerCase();
+            config[uploader].stop = button.innerHTML == "Stop";
             var stop;
-            stop = config[button.value].stop;
+            stop = config[uploader].stop;
             if (button.innerHTML == "Stop") {
-                config[button.value].stop = true;
+                config[uploader].stop = true;
             } else {
-                config[button.value].stop = undefined;
+                config[uploader].stop = undefined;
             }
-            config[button.value].revision++;
+            config[uploader].revision++;
             uploadConfig();
         }
 
@@ -2824,7 +2792,7 @@
                     statusDisplay(xmlHttp.responseText);
                 }
             }
-            xmlHttp.open("GET", "/status?state&inputs&outputs&stats&wifi&datalogs&influx1&influx2&emoncms&pvoutput", true);
+            xmlHttp.open("GET", "/status?state&inputs&outputs&stats&wifi&datalogs&uploaders", true);
             xmlHttp.send(null);
         }
 
@@ -2878,95 +2846,31 @@
                 }
             }
 
-            var influx1Div = EbyId("statusInflux1Div");
-            if (status.influx1 !== undefined && status.influx1.state != "not running") {
-                show("statusInflux1Div", "block");
-                show("tabUploaders");
-                var button = EbyId("influx1Button");
-                button.disabled = false;
-                if (status.influx1.status == "running") {
-                    button.innerHTML = "Stop";
-                    EbyId("influx1text").innerHTML = "Running"
-                } else {
-                    button.innerHTML = "Start";
-                    EbyId("influx1text").innerHTML = "Stopped"
-                }
-                EbyId("influx1text").innerHTML += ", Last update " + formatDateTime(status.influx1.lastpost);
-                EbyId("influx1msg").innerHTML = "";
-                if (status.influx1.message) {
-                    EbyId("influx1msg").innerHTML = "<br>" + status.influx1.message;
-                }
-            } else {
-                hide("statusInflux1Div");
+            if(status.uploaders === undefined){
+                EbyId("statusUploaders").innerHTML = "";
             }
-
-            var influx2Div = EbyId("statusInflux2Div");
-            if (status.influx2 !== undefined && status.influx2.state != "not running") {
-                show("statusInflux2Div", "block");
+            else {
                 show("tabUploaders");
-
-                var button = EbyId("influx2Button");
-                button.disabled = false;
-                if (status.influx2.status == "running") {
-                    button.innerHTML = "Stop";
-                    EbyId("influx2text").innerHTML = "Running"
-                } else {
-                    button.innerHTML = "Start";
-                    EbyId("influx2text").innerHTML = "Stopped"
+                var HTML = "";
+                for(var i in status.uploaders){
+                    var uploader = status.uploaders[i];
+                    var configStop = config[uploader.id.toLowerCase()].stop === undefined ? false : true;
+                    var buttonDisabled = ((uploader.status == "running" && configStop) ||
+                    (uploader.status == "stopped" && !configStop))
+                    HTML += "<div class=\"statusDiv\">";
+                    HTML += "<button style=\"configButton\" value=\"" + uploader.id + "\" onclick=\"serverToggle(this)\""
+                    HTML += buttonDisabled ? "disabled>" : ">";
+                    HTML += uploader.status == "running" ? "Stop" : "Start";
+                    HTML += "</button><span> " + uploader.id + ":</span>";
+                    HTML += "<span> " + (uploader.status == "running" ? "Running" : "Stopped"); 
+                    HTML += ", Last update " + formatDateTime(uploader.lastpost) + "</span>";
+                    if(uploader.message){
+                       HTML += "<span><br>" + uploader.message + "</span>";  
+                    }
+                    HTML += "</div>"
                 }
-                EbyId("influx2text").innerHTML += ", Last update " + formatDateTime(status.influx2.lastpost);
-                EbyId("influx2msg").innerHTML = "";
-                if (status.influx2.message) {
-                    EbyId("influx2msg").innerHTML = "<br>" + status.influx2.message;
-                }
-            } else {
-                hide("statusInflux2Div");
+                EbyId("statusUploaders").innerHTML = HTML;
             }
-
-            var EmoncmsDiv = EbyId("statusEmoncmsDiv");
-            if (status.emoncms !== undefined && status.emoncms.state != "not running") {
-                show("statusEmoncmsDiv", "block");
-                show("tabUploaders");
-                var button = EbyId("EmoncmsButton");
-                button.disabled = false;
-                if (status.emoncms.status == "running") {
-                    button.innerHTML = "Stop";
-                    EbyId("Emoncmstext").innerHTML = "Running"
-                } else {
-                    button.innerHTML = "Start";
-                    EbyId("Emoncmstext").innerHTML = "Stopped"
-                }
-                EbyId("Emoncmstext").innerHTML += ", Last update " + formatDateTime(status.emoncms.lastpost);
-                EbyId("Emoncmsmsg").innerHTML = "";
-                if (status.emoncms.message) {
-                    EbyId("Emoncmsmsg").innerHTML = "<br>" + status.emoncms.message;
-                }
-            } else {
-                hide("statusEmoncmsDiv");
-            }
-
-            var PVoutDiv = EbyId("statusPVoutDiv");
-            if (status.pvoutput !== undefined && status.pvoutput.state != "not running") {
-                show("statusPVoutDiv", "block");
-                show("tabUploaders");
-                var button = EbyId("PVoutputButton");
-                button.disabled = false;
-                if (status.pvoutput.status == "running") {
-                    button.innerHTML = "Stop";
-                    EbyId("PVoutputtext").innerHTML = "Running"
-                } else {
-                    button.innerHTML = "Start";
-                    EbyId("PVoutputtext").innerHTML = "Stopped"
-                }
-                EbyId("PVoutputtext").innerHTML += ", Last update " + formatDateTime(status.pvoutput.lastpost);
-                EbyId("PVoutputmsg").innerHTML = "";
-                if (status.pvoutput.message) {
-                    EbyId("PVoutputmsg").innerHTML = "<br>" + status.pvoutput.message;
-                }
-            } else {
-                hide("statusPVoutDiv");
-            }
-
 
             statusTable = EbyId("inputStatusTable");
             statusTable.innerHTML = "";

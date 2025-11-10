@@ -595,12 +595,13 @@ void handleStatus(){
     if(server.hasArg(F("uploaders"))){
       char **uploader_names = get_uploader_list();
       int i = -1;
+      JsonArray& uploaders = jsonBuffer.createArray();
       while(uploader_names[++i]){
         JsonObject &status = jsonBuffer.createObject();
         Uploader *uploader = get_uploader_instance(uploader_names[i]);
         if (uploader){
           uploader->getStatusJson(status);
-          root[uploader->id()] = status;
+          uploaders.add(status);
         }
       }
 
@@ -608,8 +609,9 @@ void handleStatus(){
       JsonObject& status = jsonBuffer.createObject();
       if(PVoutput){
         PVoutput->getStatusJson(status);
-        root[PVoutput->id()] = status;
+        uploaders.add(status);
       }
+      root.set(F("uploaders"),uploaders);
     }
 
     if(server.hasArg(F("datalogs"))){
