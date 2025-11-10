@@ -70,7 +70,7 @@ Installation
 *The installation of CTs can be dangerous and/or
 cause hazardous situations resulting serious injury or death.
 Worldwide, there are a variety of electrical conventions, regulations 
-and standards.  It is the user's responsibility to insure that the 
+and standards.  It is the user's responsibility to ensure that the 
 installer is qualified and all local codes and regulations are followed.*
 
 To measure the current in a circuit, a CT is installed on one, and 
