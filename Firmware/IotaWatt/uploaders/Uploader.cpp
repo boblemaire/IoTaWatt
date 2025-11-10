@@ -6,7 +6,9 @@ void Uploader::getStatusJson(JsonObject& status)
 {
     // Set status information in callers's json object.
 
-    trace(T_uploader,110);    
+
+    trace(T_uploader,110);
+    status.set(F("id"), _id);
     if(_state == stopped_s){
         status.set(F("status"), "stopped");
     } else {

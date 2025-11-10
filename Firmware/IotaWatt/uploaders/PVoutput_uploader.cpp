@@ -67,6 +67,7 @@ void PVoutput_uploader::end(){
         // Get the current status as a Json object.
 
 void PVoutput_uploader::getStatusJson(JsonObject& status){
+    status.set(F("id"), _id);
     status.set(F("status"), (_started && _state != stopped) ? "running" : "stopped");
     status.set(F("lastpost"),local2UTC(_lastPostTime));
     if(_statusMessage){
