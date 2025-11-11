@@ -18,7 +18,6 @@
  *   v DOUBLE PRECISION
  * );
  *
- * Traces are not added, but T_postgrest is defined if you need to add traces.
  ***************************************************************************************/
 
 // uint32_t postgrest_dispatch(struct serviceBlock *serviceBlock)
@@ -40,18 +39,6 @@
 /*****************************************************************************************
  * Configuration parsing
  ***************************************************************************************/
-// bool postgrest_uploader::configCB(const char *JsonText)
-// {
-//     DynamicJsonBuffer JsonBuffer;
-//     JsonObject &Json = JsonBuffer.parseObject(JsonText);
-//     if (!Json.success())
-//     {
-//         log("%s: JSON parse failed", _id);
-//         return false;
-//     }
-//     return configCB(Json);
-// }
-
 bool postgrest_uploader::configCB(JsonObject &Json)
 {
     if (Json.containsKey("table"))
