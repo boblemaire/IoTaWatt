@@ -20,22 +20,6 @@
  *
  ***************************************************************************************/
 
-// uint32_t postgrest_dispatch(struct serviceBlock *serviceBlock)
-// {
-//     postgrest_uploader *_this = (postgrest_uploader *)serviceBlock->serviceParm;
-//     uint32_t reschedule = _this->dispatch(serviceBlock);
-//     if (reschedule)
-//     {
-//         return reschedule;
-//     }
-//     return 0;
-// }
-
-// uint32_t postgrest_uploader::dispatch(struct serviceBlock *serviceBlock)
-// {
-//     return Uploader::dispatch(serviceBlock);
-// }
-
 /*****************************************************************************************
  * Configuration parsing
  ***************************************************************************************/
@@ -503,65 +487,3 @@ String postgrest_uploader::resolveDeviceName()
 
     return result;
 }
-
-// /*****************************************************************************************
-//  * Execute HTTP GET request to PostgREST endpoint
-//  ***************************************************************************************/
-// void postgrest_uploader::HTTPGet(const char *endpoint, states completionState)
-// {
-//     if (!_GETrequest)
-//     {
-//         _GETrequest = new GETrequest;
-//     }
-//     delete _GETrequest->endpoint;
-//     _GETrequest->endpoint = charstar(endpoint);
-//     _GETrequest->completionState = completionState;
-
-//     if (!WiFi.isConnected())
-//     {
-//         log("%s: No WiFi connection", _id);
-//         return;
-//     }
-
-//     if (!_request)
-//     {
-//         _request = new asyncHTTPrequest;
-//     }
-
-//     _request->setTimeout(30);
-//     _request->setDebug(false);
-
-//     String fullURL = _url->build();
-//     fullURL += endpoint;
-
-//     if (!_request->open("GET", fullURL.c_str()))
-//     {
-//         delete _request;
-//         _request = nullptr;
-//         return;
-//     }
-
-//     if (_jwtToken)
-//     {
-//         String auth = "Bearer ";
-//         auth += _jwtToken;
-//         _request->setReqHeader("Authorization", auth.c_str());
-//     }
-//     _request->setReqHeader("Accept", "application/json");
-//     _request->setReqHeader("User-Agent", "IoTaWatt");
-
-//     if (!_request->send())
-//     {
-//         delete _request;
-//         _request = nullptr;
-//     }
-//     else
-//     {
-//         _state = completionState;
-//     }
-// }
-
-// uint32_t postgrest_uploader::handle_HTTPpost_s()
-// {
-//     return uploader::handle_HTTPpost_s();
-// }
