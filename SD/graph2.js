@@ -412,8 +412,8 @@ $("#show-legend").click(function() {
 $("#placeholder").bind("plotselected", function(event, ranges) {
   custom_dates = true;
   set_custom_dates(
-    ranges.xaxis.from / 1000 - (ranges.xaxis.from % interval),
-    ranges.xaxis.to / 1000 + interval - (ranges.xaxis.to % interval)
+    ranges.xaxis.from / 1000 - ((ranges.xaxis.from / 1000) % interval),
+    ranges.xaxis.to / 1000 + interval - ((ranges.xaxis.to / 1000) % interval)
   );
   query();
 });
