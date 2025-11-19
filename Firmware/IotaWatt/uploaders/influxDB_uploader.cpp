@@ -1,7 +1,7 @@
-#include "influxDB_Uploader.h"
+#include "influxDB_uploader.h"
 #include "splitstr.h"
 
-Uploader*influxDB_v1 = nullptr;
+Uploader *influxDB_v1 = nullptr;
 
     /*****************************************************************************************
      *          handle_query_s()

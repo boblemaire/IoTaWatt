@@ -1,5 +1,5 @@
-#include "Emoncms_Uploader.h"
-Uploader*emoncms = nullptr;
+#include "Emoncms_uploader.h"
+Uploader *emoncms = nullptr;
 
 /*****************************************************************************************
  *          handle_query_s()
