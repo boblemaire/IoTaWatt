@@ -66,4 +66,4 @@ extern traceUnion traceEntry;
 #define T_Script 34
 #define T_Scriptset 35
 #define T_uploaderRegistry 36
-
+#define T_postgrest 37     // postgrest_uploader
