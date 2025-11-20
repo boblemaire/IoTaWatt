@@ -28,8 +28,7 @@
                 </tr>
                 <tr>
                     <td class="dropdown">
-                        <button id="setupButton" class="mainMenuButton buttonUp dropbtn"
-                            title="Select setup category">Setup</button>
+                        <button id="setupButton" class="mainMenuButton buttonUp dropbtn" title="Select setup category">Setup</button>
                         <span class="dropContent">
             <button class="mainMenuButton" onclick="mainMenuButton(this,configDevice)"
                 title="Specify device name, time-zone, and auto-update class">Device</button>
@@ -49,25 +48,12 @@
                 title="Set new values if stock resistors are modified/removed">Burden Resistors</button>
           </span>
                     </td>
-                    <td><button class="mainMenuButton buttonUp" onclick="mainMenuButton(this,statusBegin)"
-                            title="Display current measurements, outputs and device status">Status</button></td>
+                    <td><button class="mainMenuButton buttonUp" onclick="mainMenuButton(this,statusBegin)" title="Display current measurements, outputs and device status">Status</button></td>
                 </tr>
                 <tr>
                     <td class="dropdown">
-                        <button id="toolsButton" class="mainMenuButton buttonUp dropbtn"
-                            title="Select from the following tools">Tools</button>
+                        <button id="toolsButton" class="mainMenuButton buttonUp dropbtn" title="Select from the following tools">Tools</button>
                         <span class="dropContent">
-<<<<<<< HEAD
-                            <button class="mainMenuButton" onclick="mainMenuButton(this,loadEdit)"
-                                title="manage and edit files on the SDcard">File Manager and Editor</button>
-                            <button class="mainMenuButton" onclick="mainMenuButton(this,showMsgs)"
-                                title="View recent entries in the message log">Message Log</button>
-                            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsWiFi)">WiFi</button>
-                            <button class="mainMenuButton" onclick="mainMenuButton(this,toolsRestart)"
-                                title="Restart the IoTaWatt">Restart</button>
-
-                            <!-- <button class="mainMenuButton" onclick="mainMenuButton(this,toolsDatalogs)">Datalogs</button>
-=======
             <button class="mainMenuButton" onclick="mainMenuButton(this,loadEdit)"
                 title="manage and edit files on the SDcard">File Manager and Editor</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,showMsgs)"
@@ -77,7 +63,6 @@
                 title="Restart the IoTaWatt">Restart</button>
                 
        <!-- <button class="mainMenuButton" onclick="mainMenuButton(this,toolsDatalogs)">Datalogs</button>
->>>>>>> 401a856 (New uploader)
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsUpdate)">Software Update</button>
             <button class="mainMenuButton" onclick="mainMenuButton(this,toolsPhase)">Phase Measurement</button> -->
             
@@ -140,8 +125,7 @@
                         <tbody id="inputTableBody"></tbody>
                     </table>
                     <div align="center">
-                        <input type="checkbox" id="derive3ph" onclick="derive3ph()"
-                            title="For 3-phase power with one voltage reference">Enable derived three-phase
+                        <input type="checkbox" id="derive3ph" onclick="derive3ph()" title="For 3-phase power with one voltage reference">Enable derived three-phase
                     </div>
                 </div>
             </div>
@@ -161,16 +145,12 @@
                 <h1 id="inputCalVolts"></h1>
                 <p>
                     <span>calibration factor: </span>
-                    <input id="inputCalCal" type="number" onchange="inputCalCal(this)" min="5" max="300" step="0.01"
-                        width="100px">
-                </p>
+                    <input id="inputCalCal" type="number" onchange="inputCalCal(this)" min="5" max="300" step="0.01" width="100px"></p>
                 <p>
                     <button class="actionCancel" onclick="calVTexit(this)">cancel</button>
                     <button class="actionSave" onclick="calVTsave(this)">save</button>
                 </p>
-                <p>Using a voltmeter to display the AC line voltage, adjust the calibration factor until the displayed
-                    voltage reasonably matches the voltmeter reading. Click save to update the channel with the new
-                    calibration factor.</p>
+                <p>Using a voltmeter to display the AC line voltage, adjust the calibration factor until the displayed voltage reasonably matches the voltmeter reading. Click save to update the channel with the new calibration factor.</p>
             </div>
 
             <!-- *************** Outputs configuration ******************-->
@@ -195,13 +175,9 @@
 
             <div id="configBurden" class="body color_body" style="display: none">
                 <h3>Specify on-board burden resistors</h3>
-                <p>Burden resistors are internal components that allow IoTaWatt to convert the input current to a
-                    voltage that can be measured. The factory supplied burden values were selected to work best with the
-                    range of CTs that can be connected and
+                <p>Burden resistors are internal components that allow IoTaWatt to convert the input current to a voltage that can be measured. The factory supplied burden values were selected to work best with the range of CTs that can be connected and
                     most users will never have a need to modify them or the corresponding values in this menu.</p>
-                <p>For the benefit of advanced users that have a need to remove or change the factory resistors, this
-                    menu has been provided so that a changed value can be specified and IoTaWatt can calculate the
-                    correct current using the new value.</p>
+                <p>For the benefit of advanced users that have a need to remove or change the factory resistors, this menu has been provided so that a changed value can be specified and IoTaWatt can calculate the correct current using the new value.</p>
                 <table id="burdenTable"></table>
                 <p>
                     <button class="actionCancel" id="burdenCancel" onclick="burdenCancel()">cancel</button>
@@ -214,33 +190,22 @@
             <div id="setPasswords" class="body color_body" style="display: none">
                 <h3>Configure Optional IoTaWatt Passwords</h3>
                 <p>
-                    The initial configuration places no restrictions on who can modify or otherwise access the device.
-                    If the device is in a home and connected to a secure WiFi LAN, that may be adequate to protect the
-                    integrity of the device and privacy of the data collected.
-                    If the LAN does not provide suitable protection, or there is a need to provide port-forward
-                    passthough from the internet, access control is recommended.
+                    The initial configuration places no restrictions on who can modify or otherwise access the device. If the device is in a home and connected to a secure WiFi LAN, that may be adequate to protect the integrity of the device and privacy of the data collected.
+                    If the LAN does not provide suitable protection, or there is a need to provide port-forward passthough from the internet, access control is recommended.
                 </p>
                 <p>
-                    IoTaWatt uses the cryptographic Digest authorization method that employs an encrypted password. Data
-                    is transfered in plaintext, but IoTaWatt will not accept unauthorized requests to view or change
-                    data when passwords are enabled. Given the limitations
+                    IoTaWatt uses the cryptographic Digest authorization method that employs an encrypted password. Data is transfered in plaintext, but IoTaWatt will not accept unauthorized requests to view or change data when passwords are enabled. Given the limitations
                     of an IoT device, you may find it is a reasonable balance between exposure and data value.
                 </p>
                 <p>
-                    To enable authorization, specify an admin password. Subsequently, all configuration and access,
-                    except for user level access described below, will require the password to initiate the session. Be
-                    sure to carefully note the password that you set, as IoTaWatt
-                    does not store the actual value and it cannot be recovered. There is a procedure to remove the
-                    password, but it involves physically removing the SDcard.
+                    To enable authorization, specify an admin password. Subsequently, all configuration and access, except for user level access described below, will require the password to initiate the session. Be sure to carefully note the password that you set, as IoTaWatt
+                    does not store the actual value and it cannot be recovered. There is a procedure to remove the password, but it involves physically removing the SDcard.
                 </p>
                 <p>
-                    The optional user password is effectively a <i>read only</i> password for use by apps that visualize
-                    data. The user password does not allow access to the configuration or SD file system, except for a
-                    special /user/ directory
+                    The optional user password is effectively a <i>read only</i> password for use by apps that visualize data. The user password does not allow access to the configuration or SD file system, except for a special /user/ directory
                 </p>
                 <p>
-                    When "unrestricted local access" is checked, passwords will not be required for requests originating
-                    on the local LAN. They will be required only for requests that come from the internet gateway.
+                    When "unrestricted local access" is checked, passwords will not be required for requests originating on the local LAN. They will be required only for requests that come from the internet gateway.
                 </p>
                 <table id="pwdTable"></table>
                 <p>
@@ -276,36 +241,6 @@
                   <!-- ************* Influx tags ********************--> 
     
             <div class="body color_body" id="divInfluxTag" style="display:none">
-<<<<<<< HEAD
-                <h3>Edit influx tag</h3>
-                <table width="80%">
-                    <tr>
-                        <th>tag key</th>
-                        <th> </th>
-                        <th>tag value</th>
-                    </tr>
-                    <tr>
-                        <td><input id="influxTagKey" oninput="influxTagCheck()"></td>
-                        <td>=</td>
-                        <td><input id="influxTagValue" oninput="influxTagCheck()"
-                                title="enter a string or variable ($name, $units..)."></td>
-                    </tr>
-                </table>
-
-                <p>Tags are optional key-value pairs of metadata that can be associated with the measurement.
-                    Because they are indexed, queries on tags perform better than queries on fields.
-                </p>
-                <p>When tags are specified, IoTaWatt assumes the first tag is unique to this measurement
-                    and is referenced to determine the time of last measurement during restart recovery.
-                    In that way, an IoTaWatt can maintain context and continuity where multiple data
-                    sources are writing to a single database.</p>
-                <p>Tag-values can be a fixed string, or one of the variables $device, $name, $units</p>
-                <p>
-                    <button class="actionDelete" id="influxTagDelete">delete</button>
-                    <button class="actionCancel" id="influxTagCancel" onclick="influxTagCancel()">cancel</button>
-                    <button class="actionSave" id="influxTagSave">save</button>
-                </p>
-=======
               <h3>Edit influx tag</h3>
               <table width="80%">
                 <tr><th>tag key</th><th> </th><th>tag value</th></tr>
@@ -329,7 +264,6 @@
                 <button class="actionCancel" id="influxTagCancel" onclick="influxTagCancel()">cancel</button>
                 <button class="actionSave" id="influxTagSave">save</button>
               </p>
->>>>>>> 401a856 (New uploader)
             </div>
 
             <!-- ************* HTTPS Proxy Server ********************-->
@@ -337,11 +271,7 @@
             <div id="setProxy" class="body color_body" style="display:none">
                 <h3>Specify HTTPS Proxy Server</h3>
                 <p>
-                    Secure (HTTPS) internet connections are possible using a proxy server on the local LAN. Information
-                    about setting up an NGINX proxy server and using this feature are included in the <a
-                        href="https://docs.iotawatt.com" target="_blank">IoTaWatt online documentation</a>.<br><br> When
-                    you specify the URL of your proxy server here, uploaders and other services will use the proxy when
-                    https is specified.<br><br>
+                    Secure (HTTPS) internet connections are possible using a proxy server on the local LAN. Information about setting up an NGINX proxy server and using this feature are included in the <a href="https://docs.iotawatt.com" target="_blank">IoTaWatt online documentation</a>.<br><br>                    When you specify the URL of your proxy server here, uploaders and other services will use the proxy when https is specified.<br><br>
                 </p>
                 Proxy URL <input id="proxyURL" oninput="validateProxy()" size="48">
                 <p>
@@ -357,8 +287,7 @@
 
             <div id="divStatus" class="body color_body" style="display:none">
 
-                <button id="tabIO" class="groupTab" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs
-                    Status</button>
+                <button id="tabIO" class="groupTab" onclick="toggleDisplay('statusIODiv')">Inputs/Outputs Status</button>
                 <div id="statusIODiv" class="statusDiv" style="display: block;">
                     <table id="statusIOBody" width="100%">
                         <tr>
@@ -376,8 +305,7 @@
                     </table>
                 </div>
 
-                <button id="tabStats" class="groupTab" onclick="toggleDisplay('statusStatsDiv')">IoTaWatt
-                    Statistics</button>
+                <button id="tabStats" class="groupTab" onclick="toggleDisplay('statusStatsDiv')">IoTaWatt Statistics</button>
                 <div id="statusStatsDiv" class="statusDiv" style="display: none;">
                     <table width="100%">
                         <tr>
@@ -396,8 +324,7 @@
                     <table id="statusTable"></table>
                 </div>
 
-                <button id="tabWifi" class="groupTab" onclick="toggleDisplay('statusWifi')"
-                    style="display: none;">WiFi</button>
+                <button id="tabWifi" class="groupTab" onclick="toggleDisplay('statusWifi')" style="display: none;">WiFi</button>
                 <div id="statusWifi" class="statusDiv" style="display: none;">
                     <table id="tableWifi" width="100%"></table>
                 </div>
@@ -434,8 +361,7 @@
             <div id="divRestart" class="body tools color_body" style="display:none">
                 <h3>Reset IoTaWatt!</h3>
                 <p>
-                    Press the restart button below to reset the IoTaWatt.<br> Restart can take up to 30 seconds, longer
-                    if loading new software.<br> After restart, refresh the browser window if this app fails to restart.
+                    Press the restart button below to reset the IoTaWatt.<br> Restart can take up to 30 seconds, longer if loading new software.<br> After restart, refresh the browser window if this app fails to restart.
                 </p>
                 <h3 id="restartMsg"></h3>
                 <button id="restartButton" onclick="sendRestart()">Restart</button>
@@ -453,8 +379,7 @@
         <tr id="logsCurrent"></tr>
         <tr id="logsHistory"></tr> -->
                 </table>
-                <button id="logsTab" class="groupTab" onclick="toggleDisplay('logsDelete')">Datalog delete
-                    functions</button>
+                <button id="logsTab" class="groupTab" onclick="toggleDisplay('logsDelete')">Datalog delete functions</button>
                 <div id="logsDelete" style="display:none">
                     <h3>Delete Datalogs</h3>
                     <h3>Deleted logs cannot be recovered!</h3>
@@ -462,12 +387,10 @@
                         This is the only safe way to delete Data Logs.<br> The IoTaWatt will restart.<br>
                     </p>
                     <p>
-                        <button onclick="toolsDataLogsDelete('current')">Delete Current Log</button> a new log will
-                        created beginning now.<br>
+                        <button onclick="toolsDataLogsDelete('current')">Delete Current Log</button> a new log will created beginning now.<br>
                     </p>
                     <p>
-                        <button onclick="toolsDataLogsDelete('history')">Delete History Log</button> a new history log
-                        will be built from the current log.<br>
+                        <button onclick="toolsDataLogsDelete('history')">Delete History Log</button> a new history log will be built from the current log.<br>
                     </p>
                     <div id="logsConfirm" style="display:none">
                         <h3 id="logsMsg"></h3>
@@ -503,12 +426,9 @@
                             <th></th>
                         </tr>
                         <tr>
-                            <td><button class="calcButton calcClr" onclick="keyClearAll()" title="Clear all"
-                                    value="C">C</button></td>
-                            <td><button class="calcButton calcBack" onclick="keyClearEntry()" title="Clear last entry"
-                                    value="CE">CE</button></td>
-                            <td> <button class="calcButton calcBack" onclick="keyClearChar()" title="Backspace"
-                                    value="del">&#x21e6;</button></td>
+                            <td><button class="calcButton calcClr" onclick="keyClearAll()" title="Clear all" value="C">C</button></td>
+                            <td><button class="calcButton calcBack" onclick="keyClearEntry()" title="Clear last entry" value="CE">CE</button></td>
+                            <td> <button class="calcButton calcBack" onclick="keyClearChar()" title="Backspace" value="del">&#x21e6;</button></td>
                             <td class="calcInputDropdown">
                                 <button class="calcButton calcInput" title="Select Input" value="@">input</button>
                                 <span class="calcInputDropdown-content" id="calcInputDropdown-content" display="none">
@@ -518,46 +438,33 @@
                             </td>
                         </tr>
                         <tr>
-                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="1">1</button>
-                            </td>
-                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="2">2</button>
-                            </td>
-                            <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="3">3</button>
-                            </td>
+                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="1">1</button></td>
+                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="2">2</button></td>
+                            <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="3">3</button></td>
                             <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="+">+</button></td>
                         </tr>
                         <tr>
-                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="4">4</button>
-                            </td>
-                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="5">5</button>
-                            </td>
-                            <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="6">6</button>
-                            </td>
+                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="4">4</button></td>
+                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="5">5</button></td>
+                            <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="6">6</button></td>
                             <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="-">-</button></td>
                         </tr>
                         <tr>
-                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="7">7</button>
-                            </td>
-                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="8">8</button>
-                            </td>
-                            <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="9">9</button>
-                            </td>
+                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="7">7</button></td>
+                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="8">8</button></td>
+                            <td> <button class="calcButton calcNumeric" onclick="keyDigit(value)" value="9">9</button></td>
                             <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="*">x</button></td>
                         </tr>
                         <tr>
                             <td><button class="calcButton calcNumeric" onclick="keyDecimal()" value=".">.</button></td>
-                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="0">0</button>
-                            </td>
-                            <td> <button class="calcButton calcNumeric" onclick="keyUniNeg()" value="+/-">+/-</button>
-                            </td>
-                            <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="/">&#247;</button>
-                            </td>
+                            <td><button class="calcButton calcNumeric" onclick="keyDigit(value)" value="0">0</button></td>
+                            <td> <button class="calcButton calcNumeric" onclick="keyUniNeg()" value="+/-">+/-</button></td>
+                            <td><button class="calcButton calcOp" onclick="keyBinFunc(value)" value="/">&#247;</button></td>
                         </tr>
                         <tr>
                             <td><button class="calcButton calcParen" onclick="keyPush()" value="(">(</button></td>
                             <td><button class="calcButton calcParen" onclick="keyPop()" value=")">)</button></td>
-                            <td> <button class="calcButton calcAbs" onclick="keyUniPos()" value="abs"
-                                    title="make previous result positive">abs</button></td>
+                            <td> <button class="calcButton calcAbs" onclick="keyUniPos()" value="abs" title="make previous result positive">abs</button></td>
                             <td class="calcInputDropdown">
                                 <button class="calcButton calcInput" title="Select Function" value="Func">func</button>
                                 <span class="calcInputDropdown-content" id="calcInputDropdown-content" display="none">
@@ -825,7 +732,7 @@
             EbyId("pwdTable").innerHTML = "Checking for existing password";
             currentBodyPush("setPasswords");
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
                     var response = JSON.parse(xmlHttp.responseText);
                     if (response.passwords.admin) {
@@ -850,7 +757,7 @@
 
         function pwdValidate() {
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4) {
                     if (this.status == 200) {
                         pwdValid();
@@ -898,7 +805,7 @@
 
         function pwdSave() {
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4) {
                     if (this.status == 200) {
                         editing = false;
@@ -926,11 +833,11 @@
 
         function sendRestart() {
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
                     editing = true;
                     EbyId("restartMsg").innerHTML = "Restarting...";
-                    setTimeout(function () {
+                    setTimeout(function() {
                         setup();
                     }, 15000);
                 }
@@ -946,11 +853,11 @@
 
         function sendDisconnect() {
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
                     editing = true;
                     EbyId("WiFiMsg").innerHTML = "Disconnected";
-                    setTimeout(function () {
+                    setTimeout(function() {
                         setup();
                     }, 15000);
                 }
@@ -975,7 +882,7 @@
 
         function toolsDatalogsStatus() {
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
                     var status = JSON.parse(xmlHttp.responseText);
                     EbyId("logsTable").innerHTML = "<tr><th>Attribute</th><th>Current Log</th><th>History Log</th></tr>";
@@ -1001,11 +908,11 @@
 
         function toolsDataLogsCommit(log) {
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
                     var msg = EbyId("logsMsg");
                     msg.innerHTML = "Deleting " + log + " and restarting.";
-                    setTimeout(function () {
+                    setTimeout(function() {
                         toolsDataLogsCancel();
                         setup();
                     }, 15000);
@@ -1486,7 +1393,7 @@
         function calUpdateVoltage() {
             var index = inputEditChannel;
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
                     if (calRefreshVoltage) {
                         var response = JSON.parse(xmlHttp.responseText);
@@ -1515,26 +1422,14 @@
             currentBodyPush("configOutputs");
             
             var scriptEdit = {
-                table: EbyId("outputTable"),
-                set: config.outputs,
-                units: ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "VAR", "VARh"],
-                nameList: [],
-                uniqueNames: true,
-                namePrompt: "Name must be alphanumeric and start with a letter",
-                namePattern: "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$",
+              table : EbyId("outputTable"),
+              set : config.outputs,
+              units : ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "VAR", "VARh"],
+              nameList : [],
+              uniqueNames : true,
+              namePrompt : "Name must be alphanumeric and start with a letter",
+              namePattern : "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$",
             };
-<<<<<<< HEAD
-
-            scriptEdit.save = function () {
-                config.outputs = scriptEdit.set;
-                uploadConfig();
-            };
-
-            scriptEdit.return = function () {
-                EbyId("divCalc").style.display = "none";
-                EbyId("divOutputs").style.display = "table";
-                editScript(scriptEdit);
-=======
             
             scriptEdit.save = function() {
                 config.outputs = scriptEdit.set;
@@ -1545,7 +1440,6 @@
               EbyId("divCalc").style.display = "none";
               EbyId("divOutputs").style.display = "table";
               editScript(scriptEdit);
->>>>>>> 401a856 (New uploader)
             };
 
             editScript(scriptEdit);
@@ -1558,41 +1452,30 @@
             currentBodyPush("configIntegrators");
             
             var scriptEdit = {
-                table: EbyId("integratorsTable"),
-                set: config.integrators === undefined ? [] : config.integrators,
-                units: ["Wh"],
-                nameList: [],
-                allowIntegrators: false,
-                uniqueNames: true,
-                namePrompt: "Name must be alphanumeric and start with a letter",
-                namePattern: "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$",
-                title: "Integrator"
+              table : EbyId("integratorsTable"),
+              set : config.integrators === undefined ? [] : config.integrators,
+              units : ["Wh"],
+              nameList : [],
+              allowIntegrators : false,
+              uniqueNames : true,
+              namePrompt : "Name must be alphanumeric and start with a letter",
+              namePattern : "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$",
+              title : "Integrator"
             };
 
-            scriptEdit.save = function () {
+            scriptEdit.save = function() {
                 config.integrators = scriptEdit.set
                 uploadConfig();
             };
-<<<<<<< HEAD
-
-            scriptEdit.return = function () {
-=======
             
             scriptEdit.return = function() {
->>>>>>> 401a856 (New uploader)
                 EbyId("divCalc").style.display = "none";
                 EbyId("divIntegrators").style.display = "table";
                 editScript(scriptEdit);
             };
-<<<<<<< HEAD
-
-            scriptEdit.delete = function (script) {
-                return confirm("Deleting the integration will delete the integration log.");
-=======
             
             scriptEdit.delete = function(script){
               return confirm("Deleting the integration will delete the integration log.");
->>>>>>> 401a856 (New uploader)
             }
             
             editScript(scriptEdit);
@@ -1631,29 +1514,6 @@
          *                
          * *******************************************************************************************/
 
-<<<<<<< HEAD
-        function editScript(scriptEdit) {
-
-            // Set defaults
-
-            if (scriptEdit.nameList === undefined) {
-                scriptEdit.nameList = [];
-            }
-            if (scriptEdit.namePrompt === undefined) {
-                scriptEdit.namePrompt = "Invalid name.";
-            }
-            if (scriptEdit.namePattern === undefined) {
-                scriptEdit.namePattern = "^[a-zA-Z]{1}[a-zA-Z0-9_]{0,15}$";
-            }
-            if (scriptEdit.units === undefined) {
-                scriptEdit.units = [];
-            }
-            if (scriptEdit.uniqueNames === undefined) {
-                scriptEdit.uniqueNames = true;
-            }
-            if (scriptEdit.allowIntegrators === undefined) {
-                scriptEdit.allowIntegrators = true;
-=======
         function editScript(scriptEdit){
           
             // Set defaults
@@ -1675,7 +1535,6 @@
             }
             if(scriptEdit.allowIntegrators === undefined){
               scriptEdit.allowIntegrators = true;
->>>>>>> 401a856 (New uploader)
             }
             
             scriptEdit.index = -1;
@@ -1715,317 +1574,6 @@
             editButton.setAttribute("onclick", "addOutput()");
             selColumn.appendChild(editButton);
 
-<<<<<<< HEAD
-            function calcBuildDropdown() {
-                var inputDropdown = EbyId("calcInputDropdown-content");
-                inputDropdown.innerHTML = "";
-                for (i in config.inputs) {
-                    if (config.inputs[i] != null) {
-                        var newItem = document.createElement("p");
-                        inputDropdown.appendChild(newItem);
-                        newItem.innerHTML = config.inputs[i].name;
-                        newItem.value = "@" + Number(i);
-                        newItem.setAttribute("onclick", "keyInput(this)");
-                    }
-                }
-                if (config.simsolar !== undefined) {
-                    var newsimSolar = document.createElement("p");
-                    inputDropdown.appendChild(newsimSolar);
-                    newsimSolar.innerHTML = "simSolar";
-                    newsimSolar.value = "~0";
-                    newsimSolar.setAttribute("onclick", "keyInput(this)");
-                }
-                if (scriptEdit.allowIntegrators && config.integrators !== undefined) {
-                    for (i in config.integrators) {
-                        var newNet = document.createElement("p");
-                        inputDropdown.appendChild(newNet);
-                        newNet.innerHTML = config.integrators[i].name + ".net";
-                        newNet.value = "!" + config.integrators[i].name;
-                        newNet.setAttribute("onclick", "keyInput(this)");
-                        var newPos = document.createElement("p");
-                        inputDropdown.appendChild(newPos);
-                        newPos.innerHTML = config.integrators[i].name + ".pos";
-                        newPos.value = "!+" + config.integrators[i].name;
-                        newPos.setAttribute("onclick", "keyInput(this)");
-                        var newNeg = document.createElement("p");
-                        inputDropdown.appendChild(newNeg);
-                        newNeg.innerHTML = config.integrators[i].name + ".neg";
-                        newNeg.value = "!-" + config.integrators[i].name;
-                        newNeg.setAttribute("onclick", "keyInput(this)");
-                    }
-                }
-            };
-
-            function parseScript(script) {
-                return script.match(/~\d+|@\d+|#-?\d+\.?\d*|![+-]?[a-zA-Z0-9_]+|[-+*\/()|<>=]/g);
-                //                   virt|inpu|constant    |integration        |operator
-            };
-
-            function scriptDisplay(tokens) {
-                calcDisplay = "";
-                for (var i = 0; i < tokens.length; i++) {
-                    if (tokens[i].startsWith("#")) {
-                        calcDisplay += tokens[i].substr(1);
-                    } else if (tokens[i].startsWith("@")) {
-                        var channel = tokens[i].substr(1);
-                        var name = "Input_" + channel;
-                        if (config.inputs[channel] != null) name = config.inputs[channel].name;
-                        if (name == "") name = "Input_" + channel;
-                        calcDisplay += name;
-                    } else if (tokens[i].startsWith("~")) {
-                        var id = tokens[i].substr(1);
-                        if (id == 0) {
-                            calcDisplay += "simSolar";
-                        } else {
-                            calcDisplay += tokens[i];
-                        }
-                    } else if (tokens[i].startsWith("!")) {
-                        if (tokens[i].substr(1, 1) == "+") {
-                            calcDisplay += tokens[i].substr(2) + ".pos";
-                        } else if (tokens[i].substr(1, 1) == "-") {
-                            calcDisplay += tokens[i].substr(2) + ".neg";
-                        } else {
-                            calcDisplay += tokens[i].substr(1) + ".net";
-                        }
-                    } else if (tokens[i] == "*") calcDisplay += " x ";
-                    else if (tokens[i] == "+") calcDisplay += " + ";
-                    else if (tokens[i] == "-") calcDisplay += " - ";
-                    else if (tokens[i] == "/") calcDisplay += " &#247 ";
-                    else if (tokens[i] == "(") calcDisplay += "(";
-                    else if (tokens[i] == ")") calcDisplay += ")";
-                    else if (tokens[i] == "|") calcDisplay += " abs ";
-                    else if (tokens[i] == "<") calcDisplay += " min ";
-                    else if (tokens[i] == ">") calcDisplay += " max ";
-                }
-                return calcDisplay;
-            };
-
-            this.calculator = function (index) {
-                editingScript = true;
-                EbyId("calcTitle").innerHTML = "Configure " + (scriptEdit.title === undefined ? "Output" : scriptEdit.title);
-                currentBodyPush("divCalc");
-                EbyId("calcTable").innerHTML = "";
-                buildNames(scriptEdit.set[index].name);
-                buildUnitsList(scriptEdit.set[index].units);
-                tokens = parseScript(scriptEdit.set[index].script);
-                EbyId("calcDelete").style.display = "inline";
-                scriptEdit.index = index;
-                refreshCalcDisplay();
-            };
-
-            function buildNames(name) {
-                var calcTable = EbyId("calcTable");
-                if (scriptEdit.nameList.length == 0) {
-                    var calcName = addTableRow(calcTable, "Name:", "calcName", "input", 1);
-                    calcName.setAttribute("onchange", "refreshCalcDisplay()");
-                    calcName.pattern = scriptEdit.namePattern;
-                    calcName.title = scriptEdit.namePrompt;
-                    calcName.value = name;
-                } else {
-                    var calcName = addTableRow(calcTable, "Name:", "calcName", "select", 1);
-                    calcName.setAttribute("oninput", "refreshCalcDisplay()");
-                    calcName.value = name;
-                    for (i in scriptEdit.nameList) {
-                        var option = document.createElement("option");
-                        option.value = scriptEdit.nameList[i];
-                        option.innerHTML = scriptEdit.nameList[i];
-                        calcName.add(option);
-                        if (option.value == name) {
-                            option.selected = true;
-                        }
-                    }
-                }
-            };
-
-            function buildUnitsList(units) {
-                var calcTable = EbyId("calcTable");
-                var calcUnits = addTableRow(calcTable, "Units:", "calcUnits", "select", 1);
-                calcUnits.style = "width: 80px;";
-                for (i in scriptEdit.units) {
-                    var option = document.createElement("option");
-                    option.value = scriptEdit.units[i];
-                    option.innerHTML = scriptEdit.units[i];
-                    calcUnits.add(option);
-                    if (option.value == units) {
-                        option.selected = true;
-                    }
-                }
-            };
-
-            this.addOutput = function () {
-                editingScript = true;
-                currentBodyPush("divCalc");
-                EbyId("calcTable").innerHTML = "";
-                EbyId("calcTitle").innerHTML = "Configure " + (scriptEdit.title === undefined ? "Output" : scriptEdit.title);
-                buildNames("");
-                buildUnitsList("watts");
-                tokens = ["#0"];
-                EbyId("calcDelete").style.display = "none";
-                scriptEdit.index = scriptEdit.set.length;
-                refreshCalcDisplay();
-            };
-
-            this.calcCancel = function () {
-                currentBodyPop();
-                editingScript = false;
-                scriptEdit.return();
-            };
-
-
-            this.calcSave = function () {
-                if (scriptEdit.index < scriptEdit.set.length) {
-                    scriptEdit.set.splice(scriptEdit.index, 1);
-                }
-                scriptEdit.set.push({
-                    name: EbyId("calcName").value.trim(),
-                    units: EbyId("calcUnits").value.trim(),
-                    script: tokens.join("")
-                });
-                scriptEdit.set.sort(function (a, b) {
-                    return a.name.toString().localeCompare(b.name.toString())
-                });
-                if (scriptEdit.uniqueNames) {
-                    for (var i = 0; i < scriptEdit.set.length - 1; i++) {
-                        if (scriptEdit.set[i].name == scriptEdit.set[i + 1].name) scriptEdit.set.splice(i, 1);
-                    }
-                }
-                scriptEdit.save();
-                currentBodyPop();
-                editingScript = false;
-                scriptEdit.return();
-            };
-
-            this.calcDelete = function () {
-                if (scriptEdit.delete != undefined) {
-                    if (!scriptEdit.delete(scriptEdit.set[scriptEdit.index])) {
-                        return;
-                    }
-                }
-                scriptEdit.set.splice(scriptEdit.index, 1);
-                scriptEdit.save();
-                currentBodyPop();
-                editingScript = false;
-                scriptEdit.return();
-            };
-
-            this.refreshCalcDisplay = function () {
-                EbyId("calcDisplay").innerHTML = scriptDisplay(tokens);
-                var calcName = EbyId("calcName");
-                if (EbyId("calcName").value.trim() == "" ||
-                    parenLevel > 0 ||
-                    RegExp("^[-+*\/<>]").test(tokens[tokens.length - 1])) {
-                    EbyId("calcSave").style.display = "none";
-                } else if (!RegExp(calcName.pattern).test(calcName.value)) {
-                    EbyId("calcSave").style.display = "none";
-                } else EbyId("calcSave").style.display = "inline";
-            };
-
-
-            this.keyClearAll = function () {
-                while (tokens.length > 1) {
-                    keyClearEntry();
-                }
-                keyClearEntry();
-            };
-
-            this.keyClearEntry = function () {
-                if (tokens[tokens.length - 1] == ")") {
-                    parenLevel++;
-                } else if (tokens[tokens.length - 1] == "(") {
-                    parenLevel--;
-                }
-                if (tokens.length > 1) {
-                    tokens.pop();
-                } else {
-                    tokens[0] = "#0";
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyClearChar = function () {
-                if (RegExp("^[-+*\/()|@<>!~]").test(tokens[tokens.length - 1])) {
-                    keyClearEntry();
-                } else if (RegExp("#-?[0-9]$").test(tokens[tokens.length - 1])) {
-                    keyClearEntry();
-                } else {
-                    tokens[tokens.length - 1] = tokens[tokens.length - 1].substr(0, tokens[tokens.length - 1].length - 1);
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyDigit = function (digit) {
-                if (RegExp("^#0$").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] = "#" + digit;
-                } else if (RegExp("^#").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] += digit;
-                } else if (RegExp("^[-+*\/<>(]").test(tokens[tokens.length - 1])) {
-                    tokens.push("#" + digit);
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyDecimal = function () {
-                if (RegExp("^#-?[0-9]*$").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] += ".";
-                } else if (RegExp("^[-+*\/<>(]").test(tokens[tokens.length - 1])) {
-                    tokens.push("#0.");
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyUniNeg = function () {
-                if (RegExp("^#[0-9]+\.?[0-9]*").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] = tokens[tokens.length - 1].charAt(0) + "-" + tokens[tokens.length - 1].substr(1);
-                } else if (RegExp("^#\-[0-9]+\.?[0-9]*").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] = tokens[tokens.length - 1].charAt(0) + tokens[tokens.length - 1].substr(2);
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyUniPos = function () {
-                if (RegExp("[!@)]").test(tokens[tokens.length - 1])) {
-                    tokens.push("|");
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyBinFunc = function (op) {
-                if (RegExp("^[~!@#)\|]").test(tokens[tokens.length - 1])) {
-                    tokens.push(op);
-                } else if (RegExp("^[-+*\/<>]").test(tokens[tokens.length - 1])) {
-                    tokens[tokens.length - 1] = op;
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyPush = function () {
-                if (tokens.length == 1 && tokens[0] == "#0") {
-                    tokens[0] = "(";
-                    parenLevel++;
-                } else if (RegExp("^[-+*\/<>(]").test(tokens[tokens.length - 1])) {
-                    tokens.push("(");
-                    parenLevel++;
-                }
-                refreshCalcDisplay();
-            };
-
-            this.keyPop = function () {
-                if (parenLevel > 0 && RegExp("^[~!@#|)]").test(tokens[tokens.length - 1])) {
-                    tokens.push(")");
-                    parenLevel--;
-                    refreshCalcDisplay();
-                }
-            };
-
-            this.keyInput = function (obj) {
-                if (tokens.length == 1 && tokens[0] == "#0") {
-                    tokens[0] = obj.value;
-                } else if (RegExp("^[-+*\/(<>]").test(tokens[tokens.length - 1])) {
-                    tokens.push(obj.value);
-                }
-                refreshCalcDisplay();
-            };
-=======
           function calcBuildDropdown() {
               var inputDropdown = EbyId("calcInputDropdown-content");
               inputDropdown.innerHTML = "";
@@ -2335,7 +1883,6 @@
               }
               refreshCalcDisplay();
           };
->>>>>>> 401a856 (New uploader)
         }
 
         /********************************************************************************************
@@ -2347,7 +1894,7 @@
             timezone = config.timezone;
             buildDevice();
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
                     var response = JSON.parse(xmlHttp.responseText);
                     if (response.passwords.admin) {
@@ -2727,21 +2274,21 @@
             EbyId("serverOutputsHeader").innerHTML = "Emoncms inputs";
             
             var scriptEdit = {
-                table: EbyId("serverOutputs"),
-                set: config[emoncmsAlias].outputs,
-                units: ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
-                namePrompt: "Name is Emoncms Input Key 1-29",
-                namePattern: "^[1-9]{1}$|^[1-2]{1}[0-9]{1}$",
-                title: "Emoncms input"
+              table : EbyId("serverOutputs"),
+              set : config[emoncmsAlias].outputs,
+              units : ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
+              namePrompt : "Name is Emoncms Input Key 1-29",
+              namePattern : "^[1-9]{1}$|^[1-2]{1}[0-9]{1}$",
+              title : "Emoncms input"
             };
 
-            scriptEdit.save = function () {
-                scriptEdit.set.sort(function (a, b) {
+            scriptEdit.save = function() {
+                scriptEdit.set.sort(function(a, b) {
                     return a.name - b.name
                 });
                 config[emoncmsAlias].outputs = scriptEdit.set;
             };
-            scriptEdit.return = function () {
+            scriptEdit.return = function() {
                 scriptEdit.table.innerHTML = "";
                 editScript(scriptEdit);
                 checkEmoncms();
@@ -2864,7 +2411,7 @@
             urlInput.setAttribute("oninput", "serverConfig.url = this.value; checkInfluxdb();");
             urlInput.type = "url";
 
-            if (version == 1) {
+            if (version == 1){
                 var dbInput = addTableRow(serverTable, "database:", "serverDb", "input", 16);
                 dbInput.value = serverConfig.database;
                 dbInput.setAttribute("oninput", "serverConfig.database = this.value; checkInfluxdb();");
@@ -2939,25 +2486,20 @@
             EbyId("serverOutputsHeader").innerHTML = "measurements";
 
             var scriptEdit = {
-                table: EbyId("serverOutputs"),
-                set: serverConfig.outputs,
-                uniqueNames: false,
-                units: ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
-                namePrompt: "Name must be valid field name",
-                namePattern: "^[0-9a-zA-Z_$-/\.\+]+$",
-                title: "influxDB Measurement"
+              table : EbyId("serverOutputs"),
+              set : serverConfig.outputs,
+              uniqueNames : false,
+              units : ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
+              namePrompt : "Name must be valid field name",
+              namePattern : "^[0-9a-zA-Z_$-/\.\+]+$",
+              title : "influxDB Measurement"
             };
 
-            scriptEdit.save = function () {
+            scriptEdit.save = function() {
                 serverConfig.outputs = scriptEdit.set;
             };
-<<<<<<< HEAD
-
-            scriptEdit.return = function () {
-=======
             
             scriptEdit.return = function() {
->>>>>>> 401a856 (New uploader)
                 scriptEdit.table.innerHTML = "";
                 editScript(scriptEdit);
                 checkInfluxdb();
@@ -3186,24 +2728,19 @@
             EbyId("serverOutputsHeader").innerHTML = "Status Outputs";
 
             var scriptEdit = {
-                table: EbyId("serverOutputs"),
-                set: config.pvoutput.outputs,
-                units: ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
-                nameList: ["generation", "consumption", "voltage", "extended_1(v7)", "extended_2(v8)", "extended_3(v9)", "extended_4(v10)", "extended_5(v11)", "extended_6(v12)"],
-                namePrompt: "extended is used for donator mode only",
-                title: "Status Output"
+              table : EbyId("serverOutputs"),
+              set : config.pvoutput.outputs,
+              units : ["Watts", "Volts", "Amps", "Hz", "PF", "VA", "Wh", "kWh", "VAR", "VARh"],
+              nameList : ["generation", "consumption", "voltage", "extended_1(v7)", "extended_2(v8)", "extended_3(v9)", "extended_4(v10)", "extended_5(v11)", "extended_6(v12)"],
+              namePrompt : "extended is used for donator mode only",
+              title : "Status Output"
             };
 
-            scriptEdit.save = function () {
+            scriptEdit.save = function() {
                 config.pvoutput.outputs = scriptEdit.set;
             };
-<<<<<<< HEAD
-
-            scriptEdit.return = function () {
-=======
             
             scriptEdit.return = function() {
->>>>>>> 401a856 (New uploader)
                 scriptEdit.table.innerHTML = "";
                 editScript(scriptEdit);
                 checkPVOutput();
@@ -3410,7 +2947,7 @@
 
         function statusGet() {
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
                     statusDisplay(xmlHttp.responseText);
                 }
@@ -3469,13 +3006,13 @@
                 }
             }
 
-            if (status.uploaders === undefined) {
+            if(status.uploaders === undefined){
                 EbyId("statusUploaders").innerHTML = "";
             }
             else {
                 show("tabUploaders");
                 var HTML = "";
-                for (var i in status.uploaders) {
+                for(var i in status.uploaders){
                     var uploader = status.uploaders[i];
                     var configStop = config[uploader.id.toLowerCase()].stop === undefined ? false : true;
                     var buttonDisabled = ((uploader.status == "running" && configStop) ||
@@ -3487,13 +3024,8 @@
                     HTML += "</button><span> " + uploader.id + ":</span>";
                     HTML += "<span> " + (uploader.status == "running" ? "Running" : "Stopped"); 
                     HTML += ", Last update " + formatDateTime(uploader.lastpost) + "</span>";
-<<<<<<< HEAD
-                    if (uploader.message) {
-                        HTML += "<span><br>" + uploader.message + "</span>";
-=======
                     if(uploader.message){
                        HTML += "<span><br>" + uploader.message + "</span>";  
->>>>>>> 401a856 (New uploader)
                     }
                     HTML += "</div>"
                 }
@@ -3550,7 +3082,7 @@
                 column3.appendChild(wattNode);
             }
 
-            setTimeout(function () {
+            setTimeout(function() {
                 if (getStatus) statusGet();
             }, 1000);
 
@@ -3604,7 +3136,7 @@
 
         function checkConfig() {
             var rewrite = false;
-            readFile(burdenFileURL, function (response) {
+            readFile(burdenFileURL, function(response) {
                 config.device.burden = JSON.parse(response);
             });
             if (config.device.channels === undefined) {
@@ -3668,15 +3200,6 @@
                 config.server = undefined;
                 rewrite = true;
             }
-<<<<<<< HEAD
-
-            if (config.integrations != undefined) {
-                if (config.integrators == undefined) {
-                    config.integrators == config.integrations;
-                }
-                config.integrations = undefined;
-                rewrite = true;
-=======
             
             if(config.integrations != undefined){
               if(config.integrators == undefined){
@@ -3684,7 +3207,6 @@
               }
               config.integrations = undefined;
               rewrite = true;
->>>>>>> 401a856 (New uploader)
             }
 
             if (rewrite) {
@@ -3789,7 +3311,7 @@
 
         function getConfig(callback) {
             EbyId("panicMessageDiv").style.display = "none";
-            readFile(configFileURL, function (response) {
+            readFile(configFileURL, function(response) {
                 if (response == undefined) {
                     panic("configuration not found.");
                 } else {
@@ -3816,14 +3338,14 @@
         }
 
         function getTables() {
-            readFile(configTablesURL, function (response) {
+            readFile(configTablesURL, function(response) {
                 tables = JSON.parse(response);
             });
         }
 
         function readFile(path, responseHandler) {
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4) {
                     if (this.status == 200) {
                         if (this.getResponseHeader("X-configSHA256") !== null) {
@@ -3846,7 +3368,7 @@
 
         function writeFile(fileString, url, responseHandler) {
             var xmlHttp = new XMLHttpRequest();
-            xmlHttp.onreadystatechange = function () {
+            xmlHttp.onreadystatechange = function() {
                 if (this.readyState == 4) {
                     if (this.status == 200) {
                         if (this.getResponseHeader("X-configSHA256") !== null) {
