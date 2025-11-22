@@ -2062,7 +2062,7 @@
          * ******************************************************************************************/
 
         function buildWebServer() {
-            var servers = ["Emoncms", "InfluxDB_v1", "influxDB_v2", "PVoutput"];
+            var servers = ["Emoncms", "InfluxDB_v1", "influxDB_v2", "PostgREST", "PVoutput"];
             EbyId("serverHead").innerHTML = "Setup Server Uploaders";
             EbyId("divInfluxTagSet").style.display = "none";
             EbyId("divServerOutputs").style.display = "none";
@@ -2406,7 +2406,7 @@
             bulksendInput.setAttribute("max", "10");
             bulksendInput.setAttribute("step", "1");
 
-            var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 60);
+            var urlInput = addTableRow(serverTable, "server URL:", "serverURL", "input", 48);
             urlInput.value = serverConfig.url
             urlInput.setAttribute("oninput", "serverConfig.url = this.value; checkInfluxdb();");
             urlInput.type = "url";
@@ -2821,7 +2821,7 @@
             // Set serverConfig for compatibility with existing patterns
             serverConfig = config.postgrest;
             
-            var urlInput = addTableRow(serverTable, "PostgREST URL:", "serverURL", "input", 60);
+            var urlInput = addTableRow(serverTable, "PostgREST URL:", "serverURL", "input", 48);
             urlInput.value = config.postgrest.url || "";
             urlInput.setAttribute("oninput", "config.postgrest.url = this.value; checkPostgrest();");
             urlInput.type = "url";
