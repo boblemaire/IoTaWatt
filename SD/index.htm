@@ -484,7 +484,7 @@
         </div>
         <!-- mainBody -->
         <div id="copyright">
-            <p style="text-align:center; padding:0px; margin:0px"><small>&#xA9 2021 IoTaWatt, Inc.</small></p>
+            <p style="text-align:center; padding:0px; margin:0px"><small>&#xA9 2025 IoTaWatt, Inc.</small></p>
         </div>
     </div>
     <!-- outerContainer -->
@@ -3110,6 +3110,10 @@
             hide("mainBody");
         }
 
+        function setCurrentYear() {
+            EbyId("copyright").getElementsByTagName("small")[0].innerHTML = EbyId("copyright").getElementsByTagName("small")[0].innerHTML.replace(/\d{4}/, new Date().getFullYear());
+        }
+
         function loadGraph() {
             var myWindow = window.open(graphURL, "_self");
             resetDisplay();
@@ -3242,6 +3246,7 @@
             getTables();
             getConfig();
             resetDisplay();
+            setCurrentYear();
         }
     </script>
 </body>
